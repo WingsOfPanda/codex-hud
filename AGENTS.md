@@ -1,3 +1,5 @@
+# Codex Plus
+
 # Worker groups
 
 When dispatching related workers, use the explicit topic and batch naming rule in
@@ -6,7 +8,8 @@ When dispatching related workers, use the explicit topic and batch naming rule i
 # Background work
 
 When only finite delegated work or background shell commands remain, follow
-[the park workflow](docs/background-work.md): register the exact jobs, then end
+[the park workflow](docs/background-work.md): register the exact jobs with
+`codex-plus park`, then end
 the main turn. Let completion callbacks resume the task; use model turns for
 decisions and verification. Cancel registered callbacks when the user cancels
 that work.

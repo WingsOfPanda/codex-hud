@@ -38,7 +38,7 @@ production daemon:
 ```sh
 python3 -m venv .venv
 .venv/bin/pip install pyte==0.8.2
-.venv/bin/python tests/native_smoke.py ./bin/codex-hud --evidence .build/acceptance
+.venv/bin/python tests/native_smoke.py ./bin/codex-plus --evidence .build/acceptance
 ```
 
 The fixture serves only loopback WebSocket connections and never forwards model

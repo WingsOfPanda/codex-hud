@@ -1,8 +1,10 @@
-# codex-hud
+# Codex Plus
 
-A native worker strip inside each Codex CLI, below its shortcuts footer. Each client
-tracks its own parent thread. It works in an ordinary terminal and independently
-in split tmux panes, without a companion pane or a tmux status-line change.
+Codex Plus combines the native Codex CLI, a worker HUD below its shortcuts
+footer, and a `park` helper for background completion callbacks. Each client
+tracks its own parent thread in ordinary terminals and split tmux panes.
+The patched daemon is an optional, separately activated component for full
+background crash recovery; the worker HUD works with the stock daemon.
 
 The patch targets **Codex 0.162.1**, upstream commit
 `092d3acd6bec3e3a14bdc7e7a2810ab628ab759d`.
@@ -12,8 +14,8 @@ The patch targets **Codex 0.162.1**, upstream commit
 After building, launch a new session or resume an existing one:
 
 ```sh
-./bin/codex-hud
-./bin/codex-hud resume SESSION_UUID
+./bin/codex-plus
+./bin/codex-plus resume SESSION_UUID
 ```
 
 The launcher runs the patched native client. It does not replace `codex` on your

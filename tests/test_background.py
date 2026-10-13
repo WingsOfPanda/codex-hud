@@ -14,9 +14,9 @@ from unittest.mock import patch
 import uuid
 import time
 
-from codex_hud import background
-from codex_hud.background import HistoryLimitError, Observer, Store, pages
-from codex_hud.rpc import Client, peer_generation
+from codex_plus import background
+from codex_plus.background import HistoryLimitError, Observer, Store, pages
+from codex_plus.rpc import Client, peer_generation
 
 PARENT = '11111111-1111-4111-8111-111111111111'
 CHILD = '22222222-2222-4222-8222-222222222222'
@@ -173,7 +173,7 @@ class Transport(unittest.TestCase):
             generation = peer_generation(first)
             self.assertEqual(generation.split(':')[1], str(os.getpid()))
             self.assertEqual(generation, peer_generation(second))
-            with patch('codex_hud.rpc.Path.read_text', side_effect=[
+            with patch('codex_plus.rpc.Path.read_text', side_effect=[
                     'another-boot', '1 (name with ) delimiters) S ' + '0 ' * 18 + '999']):
                 self.assertEqual(peer_generation(first), f'another-boot:{os.getpid()}:999')
         finally:
@@ -621,7 +621,7 @@ class Lifecycle(unittest.TestCase):
         self.assertEqual(self.fake.queue, [])
 
     def test_supervisor_restarts_crash_but_stops_on_normal_exit(self):
-        with patch('codex_hud.background.subprocess.Popen') as popen, patch('codex_hud.background.time.sleep'):
+        with patch('codex_plus.background.subprocess.Popen') as popen, patch('codex_plus.background.time.sleep'):
             popen.return_value.wait.side_effect = [-9, 79, 0]
             background.supervise(self.store, PARENT, self.temp.name)
         self.assertEqual(popen.call_count, 3)
@@ -629,7 +629,7 @@ class Lifecycle(unittest.TestCase):
 
     def test_supervisor_crash_retries_are_bounded_and_durable(self):
         self.register()
-        with patch('codex_hud.background.subprocess.Popen') as popen, patch('codex_hud.background.time.sleep'):
+        with patch('codex_plus.background.subprocess.Popen') as popen, patch('codex_plus.background.time.sleep'):
             popen.return_value.wait.return_value = 79
             background.supervise(self.store, PARENT, self.temp.name)
         self.assertEqual(popen.call_count, 6)
@@ -637,7 +637,7 @@ class Lifecycle(unittest.TestCase):
 
     def test_actual_observer_kill_restarts_and_cancellation_stops_supervisor(self):
         self.register()
-        supervisor = subprocess.Popen([sys.executable, '-m', 'codex_hud.background', 'supervise', '--parent', PARENT],
+        supervisor = subprocess.Popen([sys.executable, '-m', 'codex_plus.background', 'supervise', '--parent', PARENT],
             env=dict(os.environ, CODEX_HOME=self.temp.name), stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL, start_new_session=True)
         def child_after(previous=None):
@@ -1053,7 +1053,7 @@ class Lifecycle(unittest.TestCase):
             self.fake.entries = [{'turnId': 'origin', 'item': {'type': 'commandExecution',
                                  'id': 'held', 'processId': '9', 'status': 'completed', 'exitCode': 0}}]
             self.fake.idle()
-        with patch('codex_hud.background.MAX_PAGES', 2), patch('codex_hud.background.time.sleep', recover):
+        with patch('codex_plus.background.MAX_PAGES', 2), patch('codex_plus.background.time.sleep', recover):
             self.observer.run()
         self.assertEqual(len(bounded_calls), 2)
         self.assertEqual(len(observed), 1)

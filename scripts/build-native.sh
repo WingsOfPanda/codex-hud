@@ -23,4 +23,4 @@ cd "$source_dir/codex-rs"
 cargo +1.99.0 build --locked -p codex-cli --bin codex --release -j 12
 install -s -m 755 target/release/codex "$root/.build/codex.new"
 mv -f "$root/.build/codex.new" "$root/.build/codex"
-echo "Built $root/bin/codex-hud"
+echo "Built $root/bin/codex-plus"

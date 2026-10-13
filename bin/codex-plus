@@ -3,7 +3,7 @@ set -euo pipefail
 root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 if [[ "${1:-}" == "park" ]]; then
     export PYTHONPATH="$root${PYTHONPATH:+:$PYTHONPATH}"
-    exec python3 -m codex_hud.background "$@"
+    exec python3 -m codex_plus.background "$@"
 fi
 if [[ ! -x "$root/.build/codex" ]]; then
     echo "Build the native client first: $root/scripts/build-native.sh" >&2

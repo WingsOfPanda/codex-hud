@@ -72,7 +72,7 @@ def state_home():
 
 class Store:
     def __init__(self, home):
-        self.directory = Path(home) / 'codex-hud'
+        self.directory = Path(home) / 'codex-plus'
         if self.directory.is_symlink():
             raise ValueError('background directory must not be a symlink')
         self.directory.mkdir(mode=0o700, parents=True, exist_ok=True)
@@ -515,7 +515,7 @@ def supervise(store, parent, home):
         fcntl.flock(lock, fcntl.LOCK_EX)
         for attempt in range(6):
             try:
-                child = subprocess.Popen([sys.executable, '-m', 'codex_hud.background', 'observe', '--parent', parent],
+                child = subprocess.Popen([sys.executable, '-m', 'codex_plus.background', 'observe', '--parent', parent],
                                          cwd=Path(__file__).resolve().parent.parent,
                                          env=dict(os.environ, CODEX_HOME=str(home)), stdin=subprocess.DEVNULL,
                                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, close_fds=True)
@@ -530,7 +530,7 @@ def supervise(store, parent, home):
 
 
 def launch(parent, home):
-    subprocess.Popen([sys.executable, '-m', 'codex_hud.background', 'supervise', '--parent', parent],
+    subprocess.Popen([sys.executable, '-m', 'codex_plus.background', 'supervise', '--parent', parent],
                      cwd=Path(__file__).resolve().parent.parent, env=dict(os.environ, CODEX_HOME=str(home)),
                      stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                      start_new_session=True, close_fds=True)
@@ -578,13 +578,13 @@ def main(argv=None):
             print(json.dumps(result))
         return 0
     except HistoryLimitError:
-        print(f'codex-hud park: local history exceeds {MAX_PAGES} pages; selection remains unknown.', file=sys.stderr)
+        print(f'codex-plus park: local history exceeds {MAX_PAGES} pages; selection remains unknown.', file=sys.stderr)
         return 1
     except RegistrationError as exc:
-        print(f'codex-hud park: {exc}', file=sys.stderr)
+        print(f'codex-plus park: {exc}', file=sys.stderr)
         return 1
     except (OSError, ValueError, KeyError, TypeError, sqlite3.Error) as exc:
-        print(f'codex-hud park failed ({type(exc).__name__}); inspect local daemon availability and selectors.', file=sys.stderr)
+        print(f'codex-plus park failed ({type(exc).__name__}); inspect local daemon availability and selectors.', file=sys.stderr)
         return 1
     finally:
         store.close()

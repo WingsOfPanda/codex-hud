@@ -1,6 +1,6 @@
 # Idle main session and completion wake
 
-`codex-hud park` registers specific finite jobs with a local observer. After the
+`codex-plus park` registers specific finite jobs with a local observer. After the
 main agent ends its current turn, the main session is genuinely idle. The worker
 HUD and native background-terminal UI can continue updating locally. A verified
 completion queues one notification and starts it only when the parent is idle.
@@ -19,7 +19,7 @@ workers may still use their models while the main session is idle.
 2. During the main agent's active turn, register exactly the remaining jobs:
 
    ```sh
-   /home/liupan/Aerius/codex-hud/bin/codex-hud park \
+   /home/liupan/Aerius/codex-plus/bin/codex-plus park \
      --worker /root/build__b1__compile \
      --process PROCESS_ID \
      --reason "Finish build and review the result"
@@ -44,8 +44,8 @@ shared daemon described below; an older daemon retains the conservative fallback
 ## Status and cancellation
 
 ```sh
-bin/codex-hud park --status --parent SESSION_UUID
-bin/codex-hud park --cancel --parent SESSION_UUID
+bin/codex-plus park --status --parent SESSION_UUID
+bin/codex-plus park --cancel --parent SESSION_UUID
 ```
 
 Cancellation disarms callbacks; it does not kill the registered processes or
@@ -67,8 +67,8 @@ An already-started callback cannot be undone by cancelling its registration.
 - The observer waits through an active parent or approval/input wait. It does not
   resume unloaded threads or steer active turns, and it does not bypass queued
   user input.
-- Observer state lives under `$CODEX_HOME/codex-hud/` (normally
-  `~/.codex/codex-hud/`). It contains job IDs, daemon identities, delivery records,
+- Observer state lives under `$CODEX_HOME/codex-plus/` (normally
+  `~/.codex/codex-plus/`). It contains job IDs, daemon identities, delivery records,
   the supplied reason, and the immutable callback text, without command output
   or copied conversations. The patched daemon adds its own receipt table to its
   existing queue database through a native migration.
@@ -124,7 +124,7 @@ be interrupted. Once that shared change is authorized:
 
 ```sh
 CODEX_HOME=/home/liupan/.codex \
-  /home/liupan/Aerius/codex-hud/.build/wake-recovery/daemon-package/candidate/bin/codex \
+  /home/liupan/Aerius/codex-plus/.build/wake-recovery/daemon-package/candidate/bin/codex \
   app-server daemon update --from-cli --yes
 ```
 
@@ -132,7 +132,7 @@ The stock rollback package is preserved independently of the daemon installation
 
 ```sh
 CODEX_HOME=/home/liupan/.codex \
-  /home/liupan/Aerius/codex-hud/.build/wake-recovery/daemon-package/rollback/bin/codex \
+  /home/liupan/Aerius/codex-plus/.build/wake-recovery/daemon-package/rollback/bin/codex \
   app-server daemon update --from-cli --yes
 ```
 
@@ -153,8 +153,8 @@ bounded read-only reconciliation for temporarily delayed history. To retry that
 inspection without blindly resubmitting a legacy callback:
 
 ```sh
-cd /home/liupan/Aerius/codex-hud
-python3 -m codex_hud.background observe --parent SESSION_UUID
+cd /home/liupan/Aerius/codex-plus
+python3 -m codex_plus.background observe --parent SESSION_UUID
 ```
 
 Do not delete either receipt ledger to retry delivery: doing so removes duplicate

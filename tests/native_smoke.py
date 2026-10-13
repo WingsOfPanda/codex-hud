@@ -1,8 +1,8 @@
 """Real native TUI acceptance with isolated homes and loopback protocol fixtures.
 
-Setup: python3 -m venv /tmp/codex-hud-native-smoke-venv
-       /tmp/codex-hud-native-smoke-venv/bin/pip install pyte==0.8.2
-Run:   /tmp/codex-hud-native-smoke-venv/bin/python tests/native_smoke.py BINARY
+Setup: python3 -m venv /tmp/codex-plus-native-smoke-venv
+       /tmp/codex-plus-native-smoke-venv/bin/pip install pyte==0.8.2
+Run:   /tmp/codex-plus-native-smoke-venv/bin/python tests/native_smoke.py BINARY
 """
 
 import argparse
@@ -166,7 +166,7 @@ def run(binary, evidence):
     evidence.mkdir(parents=True, exist_ok=True)
     terminals, servers, stages = [], [], []
     (evidence / 'report.json').unlink(missing_ok=True)
-    temporary = tempfile.TemporaryDirectory(prefix='codex-hud-smoke-')
+    temporary = tempfile.TemporaryDirectory(prefix='codex-plus-smoke-')
     try:
         root = Path(temporary.name)
         for index, count in enumerate((2, 6)):
@@ -339,6 +339,6 @@ def run(binary, evidence):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('binary', type=Path)
-    parser.add_argument('--evidence', type=Path, default=Path('/tmp/codex-hud-native-smoke-evidence'))
+    parser.add_argument('--evidence', type=Path, default=Path('/tmp/codex-plus-native-smoke-evidence'))
     args = parser.parse_args()
     run(args.binary.resolve(), args.evidence.resolve())

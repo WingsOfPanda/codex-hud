@@ -20,7 +20,7 @@ from test_background_integration import (
     REPO, RecordingClient, coordinator_state, stop,
     stop_observers, wait,
 )
-from codex_hud.background import Store
+from codex_plus.background import Store
 from fixtures.recovery_provider import RecoveryProvider, WorkerProvider
 
 SCENARIOS = ('shell-restart', 'worker-restart', 'before-enqueue', 'after-enqueue', 'after-start', 'queue-restart', 'native-replay')
@@ -30,7 +30,7 @@ def run(binary, evidence, scenario='shell-restart'):
     evidence.mkdir(parents=True, exist_ok=True)
     report = {'binary': str(binary), 'scenario': scenario, 'remote_model_requests': 0}
     provider = rpc = native = observer = None
-    with tempfile.TemporaryDirectory(prefix='codex-hud-recovery-') as temporary:
+    with tempfile.TemporaryDirectory(prefix='codex-plus-recovery-') as temporary:
         root = Path(temporary)
         home, workspace = root / 'home', root / 'workspace'
         home.mkdir(mode=0o700)
@@ -87,7 +87,7 @@ stream_max_retries=0
 
         def start_observer(fault=None):
             source = '''import os, time
-from codex_hud.background import Store, Observer
+from codex_plus.background import Store, Observer
 s = Store(os.environ["CODEX_HOME"])
 def fault(point):
     if point == 'before_enqueue' and os.environ.get('RECOVERY_QUEUE_BLOCK') == '1':
@@ -328,7 +328,7 @@ s.close()
             for path in home.glob('sessions/**/*.jsonl'):
                 shutil.copy2(path, evidence / path.name)
             report['loopback_provider_requests'] = provider.count
-            if (home / 'codex-hud' / 'background.sqlite').exists():
+            if (home / 'codex-plus' / 'background.sqlite').exists():
                 report['cleanup_state'] = coordinator_state(home)
             (evidence / 'provider-requests.json').write_text(json.dumps(provider.requests, indent=2) + '\n')
             (evidence / 'rpc-notifications.json').write_text(json.dumps(rpc.messages if rpc else [], indent=2) + '\n')

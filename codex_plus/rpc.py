@@ -46,7 +46,7 @@ class Client:
             headers = dict(line.split(b':', 1) for line in header.split(b'\r\n')[1:] if b':' in line)
             if not header.startswith(b'HTTP/1.1 101 ') or not any(k.lower() == b'sec-websocket-accept' and v.strip() == accept for k, v in headers.items()):
                 raise ValueError('invalid websocket handshake')
-            self.initialize_result = self.call('initialize', {'clientInfo': {'name': 'codex_hud_background', 'version': '0.1'}, 'capabilities': {'experimentalApi': True}})
+            self.initialize_result = self.call('initialize', {'clientInfo': {'name': 'codex_plus_background', 'version': '0.1'}, 'capabilities': {'experimentalApi': True}})
             self.send({'method': 'initialized'})
         except Exception:
             self.close()

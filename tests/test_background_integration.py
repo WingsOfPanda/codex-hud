@@ -22,7 +22,7 @@ from fixtures.background_provider import ResponsesProvider
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
-from codex_hud.rpc import Client
+from codex_plus.rpc import Client
 
 
 class RecordingClient(Client):
@@ -58,7 +58,7 @@ def stop(process):
 
 def coordinator_state(home):
     """Read only the fixture's owned coordinator database, never native state."""
-    with sqlite3.connect(f'file:{home / "codex-hud" / "background.sqlite"}?mode=ro', uri=True) as database:
+    with sqlite3.connect(f'file:{home / "codex-plus" / "background.sqlite"}?mode=ro', uri=True) as database:
         database.row_factory = sqlite3.Row
         return {table: [dict(row) for row in database.execute(f'SELECT * FROM {table}')]
                 for table in ('parks', 'jobs', 'callbacks')}
@@ -71,7 +71,7 @@ def stop_observers(home):
             try:
                 command = (path / 'cmdline').read_bytes().split(b'\0')
                 environment = (path / 'environ').read_bytes().split(b'\0')
-                if b'codex_hud.background' in command and action in command and f'CODEX_HOME={home}'.encode() in environment:
+                if b'codex_plus.background' in command and action in command and f'CODEX_HOME={home}'.encode() in environment:
                     descriptor = os.pidfd_open(int(path.name))
                     try:
                         signal.pidfd_send_signal(descriptor, signal.SIGTERM)
@@ -88,7 +88,7 @@ def run(binary, evidence, probe_only=False):
     evidence.mkdir(parents=True, exist_ok=True)
     report = {'binary': str(binary), 'remote_model_requests': 0}
     provider = rpc = attached = native = None
-    with tempfile.TemporaryDirectory(prefix='codex-hud-background-') as temporary:
+    with tempfile.TemporaryDirectory(prefix='codex-plus-background-') as temporary:
         root = Path(temporary)
         home, workspace = root / 'home', root / 'workspace'
         home.mkdir(mode=0o700)
@@ -137,7 +137,7 @@ stream_max_retries=0
             process = active_terminals[0]['processId']
             report.update(active_thread=active_thread, active_terminals=active_terminals)
             if not probe_only:
-                parked = subprocess.run([sys.executable, '-m', 'codex_hud.background', 'park',
+                parked = subprocess.run([sys.executable, '-m', 'codex_plus.background', 'park',
                     '--parent', parent, '--process', process, '--reason', 'isolated acceptance'],
                     cwd=REPO, env=env, capture_output=True, text=True, timeout=15)
                 (evidence / 'park.stdout').write_text(parked.stdout)
@@ -200,7 +200,7 @@ stream_max_retries=0
                 assert provider.count == 3, provider.requests
                 assert thread['status']['type'] == 'idle' and len(thread['turns']) == 2, thread
                 report['after_resume_thread'] = thread
-                status = subprocess.run([sys.executable, '-m', 'codex_hud.background', 'park',
+                status = subprocess.run([sys.executable, '-m', 'codex_plus.background', 'park',
                     '--parent', parent, '--status'], cwd=REPO, env=env,
                     capture_output=True, text=True, timeout=10)
                 assert status.returncode == 0, status.stderr
@@ -217,7 +217,7 @@ stream_max_retries=0
                 assert not report['queue_after_resume']['data'], 'owned wake remained queued after resume'
                 jobs = report['coordinator_state']['jobs']
                 assert len(jobs) == 1 and jobs[0]['turn'] == turn and jobs[0]['status'] == 'completed', jobs
-                restarted = subprocess.run([sys.executable, '-m', 'codex_hud.background', 'observe', '--parent', parent],
+                restarted = subprocess.run([sys.executable, '-m', 'codex_plus.background', 'observe', '--parent', parent],
                     cwd=REPO, env=env, capture_output=True, text=True, timeout=10)
                 report['observer_restart'] = {'returncode': restarted.returncode, 'stdout': restarted.stdout,
                                                'stderr': restarted.stderr}
@@ -239,7 +239,7 @@ stream_max_retries=0
             native_log.close()
             for path in home.glob('sessions/**/*.jsonl'):
                 shutil.copy2(path, evidence / path.name)
-            for path in (home / 'codex-hud').glob('*'):
+            for path in (home / 'codex-plus').glob('*'):
                 if path.is_file() and path.suffix in ('.json', '.log'):
                     shutil.copy2(path, evidence / path.name)
             report['loopback_provider_requests'] = provider.count
