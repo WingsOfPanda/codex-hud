@@ -1,0 +1,26 @@
+{
+  "binary": "/home/liupan/Aerius/codex-hud/.build/release-review/codex.release",
+  "passed": [
+    "six active workers show three task-first rows plus +3 more, with elapsed, unknown remote tokens and actual Sol high/Astra medium below shortcuts",
+    "two simultaneous independent roots and editable composers",
+    "input remains editable during delayed metadata RPC",
+    "completion removes its row and promotes a hidden active worker",
+    "last completion hides the entire strip while both composers remain editable",
+    "later activity restores the compact strip without losing the draft",
+    "explicit three-member cohort reduces 3\u21922\u21921\u2192hidden without duplicate rows or shrinking dispatch elapsed; independent cohort stays separate, group resize/input preserve draft, final strip collapses",
+    "small and normal PTY resize with preserved draft",
+    "partial metadata RPC failure marks counts stale and recovers",
+    "stale disconnect and automatic reconnect without cross-pane effect",
+    "zero turn/start or turn/steer requests and zero model calls",
+    "isolated tmux server: two split panes, draft editing, small/normal resize, stale/reconnect, zero turn/start or turn/steer"
+  ],
+  "ui_turn_start_requests": 0,
+  "ui_turn_steer_requests": 0,
+  "cursor_replies": [
+    3,
+    3
+  ],
+  "model_calls": 0,
+  "terminal_parser": "pyte 0.8.2",
+  "tmux_required": false
+}

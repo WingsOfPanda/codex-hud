@@ -1,0 +1,10 @@
+  /review - review any changes and find issues    
+                                                  
+                                                  
+› draft-0-refresh-small                           
+                                                  
+  gpt-6-sol default · /tmp/codex-hud-smoke-gmsd3t…
+                                                  
+  Workers 2 · active 2 · waiting 0                
+  worker 1 · active · 0:24 · ? tok · Sol high     
+  worker 2 · active · 0:24 · ? tok · Astra medium 

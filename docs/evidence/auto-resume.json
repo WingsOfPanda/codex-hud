@@ -1,0 +1,92 @@
+{
+  "passed": true,
+  "remote_model_requests": 0,
+  "loopback_provider_requests": 3,
+  "idle_observation": {
+    "seconds": 1,
+    "provider_requests_before": 2,
+    "provider_requests_after": 2
+  },
+  "parked_idle_observation": {
+    "seconds": 1,
+    "loopback_provider_requests": 2
+  },
+  "observer_restart": {
+    "returncode": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "verified_at": "2026-10-13T09:10:55.458910+00:00",
+  "unit_tests": {
+    "passed": 37,
+    "command": "python3 -m unittest discover -s tests -p test_background.py -v"
+  },
+  "integration_command": "python3 tests/test_background_integration.py .build/codex --evidence .build/auto-resume-root-gate",
+  "full_report": ".build/auto-resume-root-gate/report.json",
+  "live_demo": {
+    "state": "passed",
+    "verified_at": "2026-10-13T09:13:48.785847+00:00",
+    "parent": "01a1332f-c083-7573-8386-9a9357a23e18",
+    "shell_result": {
+      "status": "completed",
+      "completed_at": "2026-10-13T09:12:24.671251+00:00"
+    },
+    "worker_result": {
+      "worker": "/root/auto_resume_demo__b2__worker",
+      "status": "completed",
+      "completed_at": "2026-10-13T09:13:28.585858+00:00"
+    },
+    "jobs": [
+      {
+        "id": "01a1332f-c083-7573-8386-9a9357a23e18:worker:01a13487-ba8b-7230-bf7b-1137c2619173:01a13487-baad-7580-921c-7eba0a6521d2",
+        "park": "4eeea5b4-c34a-48f5-9050-d3e3f6b209c1",
+        "kind": "worker",
+        "thread": "01a13487-ba8b-7230-bf7b-1137c2619173",
+        "turn": "01a13487-baad-7580-921c-7eba0a6521d2",
+        "item": null,
+        "process": null,
+        "status": "completed",
+        "exit_code": null,
+        "callback": "7d16e30a-5ed8-4e51-81c6-5e9d46138326"
+      },
+      {
+        "id": "01a1332f-c083-7573-8386-9a9357a23e18:process:item:exec-0454d6cf-6236-454b-bfd6-0e17eed35408",
+        "park": "4eeea5b4-c34a-48f5-9050-d3e3f6b209c1",
+        "kind": "process",
+        "thread": "01a1332f-c083-7573-8386-9a9357a23e18",
+        "turn": "01a1345e-d996-7b80-a812-07c79d462acd",
+        "item": "exec-0454d6cf-6236-454b-bfd6-0e17eed35408",
+        "process": "43017",
+        "status": "completed",
+        "exit_code": 0,
+        "callback": "16e0ccd5-2984-4220-9683-9497a5781043"
+      }
+    ],
+    "callbacks": [
+      {
+        "id": "16e0ccd5-2984-4220-9683-9497a5781043",
+        "parent": "01a1332f-c083-7573-8386-9a9357a23e18",
+        "client": "d47f6353-4d27-41d4-9b35-266895f5ba0e",
+        "state": "delivered",
+        "queue": "01a13488-d4c7-7f62-b634-763f0080a230",
+        "error": null
+      },
+      {
+        "id": "7d16e30a-5ed8-4e51-81c6-5e9d46138326",
+        "parent": "01a1332f-c083-7573-8386-9a9357a23e18",
+        "client": "6f557f71-02b5-4438-bb5d-8565b268a0d1",
+        "state": "delivered",
+        "queue": "01a13489-dfa3-7472-a6e0-033fd0a9a6f4",
+        "error": null
+      }
+    ],
+    "remaining_registered_jobs": 0,
+    "observed_sequence": [
+      "main ended turn with two jobs armed",
+      "shell completion automatically started parent turn",
+      "main verified shell result and ended turn with worker still armed",
+      "worker completion automatically started parent turn",
+      "both results and delivered callbacks verified"
+    ]
+  }
+}

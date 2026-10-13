@@ -1,0 +1,10 @@
+{
+  "upstream_commit": "092d3acd6bec3e3a14bdc7e7a2810ab628ab759d",
+  "version": "0.162.1",
+  "rust": "1.99.0",
+  "profile": "release",
+  ".build/codex_sha256": "53f112b6c9b6d1ec47075c65bd2848ba729da5bff82b5e4ea08bd2bad575cf74",
+  "patches/codex-0.162.1-worker-hud.patch_sha256": "54632294fe340e254d9182b122fba0888198768e7f1934786a090e7a34cc7a82",
+  "packaging": "install -s",
+  "recovery_acceptance": "docs/evidence/wake-recovery.json"
+}

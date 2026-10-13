@@ -1,0 +1,131 @@
+{
+  "verified_at": "2026-10-13T10:26:19.080263+00:00",
+  "upstream_commit": "092d3acd6bec3e3a14bdc7e7a2810ab628ab759d",
+  "coordinator_tests": {
+    "passed": 64,
+    "log": ".build/wake-recovery/root-final-coordinator.log"
+  },
+  "native_tests": {
+    "state": {
+      "passed": 11,
+      "log": ".build/wake-recovery/root-native-state.log"
+    },
+    "queue": {
+      "passed": 22,
+      "log": ".build/wake-recovery/root-native-queue.log"
+    },
+    "rpc": {
+      "passed": 11,
+      "log": ".build/wake-recovery/root-native-rpc.log"
+    },
+    "initialize": {
+      "passed": 7,
+      "log": ".build/wake-recovery/root-native-initialize.log"
+    }
+  },
+  "recovery_scenarios": {
+    "after-enqueue": {
+      "passed": true,
+      "loopback_provider_requests": 3,
+      "remote_model_requests": 0,
+      "report": ".build/wake-recovery/main-gate/after-enqueue/report.json"
+    },
+    "after-start": {
+      "passed": true,
+      "loopback_provider_requests": 3,
+      "remote_model_requests": 0,
+      "report": ".build/wake-recovery/main-gate/after-start/report.json"
+    },
+    "before-enqueue": {
+      "passed": true,
+      "loopback_provider_requests": 3,
+      "remote_model_requests": 0,
+      "report": ".build/wake-recovery/main-gate/before-enqueue/report.json"
+    },
+    "native-replay": {
+      "passed": true,
+      "loopback_provider_requests": 3,
+      "remote_model_requests": 0,
+      "report": ".build/wake-recovery/main-gate/native-replay/report.json"
+    },
+    "queue-restart": {
+      "passed": true,
+      "loopback_provider_requests": 4,
+      "remote_model_requests": 0,
+      "report": ".build/wake-recovery/main-gate/queue-restart/report.json"
+    },
+    "shell-restart": {
+      "passed": true,
+      "loopback_provider_requests": 3,
+      "remote_model_requests": 0,
+      "report": ".build/wake-recovery/main-gate/shell-restart/report.json"
+    },
+    "worker-restart": {
+      "passed": true,
+      "loopback_provider_requests": 4,
+      "remote_model_requests": 0,
+      "report": ".build/wake-recovery/main-gate/worker-restart/report.json"
+    }
+  },
+  "normal_integration": {
+    "passed": true,
+    "report": ".build/wake-recovery/main-normal-gate/report.json"
+  },
+  "format_check": "passed",
+  "patch_apply_and_reverse": "passed",
+  "patch_sha256": "54632294fe340e254d9182b122fba0888198768e7f1934786a090e7a34cc7a82",
+  "candidate": {
+    "path": ".build/wake-recovery/codex.candidate",
+    "sha256": "53f112b6c9b6d1ec47075c65bd2848ba729da5bff82b5e4ea08bd2bad575cf74",
+    "size_bytes": 282616888,
+    "packaging": "install -s"
+  },
+  "source_hashes": {
+    "codex_hud/background.py": "554dc7886d39e312458786a4f677fe668d78cb25c039c715fc92dcafaba75914",
+    "codex_hud/rpc.py": "65cac83c2cc93da1ec7493863f15ba99f4d50215ee9521d05239afb956f7913c",
+    "tests/test_background.py": "1c26ae64904fabf157d40f0340cdd7c9f1e232bdd76453bab6c4de3f57a1ca22",
+    "tests/test_background_recovery_integration.py": "3dda8f1ad55b01899eb7d2ace6ec996f6bcf2923d34c946cdf4a64bca54a968a"
+  },
+  "hud_smoke": {
+    "passed": true,
+    "report": ".build/wake-recovery/root-hud-smoke/report.json"
+  },
+  "shared_daemon_activation": "awaiting authorization: restarts shared daemon and pins local package",
+  "limits": [
+    "Durable input delivery, not exactly-once model/tool execution.",
+    "Lost jobs are reported with unknown outcomes, never automatically rerun.",
+    "Interrupted origins conservatively cancel; old ambiguous callbacks are not retroactively safe.",
+    "Host reboot, killed supervisor, storage loss/corruption, and older direct queue writers are outside qualification."
+  ],
+  "package_acceptance": {
+    "candidate_package": "/home/liupan/Aerius/codex-hud/.build/wake-recovery/daemon-package/candidate",
+    "candidate_binary_sha256": "53f112b6c9b6d1ec47075c65bd2848ba729da5bff82b5e4ea08bd2bad575cf74",
+    "candidate_inventory_sha256": "6f6db27c78890796c17529fc36bbe93b019cdd21d352c04caf5035b627728ca3",
+    "rollback_package": "/home/liupan/Aerius/codex-hud/.build/wake-recovery/daemon-package/rollback",
+    "rollback_binary_sha256": "628e35487d888a28f0427fc37501da529dd3d81fcbad7a2c3421c1e8670d92e1",
+    "runtime_resources_preserved": true,
+    "changed_files": [
+      "bin/codex",
+      "codex-package.json",
+      "codex-resources/voice/manifest.json"
+    ],
+    "production_package_unchanged": true,
+    "scenarios": [
+      {
+        "scenario": "candidate-bootstrap-update-rollback",
+        "passed": true,
+        "private_processes_stopped": true,
+        "real_provider_requests": 0
+      },
+      {
+        "scenario": "stock-bootstrap-candidate-update",
+        "passed": true,
+        "private_processes_stopped": true,
+        "real_provider_requests": 0
+      }
+    ],
+    "root_verified_at": "2026-10-13T10:36:17.018211+00:00",
+    "full_report": ".build/wake-recovery/daemon-package/validation.json",
+    "root_log": ".build/wake-recovery/daemon-package/root-acceptance.log"
+  }
+}

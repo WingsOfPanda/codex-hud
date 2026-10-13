@@ -1,0 +1,4882 @@
+diff --git a/codex-rs/Cargo.lock b/codex-rs/Cargo.lock
+index 1cee117..5c2e408 100644
+--- a/codex-rs/Cargo.lock
++++ b/codex-rs/Cargo.lock
+@@ -276,7 +276,7 @@ checksum = "2a4385e2e34eb35d6b3efe798b9eb88096925d87726c0798709bf56d9ed84af3"
+ 
+ [[package]]
+ name = "app_test_support"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -1895,7 +1895,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-agent-extension"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "codex-core",
+@@ -1907,7 +1907,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-agent-graph-store"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "codex-protocol",
+  "codex-state",
+@@ -1922,7 +1922,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-agent-identity"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -1942,7 +1942,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-agent-message-board-client"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "chrono",
+@@ -1965,7 +1965,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-agent-message-board-extension"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "base64 0.22.1",
+  "caseless",
+@@ -1988,7 +1988,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-agent-roles"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "codex-config",
+  "codex-file-system",
+@@ -2001,7 +2001,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-analytics"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "codex-app-server-protocol",
+  "codex-git-utils",
+@@ -2024,7 +2024,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-ansi-escape"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "ansi-to-tui",
+  "pretty_assertions",
+@@ -2035,7 +2035,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-api"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "assert_matches",
+@@ -2073,7 +2073,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-app-server"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "app_test_support",
+@@ -2187,7 +2187,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-app-server-client"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "codex-app-server",
+  "codex-app-server-protocol",
+@@ -2214,7 +2214,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-app-server-daemon"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "blake3",
+@@ -2240,7 +2240,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-app-server-protocol"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "codex-app-server-protocol-noop-macros",
+@@ -2274,11 +2274,11 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-app-server-protocol-noop-macros"
+-version = "0.0.0"
++version = "0.162.1"
+ 
+ [[package]]
+ name = "codex-app-server-test-client"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "clap",
+@@ -2300,7 +2300,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-app-server-transport"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "axum",
+  "base64 0.22.1",
+@@ -2342,7 +2342,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-apply-patch"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "assert_cmd",
+@@ -2362,7 +2362,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-arg0"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "codex-apply-patch",
+@@ -2386,7 +2386,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-async-utils"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "pretty_assertions",
+  "rand 0.9.3",
+@@ -2396,7 +2396,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-attachment-store"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "pretty_assertions",
+  "serde",
+@@ -2406,7 +2406,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-aws-auth"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "aws-config",
+  "aws-credential-types",
+@@ -2432,7 +2432,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-backend-client"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "codex-api",
+@@ -2452,7 +2452,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-backend-openapi-models"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -2461,7 +2461,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-build-info"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "codex-install-context",
+  "pretty_assertions",
+@@ -2474,7 +2474,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-bwrap"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "cc",
+  "libc",
+@@ -2483,7 +2483,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-chatgpt"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "clap",
+@@ -2505,7 +2505,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-cli"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "app_test_support",
+@@ -2607,7 +2607,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-client"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "codex-http-client",
+  "eventsource-stream",
+@@ -2621,7 +2621,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-cloud-client"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "async-stream",
+@@ -2645,7 +2645,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-cloud-config"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "base64 0.22.1",
+  "chrono",
+@@ -2671,7 +2671,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-cloud-tasks"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "chrono",
+@@ -2704,7 +2704,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-cloud-tasks-client"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "chrono",
+@@ -2719,7 +2719,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-cloud-tasks-mock-client"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "chrono",
+  "codex-cloud-tasks-client",
+@@ -2728,7 +2728,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-code-mode"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "codex-code-mode-protocol",
+  "codex-http-client",
+@@ -2751,7 +2751,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-code-mode-host"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "axum",
+@@ -2780,7 +2780,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-code-mode-protocol"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "codex-protocol",
+  "glob",
+@@ -2798,7 +2798,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-code-mode-runtime"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "base64 0.22.1",
+  "codex-code-mode-protocol",
+@@ -2816,11 +2816,11 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-collaboration-mode-templates"
+-version = "0.0.0"
++version = "0.162.1"
+ 
+ [[package]]
+ name = "codex-config"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -2870,7 +2870,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-config-schema"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "clap",
+@@ -2879,7 +2879,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-connectors"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "arc-swap",
+@@ -2901,7 +2901,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-connectors-extension"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "codex-connectors",
+  "codex-core-plugins",
+@@ -2915,7 +2915,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-context-fragments"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "codex-protocol",
+  "codex-utils-string",
+@@ -2925,7 +2925,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-core"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "arc-swap",
+@@ -3067,7 +3067,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-core-api"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "codex-analytics",
+  "codex-app-server-protocol",
+@@ -3090,7 +3090,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-core-plugin-common"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "codex-utils-absolute-path",
+  "semver",
+@@ -3101,7 +3101,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-core-plugins"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "chrono",
+@@ -3158,7 +3158,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-diagnostics"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "libc",
+  "pretty_assertions",
+@@ -3166,7 +3166,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-exec"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "assert_cmd",
+@@ -3218,7 +3218,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-exec-server"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "arc-swap",
+@@ -3287,7 +3287,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-exec-server-protocol"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "base64 0.22.1",
+  "codex-file-system",
+@@ -3304,7 +3304,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-exec-server-test-support"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "codex-exec-server",
+@@ -3319,7 +3319,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-execpolicy"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "clap",
+@@ -3337,7 +3337,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-experimental-api-macros"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "proc-macro2",
+  "quote",
+@@ -3346,7 +3346,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-extension-api"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "codex-api",
+  "codex-config",
+@@ -3368,7 +3368,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-extension-items"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "codex-utils-absolute-path",
+  "pretty_assertions",
+@@ -3380,7 +3380,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-external-agent-migration"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "chrono",
+  "codex-analytics",
+@@ -3410,7 +3410,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-features"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "codex-network-proxy",
+  "codex-protocol",
+@@ -3424,7 +3424,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-feedback"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "bytes",
+@@ -3451,7 +3451,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-file-search"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "clap",
+@@ -3467,7 +3467,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-file-system"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "bytes",
+  "codex-protocol",
+@@ -3479,7 +3479,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-file-watcher"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "notify",
+  "pretty_assertions",
+@@ -3490,7 +3490,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-git-attribution"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "codex-backend-client",
+  "codex-extension-api",
+@@ -3503,7 +3503,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-git-utils"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "chrono",
+@@ -3531,7 +3531,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-goal-extension"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "chrono",
+@@ -3556,7 +3556,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-guardian-context"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "codex-context-fragments",
+  "codex-history",
+@@ -3568,7 +3568,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-guardian-reviewer"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "codex-analytics",
+@@ -3593,7 +3593,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-guardian-v2"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "codex-analytics",
+@@ -3630,7 +3630,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-history"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "codex-protocol",
+@@ -3642,7 +3642,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-history-notes-extension"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "codex-analytics",
+  "codex-client",
+@@ -3667,7 +3667,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-home"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "codex-extension-api",
+  "codex-utils-absolute-path",
+@@ -3679,7 +3679,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-hooks"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "async-channel",
+@@ -3707,7 +3707,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-http-client"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "bytes",
+  "codex-utils-cargo-bin",
+@@ -3743,7 +3743,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-image-generation-extension"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "base64 0.22.1",
+  "codex-api",
+@@ -3771,7 +3771,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-install-context"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "codex-utils-absolute-path",
+  "codex-utils-home-dir",
+@@ -3784,7 +3784,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-keyring-store"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "keyring",
+  "pretty_assertions",
+@@ -3795,7 +3795,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-linux-sandbox"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "clap",
+  "codex-core",
+@@ -3824,7 +3824,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-lmstudio"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "codex-core",
+  "codex-http-client",
+@@ -3838,7 +3838,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-login"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -3884,7 +3884,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-mcp"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "arc-swap",
+@@ -3924,7 +3924,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-mcp-extension"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "axum",
+@@ -3957,7 +3957,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-memories-extension"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "codex-core",
+  "codex-extension-api",
+@@ -3979,7 +3979,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-memories-read"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "codex-protocol",
+  "codex-shell-command",
+@@ -3989,7 +3989,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-memories-write"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "chrono",
+@@ -4026,7 +4026,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-mermaid"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "insta",
+  "pretty_assertions",
+@@ -4035,7 +4035,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-message-history"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "codex-config",
+  "memchr",
+@@ -4049,7 +4049,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-model-provider"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "base64 0.22.1",
+  "chrono",
+@@ -4083,7 +4083,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-model-provider-info"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "codex-client",
+  "codex-protocol",
+@@ -4101,7 +4101,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-models-manager"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "chrono",
+  "codex-http-client",
+@@ -4120,7 +4120,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-mxc-sandbox"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "appcontainer_common",
+@@ -4142,7 +4142,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-network-proxy"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -4191,7 +4191,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-ollama"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "assert_matches",
+  "async-stream",
+@@ -4211,7 +4211,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-otel"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "bytes",
+  "chrono",
+@@ -4248,7 +4248,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-otel-trace-websocket"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "axum",
+@@ -4259,7 +4259,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-plugin"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "codex-config",
+  "codex-core-plugin-common",
+@@ -4274,7 +4274,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-process-hardening"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "libc",
+  "pretty_assertions",
+@@ -4282,7 +4282,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-prompts"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "codex-collaboration-mode-templates",
+@@ -4299,7 +4299,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-protocol"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "chardetng",
+@@ -4344,12 +4344,13 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-queue-extension"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "codex-core",
+  "codex-extension-api",
+  "codex-protocol",
++ "codex-rollout",
+  "codex-state",
+  "codex-thread-store",
+  "codex-utils-absolute-path",
+@@ -4365,7 +4366,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-realtime-webrtc"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "codex-build-info",
+@@ -4384,7 +4385,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-response-debug-context"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "base64 0.22.1",
+  "codex-api",
+@@ -4395,7 +4396,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-responses-api-proxy"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "clap",
+@@ -4412,7 +4413,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-rmcp-client"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "axum",
+@@ -4463,7 +4464,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-rollout"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "chrono",
+@@ -4494,7 +4495,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-rollout-trace"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "codex-code-mode",
+@@ -4510,7 +4511,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-sandboxing"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "codex-mxc-sandbox",
+@@ -4538,7 +4539,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-secrets"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "age",
+  "anyhow",
+@@ -4559,7 +4560,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-shell-command"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -4582,7 +4583,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-shell-escalation"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "clap",
+@@ -4602,7 +4603,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-skills"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "codex-protocol",
+  "codex-shell-command",
+@@ -4619,7 +4620,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-skills-extension"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "assert_matches",
+  "blake3",
+@@ -4657,7 +4658,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-state"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "chrono",
+@@ -4684,7 +4685,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-stdio-to-uds"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "codex-uds",
+@@ -4696,7 +4697,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-tcp-tunnel"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "bytes",
+@@ -4717,7 +4718,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-terminal-detection"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "pretty_assertions",
+  "tracing",
+@@ -4725,7 +4726,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-test-binary-support"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "codex-arg0",
+  "tempfile",
+@@ -4733,7 +4734,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-thread-manager-sample"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "clap",
+@@ -4744,7 +4745,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-thread-store"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "chrono",
+  "codex-app-server-protocol",
+@@ -4775,7 +4776,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-tools"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "bitflags 2.13.1",
+  "codex-code-mode",
+@@ -4801,7 +4802,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-tui"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "app_test_support",
+@@ -4894,6 +4895,7 @@ dependencies = [
+  "serial_test",
+  "sha2 0.10.9",
+  "shlex",
++ "sqlx",
+  "strum 0.27.2",
+  "strum_macros 0.28.0",
+  "supports-color 3.0.2",
+@@ -4927,7 +4929,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-uds"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "async-io",
+  "libc",
+@@ -4941,7 +4943,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-user-verification"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "base64 0.22.1",
+  "core-foundation 0.10.1",
+@@ -4961,7 +4963,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-absolute-path"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "dirs",
+  "dunce",
+@@ -4975,14 +4977,14 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-approval-presets"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "codex-protocol",
+ ]
+ 
+ [[package]]
+ name = "codex-utils-audio"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "base64 0.22.1",
+  "codex-protocol",
+@@ -4996,7 +4998,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-cache"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "lru",
+  "sha1 0.10.6",
+@@ -5005,7 +5007,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-cargo-bin"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "assert_cmd",
+  "runfiles",
+@@ -5014,7 +5016,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-cli"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "clap",
+  "codex-protocol",
+@@ -5026,15 +5028,15 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-elapsed"
+-version = "0.0.0"
++version = "0.162.1"
+ 
+ [[package]]
+ name = "codex-utils-fuzzy-match"
+-version = "0.0.0"
++version = "0.162.1"
+ 
+ [[package]]
+ name = "codex-utils-git-discovery"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "codex-git-utils",
+  "codex-utils-absolute-path",
+@@ -5047,7 +5049,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-home-dir"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "codex-utils-absolute-path",
+  "dirs",
+@@ -5057,7 +5059,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-image"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "base64 0.22.1",
+  "codex-utils-cache",
+@@ -5071,7 +5073,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-json-to-toml"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "pretty_assertions",
+  "serde_json",
+@@ -5080,7 +5082,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-oss"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "codex-core",
+  "codex-lmstudio",
+@@ -5090,7 +5092,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-output-truncation"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "codex-protocol",
+  "codex-utils-string",
+@@ -5100,7 +5102,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-path"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "codex-utils-absolute-path",
+  "dunce",
+@@ -5111,7 +5113,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-path-uri"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "base64 0.22.1",
+  "codex-utils-absolute-path",
+@@ -5127,7 +5129,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-plugins"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "codex-exec-server",
+  "codex-exec-server-protocol",
+@@ -5141,7 +5143,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-process"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "pretty_assertions",
+  "tokio",
+@@ -5149,7 +5151,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-pty"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "codex-utils-cargo-bin",
+@@ -5168,7 +5170,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-readiness"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "assert_matches",
+  "thiserror 2.0.18",
+@@ -5178,7 +5180,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-redacted-string"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "schemars 0.8.22",
+  "serde",
+@@ -5186,14 +5188,14 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-rustls-provider"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "rustls",
+ ]
+ 
+ [[package]]
+ name = "codex-utils-sandbox-summary"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "codex-protocol",
+  "codex-utils-absolute-path",
+@@ -5203,7 +5205,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-sleep-inhibitor"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "core-foundation 0.9.4",
+  "libc",
+@@ -5213,14 +5215,14 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-stream-parser"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "pretty_assertions",
+ ]
+ 
+ [[package]]
+ name = "codex-utils-string"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "pretty_assertions",
+  "regex-lite",
+@@ -5230,14 +5232,14 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-utils-template"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "pretty_assertions",
+ ]
+ 
+ [[package]]
+ name = "codex-v8-poc"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "pretty_assertions",
+  "v8",
+@@ -5245,7 +5247,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-voice-host"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "codex-install-context",
+@@ -5272,7 +5274,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-web-search-extension"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "codex-api",
+  "codex-core",
+@@ -5294,7 +5296,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-websocket-auth"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -5313,7 +5315,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-websocket-client"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "codex-http-client",
+  "codex-utils-rustls-provider",
+@@ -5329,7 +5331,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-windows-sandbox"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -5359,7 +5361,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-windows-sandbox-service"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "codex-cloud-config",
+@@ -5376,14 +5378,14 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-windows-sandbox-test-support"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "dirs",
+ ]
+ 
+ [[package]]
+ name = "codex-workload-identity"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "codex-http-client",
+  "pretty_assertions",
+@@ -5398,7 +5400,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codex-worktree"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "codex-git-utils",
+@@ -5639,7 +5641,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "core_test_support"
+-version = "0.0.0"
++version = "0.162.1"
+ dependencies = [
+  "anyhow",
+  "assert_cmd",
+diff --git a/codex-rs/app-server-protocol/src/protocol/common.rs b/codex-rs/app-server-protocol/src/protocol/common.rs
+index 3e73b44..1d78341 100644
+--- a/codex-rs/app-server-protocol/src/protocol/common.rs
++++ b/codex-rs/app-server-protocol/src/protocol/common.rs
+@@ -633,6 +633,18 @@ client_request_definitions! {
+         serialization: thread_id(params.thread_id),
+         response: v2::ThreadQueueAddResponse,
+     },
++    #[experimental("thread/queue/receipt")]
++    ThreadQueueReceipt => "thread/queue/receipt" {
++        params: v2::ThreadQueueReceiptParams,
++        serialization: thread_id(params.thread_id),
++        response: v2::ThreadQueueReceiptResponse,
++    },
++    #[experimental("thread/queue/receipt/cancel")]
++    ThreadQueueReceiptCancel => "thread/queue/receipt/cancel" {
++        params: v2::ThreadQueueReceiptParams,
++        serialization: thread_id(params.thread_id),
++        response: v2::ThreadQueueReceiptCancelResponse,
++    },
+     #[experimental("thread/queue/list")]
+     ThreadQueueList => "thread/queue/list" {
+         params: v2::ThreadQueueListParams,
+diff --git a/codex-rs/app-server-protocol/src/protocol/v1.rs b/codex-rs/app-server-protocol/src/protocol/v1.rs
+index 7d05fb1..5703cf6 100644
+--- a/codex-rs/app-server-protocol/src/protocol/v1.rs
++++ b/codex-rs/app-server-protocol/src/protocol/v1.rs
+@@ -72,6 +72,10 @@ pub struct InitializeCapabilities {
+ #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, JsonSchema, TS)]
+ #[serde(rename_all = "camelCase")]
+ pub struct InitializeResponse {
++    /// Durable queue receipts and cancellation by key are available.
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    #[ts(optional = nullable)]
++    pub queue_idempotency: Option<bool>,
+     pub user_agent: String,
+     /// Absolute path to the server's $CODEX_HOME directory.
+     pub codex_home: AbsolutePathBuf,
+diff --git a/codex-rs/app-server-protocol/src/protocol/v2/thread.rs b/codex-rs/app-server-protocol/src/protocol/v2/thread.rs
+index c7f22e2..2f9f01d 100644
+--- a/codex-rs/app-server-protocol/src/protocol/v2/thread.rs
++++ b/codex-rs/app-server-protocol/src/protocol/v2/thread.rs
+@@ -924,6 +924,10 @@ pub struct QueuedSubmission {
+ #[serde(rename_all = "camelCase")]
+ #[ts(export_to = "v2/")]
+ pub struct ThreadQueueAddParams {
++    /// Opt-in durable deduplication; must equal clientUserMessageId.
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    #[ts(optional = nullable)]
++    pub idempotency_key: Option<String>,
+     pub thread_id: String,
+     pub input: Vec<UserInput>,
+     pub client_user_message_id: String,
+@@ -934,6 +938,40 @@ pub struct ThreadQueueAddParams {
+ #[ts(export_to = "v2/")]
+ pub struct ThreadQueueAddResponse {
+     pub queued_submission: QueuedSubmission,
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    #[ts(optional = nullable)]
++    pub receipt_state: Option<String>,
++}
++
++#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, JsonSchema, TS)]
++#[serde(rename_all = "camelCase")]
++#[ts(export_to = "v2/")]
++pub struct ThreadQueueReceiptParams {
++    pub thread_id: String,
++    pub idempotency_key: String,
++}
++
++#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, JsonSchema, TS)]
++#[serde(rename_all = "camelCase")]
++#[ts(export_to = "v2/")]
++pub struct ThreadQueueReceipt {
++    pub queued_submission: Option<QueuedSubmission>,
++    /// pending, consumed, or cancelled. Cancellation may precede enqueue.
++    pub receipt_state: String,
++}
++
++#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, JsonSchema, TS)]
++#[serde(rename_all = "camelCase")]
++#[ts(export_to = "v2/")]
++pub struct ThreadQueueReceiptResponse {
++    pub receipt: Option<ThreadQueueReceipt>,
++}
++
++#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, JsonSchema, TS)]
++#[serde(rename_all = "camelCase")]
++#[ts(export_to = "v2/")]
++pub struct ThreadQueueReceiptCancelResponse {
++    pub receipt: Option<ThreadQueueReceipt>,
+ }
+ 
+ #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, JsonSchema, TS)]
+diff --git a/codex-rs/app-server-transport/src/transport/mod.rs b/codex-rs/app-server-transport/src/transport/mod.rs
+index 232ce94..7277032 100644
+--- a/codex-rs/app-server-transport/src/transport/mod.rs
++++ b/codex-rs/app-server-transport/src/transport/mod.rs
+@@ -379,6 +379,7 @@ mod tests {
+             id: RequestId::Integer(7),
+             result: Box::new(ClientResponsePayload::Initialize(
+                 codex_app_server_protocol::InitializeResponse {
++                    queue_idempotency: None,
+                     user_agent: "codex-test-agent".to_string(),
+                     codex_home,
+                     platform_family: "unix".to_string(),
+diff --git a/codex-rs/app-server-transport/src/transport/remote_control/segment_tests.rs b/codex-rs/app-server-transport/src/transport/remote_control/segment_tests.rs
+index 3b2406b..efc4d8a 100644
+--- a/codex-rs/app-server-transport/src/transport/remote_control/segment_tests.rs
++++ b/codex-rs/app-server-transport/src/transport/remote_control/segment_tests.rs
+@@ -136,6 +136,7 @@ fn invalid_response_becomes_remote_control_jsonrpc_error() {
+             message: Box::new(OutgoingMessage::Response(OutgoingResponse {
+                 id: RequestId::Integer(7),
+                 result: Box::new(ClientResponsePayload::Initialize(InitializeResponse {
++                    queue_idempotency: None,
+                     user_agent: "codex-test-agent".to_string(),
+                     codex_home,
+                     platform_family: "unix".to_string(),
+diff --git a/codex-rs/app-server-transport/src/transport/remote_control/tests.rs b/codex-rs/app-server-transport/src/transport/remote_control/tests.rs
+index 490ac1e..983f18a 100644
+--- a/codex-rs/app-server-transport/src/transport/remote_control/tests.rs
++++ b/codex-rs/app-server-transport/src/transport/remote_control/tests.rs
+@@ -1888,6 +1888,7 @@ async fn remote_control_http_mode_enrolls_before_connecting() {
+                 result: Box::new(
+                     codex_app_server_protocol::ClientResponsePayload::Initialize(
+                         codex_app_server_protocol::InitializeResponse {
++                            queue_idempotency: None,
+                             user_agent: "codex-test-agent".to_string(),
+                             codex_home: codex_home.path().abs(),
+                             platform_family: "test-family".to_string(),
+diff --git a/codex-rs/app-server/src/message_processor.rs b/codex-rs/app-server/src/message_processor.rs
+index 6b705c5..93024df 100644
+--- a/codex-rs/app-server/src/message_processor.rs
++++ b/codex-rs/app-server/src/message_processor.rs
+@@ -457,6 +457,7 @@ impl MessageProcessor {
+         );
+         let git_processor = GitRequestProcessor::new();
+         let initialize_processor = InitializeRequestProcessor::new(
++            queue_service.is_some(),
+             gateway_login_control,
+             outgoing.clone(),
+             analytics_events_client.clone(),
+@@ -1370,6 +1371,23 @@ impl MessageProcessor {
+                 .add(params)
+                 .await
+                 .map(|response| Some(response.into())),
++            ClientRequest::ThreadQueueReceipt { params, .. } => self
++                .thread_queue_processor
++                .receipt(params, false)
++                .await
++                .map(|response| Some(response.into())),
++            ClientRequest::ThreadQueueReceiptCancel { params, .. } => self
++                .thread_queue_processor
++                .receipt(params, true)
++                .await
++                .map(|response| {
++                    Some(
++                        codex_app_server_protocol::ThreadQueueReceiptCancelResponse {
++                            receipt: response.receipt,
++                        }
++                        .into(),
++                    )
++                }),
+             ClientRequest::ThreadQueueList { params, .. } => self
+                 .thread_queue_processor
+                 .list(params)
+diff --git a/codex-rs/app-server/src/request_processors/initialize_processor.rs b/codex-rs/app-server/src/request_processors/initialize_processor.rs
+index d68a29d..a0a224d 100644
+--- a/codex-rs/app-server/src/request_processors/initialize_processor.rs
++++ b/codex-rs/app-server/src/request_processors/initialize_processor.rs
+@@ -20,6 +20,7 @@ const NON_ORIGINATING_CLIENT_NAMES: &[&str] = &["codex_app_server_daemon", "code
+ 
+ #[derive(Clone)]
+ pub(crate) struct InitializeRequestProcessor {
++    queue_idempotency: bool,
+     gateway_login_control: Arc<codex_login::GatewayLoginControl>,
+     gateway_login_initialized: Arc<std::sync::OnceLock<()>>,
+     outgoing: Arc<OutgoingMessageSender>,
+@@ -33,6 +34,7 @@ pub(crate) struct InitializeRequestProcessor {
+ impl InitializeRequestProcessor {
+     #[allow(clippy::too_many_arguments)]
+     pub(crate) fn new(
++        queue_idempotency: bool,
+         gateway_login_control: Arc<codex_login::GatewayLoginControl>,
+         outgoing: Arc<OutgoingMessageSender>,
+         analytics_events_client: AnalyticsEventsClient,
+@@ -42,6 +44,7 @@ impl InitializeRequestProcessor {
+         user_verification: Arc<crate::user_verification::Service>,
+     ) -> Self {
+         Self {
++            queue_idempotency,
+             gateway_login_control,
+             gateway_login_initialized: Arc::new(std::sync::OnceLock::new()),
+             outgoing,
+@@ -211,6 +214,7 @@ impl InitializeRequestProcessor {
+ 
+         let user_agent = get_codex_user_agent();
+         let response = InitializeResponse {
++            queue_idempotency: Some(self.queue_idempotency),
+             user_agent,
+             codex_home,
+             platform_family: std::env::consts::FAMILY.to_string(),
+diff --git a/codex-rs/app-server/src/request_processors/thread_queue_processor.rs b/codex-rs/app-server/src/request_processors/thread_queue_processor.rs
+index a2f5b5a..304a782 100644
+--- a/codex-rs/app-server/src/request_processors/thread_queue_processor.rs
++++ b/codex-rs/app-server/src/request_processors/thread_queue_processor.rs
+@@ -13,6 +13,9 @@ use codex_app_server_protocol::ThreadQueueDeleteParams;
+ use codex_app_server_protocol::ThreadQueueDeleteResponse;
+ use codex_app_server_protocol::ThreadQueueListParams;
+ use codex_app_server_protocol::ThreadQueueListResponse;
++use codex_app_server_protocol::ThreadQueueReceipt;
++use codex_app_server_protocol::ThreadQueueReceiptParams;
++use codex_app_server_protocol::ThreadQueueReceiptResponse;
+ use codex_app_server_protocol::ThreadQueueReorderParams;
+ use codex_app_server_protocol::ThreadQueueReorderResponse;
+ use codex_app_server_protocol::ThreadQueueStartParams;
+@@ -81,16 +84,60 @@ impl ThreadQueueRequestProcessor {
+         validate_user_input_image_urls(&params.input)?;
+         let (thread_id, loaded_thread, source) = self.require_thread(&params.thread_id).await?;
+         ensure_direct_input_allowed(loaded_thread.as_deref(), &source)?;
+-        let queued_item = self
+-            .service()?
+-            .enqueue(
+-                thread_id,
+-                submission_into_turn_input(params.input, Some(params.client_user_message_id)),
+-            )
+-            .await
+-            .map_err(queue_error)?;
++        let input = submission_into_turn_input(params.input, Some(params.client_user_message_id));
++        let (queued_item, receipt_state) = match params.idempotency_key {
++            Some(key) => {
++                let (item, state) = self
++                    .service()?
++                    .enqueue_idempotent(thread_id, key, input)
++                    .await
++                    .map_err(queue_error)?;
++                let item =
++                    item.ok_or_else(|| invalid_request("idempotencyKey has been cancelled"))?;
++                (item, Some(state))
++            }
++            None => (
++                self.service()?
++                    .enqueue(thread_id, input)
++                    .await
++                    .map_err(queue_error)?,
++                None,
++            ),
++        };
+         Ok(ThreadQueueAddResponse {
+             queued_submission: api_queued_submission(queued_item)?,
++            receipt_state,
++        })
++    }
++
++    pub(crate) async fn receipt(
++        &self,
++        params: ThreadQueueReceiptParams,
++        cancel: bool,
++    ) -> Result<ThreadQueueReceiptResponse, JSONRPCErrorError> {
++        let (thread_id, _, _) = self.require_thread(&params.thread_id).await?;
++        let receipt = if cancel {
++            Some(
++                self.service()?
++                    .cancel_receipt_by_key(thread_id, params.idempotency_key)
++                    .await
++                    .map_err(queue_error)?,
++            )
++        } else {
++            self.service()?
++                .receipt_by_key(thread_id, params.idempotency_key)
++                .await
++                .map_err(queue_error)?
++        };
++        Ok(ThreadQueueReceiptResponse {
++            receipt: receipt
++                .map(|(item, state)| {
++                    Ok(ThreadQueueReceipt {
++                        queued_submission: item.map(api_queued_submission).transpose()?,
++                        receipt_state: state,
++                    })
++                })
++                .transpose()?,
+         })
+     }
+ 
+diff --git a/codex-rs/app-server/tests/suite/v2/initialize.rs b/codex-rs/app-server/tests/suite/v2/initialize.rs
+index 1ba0f26..9b799d3 100644
+--- a/codex-rs/app-server/tests/suite/v2/initialize.rs
++++ b/codex-rs/app-server/tests/suite/v2/initialize.rs
+@@ -59,8 +59,10 @@ async fn initialize_uses_client_info_name_as_originator() -> Result<()> {
+         codex_home: response_codex_home,
+         platform_family,
+         platform_os,
++        queue_idempotency,
+     } = to_response::<InitializeResponse>(response)?;
+ 
++    assert_eq!(queue_idempotency, Some(true));
+     assert!(user_agent.starts_with("codex_vscode/"));
+     assert_eq!(response_codex_home, expected_codex_home);
+     assert_eq!(platform_family, std::env::consts::FAMILY);
+@@ -95,8 +97,13 @@ async fn initialize_probe_does_not_override_originator() -> Result<()> {
+     let JSONRPCMessage::Response(response) = message else {
+         anyhow::bail!("expected initialize response, got {message:?}");
+     };
+-    let InitializeResponse { user_agent, .. } = to_response::<InitializeResponse>(response)?;
++    let InitializeResponse {
++        user_agent,
++        queue_idempotency,
++        ..
++    } = to_response::<InitializeResponse>(response)?;
+ 
++    assert_eq!(queue_idempotency, Some(true));
+     assert!(user_agent.starts_with("codex_cli_rs/"));
+     Ok(())
+ }
+@@ -128,8 +135,13 @@ async fn initialize_codex_backend_does_not_override_originator() -> Result<()> {
+     let JSONRPCMessage::Response(response) = message else {
+         anyhow::bail!("expected initialize response, got {message:?}");
+     };
+-    let InitializeResponse { user_agent, .. } = to_response::<InitializeResponse>(response)?;
++    let InitializeResponse {
++        user_agent,
++        queue_idempotency,
++        ..
++    } = to_response::<InitializeResponse>(response)?;
+ 
++    assert_eq!(queue_idempotency, Some(true));
+     assert!(user_agent.starts_with("codex_cli_rs/"));
+     Ok(())
+ }
+@@ -171,8 +183,10 @@ async fn initialize_respects_originator_override_env_var() -> Result<()> {
+         codex_home: response_codex_home,
+         platform_family,
+         platform_os,
++        queue_idempotency,
+     } = to_response::<InitializeResponse>(response)?;
+ 
++    assert_eq!(queue_idempotency, Some(true));
+     assert!(user_agent.starts_with("codex_originator_via_env_var/"));
+     assert_eq!(response_codex_home, expected_codex_home);
+     assert_eq!(platform_family, std::env::consts::FAMILY);
+diff --git a/codex-rs/app-server/tests/suite/v2/model_provider_enforcement_tests.rs b/codex-rs/app-server/tests/suite/v2/model_provider_enforcement_tests.rs
+index 15bd32e..cfa37da 100644
+--- a/codex-rs/app-server/tests/suite/v2/model_provider_enforcement_tests.rs
++++ b/codex-rs/app-server/tests/suite/v2/model_provider_enforcement_tests.rs
+@@ -105,6 +105,7 @@ base_url = "{}/v1"
+         .request(|request_id| ClientRequest::ThreadQueueAdd {
+             request_id,
+             params: ThreadQueueAddParams {
++                idempotency_key: None,
+                 thread_id: started.thread.id.clone(),
+                 input: input.clone(),
+                 client_user_message_id: "queued-message".into(),
+diff --git a/codex-rs/app-server/tests/suite/v2/thread_queue.rs b/codex-rs/app-server/tests/suite/v2/thread_queue.rs
+index a27c3b5..c69c7b1 100644
+--- a/codex-rs/app-server/tests/suite/v2/thread_queue.rs
++++ b/codex-rs/app-server/tests/suite/v2/thread_queue.rs
+@@ -135,6 +135,7 @@ async fn queue_crud_preserves_identity_order_and_notifications() -> Result<()> {
+     let first = queue_item(
+         &mut app,
+         ThreadQueueAddParams {
++            idempotency_key: None,
+             client_user_message_id: "first-client-message".to_string(),
+             ..submission(&thread_id, "first")
+         },
+@@ -271,6 +272,7 @@ async fn queue_list_returns_ordered_pages_and_lightweight_notifications() -> Res
+     let queued = queue_item(
+         &mut app,
+         ThreadQueueAddParams {
++            idempotency_key: None,
+             thread_id: thread_id.clone(),
+             input: vec![text(&"x".repeat(64 * 1024))],
+             client_user_message_id: "oversized-snapshot".to_string(),
+@@ -375,6 +377,7 @@ async fn idle_queue_dispatch_preserves_client_id() -> Result<()> {
+         .thread
+         .id;
+     let queued_submission = ThreadQueueAddParams {
++        idempotency_key: None,
+         thread_id: thread_id.clone(),
+         input: vec![text("durable queued message")],
+         client_user_message_id: "stable-queued-client-id".to_string(),
+@@ -475,6 +478,7 @@ async fn cold_thread_resume_dispatches_a_persisted_queued_submission() -> Result
+     let queued = queue_item(
+         &mut resumed,
+         ThreadQueueAddParams {
++            idempotency_key: None,
+             client_user_message_id: "cold-resumed-queue-item".to_string(),
+             ..submission(&thread_id, "dispatch this after a cold thread resume")
+         },
+@@ -582,6 +586,7 @@ async fn interrupt_preserves_queue_and_queue_start_can_resume_a_non_head_item()
+     let second = queue_item(
+         &mut app,
+         ThreadQueueAddParams {
++            idempotency_key: None,
+             client_user_message_id: "second-queued-client-id".to_string(),
+             ..submission(&thread_id, "second queued message")
+         },
+@@ -720,6 +725,7 @@ async fn queue_start_while_active_returns_busy_and_preserves_the_queue() -> Resu
+     let queued = queue_item(
+         &mut app,
+         ThreadQueueAddParams {
++            idempotency_key: None,
+             client_user_message_id: "active-queued-client-id".to_string(),
+             ..submission(&thread_id, "send this queued message now")
+         },
+@@ -885,6 +891,7 @@ async fn a_new_turn_preserves_queued_messages_until_it_completes() -> Result<()>
+     let first = queue_item(
+         &mut app,
+         ThreadQueueAddParams {
++            idempotency_key: None,
+             client_user_message_id: "first-queued-client-id".to_string(),
+             ..submission(&thread_id, "first queued message")
+         },
+@@ -893,6 +900,7 @@ async fn a_new_turn_preserves_queued_messages_until_it_completes() -> Result<()>
+     let second = queue_item(
+         &mut app,
+         ThreadQueueAddParams {
++            idempotency_key: None,
+             client_user_message_id: "second-queued-client-id".to_string(),
+             ..submission(&thread_id, "second queued message")
+         },
+@@ -1056,6 +1064,7 @@ async fn decline_approval(app: &mut TestAppServer, request_id: RequestId) -> Res
+ 
+ fn submission(thread_id: &str, value: &str) -> ThreadQueueAddParams {
+     ThreadQueueAddParams {
++        idempotency_key: None,
+         thread_id: thread_id.to_string(),
+         input: vec![text(value)],
+         client_user_message_id: format!("queued-{value}"),
+@@ -1068,3 +1077,77 @@ fn text(value: &str) -> UserInput {
+         text_elements: Vec::new(),
+     }
+ }
++
++#[tokio::test]
++async fn queue_keyed_receipts_deduplicate_and_cancel_before_late_add() -> Result<()> {
++    skip_if_remote!(Ok(()), "uses a host-local command approval fixture");
++    let (mut app, _home, _server) = queue_app(vec![blocked_turn_response()?]).await?;
++    let thread_id = app
++        .start_thread(ThreadStartParams::default())
++        .await?
++        .thread
++        .id;
++    let _active = start_blocked_turn(&mut app, &thread_id).await?;
++    let mut params = submission(&thread_id, "keyed notification");
++    params.client_user_message_id = "receipt-key".into();
++    params.idempotency_key = Some("receipt-key".into());
++    let first: ThreadQueueAddResponse = app
++        .request(|request_id| ClientRequest::ThreadQueueAdd {
++            request_id,
++            params: params.clone(),
++        })
++        .await?;
++    let retry: ThreadQueueAddResponse = app
++        .request(|request_id| ClientRequest::ThreadQueueAdd { request_id, params })
++        .await?;
++    assert_eq!(first, retry);
++    assert_eq!(Some("pending".into()), first.receipt_state);
++    assert_eq!(1, list_queue(&mut app, &thread_id).await?.data.len());
++    let get: codex_app_server_protocol::ThreadQueueReceiptResponse = app
++        .request(|request_id| ClientRequest::ThreadQueueReceipt {
++            request_id,
++            params: codex_app_server_protocol::ThreadQueueReceiptParams {
++                thread_id: thread_id.clone(),
++                idempotency_key: "receipt-key".into(),
++            },
++        })
++        .await?;
++    assert_eq!(
++        Some(first.queued_submission),
++        get.receipt.unwrap().queued_submission
++    );
++    let cancel: codex_app_server_protocol::ThreadQueueReceiptCancelResponse = app
++        .request(|request_id| ClientRequest::ThreadQueueReceiptCancel {
++            request_id,
++            params: codex_app_server_protocol::ThreadQueueReceiptParams {
++                thread_id: thread_id.clone(),
++                idempotency_key: "receipt-key".into(),
++            },
++        })
++        .await?;
++    assert_eq!("cancelled", cancel.receipt.unwrap().receipt_state);
++    let tombstone: codex_app_server_protocol::ThreadQueueReceiptCancelResponse = app
++        .request(|request_id| ClientRequest::ThreadQueueReceiptCancel {
++            request_id,
++            params: codex_app_server_protocol::ThreadQueueReceiptParams {
++                thread_id: thread_id.clone(),
++                idempotency_key: "late-key".into(),
++            },
++        })
++        .await?;
++    let tombstone = tombstone.receipt.unwrap();
++    assert_eq!(None, tombstone.queued_submission);
++    assert_eq!("cancelled", tombstone.receipt_state);
++    let id = app.send_raw_request("thread/queue/add", Some(json!({
++        "threadId": thread_id, "idempotencyKey": "late-key", "clientUserMessageId": "late-key",
++        "input": [{"type": "text", "text": "must not deliver"}],
++    }))).await?;
++    let error = timeout(
++        READ_TIMEOUT,
++        app.read_stream_until_error_message(RequestId::Integer(id)),
++    )
++    .await??;
++    assert!(error.error.message.contains("cancelled"));
++    assert!(list_queue(&mut app, &thread_id).await?.data.is_empty());
++    Ok(())
++}
+diff --git a/codex-rs/core/src/session/turn.rs b/codex-rs/core/src/session/turn.rs
+index 64e8786..a0e8ee8 100644
+--- a/codex-rs/core/src/session/turn.rs
++++ b/codex-rs/core/src/session/turn.rs
+@@ -878,6 +878,40 @@ pub(crate) async fn run_hooks_and_record_inputs(
+     {
+         return false;
+     }
++    let mut queued_item_id = turn_context
++        .turn_metadata_state
++        .current_turn_trigger()
++        .and_then(|trigger| trigger.strip_prefix("queue-idempotent:").map(str::to_owned));
++    if let Some(item_id) = &queued_item_id
++        && !input.is_empty()
++    {
++        let Some(state_db) = sess.state_db() else {
++            return true;
++        };
++        let receipt = match state_db
++            .thread_queue()
++            .receipt_for_item(sess.thread_id, item_id)
++            .await
++        {
++            Ok(Some(receipt)) => receipt,
++            _ => return true,
++        };
++        let client_id =
++            receipt.submission.as_ref().and_then(|record| {
++                match serde_json::from_str::<crate::TurnInput>(&record.payload).ok()? {
++                    crate::TurnInput::UserInput { client_id, .. } => client_id,
++                    _ => None,
++                }
++            });
++        if !input.iter().any(|item| {
++            matches!(item,
++            TurnInput::UserInput { client_id: Some(id), .. } if Some(id) == client_id.as_ref())
++        }) {
++            queued_item_id = None;
++        } else if receipt.state != "pending" {
++            return true;
++        }
++    }
+     let mut blocked_input = false;
+     let mut accepted_user_input = false;
+     for input_item in input {
+@@ -908,6 +942,40 @@ pub(crate) async fn run_hooks_and_record_inputs(
+             .await;
+         }
+     }
++    if let Some(queued_item_id) = queued_item_id
++        && !input.is_empty()
++    {
++        // A queued receipt is terminal only after its canonical user input is durable.
++        let Some(state_db) = sess.state_db() else {
++            return true;
++        };
++        let receipt_state = if blocked_input && !accepted_user_input {
++            "cancelled"
++        } else {
++            if let Err(error) = sess.flush_rollout().await {
++                tracing::warn!(%error, "failed to persist queued input before sampling");
++                return true;
++            }
++            "consumed"
++        };
++        if let Err(error) = state_db
++            .thread_queue()
++            .finish_receipt(sess.thread_id, &queued_item_id, receipt_state)
++            .await
++        {
++            tracing::warn!(%error, "failed to finish queued input receipt");
++            return true;
++        }
++        // Cancellation may have won the race while hooks or persistence ran.
++        if receipt_state == "consumed"
++            && !matches!(
++                state_db.thread_queue().receipt_for_item(sess.thread_id, &queued_item_id).await,
++                Ok(Some(receipt)) if receipt.state == "consumed"
++            )
++        {
++            return true;
++        }
++    }
+     blocked_input && !accepted_user_input
+ }
+ 
+diff --git a/codex-rs/ext/queue/Cargo.toml b/codex-rs/ext/queue/Cargo.toml
+index 4b5e5d0..dfbd91f 100644
+--- a/codex-rs/ext/queue/Cargo.toml
++++ b/codex-rs/ext/queue/Cargo.toml
+@@ -15,6 +15,7 @@ workspace = true
+ 
+ [dependencies]
+ codex-core = { workspace = true }
++codex-rollout = { workspace = true }
+ codex-extension-api = { workspace = true }
+ codex-protocol = { workspace = true }
+ codex-thread-store = { workspace = true }
+diff --git a/codex-rs/ext/queue/src/service.rs b/codex-rs/ext/queue/src/service.rs
+index 06aeb63..9ccc113 100644
+--- a/codex-rs/ext/queue/src/service.rs
++++ b/codex-rs/ext/queue/src/service.rs
+@@ -19,6 +19,7 @@ use codex_extension_api::ThreadLifecycleContributor;
+ use codex_extension_api::ThreadResumeInput;
+ use codex_protocol::ThreadId;
+ use codex_protocol::error::CodexErr;
++use codex_protocol::items::TurnItem;
+ use codex_protocol::models::snapshot_local_user_input;
+ use codex_protocol::protocol::AgentStatus;
+ use codex_protocol::protocol::Event;
+@@ -27,8 +28,11 @@ use codex_protocol::protocol::ThreadQueueChangedEvent;
+ use codex_protocol::protocol::W3cTraceContext;
+ use codex_protocol::user_input::MAX_USER_INPUT_TEXT_CHARS;
+ use codex_protocol::user_input::UserInput;
++use codex_rollout::RolloutItem;
++use codex_rollout::RolloutRecorder;
+ use codex_thread_store::MAX_QUEUE_ITEMS;
+ use codex_thread_store::QueueStore;
++use codex_thread_store::QueuedSubmissionReceiptRecord;
+ use codex_thread_store::QueuedUserSubmissionRecord;
+ use codex_thread_store::ThreadStoreError;
+ use thiserror::Error;
+@@ -52,6 +56,8 @@ pub enum QueueServiceError {
+     InvalidPayload(#[from] serde_json::Error),
+     #[error("local queued attachment is invalid: {0}")]
+     InvalidAttachment(#[from] std::io::Error),
++    #[error("failed to checkpoint queued user input: {0}")]
++    Durability(std::io::Error),
+     #[error("Core failed to submit queued user message: {0}")]
+     CoreSubmissionError(#[from] CodexErr),
+     #[error("only user input can be added to the user-message queue")]
+@@ -279,6 +285,140 @@ impl QueuedItemService {
+         Ok(item)
+     }
+ 
++    /// Opt-in enqueue with a permanent receipt shared atomically with the queue.
++    pub async fn enqueue_idempotent(
++        &self,
++        thread_id: ThreadId,
++        key: String,
++        input: TurnInput,
++    ) -> Result<(Option<QueuedItem>, String), QueueServiceError> {
++        validate_receipt_key(&key)?;
++        if !matches!(&input, TurnInput::UserInput { client_id: Some(client_id), .. } if client_id == &key)
++        {
++            return Err(ThreadStoreError::InvalidRequest {
++                message: "idempotencyKey must equal clientUserMessageId".to_owned(),
++            }
++            .into());
++        }
++        let input = prepare_queued_user_input(input).await?;
++        let payload = serde_json::to_string(&input)?;
++        let receipt = {
++            let _guard = self.dispatch_guard(thread_id).await;
++            let receipt = self
++                .queue
++                .enqueue_idempotent(thread_id, key, payload)
++                .await?;
++            if receipt.state == "pending" {
++                self.emit_changed(thread_id);
++            }
++            receipt
++        };
++        if receipt.state == "pending" {
++            self.wake_if_loaded(thread_id).await;
++        }
++        receipt_into_item(receipt)
++    }
++
++    pub async fn receipt_by_key(
++        &self,
++        thread_id: ThreadId,
++        key: String,
++    ) -> Result<Option<(Option<QueuedItem>, String)>, QueueServiceError> {
++        validate_receipt_key(&key)?;
++        self.queue
++            .receipt_by_key(thread_id, key)
++            .await?
++            .map(receipt_into_item)
++            .transpose()
++    }
++
++    pub async fn cancel_receipt_by_key(
++        &self,
++        thread_id: ThreadId,
++        key: String,
++    ) -> Result<(Option<QueuedItem>, String), QueueServiceError> {
++        validate_receipt_key(&key)?;
++        let _guard = self.dispatch_guard(thread_id).await;
++        if let Some(receipt) = self.queue.receipt_by_key(thread_id, key.clone()).await?
++            && receipt.state == "pending"
++            && let Some(record) = receipt.submission
++            && let Some(manager) = self.thread_manager.upgrade()
++            && let Ok(thread) = manager.get_thread(thread_id).await
++        {
++            self.reconcile_receipt(thread.as_ref(), &queued_item_from_record(record)?)
++                .await?;
++        }
++        let receipt = self.queue.cancel_receipt_by_key(thread_id, key).await?;
++        self.emit_changed(thread_id);
++        receipt_into_item(receipt)
++    }
++
++    /// Read the full persisted transcript only after its writer's durability fence.
++    async fn reconcile_receipt(
++        &self,
++        thread: &CodexThread,
++        item: &QueuedItem,
++    ) -> Result<Option<String>, QueueServiceError> {
++        let TurnInput::UserInput {
++            client_id: Some(client_id),
++            ..
++        } = &item.input
++        else {
++            return Err(QueueServiceError::InvalidInput);
++        };
++        // A newly prepared thread can still have a deferred, absent rollout file.
++        thread.ensure_rollout_materialized().await;
++        thread
++            .flush_rollout()
++            .await
++            .map_err(QueueServiceError::Durability)?;
++        let thread_id = thread.startup_metadata().thread_id;
++        let rollout_path =
++            thread
++                .rollout_path()
++                .ok_or_else(|| ThreadStoreError::InvalidRequest {
++                    message: "durable queue requires a local rollout".to_owned(),
++                })?;
++        let (items, _, parse_errors) = RolloutRecorder::load_rollout_items(&rollout_path)
++            .await
++            .map_err(QueueServiceError::Durability)?;
++        let mut current_turn_id = None;
++        let mut turn_id = None;
++        for entry in &items {
++            match entry {
++                RolloutItem::EventMsg(EventMsg::TurnStarted(event)) => {
++                    current_turn_id = Some(event.turn_id.clone());
++                }
++                RolloutItem::EventMsg(EventMsg::UserMessage(message))
++                    if message.client_id.as_ref() == Some(client_id) =>
++                {
++                    turn_id = current_turn_id.clone();
++                    break;
++                }
++                RolloutItem::EventMsg(EventMsg::ItemCompleted(event))
++                    if matches!(&event.item, TurnItem::UserMessage(message)
++                        if message.client_id.as_ref() == Some(client_id)) =>
++                {
++                    turn_id = Some(event.turn_id.clone());
++                    break;
++                }
++                _ => {}
++            }
++        }
++        if turn_id.is_none() && parse_errors != 0 {
++            return Err(QueueServiceError::Durability(std::io::Error::other(
++                "cannot reconcile queued input against malformed persisted history",
++            )));
++        }
++        if turn_id.is_some() {
++            self.queue
++                .finish_receipt(thread_id, item.id.clone(), "consumed".to_owned())
++                .await?;
++            self.emit_changed(thread_id);
++        }
++        Ok(turn_id)
++    }
++
+     pub async fn list(&self, thread_id: ThreadId) -> Result<Vec<QueuedItem>, QueueServiceError> {
+         self.list_page(thread_id, /*offset*/ 0, MAX_QUEUE_ITEMS)
+             .await
+@@ -305,6 +445,17 @@ impl QueuedItemService {
+         mut input: TurnInput,
+     ) -> Result<Option<QueuedItem>, QueueServiceError> {
+         let _dispatch_guard = self.dispatch_guard(thread_id).await;
++        if self
++            .queue
++            .receipt_for_item(thread_id, queued_item_id.clone())
++            .await?
++            .is_some()
++        {
++            return Err(ThreadStoreError::InvalidRequest {
++                message: "idempotent queued submissions cannot be edited".to_owned(),
++            }
++            .into());
++        }
+         if let TurnInput::UserInput { client_id, .. } = &mut input {
+             *client_id = self
+                 .list(thread_id)
+@@ -385,18 +536,33 @@ impl QueuedItemService {
+                 ),
+             })?;
+         let queued_item_id = item.id.clone();
++        let keyed = self
++            .queue
++            .receipt_for_item(thread_id, queued_item_id.clone())
++            .await?
++            .is_some();
++        if keyed && let Some(turn_id) = self.reconcile_receipt(thread, &item).await? {
++            return Ok(StartIfIdleSubmission::Started {
++                root_turn_id: turn_id.clone(),
++                turn_id,
++            });
++        }
+         let input @ TurnInput::UserInput { .. } = item.input else {
+             return Err(QueueServiceError::InvalidInput);
+         };
+         let submission = thread
+             .start_turn_if_idle(TurnInputRequest::new(input).with_trace(trace).on_start(
+                 TurnStartOptions {
+-                    turn_trigger: Some("queue".to_string()),
++                    turn_trigger: Some(if keyed {
++                        format!("queue-idempotent:{queued_item_id}")
++                    } else {
++                        "queue".to_owned()
++                    }),
+                     ..Default::default()
+                 },
+             ))
+             .await?;
+-        if matches!(submission, StartIfIdleSubmission::Started { .. }) {
++        if !keyed && matches!(submission, StartIfIdleSubmission::Started { .. }) {
+             self.delete_locked(thread_id, queued_item_id).await?;
+         }
+         Ok(submission)
+@@ -436,15 +602,39 @@ impl QueuedItemService {
+                 continue;
+             }
+ 
++            let keyed = self
++                .queue
++                .receipt_for_item(thread_id, queued_item_id.clone())
++                .await?
++                .is_some();
++            if keyed {
++                let item = QueuedItem {
++                    id: queued_item_id.clone(),
++                    input: input.clone(),
++                };
++                if self
++                    .reconcile_receipt(thread.as_ref(), &item)
++                    .await?
++                    .is_some()
++                {
++                    continue;
++                }
++            }
+             match thread
+                 .start_turn_if_idle(TurnInputRequest::new(input).on_start(TurnStartOptions {
+-                    turn_trigger: Some("queue".to_string()),
++                    turn_trigger: Some(if keyed {
++                        format!("queue-idempotent:{queued_item_id}")
++                    } else {
++                        "queue".to_owned()
++                    }),
+                     ..Default::default()
+                 }))
+                 .await
+             {
+                 Ok(StartIfIdleSubmission::Started { .. }) => {
+-                    self.delete_locked(thread_id, queued_item_id).await?;
++                    if !keyed {
++                        self.delete_locked(thread_id, queued_item_id).await?;
++                    }
+                     return Ok(());
+                 }
+                 Ok(StartIfIdleSubmission::NotSubmitted { reason }) => {
+@@ -574,3 +764,25 @@ fn queued_item_from_record(
+         input: serde_json::from_str::<TurnInput>(&record.payload)?,
+     })
+ }
++
++fn validate_receipt_key(key: &str) -> Result<(), QueueServiceError> {
++    if key.is_empty() || key.len() > 512 {
++        return Err(ThreadStoreError::InvalidRequest {
++            message: "idempotencyKey must contain between 1 and 512 bytes".to_owned(),
++        }
++        .into());
++    }
++    Ok(())
++}
++
++fn receipt_into_item(
++    receipt: QueuedSubmissionReceiptRecord,
++) -> Result<(Option<QueuedItem>, String), QueueServiceError> {
++    Ok((
++        receipt
++            .submission
++            .map(queued_item_from_record)
++            .transpose()?,
++        receipt.state,
++    ))
++}
+diff --git a/codex-rs/ext/queue/tests/queue_service.rs b/codex-rs/ext/queue/tests/queue_service.rs
+index 305b8ed..fe58284 100644
+--- a/codex-rs/ext/queue/tests/queue_service.rs
++++ b/codex-rs/ext/queue/tests/queue_service.rs
+@@ -1104,3 +1104,285 @@ async fn resumed_idle_dispatches_input_without_a_loaded_manager() -> anyhow::Res
+     assert!(service.list(thread_id).await?.is_empty());
+     Ok(())
+ }
++
++fn keyed_input(key: &str, text: &str) -> TurnInput {
++    let mut input = user_input(text);
++    if let TurnInput::UserInput { client_id, .. } = &mut input {
++        *client_id = Some(key.to_owned());
++    }
++    input
++}
++
++#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
++async fn keyed_queue_consumes_only_after_canonical_input_and_retries_once() -> anyhow::Result<()> {
++    let server = start_mock_server().await;
++    let responses =
++        responses::mount_sse_once(&server, responses::sse_completed("keyed-turn")).await;
++    let test = test_codex()
++        .with_history_mode(codex_protocol::protocol::ThreadHistoryMode::Paginated)
++        .with_config(|config| config.include_environment_context = false)
++        .build_with_auto_env(&server)
++        .await?;
++    let thread_id = test.session_configured.thread_id;
++    let store = loaded_thread_queue(&test)?;
++    let queue =
++        QueuedItemService::new(store.clone(), Weak::new(), Arc::new(NoopExtensionEventSink));
++    let input = keyed_input("keyed-wake", "wake once");
++    let (item, state) = queue
++        .enqueue_idempotent(thread_id, "keyed-wake".into(), input.clone())
++        .await?;
++    assert_eq!("pending", state);
++    let item = item.context("pending submission")?;
++    assert_eq!(
++        (Some(item.clone()), "pending".into()),
++        queue
++            .enqueue_idempotent(thread_id, "keyed-wake".into(), input.clone())
++            .await?
++    );
++    assert!(
++        queue
++            .update(thread_id, item.id.clone(), user_input("changed"))
++            .await
++            .is_err()
++    );
++    queue
++        .start(test.codex.as_ref(), Some(item.id), None)
++        .await?;
++    wait_for_event_match(test.codex.as_ref(), |event| {
++        matches!(event, EventMsg::TurnComplete(_)).then_some(())
++    })
++    .await;
++    assert!(queue.list(thread_id).await?.is_empty());
++    let (items, _, _) =
++        codex_rollout::RolloutRecorder::load_rollout_items(&test.codex.rollout_path().unwrap())
++            .await?;
++    assert!(items.iter().any(|item| matches!(item,
++        codex_rollout::RolloutItem::EventMsg(EventMsg::ItemCompleted(event))
++            if matches!(&event.item, TurnItem::UserMessage(message) if message.client_id.as_deref() == Some("keyed-wake")))));
++    let reopened = QueuedItemService::new(store, Weak::new(), Arc::new(NoopExtensionEventSink));
++    assert_eq!(
++        "consumed",
++        reopened
++            .enqueue_idempotent(thread_id, "keyed-wake".into(), input)
++            .await?
++            .1
++    );
++    assert_eq!(
++        "consumed",
++        reopened
++            .cancel_receipt_by_key(thread_id, "keyed-wake".into())
++            .await?
++            .1
++    );
++    assert!(reopened.list(thread_id).await?.is_empty());
++    assert_eq!(1, responses.requests().len());
++    Ok(())
++}
++
++#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
++async fn keyed_queue_hook_rejection_is_terminal() -> anyhow::Result<()> {
++    let server = start_mock_server().await;
++    let responses =
++        responses::mount_sse_once(&server, responses::sse_completed("unexpected-turn")).await;
++    let test = test_codex()
++        .with_pre_build_hook(write_rejecting_prompt_hook)
++        .with_config(trust_discovered_hooks)
++        .with_config(|config| config.include_environment_context = false)
++        .build_with_auto_env(&server)
++        .await?;
++    let thread_id = test.session_configured.thread_id;
++    let queue = QueuedItemService::new(
++        loaded_thread_queue(&test)?,
++        Weak::new(),
++        Arc::new(NoopExtensionEventSink),
++    );
++    let input = keyed_input("rejected-wake", "blocked");
++    let item = queue
++        .enqueue_idempotent(thread_id, "rejected-wake".into(), input.clone())
++        .await?
++        .0
++        .unwrap();
++    queue
++        .start(test.codex.as_ref(), Some(item.id), None)
++        .await?;
++    wait_for_event_match(test.codex.as_ref(), |event| {
++        matches!(event, EventMsg::TurnComplete(_)).then_some(())
++    })
++    .await;
++    assert!(queue.list(thread_id).await?.is_empty());
++    assert_eq!(
++        "cancelled",
++        queue
++            .enqueue_idempotent(thread_id, "rejected-wake".into(), input)
++            .await?
++            .1
++    );
++    assert!(queue.start(test.codex.as_ref(), None, None).await.is_err());
++    assert_eq!(
++        vec!["blocked"],
++        std::fs::read_to_string(test.codex_home_path().join("queue_prompt_hook.log"))?
++            .lines()
++            .collect::<Vec<_>>()
++    );
++    assert!(responses.requests().is_empty());
++    Ok(())
++}
++
++#[tokio::test]
++async fn keyed_queue_cancel_before_enqueue_is_terminal() -> anyhow::Result<()> {
++    let (store, _home) = test_queue().await?;
++    let queue = QueuedItemService::new(store, Weak::new(), Arc::new(NoopExtensionEventSink));
++    assert_eq!(
++        (None, "cancelled".into()),
++        queue
++            .cancel_receipt_by_key(ThreadId::new(), "unused".into())
++            .await?
++    );
++    let thread_id = ThreadId::new();
++    assert_eq!(None, queue.receipt_by_key(thread_id, "late".into()).await?);
++    assert_eq!(
++        (None, "cancelled".into()),
++        queue
++            .cancel_receipt_by_key(thread_id, "late".into())
++            .await?
++    );
++    assert_eq!(
++        (None, "cancelled".into()),
++        queue
++            .enqueue_idempotent(
++                thread_id,
++                "late".into(),
++                keyed_input("late", "never deliver")
++            )
++            .await?
++    );
++    assert!(queue.list(thread_id).await?.is_empty());
++    Ok(())
++}
++
++#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
++async fn keyed_queue_recovers_crash_after_history_flush_before_receipt_commit() -> anyhow::Result<()>
++{
++    let server = start_mock_server().await;
++    let responses =
++        responses::mount_sse_once(&server, responses::sse_completed("accepted-before-crash")).await;
++    let test = test_codex()
++        .with_config(|config| config.include_environment_context = false)
++        .build_with_auto_env(&server)
++        .await?;
++    let thread_id = test.session_configured.thread_id;
++    let store = loaded_thread_queue(&test)?;
++    let queue =
++        QueuedItemService::new(store.clone(), Weak::new(), Arc::new(NoopExtensionEventSink));
++    let input = keyed_input("crash-window", "already accepted");
++    let item = queue
++        .enqueue_idempotent(thread_id, "crash-window".into(), input.clone())
++        .await?
++        .0
++        .unwrap();
++    // Leave the queued receipt pending while recording the canonical input, as a crashed handoff can.
++    test.codex
++        .start_turn_if_idle(TurnInputRequest::new(input.clone()))
++        .await?;
++    wait_for_event_match(test.codex.as_ref(), |event| {
++        matches!(event, EventMsg::TurnComplete(_)).then_some(())
++    })
++    .await;
++    test.codex.flush_rollout().await?;
++    assert_eq!(1, queue.list(thread_id).await?.len());
++    let recovered = QueuedItemService::new(store, Weak::new(), Arc::new(NoopExtensionEventSink));
++    assert!(matches!(
++        recovered
++            .start(test.codex.as_ref(), Some(item.id), None)
++            .await?,
++        StartIfIdleSubmission::Started { .. }
++    ));
++    assert_eq!(
++        "consumed",
++        recovered
++            .enqueue_idempotent(thread_id, "crash-window".into(), input)
++            .await?
++            .1
++    );
++    assert!(recovered.list(thread_id).await?.is_empty());
++    assert_eq!(1, responses.requests().len());
++    Ok(())
++}
++
++fn write_waiting_queue_hook(home: &Path) {
++    let script_path = home.join("waiting_queue_hook.py");
++    std::fs::write(
++        &script_path,
++        format!(
++            r#"from pathlib import Path
++import time
++Path(r"{home}/hook_started").touch()
++while not Path(r"{home}/hook_release").exists():
++    time.sleep(0.01)
++"#,
++            home = home.display()
++        ),
++    )
++    .unwrap();
++    std::fs::write(home.join("hooks.json"), serde_json::json!({"hooks": {
++        "UserPromptSubmit": [{"hooks": [{"type": "command", "command": format!("python3 {}", script_path.display())}]}]
++    }}).to_string()).unwrap();
++}
++
++#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
++async fn keyed_queue_cancellation_wins_while_core_is_recording() -> anyhow::Result<()> {
++    let server = start_mock_server().await;
++    let responses =
++        responses::mount_sse_once(&server, responses::sse_completed("must-not-run")).await;
++    let test = test_codex()
++        .with_pre_build_hook(write_waiting_queue_hook)
++        .with_config(trust_discovered_hooks)
++        .with_config(|config| config.include_environment_context = false)
++        .build_with_auto_env(&server)
++        .await?;
++    let thread_id = test.session_configured.thread_id;
++    let queue = QueuedItemService::new(
++        loaded_thread_queue(&test)?,
++        Weak::new(),
++        Arc::new(NoopExtensionEventSink),
++    );
++    let input = keyed_input("cancel-inflight", "stop before sampling");
++    let item = queue
++        .enqueue_idempotent(thread_id, "cancel-inflight".into(), input.clone())
++        .await?
++        .0
++        .unwrap();
++    queue
++        .start(test.codex.as_ref(), Some(item.id), None)
++        .await?;
++    tokio::time::timeout(Duration::from_secs(10), async {
++        while !test.codex_home_path().join("hook_started").exists() {
++            tokio::time::sleep(Duration::from_millis(10)).await;
++        }
++    })
++    .await?;
++    // Core accepted the task, but the queued input remains durable until canonical input is flushed.
++    assert_eq!(1, queue.list(thread_id).await?.len());
++    assert_eq!(
++        "cancelled",
++        queue
++            .cancel_receipt_by_key(thread_id, "cancel-inflight".into())
++            .await?
++            .1
++    );
++    std::fs::write(test.codex_home_path().join("hook_release"), "")?;
++    wait_for_event_match(test.codex.as_ref(), |event| {
++        matches!(event, EventMsg::TurnComplete(_)).then_some(())
++    })
++    .await;
++    assert!(queue.list(thread_id).await?.is_empty());
++    assert_eq!(
++        "cancelled",
++        queue
++            .enqueue_idempotent(thread_id, "cancel-inflight".into(), input)
++            .await?
++            .1
++    );
++    assert!(responses.requests().is_empty());
++    Ok(())
++}
+diff --git a/codex-rs/state/src/lib.rs b/codex-rs/state/src/lib.rs
+index 5ae36f8..5abcc13 100644
+--- a/codex-rs/state/src/lib.rs
++++ b/codex-rs/state/src/lib.rs
+@@ -30,6 +30,7 @@ pub use model::Project;
+ pub use model::ProjectRoot;
+ pub use model::ProjectSortKey;
+ pub use model::ProjectsPage;
++pub use model::QueuedSubmissionReceiptRecord;
+ pub use model::QueuedUserSubmissionRecord;
+ pub use model::RolloutMigrationCursor;
+ pub use model::RolloutMigrationSkippedRollout;
+diff --git a/codex-rs/state/src/model/mod.rs b/codex-rs/state/src/model/mod.rs
+index c0b9f44..3375cbb 100644
+--- a/codex-rs/state/src/model/mod.rs
++++ b/codex-rs/state/src/model/mod.rs
+@@ -25,6 +25,7 @@ pub use project::Project;
+ pub use project::ProjectRoot;
+ pub use project::ProjectSortKey;
+ pub use project::ProjectsPage;
++pub use queued_item::QueuedSubmissionReceiptRecord;
+ pub use queued_item::QueuedUserSubmissionRecord;
+ pub use rollout_migration_state::RolloutMigrationCursor;
+ pub use rollout_migration_state::RolloutMigrationSkippedRollout;
+diff --git a/codex-rs/state/src/model/queued_item.rs b/codex-rs/state/src/model/queued_item.rs
+index ae7ec0c..bd3debb 100644
+--- a/codex-rs/state/src/model/queued_item.rs
++++ b/codex-rs/state/src/model/queued_item.rs
+@@ -20,3 +20,10 @@ impl QueuedUserSubmissionRecord {
+         })
+     }
+ }
++
++/// Permanent keyed enqueue receipt; terminal receipts prevent re-enqueueing.
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub struct QueuedSubmissionReceiptRecord {
++    pub submission: Option<QueuedUserSubmissionRecord>,
++    pub state: String,
++}
+diff --git a/codex-rs/state/src/runtime/queued_items.rs b/codex-rs/state/src/runtime/queued_items.rs
+index 3cbf32b..910f6eb 100644
+--- a/codex-rs/state/src/runtime/queued_items.rs
++++ b/codex-rs/state/src/runtime/queued_items.rs
+@@ -1,5 +1,6 @@
+ use super::*;
+ use crate::MAX_QUEUE_ITEMS;
++use crate::QueuedSubmissionReceiptRecord;
+ use crate::QueuedUserSubmissionRecord;
+ use sqlx::Connection;
+ use tokio::sync::Mutex;
+@@ -104,6 +105,184 @@ impl SqliteQueueStore {
+         QueuedUserSubmissionRecord::try_from_row(&row)
+     }
+ 
++    /// Atomically persist the enqueue and its permanent receipt.
++    pub async fn enqueue_idempotent(
++        &self,
++        thread_id: ThreadId,
++        key: &str,
++        payload_json: &str,
++    ) -> anyhow::Result<QueuedSubmissionReceiptRecord> {
++        let mut tx = self.pool.begin_with("BEGIN IMMEDIATE").await?;
++        if let Some(row) = sqlx::query(
++            "SELECT item_id AS id, thread_id, payload_json, state
++             FROM queued_submission_receipts WHERE thread_id = ? AND idempotency_key = ?",
++        )
++        .bind(thread_id.to_string())
++        .bind(key)
++        .fetch_optional(tx.as_mut())
++        .await?
++        {
++            let submission = row
++                .try_get::<Option<String>, _>("id")?
++                .map(|_| QueuedUserSubmissionRecord::try_from_row(&row))
++                .transpose()?;
++            if submission
++                .as_ref()
++                .is_some_and(|submission| submission.payload != payload_json)
++            {
++                return Err(std::io::Error::new(
++                    std::io::ErrorKind::InvalidInput,
++                    "idempotencyKey was already used with a different submission",
++                )
++                .into());
++            }
++            return Ok(QueuedSubmissionReceiptRecord {
++                submission,
++                state: row.try_get("state")?,
++            });
++        }
++        let now_ms = datetime_to_epoch_millis(Utc::now());
++        let row = sqlx::query(
++            "INSERT INTO queued_items (id, thread_id, payload_json, queue_order, created_at_ms, updated_at_ms)
++             SELECT ?, ?, ?, COALESCE((SELECT MAX(queue_order) FROM queued_items WHERE thread_id = ?), -1) + 1, ?, ?
++             WHERE (SELECT COUNT(*) FROM queued_items WHERE thread_id = ?) < ?
++             RETURNING id, thread_id, payload_json",
++        )
++        .bind(Uuid::now_v7().to_string()).bind(thread_id.to_string()).bind(payload_json)
++        .bind(thread_id.to_string()).bind(now_ms).bind(now_ms).bind(thread_id.to_string())
++        .bind(i64::try_from(MAX_QUEUE_ITEMS)?).fetch_one(tx.as_mut()).await?;
++        let submission = QueuedUserSubmissionRecord::try_from_row(&row)?;
++        sqlx::query(
++            "INSERT INTO queued_submission_receipts (thread_id, idempotency_key, item_id, payload_json, state)
++             VALUES (?, ?, ?, ?, 'pending')",
++        ).bind(thread_id.to_string()).bind(key).bind(&submission.id).bind(payload_json)
++            .execute(tx.as_mut()).await?;
++        tx.commit().await?;
++        Ok(QueuedSubmissionReceiptRecord {
++            submission: Some(submission),
++            state: "pending".to_owned(),
++        })
++    }
++
++    pub async fn receipt_for_item(
++        &self,
++        thread_id: ThreadId,
++        item_id: &str,
++    ) -> anyhow::Result<Option<QueuedSubmissionReceiptRecord>> {
++        let row = sqlx::query(
++            "SELECT item_id AS id, thread_id, payload_json, state
++             FROM queued_submission_receipts WHERE thread_id = ? AND item_id = ?",
++        )
++        .bind(thread_id.to_string())
++        .bind(item_id)
++        .fetch_optional(self.pool.as_ref())
++        .await?;
++        row.as_ref()
++            .map(|row| {
++                Ok(QueuedSubmissionReceiptRecord {
++                    submission: Some(QueuedUserSubmissionRecord::try_from_row(row)?),
++                    state: row.try_get("state")?,
++                })
++            })
++            .transpose()
++    }
++
++    pub async fn receipt_by_key(
++        &self,
++        thread_id: ThreadId,
++        key: &str,
++    ) -> anyhow::Result<Option<QueuedSubmissionReceiptRecord>> {
++        let row = sqlx::query(
++            "SELECT item_id AS id, thread_id, payload_json, state
++             FROM queued_submission_receipts WHERE thread_id = ? AND idempotency_key = ?",
++        )
++        .bind(thread_id.to_string())
++        .bind(key)
++        .fetch_optional(self.pool.as_ref())
++        .await?;
++        row.as_ref()
++            .map(|row| {
++                Ok(QueuedSubmissionReceiptRecord {
++                    submission: row
++                        .try_get::<Option<String>, _>("id")?
++                        .map(|_| QueuedUserSubmissionRecord::try_from_row(row))
++                        .transpose()?,
++                    state: row.try_get("state")?,
++                })
++            })
++            .transpose()
++    }
++
++    /// A tombstone also cancels an enqueue whose request has not arrived yet.
++    pub async fn cancel_receipt_by_key(
++        &self,
++        thread_id: ThreadId,
++        key: &str,
++    ) -> anyhow::Result<QueuedSubmissionReceiptRecord> {
++        let mut tx = self.pool.begin_with("BEGIN IMMEDIATE").await?;
++        sqlx::query(
++            "INSERT INTO queued_submission_receipts (thread_id, idempotency_key, state)
++             VALUES (?, ?, 'cancelled') ON CONFLICT(thread_id, idempotency_key)
++             DO UPDATE SET state = 'cancelled' WHERE state = 'pending'",
++        )
++        .bind(thread_id.to_string())
++        .bind(key)
++        .execute(tx.as_mut())
++        .await?;
++        let row = sqlx::query(
++            "SELECT item_id AS id, thread_id, payload_json, state
++             FROM queued_submission_receipts WHERE thread_id = ? AND idempotency_key = ?",
++        )
++        .bind(thread_id.to_string())
++        .bind(key)
++        .fetch_one(tx.as_mut())
++        .await?;
++        let receipt = QueuedSubmissionReceiptRecord {
++            submission: row
++                .try_get::<Option<String>, _>("id")?
++                .map(|_| QueuedUserSubmissionRecord::try_from_row(&row))
++                .transpose()?,
++            state: row.try_get("state")?,
++        };
++        if receipt.state == "cancelled" {
++            sqlx::query("DELETE FROM queued_items WHERE thread_id = ? AND id = ?")
++                .bind(thread_id.to_string())
++                .bind(row.try_get::<Option<String>, _>("id")?)
++                .execute(tx.as_mut())
++                .await?;
++        }
++        tx.commit().await?;
++        Ok(receipt)
++    }
++
++    /// Finish only a pending receipt, in the same commit that removes its queue item.
++    pub async fn finish_receipt(
++        &self,
++        thread_id: ThreadId,
++        item_id: &str,
++        state: &str,
++    ) -> anyhow::Result<bool> {
++        if !matches!(state, "consumed" | "cancelled") {
++            return Err(std::io::Error::new(
++                std::io::ErrorKind::InvalidInput,
++                "invalid terminal receipt state",
++            )
++            .into());
++        }
++        let mut tx = self.pool.begin_with("BEGIN IMMEDIATE").await?;
++        sqlx::query("UPDATE queued_submission_receipts SET state = ? WHERE thread_id = ? AND item_id = ? AND state = 'pending'")
++            .bind(state).bind(thread_id.to_string()).bind(item_id).execute(tx.as_mut()).await?;
++        let deleted = sqlx::query("DELETE FROM queued_items WHERE thread_id = ? AND id = ?")
++            .bind(thread_id.to_string())
++            .bind(item_id)
++            .execute(tx.as_mut())
++            .await?
++            .rows_affected()
++            > 0;
++        tx.commit().await?;
++        Ok(deleted)
++    }
++
+     pub async fn list_page(
+         &self,
+         thread_id: ThreadId,
+@@ -150,15 +329,7 @@ impl SqliteQueueStore {
+     }
+ 
+     pub async fn delete(&self, thread_id: ThreadId, item_id: &str) -> anyhow::Result<bool> {
+-        Ok(
+-            sqlx::query("DELETE FROM queued_items WHERE thread_id = ? AND id = ?")
+-                .bind(thread_id.to_string())
+-                .bind(item_id)
+-                .execute(self.pool.as_ref())
+-                .await?
+-                .rows_affected()
+-                > 0,
+-        )
++        self.finish_receipt(thread_id, item_id, "cancelled").await
+     }
+ 
+     pub async fn reorder(&self, thread_id: ThreadId, ordered_ids: &[String]) -> anyhow::Result<()> {
+@@ -201,12 +372,19 @@ impl SqliteQueueStore {
+     }
+ 
+     pub(crate) async fn delete_thread_queue(&self, thread_id: ThreadId) -> anyhow::Result<bool> {
+-        Ok(sqlx::query("DELETE FROM queued_items WHERE thread_id = ?")
++        let mut tx = self.pool.begin_with("BEGIN IMMEDIATE").await?;
++        sqlx::query("DELETE FROM queued_submission_receipts WHERE thread_id = ?")
++            .bind(thread_id.to_string())
++            .execute(tx.as_mut())
++            .await?;
++        let deleted = sqlx::query("DELETE FROM queued_items WHERE thread_id = ?")
+             .bind(thread_id.to_string())
+-            .execute(self.pool.as_ref())
++            .execute(tx.as_mut())
+             .await?
+             .rows_affected()
+-            > 0)
++            > 0;
++        tx.commit().await?;
++        Ok(deleted)
+     }
+ }
+ 
+diff --git a/codex-rs/state/src/runtime/queued_items_tests.rs b/codex-rs/state/src/runtime/queued_items_tests.rs
+index 3f97eb3..2f5a0d2 100644
+--- a/codex-rs/state/src/runtime/queued_items_tests.rs
++++ b/codex-rs/state/src/runtime/queued_items_tests.rs
+@@ -276,3 +276,149 @@ async fn concurrent_inserts_enforce_the_queue_limit() {
+             .len()
+     );
+ }
++
++#[tokio::test]
++async fn keyed_enqueue_survives_retry_consume_cancel_and_reopen() {
++    let (runtime, thread_id) = runtime_with_thread().await;
++    let queue = runtime.thread_queue();
++    let first = queue
++        .enqueue_idempotent(thread_id, "wake-1", "payload")
++        .await
++        .unwrap();
++    let retry = queue
++        .enqueue_idempotent(thread_id, "wake-1", "payload")
++        .await
++        .unwrap();
++    assert_eq!(first, retry);
++    assert_eq!(1, queue.list_page(thread_id, 0, 10).await.unwrap().len());
++    assert!(
++        queue
++            .enqueue_idempotent(thread_id, "wake-1", "changed")
++            .await
++            .is_err()
++    );
++    queue
++        .finish_receipt(
++            thread_id,
++            &first.submission.as_ref().unwrap().id,
++            "consumed",
++        )
++        .await
++        .unwrap();
++    let other = StateRuntime::init(runtime.sqlite().clone(), "test-provider".to_owned())
++        .await
++        .unwrap();
++    let consumed = other
++        .thread_queue()
++        .enqueue_idempotent(thread_id, "wake-1", "payload")
++        .await
++        .unwrap();
++    assert_eq!(first.submission, consumed.submission);
++    assert_eq!("consumed", consumed.state);
++    assert!(queue.list_page(thread_id, 0, 10).await.unwrap().is_empty());
++    let cancelled = queue
++        .enqueue_idempotent(thread_id, "wake-2", "payload")
++        .await
++        .unwrap();
++    assert!(
++        queue
++            .delete(thread_id, &cancelled.submission.as_ref().unwrap().id)
++            .await
++            .unwrap()
++    );
++    assert_eq!(
++        "cancelled",
++        other
++            .thread_queue()
++            .enqueue_idempotent(thread_id, "wake-2", "payload")
++            .await
++            .unwrap()
++            .state
++    );
++    assert!(queue.list_page(thread_id, 0, 10).await.unwrap().is_empty());
++}
++
++#[tokio::test]
++async fn competing_keyed_enqueue_is_atomic() {
++    let (runtime, thread_id) = runtime_with_thread().await;
++    let other = StateRuntime::init(runtime.sqlite().clone(), "test-provider".to_owned())
++        .await
++        .unwrap();
++    let (first, second) = tokio::join!(
++        runtime
++            .thread_queue()
++            .enqueue_idempotent(thread_id, "same", "payload"),
++        other
++            .thread_queue()
++            .enqueue_idempotent(thread_id, "same", "payload"),
++    );
++    assert_eq!(first.unwrap(), second.unwrap());
++    assert_eq!(
++        1,
++        runtime
++            .thread_queue()
++            .list_page(thread_id, 0, 10)
++            .await
++            .unwrap()
++            .len()
++    );
++}
++
++#[tokio::test]
++async fn cancellation_tombstone_prevents_a_delayed_enqueue() {
++    let (runtime, thread_id) = runtime_with_thread().await;
++    let cancelled = runtime
++        .thread_queue()
++        .cancel_receipt_by_key(thread_id, "delayed")
++        .await
++        .unwrap();
++    assert_eq!(None, cancelled.submission);
++    assert_eq!("cancelled", cancelled.state);
++    let late = runtime
++        .thread_queue()
++        .enqueue_idempotent(thread_id, "delayed", "payload")
++        .await
++        .unwrap();
++    assert_eq!(cancelled, late);
++    assert!(
++        runtime
++            .thread_queue()
++            .list_page(thread_id, 0, 10)
++            .await
++            .unwrap()
++            .is_empty()
++    );
++}
++
++#[tokio::test]
++async fn deleting_thread_queue_cleans_terminal_receipts() {
++    let (runtime, thread_id) = runtime_with_thread().await;
++    let queue = runtime.thread_queue();
++    queue
++        .cancel_receipt_by_key(thread_id, "cancelled")
++        .await
++        .unwrap();
++    let pending = queue
++        .enqueue_idempotent(thread_id, "consumed", "payload")
++        .await
++        .unwrap();
++    queue
++        .finish_receipt(thread_id, &pending.submission.unwrap().id, "consumed")
++        .await
++        .unwrap();
++    queue.delete_thread_queue(thread_id).await.unwrap();
++    assert!(
++        queue
++            .receipt_by_key(thread_id, "cancelled")
++            .await
++            .unwrap()
++            .is_none()
++    );
++    assert!(
++        queue
++            .receipt_by_key(thread_id, "consumed")
++            .await
++            .unwrap()
++            .is_none()
++    );
++}
+diff --git a/codex-rs/thread-store/src/lib.rs b/codex-rs/thread-store/src/lib.rs
+index 9cf1267..203e30c 100644
+--- a/codex-rs/thread-store/src/lib.rs
++++ b/codex-rs/thread-store/src/lib.rs
+@@ -20,6 +20,7 @@ pub use codex_state::AddThreadAttachmentOutcome;
+ pub use codex_state::MAX_QUEUE_ITEMS;
+ pub use codex_state::MAX_THREAD_ATTACHMENT_PAYLOAD_BYTES;
+ pub use codex_state::ProjectSortKey;
++pub use codex_state::QueuedSubmissionReceiptRecord;
+ pub use codex_state::QueuedUserSubmissionRecord;
+ pub use codex_state::RemoveThreadAttachmentOutcome;
+ pub use codex_state::ThreadAttachment;
+diff --git a/codex-rs/thread-store/src/queue_store.rs b/codex-rs/thread-store/src/queue_store.rs
+index 74fc2fc..f840012 100644
+--- a/codex-rs/thread-store/src/queue_store.rs
++++ b/codex-rs/thread-store/src/queue_store.rs
+@@ -3,6 +3,7 @@ use std::future::Future;
+ 
+ use codex_protocol::ThreadId;
+ use codex_rollout::StateDbHandle;
++use codex_state::QueuedSubmissionReceiptRecord;
+ use codex_state::QueuedUserSubmissionRecord;
+ use codex_state::SqliteQueueStore;
+ 
+@@ -28,6 +29,38 @@ pub trait QueueStore: Send + Sync {
+         payload: String,
+     ) -> ThreadStoreFuture<'_, QueuedUserSubmissionRecord>;
+ 
++    fn enqueue_idempotent(
++        &self,
++        thread_id: ThreadId,
++        key: String,
++        payload: String,
++    ) -> ThreadStoreFuture<'_, QueuedSubmissionReceiptRecord>;
++
++    fn receipt_for_item(
++        &self,
++        thread_id: ThreadId,
++        item_id: String,
++    ) -> ThreadStoreFuture<'_, Option<QueuedSubmissionReceiptRecord>>;
++
++    fn receipt_by_key(
++        &self,
++        thread_id: ThreadId,
++        key: String,
++    ) -> ThreadStoreFuture<'_, Option<QueuedSubmissionReceiptRecord>>;
++
++    fn cancel_receipt_by_key(
++        &self,
++        thread_id: ThreadId,
++        key: String,
++    ) -> ThreadStoreFuture<'_, QueuedSubmissionReceiptRecord>;
++
++    fn finish_receipt(
++        &self,
++        thread_id: ThreadId,
++        item_id: String,
++        state: String,
++    ) -> ThreadStoreFuture<'_, bool>;
++
+     fn list_page(
+         &self,
+         thread_id: ThreadId,
+@@ -116,6 +149,66 @@ impl QueueStore for LocalQueueStore {
+         })
+     }
+ 
++    fn enqueue_idempotent(
++        &self,
++        thread_id: ThreadId,
++        key: String,
++        payload: String,
++    ) -> ThreadStoreFuture<'_, QueuedSubmissionReceiptRecord> {
++        Box::pin(async move {
++            self.queue()
++                .enqueue_idempotent(thread_id, &key, &payload)
++                .await
++                .map_err(|error| match error.downcast_ref::<std::io::Error>() {
++                    Some(error) if error.kind() == std::io::ErrorKind::InvalidInput => {
++                        ThreadStoreError::InvalidRequest {
++                            message: error.to_string(),
++                        }
++                    }
++                    _ => ThreadStoreError::Internal {
++                        message: format!("queue storage failed: {error}"),
++                    },
++                })
++        })
++    }
++
++    fn receipt_for_item(
++        &self,
++        thread_id: ThreadId,
++        item_id: String,
++    ) -> ThreadStoreFuture<'_, Option<QueuedSubmissionReceiptRecord>> {
++        queue_future(async move { self.queue().receipt_for_item(thread_id, &item_id).await })
++    }
++
++    fn receipt_by_key(
++        &self,
++        thread_id: ThreadId,
++        key: String,
++    ) -> ThreadStoreFuture<'_, Option<QueuedSubmissionReceiptRecord>> {
++        queue_future(async move { self.queue().receipt_by_key(thread_id, &key).await })
++    }
++
++    fn cancel_receipt_by_key(
++        &self,
++        thread_id: ThreadId,
++        key: String,
++    ) -> ThreadStoreFuture<'_, QueuedSubmissionReceiptRecord> {
++        queue_future(async move { self.queue().cancel_receipt_by_key(thread_id, &key).await })
++    }
++
++    fn finish_receipt(
++        &self,
++        thread_id: ThreadId,
++        item_id: String,
++        state: String,
++    ) -> ThreadStoreFuture<'_, bool> {
++        queue_future(async move {
++            self.queue()
++                .finish_receipt(thread_id, &item_id, &state)
++                .await
++        })
++    }
++
+     fn list_page(
+         &self,
+         thread_id: ThreadId,
+diff --git a/codex-rs/tui/Cargo.toml b/codex-rs/tui/Cargo.toml
+index 45f5866..91c232f 100644
+--- a/codex-rs/tui/Cargo.toml
++++ b/codex-rs/tui/Cargo.toml
+@@ -104,6 +104,7 @@ serde = { workspace = true, features = ["derive"] }
+ serde_json = { workspace = true, features = ["preserve_order"] }
+ sha2 = { workspace = true }
+ shlex = { workspace = true }
++sqlx = { workspace = true }
+ strum = { workspace = true }
+ strum_macros = { workspace = true }
+ supports-color = { workspace = true }
+diff --git a/codex-rs/tui/src/app.rs b/codex-rs/tui/src/app.rs
+index 5dfc3ad..00510cc 100644
+--- a/codex-rs/tui/src/app.rs
++++ b/codex-rs/tui/src/app.rs
+@@ -207,6 +207,7 @@ pub(crate) mod agents_overview_discovery;
+ mod agents_overview_threads;
+ mod agents_overview_usage;
+ mod agents_overview_view;
++mod worker_hud;
+ pub(crate) use agents_overview::AGENTS_OVERVIEW_VIEW_ID;
+ mod activity_groups;
+ mod app_server_event_targets;
+@@ -624,6 +625,7 @@ pub(crate) struct App {
+     pending_thread_titles: HashMap<(ThreadId, ThreadTitleDestination), CancellationToken>,
+     thread_event_listener_tasks: HashMap<ThreadId, JoinHandle<()>>,
+     agent_navigation: AgentNavigationState,
++    worker_hud: worker_hud::WorkerHudState,
+     agents_overview: agents_overview::AgentsOverviewState,
+     side_threads: HashMap<ThreadId, SideThreadState>,
+     abandoned_side_threads: HashSet<ThreadId>,
+@@ -1104,6 +1106,7 @@ impl App {
+                     }
+                     self.chat_widget.pre_draw_tick();
+                     self.refresh_agents_overview_usage(app_server, tui.frame_requester());
++                    self.refresh_worker_hud(app_server, &tui.frame_requester());
+                     let rendered_area = self.render_chat_widget_frame(tui, screen_size)?;
+                     if tui.is_owned_screen()
+                         && self.transcript_view.history
+diff --git a/codex-rs/tui/src/app/event_dispatch.rs b/codex-rs/tui/src/app/event_dispatch.rs
+index 2979e0a..6209e42 100644
+--- a/codex-rs/tui/src/app/event_dispatch.rs
++++ b/codex-rs/tui/src/app/event_dispatch.rs
+@@ -2960,6 +2960,10 @@ impl App {
+                     result,
+                 );
+             }
++            AppEvent::WorkerHudLoaded { primary_thread_id, request_id, result } => {
++                self.finish_worker_hud(primary_thread_id, request_id, result);
++                tui.frame_requester().schedule_frame();
++            }
+             AppEvent::SelectAgentThread(thread_id) => {
+                 self.select_agent_thread_and_discard_side(tui, app_server, thread_id)
+                     .await?;
+diff --git a/codex-rs/tui/src/app/reconnect.rs b/codex-rs/tui/src/app/reconnect.rs
+index b7d6e26..7e230fc 100644
+--- a/codex-rs/tui/src/app/reconnect.rs
++++ b/codex-rs/tui/src/app/reconnect.rs
+@@ -195,6 +195,7 @@ impl App {
+             }
+             self.retire_background_voice();
+             self.reconnect.offline = true;
++            self.invalidate_worker_hud();
+             self.account_email_request_id = None;
+             // Cached blank sessions are usable only while this connection owns a subscription.
+             self.agents_overview.blank_sessions.clear();
+diff --git a/codex-rs/tui/src/app/session_lifecycle.rs b/codex-rs/tui/src/app/session_lifecycle.rs
+index 61550ab..2ea29a0 100644
+--- a/codex-rs/tui/src/app/session_lifecycle.rs
++++ b/codex-rs/tui/src/app/session_lifecycle.rs
+@@ -833,6 +833,8 @@ impl App {
+         self.pending_server_profiles.clear();
+         self.agents_overview.activity.clear();
+         self.agent_navigation.clear();
++        self.worker_hud = Default::default();
++        self.chat_widget.set_worker_hud(Vec::new(), false, false);
+         self.side_threads.clear();
+         self.active_thread_id = None;
+         self.active_thread_rx = None;
+diff --git a/codex-rs/tui/src/app/startup.rs b/codex-rs/tui/src/app/startup.rs
+index 69a4ff5..a519e14 100644
+--- a/codex-rs/tui/src/app/startup.rs
++++ b/codex-rs/tui/src/app/startup.rs
+@@ -940,6 +940,7 @@ See the Codex keymap documentation for supported actions and examples."
+             pending_thread_titles: HashMap::new(),
+             thread_event_listener_tasks: HashMap::new(),
+             agent_navigation: AgentNavigationState::default(),
++            worker_hud: Default::default(),
+             agents_overview,
+             side_threads: HashMap::new(),
+             abandoned_side_threads: HashSet::new(),
+diff --git a/codex-rs/tui/src/app/test_support.rs b/codex-rs/tui/src/app/test_support.rs
+index 8b5901c..e24d682 100644
+--- a/codex-rs/tui/src/app/test_support.rs
++++ b/codex-rs/tui/src/app/test_support.rs
+@@ -89,6 +89,7 @@ pub(crate) async fn make_test_app() -> App {
+         pending_thread_titles: HashMap::new(),
+         thread_event_listener_tasks: HashMap::new(),
+         agent_navigation: AgentNavigationState::default(),
++        worker_hud: Default::default(),
+         agents_overview: Default::default(),
+         side_threads: HashMap::new(),
+         abandoned_side_threads: HashSet::new(),
+diff --git a/codex-rs/tui/src/app/tests.rs b/codex-rs/tui/src/app/tests.rs
+index 73bc892..5cd9303 100644
+--- a/codex-rs/tui/src/app/tests.rs
++++ b/codex-rs/tui/src/app/tests.rs
+@@ -6199,6 +6199,7 @@ async fn make_test_app() -> Box<App> {
+         pending_thread_titles: HashMap::new(),
+         thread_event_listener_tasks: HashMap::new(),
+         agent_navigation: AgentNavigationState::default(),
++        worker_hud: Default::default(),
+         pending_server_profiles: HashMap::new(),
+         agents_overview: Default::default(),
+         side_threads: HashMap::new(),
+@@ -6319,6 +6320,7 @@ pub(super) async fn make_test_app_with_channels() -> (
+             pending_thread_titles: HashMap::new(),
+             thread_event_listener_tasks: HashMap::new(),
+             agent_navigation: AgentNavigationState::default(),
++            worker_hud: Default::default(),
+             pending_server_profiles: HashMap::new(),
+             agents_overview: Default::default(),
+             side_threads: HashMap::new(),
+diff --git a/codex-rs/tui/src/app/worker_hud.rs b/codex-rs/tui/src/app/worker_hud.rs
+new file mode 100644
+index 0000000..661953d
+--- /dev/null
++++ b/codex-rs/tui/src/app/worker_hud.rs
+@@ -0,0 +1,705 @@
++//! Per-client worker metadata refresh. These requests never start or steer a turn.
++
++use super::*;
++use crate::app_server_session::source_agent_path;
++use crate::bottom_pane::worker_hud::WorkerGroup;
++use crate::bottom_pane::worker_hud::WorkerRow;
++use crate::bottom_pane::worker_hud::WorkerState;
++use codex_app_server_protocol::RequestId;
++use codex_app_server_protocol::SortDirection;
++use codex_app_server_protocol::Thread;
++use codex_app_server_protocol::ThreadActiveFlag;
++use codex_app_server_protocol::ThreadListParams;
++use codex_app_server_protocol::ThreadListResponse;
++use codex_app_server_protocol::ThreadSourceKind;
++use codex_app_server_protocol::ThreadStatus;
++use codex_app_server_protocol::ThreadTurnsListParams;
++use codex_app_server_protocol::ThreadTurnsListResponse;
++use codex_app_server_protocol::Turn;
++use codex_app_server_protocol::TurnItemsView;
++use futures::StreamExt;
++use futures::TryStreamExt;
++use std::time::SystemTime;
++use std::time::UNIX_EPOCH;
++
++const REFRESH_INTERVAL: Duration = Duration::from_secs(1);
++const FETCH_TIMEOUT: Duration = Duration::from_secs(4);
++
++#[derive(Default)]
++pub(super) struct WorkerHudState {
++    root: Option<ThreadId>,
++    pending: Option<Uuid>,
++    fetched_at: Option<Instant>,
++    attempted_at: Option<Instant>,
++    rows: Vec<WorkerRow>,
++    stale: bool,
++}
++
++impl WorkerHudState {
++    fn bind(&mut self, root: Option<ThreadId>) {
++        if self.root != root {
++            *self = Self {
++                root,
++                ..Self::default()
++            };
++        }
++    }
++
++    fn finish(
++        &mut self,
++        root: ThreadId,
++        request_id: Uuid,
++        result: Result<Vec<WorkerRow>, String>,
++    ) -> bool {
++        if self.root != Some(root) || self.pending != Some(request_id) {
++            return false;
++        }
++        self.pending = None;
++        match result {
++            Ok(rows) => {
++                self.rows = rows;
++                self.fetched_at = Some(Instant::now());
++                self.stale = false;
++            }
++            Err(err) => {
++                tracing::debug!(%err, "worker HUD metadata unavailable");
++                self.stale = true;
++            }
++        }
++        true
++    }
++}
++
++impl App {
++    pub(super) fn invalidate_worker_hud(&mut self) {
++        self.worker_hud.pending = None;
++        self.worker_hud.stale = true;
++        self.chat_widget.set_worker_hud(
++            self.worker_hud.rows.clone(),
++            true,
++            self.primary_thread_id.is_some(),
++        );
++    }
++
++    pub(super) fn refresh_worker_hud(
++        &mut self,
++        app_server: &AppServerSession,
++        frame_requester: &tui::FrameRequester,
++    ) {
++        self.worker_hud.bind(self.primary_thread_id);
++        let Some(root) = self.primary_thread_id else {
++            self.chat_widget.set_worker_hud(Vec::new(), false, false);
++            return;
++        };
++        if self.reconnect.offline {
++            self.worker_hud.pending = None;
++        }
++        let stale = self.reconnect.offline
++            || self.worker_hud.fetched_at.is_none()
++            || self.worker_hud.stale
++            || self
++                .worker_hud
++                .fetched_at
++                .is_some_and(|at| at.elapsed() > FETCH_TIMEOUT);
++        self.chat_widget
++            .set_worker_hud(self.worker_hud.rows.clone(), stale, true);
++        frame_requester.schedule_frame_in(REFRESH_INTERVAL);
++        if self.reconnect.offline
++            || self.worker_hud.pending.is_some()
++            || self
++                .worker_hud
++                .attempted_at
++                .is_some_and(|at| at.elapsed() < REFRESH_INTERVAL)
++        {
++            return;
++        }
++        let request_id = Uuid::new_v4();
++        self.worker_hud.pending = Some(request_id);
++        self.worker_hud.attempted_at = Some(Instant::now());
++        let request_handle = app_server.request_handle();
++        let sqlite = (!app_server.uses_remote_workspace()).then(|| self.config.sqlite.clone());
++        let app_event_tx = self.app_event_tx.clone();
++        tokio::spawn(async move {
++            let deadline = tokio::time::Instant::now() + FETCH_TIMEOUT;
++            let result = tokio::time::timeout_at(deadline, async {
++                let mut threads = Vec::new();
++                let mut cursor = None;
++                let mut seen_cursors = HashSet::new();
++                loop {
++                    if !seen_cursors.insert(cursor.clone()) || threads.len() >= 1_000 {
++                        return Err("worker list incomplete".to_string());
++                    }
++                    let page = request_handle
++                        .request_typed::<ThreadListResponse>(ClientRequest::ThreadList {
++                            request_id: RequestId::String(Uuid::new_v4().to_string()),
++                            params: ThreadListParams {
++                                cursor,
++                                limit: Some(100),
++                                sort_key: None,
++                                sort_direction: Some(SortDirection::Asc),
++                                model_providers: Some(vec![]),
++                                source_kinds: Some(vec![ThreadSourceKind::SubAgentThreadSpawn]),
++                                originators: None,
++                                archived: Some(false),
++                                section_id: None,
++                                project_id: None,
++                                cwd: None,
++                                use_state_db_only: true,
++                                search_term: None,
++                                parent_thread_id: Some(root.to_string()),
++                                ancestor_thread_id: None,
++                            },
++                        })
++                        .await
++                        .map_err(|err| err.to_string())?;
++                    threads.extend(page.data.into_iter().filter(|thread| {
++                        thread.parent_thread_id.as_deref() == Some(root.to_string().as_str())
++                    }));
++                    match page.next_cursor {
++                        Some(next) => cursor = Some(next),
++                        None => break,
++                    }
++                }
++                let now = SystemTime::now()
++                    .duration_since(UNIX_EPOCH)
++                    .unwrap_or_default()
++                    .as_secs();
++                let rows = futures::stream::iter(threads.into_iter().map(|thread| {
++                    let request_handle = request_handle.clone();
++                    async move {
++                        let turns = request_handle
++                            .request_typed::<ThreadTurnsListResponse>(
++                                ClientRequest::ThreadTurnsList {
++                                    request_id: RequestId::String(Uuid::new_v4().to_string()),
++                                    params: ThreadTurnsListParams {
++                                        thread_id: thread.id.clone(),
++                                        cursor: None,
++                                        limit: Some(1),
++                                        sort_direction: Some(SortDirection::Desc),
++                                        items_view: Some(TurnItemsView::NotLoaded),
++                                    },
++                                },
++                            )
++                            .await
++                            .map_err(|err| err.to_string())?;
++                        let turn = turns.data.into_iter().next();
++                        let row = worker_row(&thread, turn.as_ref(), now);
++                        Ok::<_, String>((thread, row))
++                    }
++                }))
++                .buffered(8)
++                .try_collect::<Vec<_>>()
++                .await?;
++                Ok(rows)
++            })
++            .await
++            .map_err(|_| "worker metadata timed out".to_string())
++            .and_then(|result| result);
++            let result = match result {
++                Ok(mut workers) => {
++                    // Optional metrics must never invalidate a valid runtime snapshot.
++                    let metrics_deadline =
++                        deadline.min(tokio::time::Instant::now() + Duration::from_millis(250));
++                    let _ = tokio::time::timeout_at(
++                        metrics_deadline,
++                        read_worker_tokens(sqlite.as_ref(), &mut workers),
++                    )
++                    .await;
++                    let mut rows: Vec<_> = workers.into_iter().map(|(_, row)| row).collect();
++                    rows.sort_by_key(|row| !row.state.is_active());
++                    Ok(rows)
++                }
++                Err(err) => Err(err),
++            };
++            app_event_tx.send(AppEvent::WorkerHudLoaded {
++                primary_thread_id: root,
++                request_id,
++                result,
++            });
++        });
++    }
++
++    pub(super) fn finish_worker_hud(
++        &mut self,
++        root: ThreadId,
++        request_id: Uuid,
++        result: Result<Vec<WorkerRow>, String>,
++    ) {
++        if !self.reconnect.offline
++            && self.primary_thread_id == Some(root)
++            && self.worker_hud.finish(root, request_id, result)
++        {
++            self.chat_widget.set_worker_hud(
++                self.worker_hud.rows.clone(),
++                self.worker_hud.stale || self.reconnect.offline,
++                true,
++            );
++        }
++    }
++}
++
++fn worker_row(thread: &Thread, turn: Option<&Turn>, now: u64) -> WorkerRow {
++    let state = worker_state(&thread.status, turn);
++    let elapsed_secs = worker_elapsed(&state, turn, now);
++    let task = [
++        source_agent_path(&thread.source).map(|path| {
++            path.rsplit('/')
++                .next()
++                .unwrap_or_default()
++                .replace('_', " ")
++        }),
++        thread.name.clone(),
++        thread.agent_nickname.clone(),
++        Some(thread.id.clone()),
++    ]
++    .into_iter()
++    .flatten()
++    .map(|label| {
++        label
++            .chars()
++            .map(|ch| if ch.is_control() { ' ' } else { ch })
++            .collect::<String>()
++            .trim()
++            .to_string()
++    })
++    .find(|label| !label.is_empty())
++    .unwrap_or_default();
++    WorkerRow {
++        group: worker_group(thread),
++        dispatch_elapsed_secs: u64::try_from(thread.created_at)
++            .ok()
++            .and_then(|created| now.checked_sub(created)),
++        task,
++        state,
++        elapsed_secs,
++        model: thread.model.clone(),
++        reasoning_effort: thread.reasoning_effort.clone(),
++        total_tokens: None,
++    }
++}
++
++fn worker_group(thread: &Thread) -> Option<WorkerGroup> {
++    let path = source_agent_path(&thread.source)?;
++    let (parent_path, leaf) = path.rsplit_once('/')?;
++    let parts: Vec<_> = leaf.split("__").collect();
++    if parts.len() != 3
++        || parts
++            .iter()
++            .any(|part| !part.bytes().any(|ch| ch.is_ascii_alphanumeric()))
++    {
++        return None;
++    }
++    let parent = thread.parent_thread_id.as_deref().unwrap_or(parent_path);
++    Some(WorkerGroup {
++        key: format!("{parent}\0{}\0{}", parts[0], parts[1]),
++        topic: parts[0].replace('_', " "),
++    })
++}
++
++async fn read_worker_tokens(
++    sqlite: Option<&codex_state::SqliteConfig>,
++    workers: &mut [(Thread, WorkerRow)],
++) {
++    let Some(sqlite) = sqlite else {
++        return;
++    };
++    let Ok(pool) = sqlite
++        .open_read_only_pool(&sqlite.state_db_path(), Some(Duration::from_millis(50)))
++        .await
++    else {
++        return;
++    };
++    for (thread, row) in workers {
++        // Forks can inherit the parent's cumulative total, so attribution is unknown.
++        if thread.forked_from_id.is_some() {
++            continue;
++        }
++        row.total_tokens =
++            sqlx::query_scalar::<_, i64>("SELECT tokens_used FROM threads WHERE id = ?")
++                .bind(&thread.id)
++                .fetch_optional(&pool)
++                .await
++                .ok()
++                .flatten()
++                .filter(|tokens| *tokens >= 0);
++    }
++    pool.close().await;
++}
++
++fn worker_state(status: &ThreadStatus, turn: Option<&Turn>) -> WorkerState {
++    match status {
++        ThreadStatus::Active { active_flags }
++            if active_flags.contains(&ThreadActiveFlag::WaitingOnApproval) =>
++        {
++            WorkerState::Approval
++        }
++        ThreadStatus::Active { active_flags }
++            if active_flags.contains(&ThreadActiveFlag::WaitingOnUserInput) =>
++        {
++            WorkerState::Input
++        }
++        ThreadStatus::Active { .. } => WorkerState::Active,
++        ThreadStatus::SystemError => WorkerState::Error,
++        ThreadStatus::NotLoaded => WorkerState::Unloaded,
++        ThreadStatus::Idle => match turn.map(|turn| &turn.status) {
++            Some(TurnStatus::Completed) => WorkerState::Done,
++            Some(TurnStatus::Failed) => WorkerState::Failed,
++            Some(TurnStatus::Interrupted) => WorkerState::Interrupted,
++            _ => WorkerState::Idle,
++        },
++    }
++}
++
++fn worker_elapsed(state: &WorkerState, turn: Option<&Turn>, now: u64) -> Option<u64> {
++    turn.and_then(|turn| {
++        let start = u64::try_from(turn.started_at?).ok()?;
++        let end = if state.is_active() {
++            if turn.status != TurnStatus::InProgress {
++                return None;
++            }
++            now
++        } else {
++            u64::try_from(turn.completed_at?).ok()?
++        };
++        end.checked_sub(start)
++    })
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    fn thread(id: &str) -> Thread {
++        serde_json::from_value(serde_json::json!({
++            "id": id,
++            "sessionId": "root",
++            "preview": "",
++            "ephemeral": false,
++            "modelProvider": "openai",
++            "model": "gpt-6.1-sol",
++            "reasoningEffort": "high",
++            "createdAt": 1,
++            "updatedAt": 2,
++            "status": {"type": "idle"},
++            "cwd": "/tmp",
++            "cliVersion": "0.162.1",
++            "source": "cli",
++            "turns": []
++        }))
++        .unwrap()
++    }
++
++    #[test]
++    fn worker_hud_shortens_paths_and_falls_back_to_names_without_controls() {
++        let mut worker = thread("worker-id");
++        worker.source = serde_json::from_value(serde_json::json!({
++            "subAgent": {"thread_spawn": {
++                "parent_thread_id": "00000000-0000-0000-0000-000000000001",
++                "depth": 1,
++                "agent_path": "/root/parent/test_worker"
++            }}
++        }))
++        .unwrap();
++        worker.name = Some("Named\nworker".into());
++        worker.agent_nickname = Some("Nick\tname".into());
++        let row = worker_row(&worker, None, 10);
++        assert_eq!(row.task, "test worker");
++        assert_eq!(row.model.as_deref(), Some("gpt-6.1-sol"));
++        assert_eq!(
++            row.reasoning_effort.as_ref().map(|effort| effort.as_str()),
++            Some("high")
++        );
++        assert_eq!(row.total_tokens, None);
++        worker.reasoning_effort = None;
++        assert_eq!(worker_row(&worker, None, 10).reasoning_effort, None);
++        worker.reasoning_effort = Some(codex_protocol::openai_models::ReasoningEffort::None);
++        assert_eq!(
++            worker_row(&worker, None, 10)
++                .reasoning_effort
++                .as_ref()
++                .map(|effort| effort.as_str()),
++            Some("none")
++        );
++        worker.source = codex_app_server_protocol::SessionSource::Cli;
++        assert_eq!(worker_row(&worker, None, 10).task, "Named worker");
++        worker.name = Some("\n\t".into());
++        assert_eq!(worker_row(&worker, None, 10).task, "Nick name");
++        worker.agent_nickname = None;
++        assert_eq!(worker_row(&worker, None, 10).task, "worker-id");
++    }
++
++    #[test]
++    fn worker_hud_groups_only_explicit_topic_batch_tags_before_shortening() {
++        let mut worker = thread("worker-id");
++        worker.parent_thread_id = Some("parent-a".into());
++        let mut tagged = |leaf: &str| {
++            worker.source = serde_json::from_value(serde_json::json!({
++                "subAgent": {"thread_spawn": {
++                    "parent_thread_id": "00000000-0000-0000-0000-000000000001",
++                    "depth": 1,
++                    "agent_path": format!("/root/{leaf}")
++                }}
++            }))
++            .unwrap();
++            worker_row(&worker, None, 10)
++        };
++        let render = tagged("hud_styling__b1__render");
++        let test = tagged("hud_styling__b1__test");
++        assert_eq!(render.group, test.group);
++        assert_eq!(render.group.as_ref().unwrap().topic, "hud styling");
++        assert_ne!(render.group, tagged("hud_styling__b2__render").group);
++        for leaf in [
++            "hud_styling_render",
++            "hud_styling_test",
++            "hud_styling__b1",
++            "hud__b1__test__extra",
++            "hud____test",
++            "hud__b1___",
++        ] {
++            assert!(tagged(leaf).group.is_none(), "{leaf}");
++        }
++        worker.parent_thread_id = Some("parent-b".into());
++        worker.source = serde_json::from_value(serde_json::json!({
++            "subAgent": {"thread_spawn": {
++                "parent_thread_id": "00000000-0000-0000-0000-000000000001",
++                "depth": 1,
++                "agent_path": "/root/hud_styling__b1__render"
++            }}
++        }))
++        .unwrap();
++        assert_ne!(render.group, worker_row(&worker, None, 10).group);
++        assert_eq!(render.dispatch_elapsed_secs, Some(9));
++        worker.created_at = -1;
++        assert_eq!(worker_row(&worker, None, 10).dispatch_elapsed_secs, None);
++        worker.created_at = 11;
++        assert_eq!(worker_row(&worker, None, 10).dispatch_elapsed_secs, None);
++        worker.created_at = 10;
++        assert_eq!(worker_row(&worker, None, 10).dispatch_elapsed_secs, Some(0));
++    }
++
++    #[tokio::test]
++    async fn worker_hud_reads_actual_local_tokens_without_writing_or_fork_attribution() {
++        let home = tempfile::tempdir().unwrap();
++        let sqlite = codex_state::SqliteConfig::new_for_testing(
++            codex_utils_absolute_path::AbsolutePathBuf::try_from(home.path()).unwrap(),
++        );
++        let pool = sqlite
++            .open_read_write_pool(&sqlite.state_db_path())
++            .await
++            .unwrap();
++        sqlx::query("CREATE TABLE threads (id TEXT PRIMARY KEY, tokens_used INTEGER NOT NULL)")
++            .execute(&pool)
++            .await
++            .unwrap();
++        sqlx::query("INSERT INTO threads VALUES ('zero', 0), ('positive', 12345), ('negative', -1), ('fork', 999)")
++            .execute(&pool)
++            .await
++            .unwrap();
++        pool.close().await;
++        let mut workers: Vec<_> = ["zero", "positive", "negative", "missing", "fork"]
++            .into_iter()
++            .map(|id| {
++                let mut worker = thread(id);
++                if id == "fork" {
++                    worker.forked_from_id = Some("parent".into());
++                }
++                let row = worker_row(&worker, None, 10);
++                (worker, row)
++            })
++            .collect();
++        // Remote backends never receive a local database configuration.
++        read_worker_tokens(None, &mut workers).await;
++        assert!(workers.iter().all(|(_, row)| row.total_tokens.is_none()));
++        read_worker_tokens(Some(&sqlite), &mut workers).await;
++        assert_eq!(
++            workers
++                .iter()
++                .map(|(_, row)| row.total_tokens)
++                .collect::<Vec<_>>(),
++            [Some(0), Some(12345), None, None, None]
++        );
++        let read_only = sqlite
++            .open_read_only_pool(&sqlite.state_db_path(), None)
++            .await
++            .unwrap();
++        assert!(
++            sqlx::query("UPDATE threads SET tokens_used = 9")
++                .execute(&read_only)
++                .await
++                .is_err()
++        );
++        assert_eq!(
++            sqlx::query_scalar::<_, i64>("SELECT tokens_used FROM threads WHERE id = 'zero'")
++                .fetch_one(&read_only)
++                .await
++                .unwrap(),
++            0
++        );
++        read_only.close().await;
++    }
++
++    #[tokio::test]
++    async fn worker_hud_missing_or_invalid_database_keeps_runtime_rows() {
++        let home = tempfile::tempdir().unwrap();
++        let sqlite = codex_state::SqliteConfig::new_for_testing(
++            codex_utils_absolute_path::AbsolutePathBuf::try_from(home.path()).unwrap(),
++        );
++        let worker = thread("worker-id");
++        let row = worker_row(&worker, None, 10);
++        let mut workers = vec![(worker, row.clone())];
++        tokio::time::timeout(
++            Duration::from_millis(250),
++            read_worker_tokens(Some(&sqlite), &mut workers),
++        )
++        .await
++        .ok();
++        assert!(!sqlite.state_db_path().exists());
++        assert_eq!(workers[0].1, row);
++        std::fs::write(sqlite.state_db_path(), b"invalid database").unwrap();
++        tokio::time::timeout(
++            Duration::from_millis(250),
++            read_worker_tokens(Some(&sqlite), &mut workers),
++        )
++        .await
++        .ok();
++        assert_eq!(workers[0].1, row);
++        assert_eq!(
++            std::fs::read(sqlite.state_db_path()).unwrap(),
++            b"invalid database"
++        );
++    }
++
++    fn turn(status: TurnStatus) -> Turn {
++        Turn {
++            id: "turn".to_string(),
++            root_turn_id: None,
++            items: vec![],
++            items_view: TurnItemsView::NotLoaded,
++            status,
++            error: None,
++            started_at: Some(100),
++            completed_at: Some(130),
++            duration_ms: Some(30_000),
++        }
++    }
++
++    #[test]
++    fn worker_hud_runtime_activity_overrides_old_completion_and_elapsed() {
++        let completed = turn(TurnStatus::Completed);
++        let active = ThreadStatus::Active {
++            active_flags: vec![],
++        };
++        assert_eq!(worker_state(&active, Some(&completed)), WorkerState::Active);
++        assert_eq!(
++            worker_elapsed(&WorkerState::Active, Some(&completed), 160),
++            None
++        );
++        assert_eq!(
++            worker_state(&ThreadStatus::Idle, Some(&completed)),
++            WorkerState::Done
++        );
++        assert_eq!(
++            worker_elapsed(&WorkerState::Done, Some(&completed), 160),
++            Some(30)
++        );
++        assert_eq!(
++            worker_elapsed(
++                &WorkerState::Active,
++                Some(&turn(TurnStatus::InProgress)),
++                160
++            ),
++            Some(60)
++        );
++        assert_eq!(
++            worker_elapsed(
++                &WorkerState::Active,
++                Some(&turn(TurnStatus::InProgress)),
++                99
++            ),
++            None
++        );
++    }
++
++    #[test]
++    fn worker_hud_waiting_requires_explicit_runtime_flag() {
++        assert_eq!(
++            worker_state(
++                &ThreadStatus::Active {
++                    active_flags: vec![ThreadActiveFlag::WaitingOnApproval]
++                },
++                None
++            ),
++            WorkerState::Approval
++        );
++        assert_eq!(
++            worker_state(
++                &ThreadStatus::Active {
++                    active_flags: vec![ThreadActiveFlag::WaitingOnUserInput]
++                },
++                None
++            ),
++            WorkerState::Input
++        );
++        assert_eq!(worker_state(&ThreadStatus::Idle, None), WorkerState::Idle);
++        assert_eq!(
++            worker_state(&ThreadStatus::NotLoaded, Some(&turn(TurnStatus::Completed))),
++            WorkerState::Unloaded
++        );
++        assert_eq!(
++            worker_state(&ThreadStatus::SystemError, None),
++            WorkerState::Error
++        );
++        assert_eq!(
++            worker_state(&ThreadStatus::Idle, Some(&turn(TurnStatus::Failed))),
++            WorkerState::Failed
++        );
++        assert_eq!(
++            worker_state(&ThreadStatus::Idle, Some(&turn(TurnStatus::Interrupted))),
++            WorkerState::Interrupted
++        );
++    }
++
++    #[test]
++    fn worker_hud_isolates_clients_and_rejects_previous_primary_replies() {
++        let root_a = ThreadId::new();
++        let root_b = ThreadId::new();
++        let id = Uuid::new_v4();
++        let row = WorkerRow {
++            group: None,
++            dispatch_elapsed_secs: None,
++            task: "/root/build".to_string(),
++            state: WorkerState::Active,
++            elapsed_secs: Some(10),
++            model: None,
++            reasoning_effort: None,
++            total_tokens: None,
++        };
++        let mut a = WorkerHudState::default();
++        let mut b = WorkerHudState::default();
++        a.bind(Some(root_a));
++        b.bind(Some(root_b));
++        a.pending = Some(id);
++        b.pending = Some(id);
++        assert!(a.finish(root_a, id, Ok(vec![row])));
++        assert!(!b.finish(root_a, id, Ok(a.rows.clone())));
++        assert!(b.rows.is_empty());
++        a.pending = Some(id);
++        assert!(a.finish(root_a, id, Err("timeout".to_string())));
++        assert!(a.stale);
++        assert_eq!(a.rows.len(), 1);
++        let recovered_id = Uuid::new_v4();
++        a.pending = Some(recovered_id);
++        assert!(a.finish(root_a, recovered_id, Ok(a.rows.clone())));
++        assert!(!a.stale);
++        assert_eq!(a.rows.len(), 1);
++        a.pending = None;
++        assert!(!a.finish(root_a, id, Ok(vec![])));
++        assert_eq!(a.rows.len(), 1);
++        a.bind(Some(root_b));
++        a.pending = Some(Uuid::new_v4());
++        assert!(!a.finish(root_a, id, Ok(vec![])));
++        assert!(a.rows.is_empty());
++        a.bind(None);
++        assert!(a.pending.is_none());
++    }
++}
+diff --git a/codex-rs/tui/src/app_event.rs b/codex-rs/tui/src/app_event.rs
+index 4c6ede3..3cb7212 100644
+--- a/codex-rs/tui/src/app_event.rs
++++ b/codex-rs/tui/src/app_event.rs
+@@ -404,6 +404,11 @@ pub(crate) enum AppEvent {
+         request_id: Uuid,
+         result: Result<AgentPickerThreadRefresh, String>,
+     },
++    WorkerHudLoaded {
++        primary_thread_id: ThreadId,
++        request_id: Uuid,
++        result: Result<Vec<crate::bottom_pane::worker_hud::WorkerRow>, String>,
++    },
+     /// Switch the active thread to the selected agent.
+     SelectAgentThread(ThreadId),
+ 
+diff --git a/codex-rs/tui/src/bottom_pane/mod.rs b/codex-rs/tui/src/bottom_pane/mod.rs
+index c0e3902..ac23c79 100644
+--- a/codex-rs/tui/src/bottom_pane/mod.rs
++++ b/codex-rs/tui/src/bottom_pane/mod.rs
+@@ -202,6 +202,7 @@ mod paste_burst;
+ mod pending_input_preview;
+ mod pending_thread_approvals;
+ mod picker_option;
++pub(crate) mod worker_hud;
+ pub(crate) use picker_option::picker_option_list;
+ pub(crate) use picker_option::picker_option_row;
+ pub(crate) mod popup_consts;
+@@ -323,6 +324,7 @@ pub(crate) struct BottomPane {
+     pending_input_preview: PendingInputPreview,
+     /// Inactive threads with pending approval requests.
+     pending_thread_approvals: PendingThreadApprovals,
++    worker_hud: worker_hud::WorkerHud,
+     context_window_percent: Option<i64>,
+     context_window_used_tokens: Option<i64>,
+     keymap: RuntimeKeymap,
+@@ -395,6 +397,7 @@ impl BottomPane {
+             unified_exec_footer: UnifiedExecFooter::new(),
+             pending_input_preview: PendingInputPreview::new(),
+             pending_thread_approvals: PendingThreadApprovals::new(),
++            worker_hud: worker_hud::WorkerHud::default(),
+             esc_backtrack_hint: false,
+             animations_enabled,
+             effects,
+@@ -1644,6 +1647,17 @@ impl BottomPane {
+         self.request_redraw();
+     }
+ 
++    pub(crate) fn set_worker_hud(
++        &mut self,
++        rows: Vec<worker_hud::WorkerRow>,
++        stale: bool,
++        visible: bool,
++    ) {
++        if self.worker_hud.set(rows, stale, visible) {
++            self.request_redraw();
++        }
++    }
++
+     /// Update the inactive-thread approval list shown above the composer.
+     pub(crate) fn set_pending_thread_approvals(&mut self, threads: Vec<String>) {
+         if self.pending_thread_approvals.set_threads(threads) {
+@@ -2357,6 +2371,7 @@ impl BottomPane {
+                 }))
+             };
+             flex2.push(/*flex*/ 0, composer);
++            flex2.push(/*flex*/ 1, RenderableItem::Borrowed(&self.worker_hud));
+             RenderableItem::Owned(Box::new(flex2))
+         }
+     }
+@@ -2591,6 +2606,43 @@ mod tests {
+         assert_eq!(pane.composer_text(), "main draft");
+     }
+ 
++    #[test]
++    fn worker_hud_keeps_idle_and_running_composer_editable_on_resize() {
++        let (tx, _rx) = unbounded_channel();
++        let mut pane = test_pane_with_disable_paste_burst(AppEventSender::new(tx), true);
++        pane.set_worker_hud(
++            vec![worker_hud::WorkerRow {
++                group: None,
++                dispatch_elapsed_secs: None,
++                task: "/root/build".to_string(),
++                state: worker_hud::WorkerState::Active,
++                elapsed_secs: Some(60),
++                total_tokens: Some(0),
++                model: Some("gpt-6-sol".to_string()),
++                reasoning_effort: None,
++            }],
++            false,
++            true,
++        );
++        for running in [false, true] {
++            pane.set_task_running(running);
++            pane.handle_key_event(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE));
++            for width in [12, 40, 120] {
++                let full = Rect::new(0, 0, width, pane.desired_height(width));
++                assert!(render_snapshot(&pane, full).contains("Workers 1"));
++                for height in [3, full.height] {
++                    let area = Rect::new(0, 0, width, height);
++                    assert!(
++                        pane.cursor_pos(area)
++                            .is_some_and(|(_, y)| y < area.bottom())
++                    );
++                    assert!(render_snapshot(&pane, area).contains('x'));
++                }
++            }
++        }
++        assert_eq!(pane.composer_text(), "xx");
++    }
++
+     #[test]
+     fn inline_banner_snapshot() {
+         let (tx, _rx) = unbounded_channel();
+diff --git a/codex-rs/tui/src/bottom_pane/worker_hud.rs b/codex-rs/tui/src/bottom_pane/worker_hud.rs
+new file mode 100644
+index 0000000..5844581
+--- /dev/null
++++ b/codex-rs/tui/src/bottom_pane/worker_hud.rs
+@@ -0,0 +1,684 @@
++//! Read-only worker summary; clipping never takes space from the composer.
++
++use crate::line_truncation::truncate_line_with_ellipsis_if_overflow;
++use crate::render::renderable::Renderable;
++use crate::status::format_tokens_compact;
++use crate::width::display_width;
++use codex_protocol::openai_models::ReasoningEffort;
++use ratatui::buffer::Buffer;
++use ratatui::layout::Rect;
++use ratatui::style::Stylize;
++use ratatui::text::Line;
++use ratatui::widgets::Paragraph;
++use std::collections::HashMap;
++
++#[derive(Clone, Debug, PartialEq, Eq)]
++pub(crate) enum WorkerState {
++    Active,
++    Approval,
++    Input,
++    Idle,
++    Done,
++    Failed,
++    Interrupted,
++    Unloaded,
++    Error,
++}
++
++impl WorkerState {
++    pub(crate) fn label(&self) -> &'static str {
++        match self {
++            Self::Active => "active",
++            Self::Approval => "wait approval",
++            Self::Input => "wait input",
++            Self::Idle => "idle",
++            Self::Done => "done",
++            Self::Failed => "failed",
++            Self::Interrupted => "interrupted",
++            Self::Unloaded => "unloaded",
++            Self::Error => "error",
++        }
++    }
++
++    pub(crate) fn is_active(&self) -> bool {
++        matches!(self, Self::Active | Self::Approval | Self::Input)
++    }
++}
++
++#[derive(Clone, Debug, PartialEq, Eq)]
++pub(crate) struct WorkerGroup {
++    pub(crate) key: String,
++    pub(crate) topic: String,
++}
++
++#[derive(Clone, Debug, PartialEq, Eq)]
++pub(crate) struct WorkerRow {
++    pub(crate) group: Option<WorkerGroup>,
++    pub(crate) dispatch_elapsed_secs: Option<u64>,
++    pub(crate) task: String,
++    pub(crate) state: WorkerState,
++    pub(crate) elapsed_secs: Option<u64>,
++    pub(crate) total_tokens: Option<i64>,
++    pub(crate) model: Option<String>,
++    pub(crate) reasoning_effort: Option<ReasoningEffort>,
++}
++
++#[derive(Default)]
++pub(crate) struct WorkerHud {
++    rows: Vec<WorkerRow>,
++    stale: bool,
++    visible: bool,
++}
++
++impl WorkerHud {
++    pub(crate) fn set(&mut self, rows: Vec<WorkerRow>, stale: bool, visible: bool) -> bool {
++        if self.rows == rows && self.stale == stale && self.visible == visible {
++            return false;
++        }
++        self.rows = rows;
++        self.stale = stale;
++        self.visible = visible;
++        true
++    }
++
++    fn display_rows(&self) -> Vec<Vec<&WorkerRow>> {
++        let mut rows: Vec<Vec<&WorkerRow>> = Vec::new();
++        let mut groups = HashMap::new();
++        for row in &self.rows {
++            if let Some(group) = &row.group {
++                let index = *groups.entry(&group.key).or_insert_with(|| {
++                    rows.push(Vec::new());
++                    rows.len() - 1
++                });
++                rows[index].push(row);
++            } else if row.state.is_active() {
++                rows.push(vec![row]);
++            }
++        }
++        rows.retain(|members| members.iter().any(|row| row.state.is_active()));
++        rows
++    }
++
++    fn lines(&self, width: u16) -> Vec<Line<'static>> {
++        if !self.visible {
++            return Vec::new();
++        }
++        let rows: Vec<_> = self
++            .rows
++            .iter()
++            .filter(|row| row.state.is_active())
++            .collect();
++        if rows.is_empty() && !self.stale {
++            return Vec::new();
++        }
++        let active = rows
++            .iter()
++            .filter(|r| r.state == WorkerState::Active)
++            .count();
++        let waiting = rows.len() - active;
++        let header = if self.stale {
++            "  Workers stale · counts unavailable".to_string()
++        } else {
++            format!(
++                "  Workers {} · active {active} · waiting {waiting}",
++                rows.len()
++            )
++        };
++        let mut lines = vec![Line::from(header).not_dim()];
++        let display_rows = self.display_rows();
++        for members in display_rows.iter().take(3) {
++            let row = members[0];
++            let current: Vec<_> = members.iter().filter(|row| row.state.is_active()).collect();
++            let grouped = row.group.is_some();
++            let elapsed = if self.stale {
++                None
++            } else if grouped {
++                members
++                    .iter()
++                    .try_fold(0, |age, row| Some(age.max(row.dispatch_elapsed_secs?)))
++            } else {
++                row.elapsed_secs
++            };
++            let time = elapsed
++                .map(|secs| format!("{}:{:02}", secs / 60, secs % 60))
++                .unwrap_or_else(|| "?".to_string());
++            let total_tokens = if self.stale {
++                None
++            } else {
++                members.iter().try_fold(0i64, |total, row| {
++                    total.checked_add(row.total_tokens.filter(|tokens| *tokens >= 0)?)
++                })
++            };
++            let tokens = total_tokens
++                .map(format_tokens_compact)
++                .unwrap_or_else(|| "?".to_string());
++            let state = if self.stale {
++                "stale"
++            } else if current.iter().any(|row| row.state == WorkerState::Active) {
++                WorkerState::Active.label()
++            } else if current.iter().any(|row| row.state == WorkerState::Approval) {
++                WorkerState::Approval.label()
++            } else {
++                WorkerState::Input.label()
++            };
++            let first = current[0];
++            let model = if current.iter().any(|row| row.model.is_none()) {
++                "?".to_string()
++            } else if current.iter().all(|row| row.model == first.model) {
++                model_label(first.model.as_deref())
++            } else {
++                "mixed".to_string()
++            };
++            let effort = if current.iter().any(|row| row.reasoning_effort.is_none()) {
++                "?".to_string()
++            } else if current
++                .iter()
++                .all(|row| row.reasoning_effort == first.reasoning_effort)
++            {
++                effort_label(first.reasoning_effort.as_ref())
++            } else {
++                "mixed".to_string()
++            };
++            let model_effort = if model == "mixed" && effort == "mixed" {
++                "mixed".to_string()
++            } else {
++                format!("{model} {effort}")
++            };
++            let metrics = format!(" · {state} · {time} · {tokens} tok · {model_effort}");
++            let count = if grouped {
++                if self.stale {
++                    " (? agents)".to_string()
++                } else {
++                    let suffix = if current.len() == 1 { "" } else { "s" };
++                    format!(" ({} agent{suffix})", current.len())
++                }
++            } else {
++                String::new()
++            };
++            let task_width = usize::from(width)
++                .saturating_sub(2 + display_width(&metrics))
++                .max(12.min(usize::from(width).saturating_sub(2)))
++                .saturating_sub(display_width(&count));
++            let label = row.group.as_ref().map_or(&row.task, |group| &group.topic);
++            let task =
++                truncate_line_with_ellipsis_if_overflow(Line::from(label.clone()), task_width);
++            lines.push(Line::from(format!("  {task}{count}{metrics}")).dim());
++        }
++        if display_rows.len() > 3 {
++            lines.push(Line::from(format!("  +{} more", display_rows.len() - 3)).dim());
++        }
++        lines
++    }
++}
++
++fn effort_label(effort: Option<&ReasoningEffort>) -> String {
++    effort
++        .map(ReasoningEffort::as_str)
++        .unwrap_or("?")
++        .chars()
++        .map(|ch| if ch.is_control() { ' ' } else { ch })
++        .collect::<String>()
++        .trim()
++        .to_string()
++}
++
++fn model_label(model: Option<&str>) -> String {
++    let model: String = model
++        .unwrap_or_default()
++        .chars()
++        .map(|ch| if ch.is_control() { ' ' } else { ch })
++        .collect();
++    let model = model.trim();
++    for segment in model.split(|ch: char| !ch.is_ascii_alphanumeric()) {
++        if segment.eq_ignore_ascii_case("sol") {
++            return "Sol".to_string();
++        }
++        if segment.eq_ignore_ascii_case("astra") {
++            return "Astra".to_string();
++        }
++    }
++    if model.is_empty() {
++        "?".to_string()
++    } else {
++        model.to_string()
++    }
++}
++
++impl Renderable for WorkerHud {
++    fn render(&self, area: Rect, buf: &mut Buffer) {
++        if !area.is_empty() {
++            Renderable::render(&Paragraph::new(self.lines(area.width)), area, buf);
++        }
++    }
++
++    fn desired_height(&self, width: u16) -> u16 {
++        if width == 0 || !self.visible {
++            0
++        } else {
++            let count = self.display_rows().len();
++            if count == 0 && !self.stale {
++                0
++            } else {
++                1 + count.min(3) as u16 + u16::from(count > 3)
++            }
++        }
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use ratatui::style::Modifier;
++
++    #[test]
++    fn healthy_empty_hud_is_hidden_but_stale_hud_warns() {
++        let mut hud = WorkerHud::default();
++        assert_eq!(hud.desired_height(80), 0);
++        hud.set(vec![], true, true);
++        assert!(hud.lines(80)[0].to_string().contains("counts unavailable"));
++        assert_eq!(hud.desired_height(80), 1);
++        hud.set(vec![], false, true);
++        assert!(hud.lines(80).is_empty());
++        assert_eq!(hud.desired_height(80), 0);
++    }
++
++    #[test]
++    fn worker_hud_caps_current_rows_and_is_safe_when_resized() {
++        let mut hud = WorkerHud::default();
++        hud.set(
++            (0..6)
++                .map(|n| WorkerRow {
++                    group: None,
++                    dispatch_elapsed_secs: None,
++                    task: format!("/root/测试{n}"),
++                    state: WorkerState::Active,
++                    elapsed_secs: Some(62),
++                    total_tokens: Some(12_300),
++                    model: Some("gpt-6-sol".to_string()),
++                    reasoning_effort: Some(ReasoningEffort::High),
++                })
++                .collect(),
++            false,
++            true,
++        );
++        for width in [0, 1, 2, 8, 40, 80, 120] {
++            assert_eq!(hud.desired_height(width), if width == 0 { 0 } else { 5 });
++            for height in [0, 1, 3, 5] {
++                let area = Rect::new(0, 0, width, height);
++                hud.render(area, &mut Buffer::empty(area));
++            }
++        }
++        assert_eq!(
++            hud.lines(80)[0].to_string(),
++            "  Workers 6 · active 6 · waiting 0"
++        );
++        assert_eq!(hud.lines(80).len(), 5);
++        assert_eq!(hud.lines(80)[4].to_string(), "  +3 more");
++        let area = Rect::new(0, 0, 80, 5);
++        let mut buf = Buffer::empty(area);
++        hud.render(area, &mut buf);
++        assert!(!buf[(2, 0)].modifier.contains(Modifier::DIM));
++        assert!(buf[(2, 4)].modifier.contains(Modifier::DIM));
++        for n in 0..3 {
++            let rendered: String = (0..80).map(|x| buf[(x, n + 1)].symbol()).collect();
++            assert_eq!(buf[(8, n + 1)].symbol(), "测");
++            assert_eq!(buf[(10, n + 1)].symbol(), "试");
++            assert_eq!(buf[(12, n + 1)].symbol(), n.to_string());
++            assert!(rendered.contains("1:02 · 12.3K tok · Sol high"));
++            assert!(buf[(2, n + 1)].modifier.contains(Modifier::DIM));
++        }
++        let mut rows = hud.rows.clone();
++        rows[0].state = WorkerState::Done;
++        hud.set(rows, false, true);
++        for n in 0..3 {
++            assert!(
++                hud.lines(80)[n + 1]
++                    .to_string()
++                    .contains(&format!("测试{}", n + 1))
++            );
++        }
++        assert_eq!(hud.lines(80)[4].to_string(), "  +2 more");
++        hud.set(hud.rows.clone(), true, true);
++        assert!(hud.lines(80)[0].to_string().contains("counts unavailable"));
++        assert!(hud.lines(80)[1].to_string().contains("stale"));
++        assert!(!hud.lines(80)[1].to_string().contains("1:02"));
++        assert!(!hud.lines(80)[1].to_string().contains("12.3K"));
++        assert!(
++            hud.lines(80)[1]
++                .to_string()
++                .contains("stale · ? · ? tok · Sol high")
++        );
++    }
++
++    #[test]
++    fn only_active_and_waiting_workers_are_shown() {
++        let mut hud = WorkerHud::default();
++        let states = [
++            WorkerState::Done,
++            WorkerState::Active,
++            WorkerState::Failed,
++            WorkerState::Approval,
++            WorkerState::Interrupted,
++            WorkerState::Input,
++            WorkerState::Idle,
++            WorkerState::Unloaded,
++            WorkerState::Error,
++        ];
++        hud.set(
++            states
++                .into_iter()
++                .map(|state| WorkerRow {
++                    group: None,
++                    dispatch_elapsed_secs: None,
++                    task: format!("{} task", state.label()),
++                    state,
++                    elapsed_secs: None,
++                    total_tokens: None,
++                    model: None,
++                    reasoning_effort: None,
++                })
++                .collect(),
++            false,
++            true,
++        );
++        let lines = hud.lines(80);
++        assert_eq!(lines.len(), 4);
++        assert_eq!(hud.desired_height(80), 4);
++        assert_eq!(lines[0].to_string(), "  Workers 3 · active 1 · waiting 2");
++        assert!(lines[1].to_string().starts_with("  active task"));
++        assert!(lines[2].to_string().starts_with("  wait approval task"));
++        assert!(lines[3].to_string().starts_with("  wait input task"));
++        let mut rows = hud.rows.clone();
++        for row in &mut rows {
++            row.state = WorkerState::Done;
++        }
++        hud.set(rows, false, true);
++        assert!(hud.lines(80).is_empty());
++        assert_eq!(hud.desired_height(80), 0);
++        hud.set(hud.rows.clone(), true, true);
++        assert_eq!(hud.lines(80).len(), 1);
++        assert!(hud.lines(80)[0].to_string().contains("counts unavailable"));
++        assert_eq!(hud.desired_height(80), 1);
++    }
++
++    #[test]
++    fn long_unicode_task_keeps_metrics_visible() {
++        let mut hud = WorkerHud::default();
++        hud.set(
++            vec![WorkerRow {
++                group: None,
++                dispatch_elapsed_secs: None,
++                task: "测试👩‍💻 e\u{301} ".repeat(30),
++                state: WorkerState::Active,
++                elapsed_secs: Some(222),
++                total_tokens: Some(12_300),
++                model: Some("gpt-6-astra".to_string()),
++                reasoning_effort: Some(ReasoningEffort::Medium),
++            }],
++            false,
++            true,
++        );
++        let line = hud.lines(80)[1].to_string();
++        assert!(line.starts_with("  测试"));
++        assert!(line.contains('…'));
++        assert!(line.ends_with(" · active · 3:42 · 12.3K tok · Astra medium"));
++        assert!(display_width(&line) <= 80);
++        let area = Rect::new(0, 0, 80, 2);
++        let mut buf = Buffer::empty(area);
++        hud.render(area, &mut buf);
++        let rendered: String = (0..80).map(|x| buf[(x, 1)].symbol()).collect();
++        assert!(rendered.contains("3:42 · 12.3K tok · Astra medium"));
++    }
++
++    #[test]
++    fn narrow_rows_keep_worker_identity_first() {
++        let mut hud = WorkerHud::default();
++        hud.set(
++            vec![WorkerRow {
++                group: None,
++                dispatch_elapsed_secs: None,
++                task: "integration probe".to_string(),
++                state: WorkerState::Active,
++                elapsed_secs: Some(222),
++                total_tokens: Some(12_300),
++                model: Some("gpt-6-astra".to_string()),
++                reasoning_effort: Some(ReasoningEffort::Medium),
++            }],
++            false,
++            true,
++        );
++        for width in [8, 12, 20, 40] {
++            let area = Rect::new(0, 0, width, 2);
++            let mut buf = Buffer::empty(area);
++            hud.render(area, &mut buf);
++            let rendered: String = (0..width).map(|x| buf[(x, 1)].symbol()).collect();
++            assert!(rendered.starts_with("  integ"));
++        }
++    }
++
++    #[test]
++    fn zero_tokens_and_missing_values_are_distinct() {
++        let mut hud = WorkerHud::default();
++        hud.set(
++            vec![WorkerRow {
++                group: None,
++                dispatch_elapsed_secs: None,
++                task: "probe".to_string(),
++                state: WorkerState::Active,
++                elapsed_secs: None,
++                total_tokens: Some(0),
++                model: None,
++                reasoning_effort: None,
++            }],
++            false,
++            true,
++        );
++        assert_eq!(
++            hud.lines(80)[1].to_string(),
++            "  probe · active · ? · 0 tok · ? ?"
++        );
++        hud.rows[0].total_tokens = None;
++        assert_eq!(
++            hud.lines(80)[1].to_string(),
++            "  probe · active · ? · ? tok · ? ?"
++        );
++        hud.rows[0].total_tokens = Some(-1);
++        assert!(hud.lines(80)[1].to_string().contains("? tok"));
++    }
++
++    #[test]
++    fn actual_effort_distinguishes_missing_none_and_custom_values() {
++        let mut hud = WorkerHud::default();
++        for (reasoning_effort, expected) in [
++            (None, "?"),
++            (Some(ReasoningEffort::None), "none"),
++            (Some(ReasoningEffort::High), "high"),
++            (Some(ReasoningEffort::Medium), "medium"),
++            (
++                Some(ReasoningEffort::Custom("future\neffort".into())),
++                "future effort",
++            ),
++        ] {
++            hud.set(
++                vec![WorkerRow {
++                    group: None,
++                    dispatch_elapsed_secs: None,
++                    task: "probe".to_string(),
++                    state: WorkerState::Active,
++                    elapsed_secs: None,
++                    total_tokens: None,
++                    model: Some("gpt-6.1-sol".to_string()),
++                    reasoning_effort,
++                }],
++                false,
++                true,
++            );
++            assert!(
++                hud.lines(80)[1]
++                    .to_string()
++                    .ends_with(&format!("Sol {expected}"))
++            );
++            let area = Rect::new(0, 0, 80, 2);
++            let mut buf = Buffer::empty(area);
++            buf.set_style(
++                area,
++                ratatui::style::Style::default().add_modifier(Modifier::DIM),
++            );
++            hud.render(area, &mut buf);
++            assert!(!buf[(2, 0)].modifier.contains(Modifier::DIM));
++            assert!(buf[(2, 1)].modifier.contains(Modifier::DIM));
++        }
++    }
++
++    fn grouped_member(key: &str, state: WorkerState, age: u64, tokens: i64) -> WorkerRow {
++        WorkerRow {
++            group: Some(WorkerGroup {
++                key: key.into(),
++                topic: "hud styling".into(),
++            }),
++            dispatch_elapsed_secs: Some(age),
++            task: "render".into(),
++            state,
++            elapsed_secs: Some(1),
++            total_tokens: Some(tokens),
++            model: Some("gpt-6.1-sol".into()),
++            reasoning_effort: Some(ReasoningEffort::High),
++        }
++    }
++
++    #[test]
++    fn worker_hud_group_counts_shrink_without_losing_completed_metrics() {
++        let mut hud = WorkerHud::default();
++        let mut rows = vec![
++            grouped_member("batch1", WorkerState::Active, 120, 1000),
++            grouped_member("batch1", WorkerState::Approval, 90, 2000),
++            grouped_member("batch1", WorkerState::Input, 60, 3000),
++        ];
++        for remaining in (0..=3).rev() {
++            hud.set(rows.clone(), false, true);
++            if remaining == 0 {
++                assert!(hud.lines(80).is_empty());
++                assert_eq!(hud.desired_height(80), 0);
++            } else {
++                assert_eq!(hud.desired_height(80), 2);
++                let lines = hud.lines(80);
++                assert_eq!(lines.len(), 2);
++                assert!(
++                    lines[0]
++                        .to_string()
++                        .starts_with(&format!("  Workers {remaining} ·"))
++                );
++                let state = ["", "wait input", "wait approval", "active"][remaining];
++                let suffix = if remaining == 1 { "" } else { "s" };
++                assert_eq!(
++                    lines[1].to_string(),
++                    format!(
++                        "  hud styling ({remaining} agent{suffix}) · {state} · 2:00 · 6K tok · Sol high"
++                    )
++                );
++                rows[3 - remaining].state = WorkerState::Done;
++            }
++        }
++    }
++
++    #[test]
++    fn worker_hud_groups_preserve_unknowns_mixed_labels_and_stale_suppression() {
++        let mut hud = WorkerHud::default();
++        hud.set(
++            vec![
++                grouped_member("batch1", WorkerState::Done, 120, 1000),
++                grouped_member("batch1", WorkerState::Active, 60, 2000),
++                grouped_member("batch1", WorkerState::Input, 30, 3000),
++            ],
++            false,
++            true,
++        );
++        // Terminal members do not choose the active cohort's model or effort.
++        hud.rows[0].model = Some("gpt-6-astra".into());
++        hud.rows[0].reasoning_effort = Some(ReasoningEffort::Medium);
++        assert!(hud.lines(100)[1].to_string().ends_with("Sol high"));
++        hud.rows[2].model = Some("gpt-6-sol".into());
++        assert!(hud.lines(100)[1].to_string().ends_with("mixed high"));
++        hud.rows[2].model = Some("gpt-6.1-sol".into());
++        hud.rows[2].reasoning_effort = Some(ReasoningEffort::Medium);
++        assert!(hud.lines(100)[1].to_string().ends_with("Sol mixed"));
++        hud.rows[2].model = Some("gpt-6-sol".into());
++        assert!(hud.lines(100)[1].to_string().ends_with("tok · mixed"));
++        hud.rows[2].model = None;
++        hud.rows[2].reasoning_effort = None;
++        assert!(hud.lines(100)[1].to_string().ends_with("? ?"));
++        for tokens in [None, Some(-1), Some(i64::MAX)] {
++            hud.rows[0].total_tokens = tokens;
++            assert!(hud.lines(100)[1].to_string().contains("? tok"));
++        }
++        hud.rows[0].dispatch_elapsed_secs = None;
++        assert!(
++            hud.lines(100)[1]
++                .to_string()
++                .contains(" · active · ? · ? tok")
++        );
++        hud.rows[0].dispatch_elapsed_secs = Some(120);
++        hud.rows[0].total_tokens = Some(1000);
++        hud.stale = true;
++        let line = hud.lines(100)[1].to_string();
++        assert!(line.contains("(? agents) · stale · ? · ? tok"));
++        assert!(!line.contains("2:00") && !line.contains("6K"));
++        assert!(hud.lines(100)[0].to_string().contains("counts unavailable"));
++    }
++
++    #[test]
++    fn worker_hud_caps_display_groups_and_keeps_counts_after_long_topics() {
++        let mut hud = WorkerHud::default();
++        let mut rows = Vec::new();
++        for key in ["parent-a/b1", "parent-a/b2", "parent-b/b1", "other/b1"] {
++            for _ in 0..3 {
++                rows.push(grouped_member(key, WorkerState::Active, 120, 1000));
++            }
++        }
++        // Similar untagged names and matching times remain separate display rows.
++        let mut standalone = grouped_member("unused", WorkerState::Active, 120, 1000);
++        standalone.group = None;
++        standalone.task = "hud styling render".into();
++        rows.push(standalone.clone());
++        standalone.task = "hud styling test".into();
++        rows.push(standalone);
++        rows[0].group.as_mut().unwrap().topic = "very_long_topic ".repeat(20);
++        hud.set(rows, false, true);
++        let lines = hud.lines(80);
++        assert_eq!(lines.len(), 5);
++        assert_eq!(hud.desired_height(80), 5);
++        assert_eq!(lines[0].to_string(), "  Workers 14 · active 14 · waiting 0");
++        assert_eq!(lines[4].to_string(), "  +3 more");
++        let line = lines[1].to_string();
++        assert!(line.contains("… (3 agents) · active · 2:00 · 3K tok · Sol high"));
++        assert!(display_width(&line) <= 80);
++        let area = Rect::new(0, 0, 80, 5);
++        let mut buf = Buffer::empty(area);
++        hud.render(area, &mut buf);
++        let rendered: String = (0..80).map(|x| buf[(x, 1)].symbol()).collect();
++        assert!(rendered.contains("(3 agents)"));
++        assert!(!buf[(2, 0)].modifier.contains(Modifier::DIM));
++        assert!(buf[(2, 1)].modifier.contains(Modifier::DIM));
++        for width in [0, 1, 2, 8, 20, 40, 80] {
++            let area = Rect::new(0, 0, width, 5);
++            hud.render(area, &mut Buffer::empty(area));
++        }
++    }
++
++    #[test]
++    fn model_families_and_unknown_identifiers_are_preserved() {
++        for (model, expected) in [
++            ("gpt-6-sol", "Sol"),
++            ("GPT-6.1-SOL", "Sol"),
++            ("gpt-6-astra", "Astra"),
++            ("Astra", "Astra"),
++            ("gpt-solar", "gpt-solar"),
++            ("custom/model-v2", "custom/model-v2"),
++            ("custom\nmodel\u{1b}", "custom model"),
++            ("", "?"),
++        ] {
++            assert_eq!(model_label(Some(model)), expected);
++        }
++        assert_eq!(model_label(None), "?");
++    }
++}
+diff --git a/codex-rs/tui/src/chatwidget.rs b/codex-rs/tui/src/chatwidget.rs
+index 7dbb54b..5b6c71c 100644
+--- a/codex-rs/tui/src/chatwidget.rs
++++ b/codex-rs/tui/src/chatwidget.rs
+@@ -1435,6 +1435,15 @@ impl ChatWidget {
+         }
+     }
+ 
++    pub(crate) fn set_worker_hud(
++        &mut self,
++        rows: Vec<crate::bottom_pane::worker_hud::WorkerRow>,
++        stale: bool,
++        visible: bool,
++    ) {
++        self.bottom_pane.set_worker_hud(rows, stale, visible);
++    }
++
+     pub(crate) fn set_pending_thread_approvals(&mut self, threads: Vec<String>) {
+         self.bottom_pane.set_pending_thread_approvals(threads);
+     }
+diff --git a/codex-rs/tui/src/session_queue_commands.rs b/codex-rs/tui/src/session_queue_commands.rs
+index 9752a42..3295d4f 100644
+--- a/codex-rs/tui/src/session_queue_commands.rs
++++ b/codex-rs/tui/src/session_queue_commands.rs
+@@ -114,6 +114,7 @@ pub(super) async fn run_session_queue_action_with_app_server(
+         .request_typed(ClientRequest::ThreadQueueAdd {
+             request_id,
+             params: ThreadQueueAddParams {
++                idempotency_key: None,
+                 thread_id: thread_id.to_string(),
+                 input: vec![UserInput::Text {
+                     text: message.to_string(),
+diff --git a/codex-rs/state/queue_migrations/0003_queued_submission_receipts.sql b/codex-rs/state/queue_migrations/0003_queued_submission_receipts.sql
+new file mode 100644
+index 0000000..f14c026
+--- /dev/null
++++ b/codex-rs/state/queue_migrations/0003_queued_submission_receipts.sql
+@@ -0,0 +1,9 @@
++CREATE TABLE queued_submission_receipts (
++    thread_id TEXT NOT NULL,
++    idempotency_key TEXT NOT NULL,
++    item_id TEXT,
++    payload_json TEXT,
++    state TEXT NOT NULL CHECK (state IN ('pending', 'consumed', 'cancelled')),
++    PRIMARY KEY (thread_id, idempotency_key),
++    UNIQUE (thread_id, item_id)
++);

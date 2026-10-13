@@ -1,0 +1,23 @@
+running 19 tests
+test app::worker_hud::tests::worker_hud_isolates_clients_and_rejects_previous_primary_replies ... ok
+test app::worker_hud::tests::worker_hud_runtime_activity_overrides_old_completion_and_elapsed ... ok
+test app::worker_hud::tests::worker_hud_waiting_requires_explicit_runtime_flag ... ok
+test bottom_pane::worker_hud::tests::healthy_empty_hud_is_hidden_but_stale_hud_warns ... ok
+test bottom_pane::worker_hud::tests::model_families_and_unknown_identifiers_are_preserved ... ok
+test bottom_pane::worker_hud::tests::only_active_and_waiting_workers_are_shown ... ok
+test app::worker_hud::tests::worker_hud_shortens_paths_and_falls_back_to_names_without_controls ... ok
+test bottom_pane::worker_hud::tests::worker_hud_group_counts_shrink_without_losing_completed_metrics ... ok
+test bottom_pane::worker_hud::tests::zero_tokens_and_missing_values_are_distinct ... ok
+test app::worker_hud::tests::worker_hud_groups_only_explicit_topic_batch_tags_before_shortening ... ok
+test bottom_pane::worker_hud::tests::narrow_rows_keep_worker_identity_first ... ok
+test bottom_pane::worker_hud::tests::long_unicode_task_keeps_metrics_visible ... ok
+test bottom_pane::worker_hud::tests::worker_hud_groups_preserve_unknowns_mixed_labels_and_stale_suppression ... ok
+test bottom_pane::worker_hud::tests::actual_effort_distinguishes_missing_none_and_custom_values ... ok
+test bottom_pane::worker_hud::tests::worker_hud_caps_display_groups_and_keeps_counts_after_long_topics ... ok
+test app::worker_hud::tests::worker_hud_missing_or_invalid_database_keeps_runtime_rows ... ok
+test bottom_pane::worker_hud::tests::worker_hud_caps_current_rows_and_is_safe_when_resized ... ok
+test bottom_pane::tests::worker_hud_keeps_idle_and_running_composer_editable_on_resize ... ok
+test app::worker_hud::tests::worker_hud_reads_actual_local_tokens_without_writing_or_fork_attribution ... ok
+
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 5692 filtered out; finished in 0.02s
+

@@ -1,0 +1,32 @@
+                                                                                                                        
+  >_ OpenAI Codex (v0.162.1)                                                                                            
+     /tmp/codex-hud-smoke-gmsd3thi/workspace-0                                                                          
+  permissions: YOLO mode                                                                                                
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+› draft-0-refresh-small-offline                                                                                         
+                                                                                                                        
+  gpt-6-sol default · /tmp/codex-hud-smoke-gmsd3thi/workspace-0                                                         
+                                                                                                                        
+  Workers 2 · active 2 · waiting 0                                                                                      
+  worker 1 · active · 0:28 · ? tok · Sol high                                                                           
+  worker 2 · active · 0:28 · ? tok · Astra medium                                                                       
