@@ -3,8 +3,8 @@
 Codex Plus combines the native Codex CLI, a worker HUD below its shortcuts
 footer, and a `park` helper for background completion callbacks. Each client
 tracks its own parent thread in ordinary terminals and split tmux panes.
-The patched daemon is an optional, separately activated component for full
-background crash recovery; the worker HUD works with the stock daemon.
+Release builds patch the frontend and keep upstream daemon code unchanged.
+The HUD and Python completion coordinator work with the official stock daemon.
 
 The patch targets **Codex 0.162.1**, upstream commit
 `092d3acd6bec3e3a14bdc7e7a2810ab628ab759d`.
@@ -33,9 +33,16 @@ rustup toolchain install 1.99.0
 
 The script fetches the pinned upstream source into `.build/source`, applies
 `patches/codex-0.162.1-worker-hud.patch`, and builds `.build/codex`. It refuses an
-unexpected source revision or conflicting patch. The patch also reconciles the
+unexpected source revision or a checkout that differs from the exact release
+patch, including old daemon modifications. The patch also reconciles the
 release tag's workspace versions in `Cargo.lock`; external dependency versions
 are unchanged. The first build downloads and compiles Codex's dependencies.
+
+The historical receipt extension is preserved in
+`patches/experimental/codex-0.162.1-daemon-receipts.patch` and is excluded from the
+build script. See [experimental receipts](docs/experimental-daemon-receipts.md)
+for its scope and patch order. A previous combined source checkout must be moved
+aside before building the frontend release; the script will not erase it.
 
 Builds use Cargo's optimized release profile (thin LTO and four codegen units).
 Installation strips symbols; the original release binary stays in the build
@@ -89,9 +96,9 @@ connection, respecting its configured SQLite directory. They reflect recorded
 usage updates, not a per-token streaming counter or a subscription cost. Zero
 means no usage has been recorded yet. Remote backends, unavailable counters, and
 known forked threads show `?`; fork totals can include inherited parent usage.
-The worker HUD itself needs no database migration or daemon restart. Full
-[background crash recovery](docs/background-work.md#patched-daemon-and-compatibility)
-requires the patched daemon and its queue receipt migration.
+The release adds no native database migration and requires no shared-daemon
+replacement. See [delivery limits](docs/background-work.md#stock-daemon-and-delivery-limits)
+for crash recovery and ambiguous notification delivery.
 
 ## Worker groups
 
@@ -134,16 +141,29 @@ while specific workers or finite background shell commands run. A local observer
 wakes the idle parent on verified completion without periodic model polling.
 The main agent must register the jobs and finish its turn; this does not pretend
 that an active synchronous tool call is idle. The observer is separate from HUD
-rendering. Full crash recovery uses durable receipts in the patched daemon,
-supervised observers, and explicit recovery of registered jobs after a daemon
-restart. Older daemons retain conservative delivery handling; see the workflow
-for activation and compatibility limits.
+rendering. Supervised observers reconcile registered jobs after a daemon restart.
+If notification delivery cannot be confirmed from the stock queue or history,
+the coordinator displays uncertainty and does not blindly resend.
 
 The HUD also shows local watcher health when a wake is uncertain or monitoring
 is unavailable. Completion notices are short: `LIVE` continues the authorized
 task after verification; `REPORT ONLY` reports results discovered after a restart
 and waits for renewed direction. These features work with the stock daemon;
-stronger native receipt guarantees remain a separate, staged extension.
+stronger native receipt guarantees remain a separate experiment outside releases.
+
+## Shell execution policy
+
+The [shell workflow](docs/shell-workflow.md) gives explicitly managed
+noninteractive commands a two-second foreground budget. Use `codex-plus run --`
+to capture complete output from launch and a command marker to select `auto`,
+`background`, or `foreground`. Long managed commands keep progress in the HUD
+and leave compact result records, including on resume. Interactive and unmarked
+commands retain their ordinary display.
+
+The runner's private logs remain until explicitly removed. Rendering does not
+end model turns: agents still register finite remaining work with `park` and end
+their turn. This policy uses the stock daemon and adds no background service or
+global configuration changes. Fleet-config owns the shared workflow rollout.
 
 ## Verification
 

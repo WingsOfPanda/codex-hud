@@ -1,0 +1,152 @@
+{
+  "verified_at": "2026-10-14T04:42:41.895107+00:00",
+  "scope": "Explicit foreground/background shell policy; private full-output runner; frontend-only display.",
+  "primary_acceptance": {
+    "helper_tests": 15,
+    "shell_policy_native_tests": 14,
+    "hud_tests": 33,
+    "command_lifecycle_tests": 53,
+    "historical_transcript_tests": 6,
+    "original_terminal_stages": 16,
+    "policy_cases": [
+      {
+        "case": "auto_quick",
+        "exit": 0,
+        "compact": false,
+        "completion_hud_clear_ms": 4,
+        "loopback_requests": 2
+      },
+      {
+        "case": "auto_long",
+        "exit": 0,
+        "compact": true,
+        "completion_hud_clear_ms": 1007,
+        "loopback_requests": 2
+      },
+      {
+        "case": "auto_polling",
+        "exit": 0,
+        "compact": true,
+        "completion_hud_clear_ms": 1006,
+        "loopback_requests": 4
+      },
+      {
+        "case": "background_quick",
+        "exit": 0,
+        "compact": true,
+        "completion_hud_clear_ms": 4,
+        "loopback_requests": 2
+      },
+      {
+        "case": "background_long",
+        "exit": 0,
+        "compact": true,
+        "completion_hud_clear_ms": 4,
+        "loopback_requests": 2
+      },
+      {
+        "case": "unmarked_long",
+        "exit": 0,
+        "compact": false,
+        "completion_hud_clear_ms": 1015,
+        "loopback_requests": 2
+      },
+      {
+        "case": "foreground_long",
+        "exit": 0,
+        "compact": false,
+        "completion_hud_clear_ms": 1014,
+        "loopback_requests": 2
+      },
+      {
+        "case": "background_failure",
+        "exit": 17,
+        "compact": true,
+        "completion_hud_clear_ms": 4,
+        "loopback_requests": 2
+      }
+    ],
+    "parallel_roots": {
+      "parallel_roots": 2,
+      "isolated_policies": true,
+      "editable_composers": true
+    },
+    "cancellation": {
+      "ctrl_c_preserves_tracked_processes": true,
+      "native_stop_kills_process_group": true,
+      "terminated_known_child_pids": [
+        3103961,
+        3103970,
+        3103962
+      ],
+      "partial_log_preserved": true
+    },
+    "stock_daemon_park": {
+      "official_daemon": "/home/liupan/.codex/packages/app-server-daemon/releases/0.162.1-x86_64-unknown-linux-musl/bin/codex",
+      "queueIdempotency": false,
+      "loopback_requests": 3,
+      "callbacks": 1,
+      "turns": 2,
+      "passed": true
+    },
+    "external_model_requests": 0,
+    "reports": {
+      "terminal_policy": ".build/shell-policy/root-policy-final/report.json",
+      "original_smoke": ".build/shell-policy/root-gate/original-smoke/report.json",
+      "helper": ".build/shell-policy/root-helper-tests.log",
+      "native_tests": ".build/shell-policy/root-gate/summary.json"
+    }
+  },
+  "fixture_corrections": [
+    "Wait for canonical completion separately from end of model turn.",
+    "Wait for next one-second remote snapshot before asserting completed HUD row removal.",
+    "Unmarked native jobs retain existing HUD behavior.",
+    "Ctrl-C interrupts stock turns; /stop owns process-group termination."
+  ],
+  "boundary": {
+    "passed": true,
+    "source_tree": "f816f76ffcae15ba2455efa9a61ced20fe5d5442",
+    "native_changes_confined_to_tui": true,
+    "backend_dirs_identical_to_upstream": [
+      "app-server",
+      "app-server-protocol",
+      "app-server-transport",
+      "core",
+      "ext/queue",
+      "state",
+      "thread-store"
+    ],
+    "experimental_patch_unchanged_and_applies": true,
+    "coordinator_sources_unchanged": true,
+    "frontend_patch_sha256": "0967e438bb57f69f773f037137a1c87f581143d8ae6ce5f010bc25d68fde8411"
+  },
+  "artifact": {
+    "installed": ".build/codex",
+    "sha256": "89133a6597e9f23d0071996d35fa6483a281c86ef4ee7499282e4caad4e3c9ba",
+    "bytes": 282461720,
+    "backup": ".build/codex.before-shell-policy",
+    "backup_sha256": "27f645a6ee410921a1c91e7d4812c6c3151084ec23f12ee5d255d41a4915ff82",
+    "atomic_replace": true,
+    "shared_daemon_changed": false
+  },
+  "source_sha256": {
+    "codex_plus/runner.py": "c654a5d1871378b03a81ed1e33113a4af620e9e0249a3314cea308f0e24239c6",
+    "bin/codex-plus": "0a3dd250f74595cb3295c47ffe49ea10a47cc5da4f576b8c0135da9d5fb351d7",
+    "tests/test_runner.py": "da6b46d57ab55636574b2fe09be357bdcdd3bb3b1d60de3297a5b43ec7671cc7",
+    "tests/test_shell_policy_integration.py": "6dec777acd4878605fbd63edcad2785f3cbe1041143e46300960f56378f8fa01",
+    "tests/fixtures/shell_policy_provider.py": "d6db582ed0dbfc05f259bb0024e2414262d62609eac1eda423c08f8f295aafda",
+    "patches/codex-0.162.1-worker-hud.patch": "0967e438bb57f69f773f037137a1c87f581143d8ae6ce5f010bc25d68fde8411"
+  },
+  "shared_daemon_changed": false,
+  "global_configuration_changed": false,
+  "fleet_deployed": false,
+  "limits": [
+    "Explicit markers and runner adoption are agent instructions; frontend cannot infer interactivity from stock protocol.",
+    "Two seconds is a requested tool yield and display threshold, not forced main-model idling.",
+    "Stock replay lacks stdin metadata; interactive work must launch foreground or unmarked.",
+    "Native Ctrl-C leaves background commands tracked; /stop terminates the session background terminals.",
+    "Logs are retained until explicitly removed; forced termination can leave partial logs without final wrapper line.",
+    "Shared global instructions and installation rollout remain owned by fleet-config.",
+    "Full upstream test suite and four-box deployment not run."
+  ]
+}

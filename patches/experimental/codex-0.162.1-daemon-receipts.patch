@@ -1,0 +1,1789 @@
+diff --git a/codex-rs/Cargo.lock b/codex-rs/Cargo.lock
+index 4e19a5c..5c2e408 100644
+--- a/codex-rs/Cargo.lock
++++ b/codex-rs/Cargo.lock
+@@ -4350,6 +4350,7 @@ dependencies = [
+  "codex-core",
+  "codex-extension-api",
+  "codex-protocol",
++ "codex-rollout",
+  "codex-state",
+  "codex-thread-store",
+  "codex-utils-absolute-path",
+diff --git a/codex-rs/app-server-protocol/src/protocol/common.rs b/codex-rs/app-server-protocol/src/protocol/common.rs
+index 3e73b44..1d78341 100644
+--- a/codex-rs/app-server-protocol/src/protocol/common.rs
++++ b/codex-rs/app-server-protocol/src/protocol/common.rs
+@@ -633,6 +633,18 @@ client_request_definitions! {
+         serialization: thread_id(params.thread_id),
+         response: v2::ThreadQueueAddResponse,
+     },
++    #[experimental("thread/queue/receipt")]
++    ThreadQueueReceipt => "thread/queue/receipt" {
++        params: v2::ThreadQueueReceiptParams,
++        serialization: thread_id(params.thread_id),
++        response: v2::ThreadQueueReceiptResponse,
++    },
++    #[experimental("thread/queue/receipt/cancel")]
++    ThreadQueueReceiptCancel => "thread/queue/receipt/cancel" {
++        params: v2::ThreadQueueReceiptParams,
++        serialization: thread_id(params.thread_id),
++        response: v2::ThreadQueueReceiptCancelResponse,
++    },
+     #[experimental("thread/queue/list")]
+     ThreadQueueList => "thread/queue/list" {
+         params: v2::ThreadQueueListParams,
+diff --git a/codex-rs/app-server-protocol/src/protocol/v1.rs b/codex-rs/app-server-protocol/src/protocol/v1.rs
+index 7d05fb1..5703cf6 100644
+--- a/codex-rs/app-server-protocol/src/protocol/v1.rs
++++ b/codex-rs/app-server-protocol/src/protocol/v1.rs
+@@ -72,6 +72,10 @@ pub struct InitializeCapabilities {
+ #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, JsonSchema, TS)]
+ #[serde(rename_all = "camelCase")]
+ pub struct InitializeResponse {
++    /// Durable queue receipts and cancellation by key are available.
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    #[ts(optional = nullable)]
++    pub queue_idempotency: Option<bool>,
+     pub user_agent: String,
+     /// Absolute path to the server's $CODEX_HOME directory.
+     pub codex_home: AbsolutePathBuf,
+diff --git a/codex-rs/app-server-protocol/src/protocol/v2/thread.rs b/codex-rs/app-server-protocol/src/protocol/v2/thread.rs
+index c7f22e2..2f9f01d 100644
+--- a/codex-rs/app-server-protocol/src/protocol/v2/thread.rs
++++ b/codex-rs/app-server-protocol/src/protocol/v2/thread.rs
+@@ -924,6 +924,10 @@ pub struct QueuedSubmission {
+ #[serde(rename_all = "camelCase")]
+ #[ts(export_to = "v2/")]
+ pub struct ThreadQueueAddParams {
++    /// Opt-in durable deduplication; must equal clientUserMessageId.
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    #[ts(optional = nullable)]
++    pub idempotency_key: Option<String>,
+     pub thread_id: String,
+     pub input: Vec<UserInput>,
+     pub client_user_message_id: String,
+@@ -934,6 +938,40 @@ pub struct ThreadQueueAddParams {
+ #[ts(export_to = "v2/")]
+ pub struct ThreadQueueAddResponse {
+     pub queued_submission: QueuedSubmission,
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    #[ts(optional = nullable)]
++    pub receipt_state: Option<String>,
++}
++
++#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, JsonSchema, TS)]
++#[serde(rename_all = "camelCase")]
++#[ts(export_to = "v2/")]
++pub struct ThreadQueueReceiptParams {
++    pub thread_id: String,
++    pub idempotency_key: String,
++}
++
++#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, JsonSchema, TS)]
++#[serde(rename_all = "camelCase")]
++#[ts(export_to = "v2/")]
++pub struct ThreadQueueReceipt {
++    pub queued_submission: Option<QueuedSubmission>,
++    /// pending, consumed, or cancelled. Cancellation may precede enqueue.
++    pub receipt_state: String,
++}
++
++#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, JsonSchema, TS)]
++#[serde(rename_all = "camelCase")]
++#[ts(export_to = "v2/")]
++pub struct ThreadQueueReceiptResponse {
++    pub receipt: Option<ThreadQueueReceipt>,
++}
++
++#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, JsonSchema, TS)]
++#[serde(rename_all = "camelCase")]
++#[ts(export_to = "v2/")]
++pub struct ThreadQueueReceiptCancelResponse {
++    pub receipt: Option<ThreadQueueReceipt>,
+ }
+ 
+ #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, JsonSchema, TS)]
+diff --git a/codex-rs/app-server-transport/src/transport/mod.rs b/codex-rs/app-server-transport/src/transport/mod.rs
+index 232ce94..7277032 100644
+--- a/codex-rs/app-server-transport/src/transport/mod.rs
++++ b/codex-rs/app-server-transport/src/transport/mod.rs
+@@ -379,6 +379,7 @@ mod tests {
+             id: RequestId::Integer(7),
+             result: Box::new(ClientResponsePayload::Initialize(
+                 codex_app_server_protocol::InitializeResponse {
++                    queue_idempotency: None,
+                     user_agent: "codex-test-agent".to_string(),
+                     codex_home,
+                     platform_family: "unix".to_string(),
+diff --git a/codex-rs/app-server-transport/src/transport/remote_control/segment_tests.rs b/codex-rs/app-server-transport/src/transport/remote_control/segment_tests.rs
+index 3b2406b..efc4d8a 100644
+--- a/codex-rs/app-server-transport/src/transport/remote_control/segment_tests.rs
++++ b/codex-rs/app-server-transport/src/transport/remote_control/segment_tests.rs
+@@ -136,6 +136,7 @@ fn invalid_response_becomes_remote_control_jsonrpc_error() {
+             message: Box::new(OutgoingMessage::Response(OutgoingResponse {
+                 id: RequestId::Integer(7),
+                 result: Box::new(ClientResponsePayload::Initialize(InitializeResponse {
++                    queue_idempotency: None,
+                     user_agent: "codex-test-agent".to_string(),
+                     codex_home,
+                     platform_family: "unix".to_string(),
+diff --git a/codex-rs/app-server-transport/src/transport/remote_control/tests.rs b/codex-rs/app-server-transport/src/transport/remote_control/tests.rs
+index 490ac1e..983f18a 100644
+--- a/codex-rs/app-server-transport/src/transport/remote_control/tests.rs
++++ b/codex-rs/app-server-transport/src/transport/remote_control/tests.rs
+@@ -1888,6 +1888,7 @@ async fn remote_control_http_mode_enrolls_before_connecting() {
+                 result: Box::new(
+                     codex_app_server_protocol::ClientResponsePayload::Initialize(
+                         codex_app_server_protocol::InitializeResponse {
++                            queue_idempotency: None,
+                             user_agent: "codex-test-agent".to_string(),
+                             codex_home: codex_home.path().abs(),
+                             platform_family: "test-family".to_string(),
+diff --git a/codex-rs/app-server/src/message_processor.rs b/codex-rs/app-server/src/message_processor.rs
+index 6b705c5..93024df 100644
+--- a/codex-rs/app-server/src/message_processor.rs
++++ b/codex-rs/app-server/src/message_processor.rs
+@@ -457,6 +457,7 @@ impl MessageProcessor {
+         );
+         let git_processor = GitRequestProcessor::new();
+         let initialize_processor = InitializeRequestProcessor::new(
++            queue_service.is_some(),
+             gateway_login_control,
+             outgoing.clone(),
+             analytics_events_client.clone(),
+@@ -1370,6 +1371,23 @@ impl MessageProcessor {
+                 .add(params)
+                 .await
+                 .map(|response| Some(response.into())),
++            ClientRequest::ThreadQueueReceipt { params, .. } => self
++                .thread_queue_processor
++                .receipt(params, false)
++                .await
++                .map(|response| Some(response.into())),
++            ClientRequest::ThreadQueueReceiptCancel { params, .. } => self
++                .thread_queue_processor
++                .receipt(params, true)
++                .await
++                .map(|response| {
++                    Some(
++                        codex_app_server_protocol::ThreadQueueReceiptCancelResponse {
++                            receipt: response.receipt,
++                        }
++                        .into(),
++                    )
++                }),
+             ClientRequest::ThreadQueueList { params, .. } => self
+                 .thread_queue_processor
+                 .list(params)
+diff --git a/codex-rs/app-server/src/request_processors/initialize_processor.rs b/codex-rs/app-server/src/request_processors/initialize_processor.rs
+index d68a29d..a0a224d 100644
+--- a/codex-rs/app-server/src/request_processors/initialize_processor.rs
++++ b/codex-rs/app-server/src/request_processors/initialize_processor.rs
+@@ -20,6 +20,7 @@ const NON_ORIGINATING_CLIENT_NAMES: &[&str] = &["codex_app_server_daemon", "code
+ 
+ #[derive(Clone)]
+ pub(crate) struct InitializeRequestProcessor {
++    queue_idempotency: bool,
+     gateway_login_control: Arc<codex_login::GatewayLoginControl>,
+     gateway_login_initialized: Arc<std::sync::OnceLock<()>>,
+     outgoing: Arc<OutgoingMessageSender>,
+@@ -33,6 +34,7 @@ pub(crate) struct InitializeRequestProcessor {
+ impl InitializeRequestProcessor {
+     #[allow(clippy::too_many_arguments)]
+     pub(crate) fn new(
++        queue_idempotency: bool,
+         gateway_login_control: Arc<codex_login::GatewayLoginControl>,
+         outgoing: Arc<OutgoingMessageSender>,
+         analytics_events_client: AnalyticsEventsClient,
+@@ -42,6 +44,7 @@ impl InitializeRequestProcessor {
+         user_verification: Arc<crate::user_verification::Service>,
+     ) -> Self {
+         Self {
++            queue_idempotency,
+             gateway_login_control,
+             gateway_login_initialized: Arc::new(std::sync::OnceLock::new()),
+             outgoing,
+@@ -211,6 +214,7 @@ impl InitializeRequestProcessor {
+ 
+         let user_agent = get_codex_user_agent();
+         let response = InitializeResponse {
++            queue_idempotency: Some(self.queue_idempotency),
+             user_agent,
+             codex_home,
+             platform_family: std::env::consts::FAMILY.to_string(),
+diff --git a/codex-rs/app-server/src/request_processors/thread_queue_processor.rs b/codex-rs/app-server/src/request_processors/thread_queue_processor.rs
+index a2f5b5a..304a782 100644
+--- a/codex-rs/app-server/src/request_processors/thread_queue_processor.rs
++++ b/codex-rs/app-server/src/request_processors/thread_queue_processor.rs
+@@ -13,6 +13,9 @@ use codex_app_server_protocol::ThreadQueueDeleteParams;
+ use codex_app_server_protocol::ThreadQueueDeleteResponse;
+ use codex_app_server_protocol::ThreadQueueListParams;
+ use codex_app_server_protocol::ThreadQueueListResponse;
++use codex_app_server_protocol::ThreadQueueReceipt;
++use codex_app_server_protocol::ThreadQueueReceiptParams;
++use codex_app_server_protocol::ThreadQueueReceiptResponse;
+ use codex_app_server_protocol::ThreadQueueReorderParams;
+ use codex_app_server_protocol::ThreadQueueReorderResponse;
+ use codex_app_server_protocol::ThreadQueueStartParams;
+@@ -81,16 +84,60 @@ impl ThreadQueueRequestProcessor {
+         validate_user_input_image_urls(&params.input)?;
+         let (thread_id, loaded_thread, source) = self.require_thread(&params.thread_id).await?;
+         ensure_direct_input_allowed(loaded_thread.as_deref(), &source)?;
+-        let queued_item = self
+-            .service()?
+-            .enqueue(
+-                thread_id,
+-                submission_into_turn_input(params.input, Some(params.client_user_message_id)),
+-            )
+-            .await
+-            .map_err(queue_error)?;
++        let input = submission_into_turn_input(params.input, Some(params.client_user_message_id));
++        let (queued_item, receipt_state) = match params.idempotency_key {
++            Some(key) => {
++                let (item, state) = self
++                    .service()?
++                    .enqueue_idempotent(thread_id, key, input)
++                    .await
++                    .map_err(queue_error)?;
++                let item =
++                    item.ok_or_else(|| invalid_request("idempotencyKey has been cancelled"))?;
++                (item, Some(state))
++            }
++            None => (
++                self.service()?
++                    .enqueue(thread_id, input)
++                    .await
++                    .map_err(queue_error)?,
++                None,
++            ),
++        };
+         Ok(ThreadQueueAddResponse {
+             queued_submission: api_queued_submission(queued_item)?,
++            receipt_state,
++        })
++    }
++
++    pub(crate) async fn receipt(
++        &self,
++        params: ThreadQueueReceiptParams,
++        cancel: bool,
++    ) -> Result<ThreadQueueReceiptResponse, JSONRPCErrorError> {
++        let (thread_id, _, _) = self.require_thread(&params.thread_id).await?;
++        let receipt = if cancel {
++            Some(
++                self.service()?
++                    .cancel_receipt_by_key(thread_id, params.idempotency_key)
++                    .await
++                    .map_err(queue_error)?,
++            )
++        } else {
++            self.service()?
++                .receipt_by_key(thread_id, params.idempotency_key)
++                .await
++                .map_err(queue_error)?
++        };
++        Ok(ThreadQueueReceiptResponse {
++            receipt: receipt
++                .map(|(item, state)| {
++                    Ok(ThreadQueueReceipt {
++                        queued_submission: item.map(api_queued_submission).transpose()?,
++                        receipt_state: state,
++                    })
++                })
++                .transpose()?,
+         })
+     }
+ 
+diff --git a/codex-rs/app-server/tests/suite/v2/initialize.rs b/codex-rs/app-server/tests/suite/v2/initialize.rs
+index 1ba0f26..9b799d3 100644
+--- a/codex-rs/app-server/tests/suite/v2/initialize.rs
++++ b/codex-rs/app-server/tests/suite/v2/initialize.rs
+@@ -59,8 +59,10 @@ async fn initialize_uses_client_info_name_as_originator() -> Result<()> {
+         codex_home: response_codex_home,
+         platform_family,
+         platform_os,
++        queue_idempotency,
+     } = to_response::<InitializeResponse>(response)?;
+ 
++    assert_eq!(queue_idempotency, Some(true));
+     assert!(user_agent.starts_with("codex_vscode/"));
+     assert_eq!(response_codex_home, expected_codex_home);
+     assert_eq!(platform_family, std::env::consts::FAMILY);
+@@ -95,8 +97,13 @@ async fn initialize_probe_does_not_override_originator() -> Result<()> {
+     let JSONRPCMessage::Response(response) = message else {
+         anyhow::bail!("expected initialize response, got {message:?}");
+     };
+-    let InitializeResponse { user_agent, .. } = to_response::<InitializeResponse>(response)?;
++    let InitializeResponse {
++        user_agent,
++        queue_idempotency,
++        ..
++    } = to_response::<InitializeResponse>(response)?;
+ 
++    assert_eq!(queue_idempotency, Some(true));
+     assert!(user_agent.starts_with("codex_cli_rs/"));
+     Ok(())
+ }
+@@ -128,8 +135,13 @@ async fn initialize_codex_backend_does_not_override_originator() -> Result<()> {
+     let JSONRPCMessage::Response(response) = message else {
+         anyhow::bail!("expected initialize response, got {message:?}");
+     };
+-    let InitializeResponse { user_agent, .. } = to_response::<InitializeResponse>(response)?;
++    let InitializeResponse {
++        user_agent,
++        queue_idempotency,
++        ..
++    } = to_response::<InitializeResponse>(response)?;
+ 
++    assert_eq!(queue_idempotency, Some(true));
+     assert!(user_agent.starts_with("codex_cli_rs/"));
+     Ok(())
+ }
+@@ -171,8 +183,10 @@ async fn initialize_respects_originator_override_env_var() -> Result<()> {
+         codex_home: response_codex_home,
+         platform_family,
+         platform_os,
++        queue_idempotency,
+     } = to_response::<InitializeResponse>(response)?;
+ 
++    assert_eq!(queue_idempotency, Some(true));
+     assert!(user_agent.starts_with("codex_originator_via_env_var/"));
+     assert_eq!(response_codex_home, expected_codex_home);
+     assert_eq!(platform_family, std::env::consts::FAMILY);
+diff --git a/codex-rs/app-server/tests/suite/v2/model_provider_enforcement_tests.rs b/codex-rs/app-server/tests/suite/v2/model_provider_enforcement_tests.rs
+index 15bd32e..cfa37da 100644
+--- a/codex-rs/app-server/tests/suite/v2/model_provider_enforcement_tests.rs
++++ b/codex-rs/app-server/tests/suite/v2/model_provider_enforcement_tests.rs
+@@ -105,6 +105,7 @@ base_url = "{}/v1"
+         .request(|request_id| ClientRequest::ThreadQueueAdd {
+             request_id,
+             params: ThreadQueueAddParams {
++                idempotency_key: None,
+                 thread_id: started.thread.id.clone(),
+                 input: input.clone(),
+                 client_user_message_id: "queued-message".into(),
+diff --git a/codex-rs/app-server/tests/suite/v2/thread_queue.rs b/codex-rs/app-server/tests/suite/v2/thread_queue.rs
+index a27c3b5..c69c7b1 100644
+--- a/codex-rs/app-server/tests/suite/v2/thread_queue.rs
++++ b/codex-rs/app-server/tests/suite/v2/thread_queue.rs
+@@ -135,6 +135,7 @@ async fn queue_crud_preserves_identity_order_and_notifications() -> Result<()> {
+     let first = queue_item(
+         &mut app,
+         ThreadQueueAddParams {
++            idempotency_key: None,
+             client_user_message_id: "first-client-message".to_string(),
+             ..submission(&thread_id, "first")
+         },
+@@ -271,6 +272,7 @@ async fn queue_list_returns_ordered_pages_and_lightweight_notifications() -> Res
+     let queued = queue_item(
+         &mut app,
+         ThreadQueueAddParams {
++            idempotency_key: None,
+             thread_id: thread_id.clone(),
+             input: vec![text(&"x".repeat(64 * 1024))],
+             client_user_message_id: "oversized-snapshot".to_string(),
+@@ -375,6 +377,7 @@ async fn idle_queue_dispatch_preserves_client_id() -> Result<()> {
+         .thread
+         .id;
+     let queued_submission = ThreadQueueAddParams {
++        idempotency_key: None,
+         thread_id: thread_id.clone(),
+         input: vec![text("durable queued message")],
+         client_user_message_id: "stable-queued-client-id".to_string(),
+@@ -475,6 +478,7 @@ async fn cold_thread_resume_dispatches_a_persisted_queued_submission() -> Result
+     let queued = queue_item(
+         &mut resumed,
+         ThreadQueueAddParams {
++            idempotency_key: None,
+             client_user_message_id: "cold-resumed-queue-item".to_string(),
+             ..submission(&thread_id, "dispatch this after a cold thread resume")
+         },
+@@ -582,6 +586,7 @@ async fn interrupt_preserves_queue_and_queue_start_can_resume_a_non_head_item()
+     let second = queue_item(
+         &mut app,
+         ThreadQueueAddParams {
++            idempotency_key: None,
+             client_user_message_id: "second-queued-client-id".to_string(),
+             ..submission(&thread_id, "second queued message")
+         },
+@@ -720,6 +725,7 @@ async fn queue_start_while_active_returns_busy_and_preserves_the_queue() -> Resu
+     let queued = queue_item(
+         &mut app,
+         ThreadQueueAddParams {
++            idempotency_key: None,
+             client_user_message_id: "active-queued-client-id".to_string(),
+             ..submission(&thread_id, "send this queued message now")
+         },
+@@ -885,6 +891,7 @@ async fn a_new_turn_preserves_queued_messages_until_it_completes() -> Result<()>
+     let first = queue_item(
+         &mut app,
+         ThreadQueueAddParams {
++            idempotency_key: None,
+             client_user_message_id: "first-queued-client-id".to_string(),
+             ..submission(&thread_id, "first queued message")
+         },
+@@ -893,6 +900,7 @@ async fn a_new_turn_preserves_queued_messages_until_it_completes() -> Result<()>
+     let second = queue_item(
+         &mut app,
+         ThreadQueueAddParams {
++            idempotency_key: None,
+             client_user_message_id: "second-queued-client-id".to_string(),
+             ..submission(&thread_id, "second queued message")
+         },
+@@ -1056,6 +1064,7 @@ async fn decline_approval(app: &mut TestAppServer, request_id: RequestId) -> Res
+ 
+ fn submission(thread_id: &str, value: &str) -> ThreadQueueAddParams {
+     ThreadQueueAddParams {
++        idempotency_key: None,
+         thread_id: thread_id.to_string(),
+         input: vec![text(value)],
+         client_user_message_id: format!("queued-{value}"),
+@@ -1068,3 +1077,77 @@ fn text(value: &str) -> UserInput {
+         text_elements: Vec::new(),
+     }
+ }
++
++#[tokio::test]
++async fn queue_keyed_receipts_deduplicate_and_cancel_before_late_add() -> Result<()> {
++    skip_if_remote!(Ok(()), "uses a host-local command approval fixture");
++    let (mut app, _home, _server) = queue_app(vec![blocked_turn_response()?]).await?;
++    let thread_id = app
++        .start_thread(ThreadStartParams::default())
++        .await?
++        .thread
++        .id;
++    let _active = start_blocked_turn(&mut app, &thread_id).await?;
++    let mut params = submission(&thread_id, "keyed notification");
++    params.client_user_message_id = "receipt-key".into();
++    params.idempotency_key = Some("receipt-key".into());
++    let first: ThreadQueueAddResponse = app
++        .request(|request_id| ClientRequest::ThreadQueueAdd {
++            request_id,
++            params: params.clone(),
++        })
++        .await?;
++    let retry: ThreadQueueAddResponse = app
++        .request(|request_id| ClientRequest::ThreadQueueAdd { request_id, params })
++        .await?;
++    assert_eq!(first, retry);
++    assert_eq!(Some("pending".into()), first.receipt_state);
++    assert_eq!(1, list_queue(&mut app, &thread_id).await?.data.len());
++    let get: codex_app_server_protocol::ThreadQueueReceiptResponse = app
++        .request(|request_id| ClientRequest::ThreadQueueReceipt {
++            request_id,
++            params: codex_app_server_protocol::ThreadQueueReceiptParams {
++                thread_id: thread_id.clone(),
++                idempotency_key: "receipt-key".into(),
++            },
++        })
++        .await?;
++    assert_eq!(
++        Some(first.queued_submission),
++        get.receipt.unwrap().queued_submission
++    );
++    let cancel: codex_app_server_protocol::ThreadQueueReceiptCancelResponse = app
++        .request(|request_id| ClientRequest::ThreadQueueReceiptCancel {
++            request_id,
++            params: codex_app_server_protocol::ThreadQueueReceiptParams {
++                thread_id: thread_id.clone(),
++                idempotency_key: "receipt-key".into(),
++            },
++        })
++        .await?;
++    assert_eq!("cancelled", cancel.receipt.unwrap().receipt_state);
++    let tombstone: codex_app_server_protocol::ThreadQueueReceiptCancelResponse = app
++        .request(|request_id| ClientRequest::ThreadQueueReceiptCancel {
++            request_id,
++            params: codex_app_server_protocol::ThreadQueueReceiptParams {
++                thread_id: thread_id.clone(),
++                idempotency_key: "late-key".into(),
++            },
++        })
++        .await?;
++    let tombstone = tombstone.receipt.unwrap();
++    assert_eq!(None, tombstone.queued_submission);
++    assert_eq!("cancelled", tombstone.receipt_state);
++    let id = app.send_raw_request("thread/queue/add", Some(json!({
++        "threadId": thread_id, "idempotencyKey": "late-key", "clientUserMessageId": "late-key",
++        "input": [{"type": "text", "text": "must not deliver"}],
++    }))).await?;
++    let error = timeout(
++        READ_TIMEOUT,
++        app.read_stream_until_error_message(RequestId::Integer(id)),
++    )
++    .await??;
++    assert!(error.error.message.contains("cancelled"));
++    assert!(list_queue(&mut app, &thread_id).await?.data.is_empty());
++    Ok(())
++}
+diff --git a/codex-rs/core/src/session/turn.rs b/codex-rs/core/src/session/turn.rs
+index 64e8786..a0e8ee8 100644
+--- a/codex-rs/core/src/session/turn.rs
++++ b/codex-rs/core/src/session/turn.rs
+@@ -878,6 +878,40 @@ pub(crate) async fn run_hooks_and_record_inputs(
+     {
+         return false;
+     }
++    let mut queued_item_id = turn_context
++        .turn_metadata_state
++        .current_turn_trigger()
++        .and_then(|trigger| trigger.strip_prefix("queue-idempotent:").map(str::to_owned));
++    if let Some(item_id) = &queued_item_id
++        && !input.is_empty()
++    {
++        let Some(state_db) = sess.state_db() else {
++            return true;
++        };
++        let receipt = match state_db
++            .thread_queue()
++            .receipt_for_item(sess.thread_id, item_id)
++            .await
++        {
++            Ok(Some(receipt)) => receipt,
++            _ => return true,
++        };
++        let client_id =
++            receipt.submission.as_ref().and_then(|record| {
++                match serde_json::from_str::<crate::TurnInput>(&record.payload).ok()? {
++                    crate::TurnInput::UserInput { client_id, .. } => client_id,
++                    _ => None,
++                }
++            });
++        if !input.iter().any(|item| {
++            matches!(item,
++            TurnInput::UserInput { client_id: Some(id), .. } if Some(id) == client_id.as_ref())
++        }) {
++            queued_item_id = None;
++        } else if receipt.state != "pending" {
++            return true;
++        }
++    }
+     let mut blocked_input = false;
+     let mut accepted_user_input = false;
+     for input_item in input {
+@@ -908,6 +942,40 @@ pub(crate) async fn run_hooks_and_record_inputs(
+             .await;
+         }
+     }
++    if let Some(queued_item_id) = queued_item_id
++        && !input.is_empty()
++    {
++        // A queued receipt is terminal only after its canonical user input is durable.
++        let Some(state_db) = sess.state_db() else {
++            return true;
++        };
++        let receipt_state = if blocked_input && !accepted_user_input {
++            "cancelled"
++        } else {
++            if let Err(error) = sess.flush_rollout().await {
++                tracing::warn!(%error, "failed to persist queued input before sampling");
++                return true;
++            }
++            "consumed"
++        };
++        if let Err(error) = state_db
++            .thread_queue()
++            .finish_receipt(sess.thread_id, &queued_item_id, receipt_state)
++            .await
++        {
++            tracing::warn!(%error, "failed to finish queued input receipt");
++            return true;
++        }
++        // Cancellation may have won the race while hooks or persistence ran.
++        if receipt_state == "consumed"
++            && !matches!(
++                state_db.thread_queue().receipt_for_item(sess.thread_id, &queued_item_id).await,
++                Ok(Some(receipt)) if receipt.state == "consumed"
++            )
++        {
++            return true;
++        }
++    }
+     blocked_input && !accepted_user_input
+ }
+ 
+diff --git a/codex-rs/ext/queue/Cargo.toml b/codex-rs/ext/queue/Cargo.toml
+index 4b5e5d0..dfbd91f 100644
+--- a/codex-rs/ext/queue/Cargo.toml
++++ b/codex-rs/ext/queue/Cargo.toml
+@@ -15,6 +15,7 @@ workspace = true
+ 
+ [dependencies]
+ codex-core = { workspace = true }
++codex-rollout = { workspace = true }
+ codex-extension-api = { workspace = true }
+ codex-protocol = { workspace = true }
+ codex-thread-store = { workspace = true }
+diff --git a/codex-rs/ext/queue/src/service.rs b/codex-rs/ext/queue/src/service.rs
+index 06aeb63..9ccc113 100644
+--- a/codex-rs/ext/queue/src/service.rs
++++ b/codex-rs/ext/queue/src/service.rs
+@@ -19,6 +19,7 @@ use codex_extension_api::ThreadLifecycleContributor;
+ use codex_extension_api::ThreadResumeInput;
+ use codex_protocol::ThreadId;
+ use codex_protocol::error::CodexErr;
++use codex_protocol::items::TurnItem;
+ use codex_protocol::models::snapshot_local_user_input;
+ use codex_protocol::protocol::AgentStatus;
+ use codex_protocol::protocol::Event;
+@@ -27,8 +28,11 @@ use codex_protocol::protocol::ThreadQueueChangedEvent;
+ use codex_protocol::protocol::W3cTraceContext;
+ use codex_protocol::user_input::MAX_USER_INPUT_TEXT_CHARS;
+ use codex_protocol::user_input::UserInput;
++use codex_rollout::RolloutItem;
++use codex_rollout::RolloutRecorder;
+ use codex_thread_store::MAX_QUEUE_ITEMS;
+ use codex_thread_store::QueueStore;
++use codex_thread_store::QueuedSubmissionReceiptRecord;
+ use codex_thread_store::QueuedUserSubmissionRecord;
+ use codex_thread_store::ThreadStoreError;
+ use thiserror::Error;
+@@ -52,6 +56,8 @@ pub enum QueueServiceError {
+     InvalidPayload(#[from] serde_json::Error),
+     #[error("local queued attachment is invalid: {0}")]
+     InvalidAttachment(#[from] std::io::Error),
++    #[error("failed to checkpoint queued user input: {0}")]
++    Durability(std::io::Error),
+     #[error("Core failed to submit queued user message: {0}")]
+     CoreSubmissionError(#[from] CodexErr),
+     #[error("only user input can be added to the user-message queue")]
+@@ -279,6 +285,140 @@ impl QueuedItemService {
+         Ok(item)
+     }
+ 
++    /// Opt-in enqueue with a permanent receipt shared atomically with the queue.
++    pub async fn enqueue_idempotent(
++        &self,
++        thread_id: ThreadId,
++        key: String,
++        input: TurnInput,
++    ) -> Result<(Option<QueuedItem>, String), QueueServiceError> {
++        validate_receipt_key(&key)?;
++        if !matches!(&input, TurnInput::UserInput { client_id: Some(client_id), .. } if client_id == &key)
++        {
++            return Err(ThreadStoreError::InvalidRequest {
++                message: "idempotencyKey must equal clientUserMessageId".to_owned(),
++            }
++            .into());
++        }
++        let input = prepare_queued_user_input(input).await?;
++        let payload = serde_json::to_string(&input)?;
++        let receipt = {
++            let _guard = self.dispatch_guard(thread_id).await;
++            let receipt = self
++                .queue
++                .enqueue_idempotent(thread_id, key, payload)
++                .await?;
++            if receipt.state == "pending" {
++                self.emit_changed(thread_id);
++            }
++            receipt
++        };
++        if receipt.state == "pending" {
++            self.wake_if_loaded(thread_id).await;
++        }
++        receipt_into_item(receipt)
++    }
++
++    pub async fn receipt_by_key(
++        &self,
++        thread_id: ThreadId,
++        key: String,
++    ) -> Result<Option<(Option<QueuedItem>, String)>, QueueServiceError> {
++        validate_receipt_key(&key)?;
++        self.queue
++            .receipt_by_key(thread_id, key)
++            .await?
++            .map(receipt_into_item)
++            .transpose()
++    }
++
++    pub async fn cancel_receipt_by_key(
++        &self,
++        thread_id: ThreadId,
++        key: String,
++    ) -> Result<(Option<QueuedItem>, String), QueueServiceError> {
++        validate_receipt_key(&key)?;
++        let _guard = self.dispatch_guard(thread_id).await;
++        if let Some(receipt) = self.queue.receipt_by_key(thread_id, key.clone()).await?
++            && receipt.state == "pending"
++            && let Some(record) = receipt.submission
++            && let Some(manager) = self.thread_manager.upgrade()
++            && let Ok(thread) = manager.get_thread(thread_id).await
++        {
++            self.reconcile_receipt(thread.as_ref(), &queued_item_from_record(record)?)
++                .await?;
++        }
++        let receipt = self.queue.cancel_receipt_by_key(thread_id, key).await?;
++        self.emit_changed(thread_id);
++        receipt_into_item(receipt)
++    }
++
++    /// Read the full persisted transcript only after its writer's durability fence.
++    async fn reconcile_receipt(
++        &self,
++        thread: &CodexThread,
++        item: &QueuedItem,
++    ) -> Result<Option<String>, QueueServiceError> {
++        let TurnInput::UserInput {
++            client_id: Some(client_id),
++            ..
++        } = &item.input
++        else {
++            return Err(QueueServiceError::InvalidInput);
++        };
++        // A newly prepared thread can still have a deferred, absent rollout file.
++        thread.ensure_rollout_materialized().await;
++        thread
++            .flush_rollout()
++            .await
++            .map_err(QueueServiceError::Durability)?;
++        let thread_id = thread.startup_metadata().thread_id;
++        let rollout_path =
++            thread
++                .rollout_path()
++                .ok_or_else(|| ThreadStoreError::InvalidRequest {
++                    message: "durable queue requires a local rollout".to_owned(),
++                })?;
++        let (items, _, parse_errors) = RolloutRecorder::load_rollout_items(&rollout_path)
++            .await
++            .map_err(QueueServiceError::Durability)?;
++        let mut current_turn_id = None;
++        let mut turn_id = None;
++        for entry in &items {
++            match entry {
++                RolloutItem::EventMsg(EventMsg::TurnStarted(event)) => {
++                    current_turn_id = Some(event.turn_id.clone());
++                }
++                RolloutItem::EventMsg(EventMsg::UserMessage(message))
++                    if message.client_id.as_ref() == Some(client_id) =>
++                {
++                    turn_id = current_turn_id.clone();
++                    break;
++                }
++                RolloutItem::EventMsg(EventMsg::ItemCompleted(event))
++                    if matches!(&event.item, TurnItem::UserMessage(message)
++                        if message.client_id.as_ref() == Some(client_id)) =>
++                {
++                    turn_id = Some(event.turn_id.clone());
++                    break;
++                }
++                _ => {}
++            }
++        }
++        if turn_id.is_none() && parse_errors != 0 {
++            return Err(QueueServiceError::Durability(std::io::Error::other(
++                "cannot reconcile queued input against malformed persisted history",
++            )));
++        }
++        if turn_id.is_some() {
++            self.queue
++                .finish_receipt(thread_id, item.id.clone(), "consumed".to_owned())
++                .await?;
++            self.emit_changed(thread_id);
++        }
++        Ok(turn_id)
++    }
++
+     pub async fn list(&self, thread_id: ThreadId) -> Result<Vec<QueuedItem>, QueueServiceError> {
+         self.list_page(thread_id, /*offset*/ 0, MAX_QUEUE_ITEMS)
+             .await
+@@ -305,6 +445,17 @@ impl QueuedItemService {
+         mut input: TurnInput,
+     ) -> Result<Option<QueuedItem>, QueueServiceError> {
+         let _dispatch_guard = self.dispatch_guard(thread_id).await;
++        if self
++            .queue
++            .receipt_for_item(thread_id, queued_item_id.clone())
++            .await?
++            .is_some()
++        {
++            return Err(ThreadStoreError::InvalidRequest {
++                message: "idempotent queued submissions cannot be edited".to_owned(),
++            }
++            .into());
++        }
+         if let TurnInput::UserInput { client_id, .. } = &mut input {
+             *client_id = self
+                 .list(thread_id)
+@@ -385,18 +536,33 @@ impl QueuedItemService {
+                 ),
+             })?;
+         let queued_item_id = item.id.clone();
++        let keyed = self
++            .queue
++            .receipt_for_item(thread_id, queued_item_id.clone())
++            .await?
++            .is_some();
++        if keyed && let Some(turn_id) = self.reconcile_receipt(thread, &item).await? {
++            return Ok(StartIfIdleSubmission::Started {
++                root_turn_id: turn_id.clone(),
++                turn_id,
++            });
++        }
+         let input @ TurnInput::UserInput { .. } = item.input else {
+             return Err(QueueServiceError::InvalidInput);
+         };
+         let submission = thread
+             .start_turn_if_idle(TurnInputRequest::new(input).with_trace(trace).on_start(
+                 TurnStartOptions {
+-                    turn_trigger: Some("queue".to_string()),
++                    turn_trigger: Some(if keyed {
++                        format!("queue-idempotent:{queued_item_id}")
++                    } else {
++                        "queue".to_owned()
++                    }),
+                     ..Default::default()
+                 },
+             ))
+             .await?;
+-        if matches!(submission, StartIfIdleSubmission::Started { .. }) {
++        if !keyed && matches!(submission, StartIfIdleSubmission::Started { .. }) {
+             self.delete_locked(thread_id, queued_item_id).await?;
+         }
+         Ok(submission)
+@@ -436,15 +602,39 @@ impl QueuedItemService {
+                 continue;
+             }
+ 
++            let keyed = self
++                .queue
++                .receipt_for_item(thread_id, queued_item_id.clone())
++                .await?
++                .is_some();
++            if keyed {
++                let item = QueuedItem {
++                    id: queued_item_id.clone(),
++                    input: input.clone(),
++                };
++                if self
++                    .reconcile_receipt(thread.as_ref(), &item)
++                    .await?
++                    .is_some()
++                {
++                    continue;
++                }
++            }
+             match thread
+                 .start_turn_if_idle(TurnInputRequest::new(input).on_start(TurnStartOptions {
+-                    turn_trigger: Some("queue".to_string()),
++                    turn_trigger: Some(if keyed {
++                        format!("queue-idempotent:{queued_item_id}")
++                    } else {
++                        "queue".to_owned()
++                    }),
+                     ..Default::default()
+                 }))
+                 .await
+             {
+                 Ok(StartIfIdleSubmission::Started { .. }) => {
+-                    self.delete_locked(thread_id, queued_item_id).await?;
++                    if !keyed {
++                        self.delete_locked(thread_id, queued_item_id).await?;
++                    }
+                     return Ok(());
+                 }
+                 Ok(StartIfIdleSubmission::NotSubmitted { reason }) => {
+@@ -574,3 +764,25 @@ fn queued_item_from_record(
+         input: serde_json::from_str::<TurnInput>(&record.payload)?,
+     })
+ }
++
++fn validate_receipt_key(key: &str) -> Result<(), QueueServiceError> {
++    if key.is_empty() || key.len() > 512 {
++        return Err(ThreadStoreError::InvalidRequest {
++            message: "idempotencyKey must contain between 1 and 512 bytes".to_owned(),
++        }
++        .into());
++    }
++    Ok(())
++}
++
++fn receipt_into_item(
++    receipt: QueuedSubmissionReceiptRecord,
++) -> Result<(Option<QueuedItem>, String), QueueServiceError> {
++    Ok((
++        receipt
++            .submission
++            .map(queued_item_from_record)
++            .transpose()?,
++        receipt.state,
++    ))
++}
+diff --git a/codex-rs/ext/queue/tests/queue_service.rs b/codex-rs/ext/queue/tests/queue_service.rs
+index 305b8ed..fe58284 100644
+--- a/codex-rs/ext/queue/tests/queue_service.rs
++++ b/codex-rs/ext/queue/tests/queue_service.rs
+@@ -1104,3 +1104,285 @@ async fn resumed_idle_dispatches_input_without_a_loaded_manager() -> anyhow::Res
+     assert!(service.list(thread_id).await?.is_empty());
+     Ok(())
+ }
++
++fn keyed_input(key: &str, text: &str) -> TurnInput {
++    let mut input = user_input(text);
++    if let TurnInput::UserInput { client_id, .. } = &mut input {
++        *client_id = Some(key.to_owned());
++    }
++    input
++}
++
++#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
++async fn keyed_queue_consumes_only_after_canonical_input_and_retries_once() -> anyhow::Result<()> {
++    let server = start_mock_server().await;
++    let responses =
++        responses::mount_sse_once(&server, responses::sse_completed("keyed-turn")).await;
++    let test = test_codex()
++        .with_history_mode(codex_protocol::protocol::ThreadHistoryMode::Paginated)
++        .with_config(|config| config.include_environment_context = false)
++        .build_with_auto_env(&server)
++        .await?;
++    let thread_id = test.session_configured.thread_id;
++    let store = loaded_thread_queue(&test)?;
++    let queue =
++        QueuedItemService::new(store.clone(), Weak::new(), Arc::new(NoopExtensionEventSink));
++    let input = keyed_input("keyed-wake", "wake once");
++    let (item, state) = queue
++        .enqueue_idempotent(thread_id, "keyed-wake".into(), input.clone())
++        .await?;
++    assert_eq!("pending", state);
++    let item = item.context("pending submission")?;
++    assert_eq!(
++        (Some(item.clone()), "pending".into()),
++        queue
++            .enqueue_idempotent(thread_id, "keyed-wake".into(), input.clone())
++            .await?
++    );
++    assert!(
++        queue
++            .update(thread_id, item.id.clone(), user_input("changed"))
++            .await
++            .is_err()
++    );
++    queue
++        .start(test.codex.as_ref(), Some(item.id), None)
++        .await?;
++    wait_for_event_match(test.codex.as_ref(), |event| {
++        matches!(event, EventMsg::TurnComplete(_)).then_some(())
++    })
++    .await;
++    assert!(queue.list(thread_id).await?.is_empty());
++    let (items, _, _) =
++        codex_rollout::RolloutRecorder::load_rollout_items(&test.codex.rollout_path().unwrap())
++            .await?;
++    assert!(items.iter().any(|item| matches!(item,
++        codex_rollout::RolloutItem::EventMsg(EventMsg::ItemCompleted(event))
++            if matches!(&event.item, TurnItem::UserMessage(message) if message.client_id.as_deref() == Some("keyed-wake")))));
++    let reopened = QueuedItemService::new(store, Weak::new(), Arc::new(NoopExtensionEventSink));
++    assert_eq!(
++        "consumed",
++        reopened
++            .enqueue_idempotent(thread_id, "keyed-wake".into(), input)
++            .await?
++            .1
++    );
++    assert_eq!(
++        "consumed",
++        reopened
++            .cancel_receipt_by_key(thread_id, "keyed-wake".into())
++            .await?
++            .1
++    );
++    assert!(reopened.list(thread_id).await?.is_empty());
++    assert_eq!(1, responses.requests().len());
++    Ok(())
++}
++
++#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
++async fn keyed_queue_hook_rejection_is_terminal() -> anyhow::Result<()> {
++    let server = start_mock_server().await;
++    let responses =
++        responses::mount_sse_once(&server, responses::sse_completed("unexpected-turn")).await;
++    let test = test_codex()
++        .with_pre_build_hook(write_rejecting_prompt_hook)
++        .with_config(trust_discovered_hooks)
++        .with_config(|config| config.include_environment_context = false)
++        .build_with_auto_env(&server)
++        .await?;
++    let thread_id = test.session_configured.thread_id;
++    let queue = QueuedItemService::new(
++        loaded_thread_queue(&test)?,
++        Weak::new(),
++        Arc::new(NoopExtensionEventSink),
++    );
++    let input = keyed_input("rejected-wake", "blocked");
++    let item = queue
++        .enqueue_idempotent(thread_id, "rejected-wake".into(), input.clone())
++        .await?
++        .0
++        .unwrap();
++    queue
++        .start(test.codex.as_ref(), Some(item.id), None)
++        .await?;
++    wait_for_event_match(test.codex.as_ref(), |event| {
++        matches!(event, EventMsg::TurnComplete(_)).then_some(())
++    })
++    .await;
++    assert!(queue.list(thread_id).await?.is_empty());
++    assert_eq!(
++        "cancelled",
++        queue
++            .enqueue_idempotent(thread_id, "rejected-wake".into(), input)
++            .await?
++            .1
++    );
++    assert!(queue.start(test.codex.as_ref(), None, None).await.is_err());
++    assert_eq!(
++        vec!["blocked"],
++        std::fs::read_to_string(test.codex_home_path().join("queue_prompt_hook.log"))?
++            .lines()
++            .collect::<Vec<_>>()
++    );
++    assert!(responses.requests().is_empty());
++    Ok(())
++}
++
++#[tokio::test]
++async fn keyed_queue_cancel_before_enqueue_is_terminal() -> anyhow::Result<()> {
++    let (store, _home) = test_queue().await?;
++    let queue = QueuedItemService::new(store, Weak::new(), Arc::new(NoopExtensionEventSink));
++    assert_eq!(
++        (None, "cancelled".into()),
++        queue
++            .cancel_receipt_by_key(ThreadId::new(), "unused".into())
++            .await?
++    );
++    let thread_id = ThreadId::new();
++    assert_eq!(None, queue.receipt_by_key(thread_id, "late".into()).await?);
++    assert_eq!(
++        (None, "cancelled".into()),
++        queue
++            .cancel_receipt_by_key(thread_id, "late".into())
++            .await?
++    );
++    assert_eq!(
++        (None, "cancelled".into()),
++        queue
++            .enqueue_idempotent(
++                thread_id,
++                "late".into(),
++                keyed_input("late", "never deliver")
++            )
++            .await?
++    );
++    assert!(queue.list(thread_id).await?.is_empty());
++    Ok(())
++}
++
++#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
++async fn keyed_queue_recovers_crash_after_history_flush_before_receipt_commit() -> anyhow::Result<()>
++{
++    let server = start_mock_server().await;
++    let responses =
++        responses::mount_sse_once(&server, responses::sse_completed("accepted-before-crash")).await;
++    let test = test_codex()
++        .with_config(|config| config.include_environment_context = false)
++        .build_with_auto_env(&server)
++        .await?;
++    let thread_id = test.session_configured.thread_id;
++    let store = loaded_thread_queue(&test)?;
++    let queue =
++        QueuedItemService::new(store.clone(), Weak::new(), Arc::new(NoopExtensionEventSink));
++    let input = keyed_input("crash-window", "already accepted");
++    let item = queue
++        .enqueue_idempotent(thread_id, "crash-window".into(), input.clone())
++        .await?
++        .0
++        .unwrap();
++    // Leave the queued receipt pending while recording the canonical input, as a crashed handoff can.
++    test.codex
++        .start_turn_if_idle(TurnInputRequest::new(input.clone()))
++        .await?;
++    wait_for_event_match(test.codex.as_ref(), |event| {
++        matches!(event, EventMsg::TurnComplete(_)).then_some(())
++    })
++    .await;
++    test.codex.flush_rollout().await?;
++    assert_eq!(1, queue.list(thread_id).await?.len());
++    let recovered = QueuedItemService::new(store, Weak::new(), Arc::new(NoopExtensionEventSink));
++    assert!(matches!(
++        recovered
++            .start(test.codex.as_ref(), Some(item.id), None)
++            .await?,
++        StartIfIdleSubmission::Started { .. }
++    ));
++    assert_eq!(
++        "consumed",
++        recovered
++            .enqueue_idempotent(thread_id, "crash-window".into(), input)
++            .await?
++            .1
++    );
++    assert!(recovered.list(thread_id).await?.is_empty());
++    assert_eq!(1, responses.requests().len());
++    Ok(())
++}
++
++fn write_waiting_queue_hook(home: &Path) {
++    let script_path = home.join("waiting_queue_hook.py");
++    std::fs::write(
++        &script_path,
++        format!(
++            r#"from pathlib import Path
++import time
++Path(r"{home}/hook_started").touch()
++while not Path(r"{home}/hook_release").exists():
++    time.sleep(0.01)
++"#,
++            home = home.display()
++        ),
++    )
++    .unwrap();
++    std::fs::write(home.join("hooks.json"), serde_json::json!({"hooks": {
++        "UserPromptSubmit": [{"hooks": [{"type": "command", "command": format!("python3 {}", script_path.display())}]}]
++    }}).to_string()).unwrap();
++}
++
++#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
++async fn keyed_queue_cancellation_wins_while_core_is_recording() -> anyhow::Result<()> {
++    let server = start_mock_server().await;
++    let responses =
++        responses::mount_sse_once(&server, responses::sse_completed("must-not-run")).await;
++    let test = test_codex()
++        .with_pre_build_hook(write_waiting_queue_hook)
++        .with_config(trust_discovered_hooks)
++        .with_config(|config| config.include_environment_context = false)
++        .build_with_auto_env(&server)
++        .await?;
++    let thread_id = test.session_configured.thread_id;
++    let queue = QueuedItemService::new(
++        loaded_thread_queue(&test)?,
++        Weak::new(),
++        Arc::new(NoopExtensionEventSink),
++    );
++    let input = keyed_input("cancel-inflight", "stop before sampling");
++    let item = queue
++        .enqueue_idempotent(thread_id, "cancel-inflight".into(), input.clone())
++        .await?
++        .0
++        .unwrap();
++    queue
++        .start(test.codex.as_ref(), Some(item.id), None)
++        .await?;
++    tokio::time::timeout(Duration::from_secs(10), async {
++        while !test.codex_home_path().join("hook_started").exists() {
++            tokio::time::sleep(Duration::from_millis(10)).await;
++        }
++    })
++    .await?;
++    // Core accepted the task, but the queued input remains durable until canonical input is flushed.
++    assert_eq!(1, queue.list(thread_id).await?.len());
++    assert_eq!(
++        "cancelled",
++        queue
++            .cancel_receipt_by_key(thread_id, "cancel-inflight".into())
++            .await?
++            .1
++    );
++    std::fs::write(test.codex_home_path().join("hook_release"), "")?;
++    wait_for_event_match(test.codex.as_ref(), |event| {
++        matches!(event, EventMsg::TurnComplete(_)).then_some(())
++    })
++    .await;
++    assert!(queue.list(thread_id).await?.is_empty());
++    assert_eq!(
++        "cancelled",
++        queue
++            .enqueue_idempotent(thread_id, "cancel-inflight".into(), input)
++            .await?
++            .1
++    );
++    assert!(responses.requests().is_empty());
++    Ok(())
++}
+diff --git a/codex-rs/state/queue_migrations/0003_queued_submission_receipts.sql b/codex-rs/state/queue_migrations/0003_queued_submission_receipts.sql
+new file mode 100644
+index 0000000..f14c026
+--- /dev/null
++++ b/codex-rs/state/queue_migrations/0003_queued_submission_receipts.sql
+@@ -0,0 +1,9 @@
++CREATE TABLE queued_submission_receipts (
++    thread_id TEXT NOT NULL,
++    idempotency_key TEXT NOT NULL,
++    item_id TEXT,
++    payload_json TEXT,
++    state TEXT NOT NULL CHECK (state IN ('pending', 'consumed', 'cancelled')),
++    PRIMARY KEY (thread_id, idempotency_key),
++    UNIQUE (thread_id, item_id)
++);
+diff --git a/codex-rs/state/src/lib.rs b/codex-rs/state/src/lib.rs
+index 5ae36f8..5abcc13 100644
+--- a/codex-rs/state/src/lib.rs
++++ b/codex-rs/state/src/lib.rs
+@@ -30,6 +30,7 @@ pub use model::Project;
+ pub use model::ProjectRoot;
+ pub use model::ProjectSortKey;
+ pub use model::ProjectsPage;
++pub use model::QueuedSubmissionReceiptRecord;
+ pub use model::QueuedUserSubmissionRecord;
+ pub use model::RolloutMigrationCursor;
+ pub use model::RolloutMigrationSkippedRollout;
+diff --git a/codex-rs/state/src/model/mod.rs b/codex-rs/state/src/model/mod.rs
+index c0b9f44..3375cbb 100644
+--- a/codex-rs/state/src/model/mod.rs
++++ b/codex-rs/state/src/model/mod.rs
+@@ -25,6 +25,7 @@ pub use project::Project;
+ pub use project::ProjectRoot;
+ pub use project::ProjectSortKey;
+ pub use project::ProjectsPage;
++pub use queued_item::QueuedSubmissionReceiptRecord;
+ pub use queued_item::QueuedUserSubmissionRecord;
+ pub use rollout_migration_state::RolloutMigrationCursor;
+ pub use rollout_migration_state::RolloutMigrationSkippedRollout;
+diff --git a/codex-rs/state/src/model/queued_item.rs b/codex-rs/state/src/model/queued_item.rs
+index ae7ec0c..bd3debb 100644
+--- a/codex-rs/state/src/model/queued_item.rs
++++ b/codex-rs/state/src/model/queued_item.rs
+@@ -20,3 +20,10 @@ impl QueuedUserSubmissionRecord {
+         })
+     }
+ }
++
++/// Permanent keyed enqueue receipt; terminal receipts prevent re-enqueueing.
++#[derive(Debug, Clone, PartialEq, Eq)]
++pub struct QueuedSubmissionReceiptRecord {
++    pub submission: Option<QueuedUserSubmissionRecord>,
++    pub state: String,
++}
+diff --git a/codex-rs/state/src/runtime/queued_items.rs b/codex-rs/state/src/runtime/queued_items.rs
+index 3cbf32b..910f6eb 100644
+--- a/codex-rs/state/src/runtime/queued_items.rs
++++ b/codex-rs/state/src/runtime/queued_items.rs
+@@ -1,5 +1,6 @@
+ use super::*;
+ use crate::MAX_QUEUE_ITEMS;
++use crate::QueuedSubmissionReceiptRecord;
+ use crate::QueuedUserSubmissionRecord;
+ use sqlx::Connection;
+ use tokio::sync::Mutex;
+@@ -104,6 +105,184 @@ impl SqliteQueueStore {
+         QueuedUserSubmissionRecord::try_from_row(&row)
+     }
+ 
++    /// Atomically persist the enqueue and its permanent receipt.
++    pub async fn enqueue_idempotent(
++        &self,
++        thread_id: ThreadId,
++        key: &str,
++        payload_json: &str,
++    ) -> anyhow::Result<QueuedSubmissionReceiptRecord> {
++        let mut tx = self.pool.begin_with("BEGIN IMMEDIATE").await?;
++        if let Some(row) = sqlx::query(
++            "SELECT item_id AS id, thread_id, payload_json, state
++             FROM queued_submission_receipts WHERE thread_id = ? AND idempotency_key = ?",
++        )
++        .bind(thread_id.to_string())
++        .bind(key)
++        .fetch_optional(tx.as_mut())
++        .await?
++        {
++            let submission = row
++                .try_get::<Option<String>, _>("id")?
++                .map(|_| QueuedUserSubmissionRecord::try_from_row(&row))
++                .transpose()?;
++            if submission
++                .as_ref()
++                .is_some_and(|submission| submission.payload != payload_json)
++            {
++                return Err(std::io::Error::new(
++                    std::io::ErrorKind::InvalidInput,
++                    "idempotencyKey was already used with a different submission",
++                )
++                .into());
++            }
++            return Ok(QueuedSubmissionReceiptRecord {
++                submission,
++                state: row.try_get("state")?,
++            });
++        }
++        let now_ms = datetime_to_epoch_millis(Utc::now());
++        let row = sqlx::query(
++            "INSERT INTO queued_items (id, thread_id, payload_json, queue_order, created_at_ms, updated_at_ms)
++             SELECT ?, ?, ?, COALESCE((SELECT MAX(queue_order) FROM queued_items WHERE thread_id = ?), -1) + 1, ?, ?
++             WHERE (SELECT COUNT(*) FROM queued_items WHERE thread_id = ?) < ?
++             RETURNING id, thread_id, payload_json",
++        )
++        .bind(Uuid::now_v7().to_string()).bind(thread_id.to_string()).bind(payload_json)
++        .bind(thread_id.to_string()).bind(now_ms).bind(now_ms).bind(thread_id.to_string())
++        .bind(i64::try_from(MAX_QUEUE_ITEMS)?).fetch_one(tx.as_mut()).await?;
++        let submission = QueuedUserSubmissionRecord::try_from_row(&row)?;
++        sqlx::query(
++            "INSERT INTO queued_submission_receipts (thread_id, idempotency_key, item_id, payload_json, state)
++             VALUES (?, ?, ?, ?, 'pending')",
++        ).bind(thread_id.to_string()).bind(key).bind(&submission.id).bind(payload_json)
++            .execute(tx.as_mut()).await?;
++        tx.commit().await?;
++        Ok(QueuedSubmissionReceiptRecord {
++            submission: Some(submission),
++            state: "pending".to_owned(),
++        })
++    }
++
++    pub async fn receipt_for_item(
++        &self,
++        thread_id: ThreadId,
++        item_id: &str,
++    ) -> anyhow::Result<Option<QueuedSubmissionReceiptRecord>> {
++        let row = sqlx::query(
++            "SELECT item_id AS id, thread_id, payload_json, state
++             FROM queued_submission_receipts WHERE thread_id = ? AND item_id = ?",
++        )
++        .bind(thread_id.to_string())
++        .bind(item_id)
++        .fetch_optional(self.pool.as_ref())
++        .await?;
++        row.as_ref()
++            .map(|row| {
++                Ok(QueuedSubmissionReceiptRecord {
++                    submission: Some(QueuedUserSubmissionRecord::try_from_row(row)?),
++                    state: row.try_get("state")?,
++                })
++            })
++            .transpose()
++    }
++
++    pub async fn receipt_by_key(
++        &self,
++        thread_id: ThreadId,
++        key: &str,
++    ) -> anyhow::Result<Option<QueuedSubmissionReceiptRecord>> {
++        let row = sqlx::query(
++            "SELECT item_id AS id, thread_id, payload_json, state
++             FROM queued_submission_receipts WHERE thread_id = ? AND idempotency_key = ?",
++        )
++        .bind(thread_id.to_string())
++        .bind(key)
++        .fetch_optional(self.pool.as_ref())
++        .await?;
++        row.as_ref()
++            .map(|row| {
++                Ok(QueuedSubmissionReceiptRecord {
++                    submission: row
++                        .try_get::<Option<String>, _>("id")?
++                        .map(|_| QueuedUserSubmissionRecord::try_from_row(row))
++                        .transpose()?,
++                    state: row.try_get("state")?,
++                })
++            })
++            .transpose()
++    }
++
++    /// A tombstone also cancels an enqueue whose request has not arrived yet.
++    pub async fn cancel_receipt_by_key(
++        &self,
++        thread_id: ThreadId,
++        key: &str,
++    ) -> anyhow::Result<QueuedSubmissionReceiptRecord> {
++        let mut tx = self.pool.begin_with("BEGIN IMMEDIATE").await?;
++        sqlx::query(
++            "INSERT INTO queued_submission_receipts (thread_id, idempotency_key, state)
++             VALUES (?, ?, 'cancelled') ON CONFLICT(thread_id, idempotency_key)
++             DO UPDATE SET state = 'cancelled' WHERE state = 'pending'",
++        )
++        .bind(thread_id.to_string())
++        .bind(key)
++        .execute(tx.as_mut())
++        .await?;
++        let row = sqlx::query(
++            "SELECT item_id AS id, thread_id, payload_json, state
++             FROM queued_submission_receipts WHERE thread_id = ? AND idempotency_key = ?",
++        )
++        .bind(thread_id.to_string())
++        .bind(key)
++        .fetch_one(tx.as_mut())
++        .await?;
++        let receipt = QueuedSubmissionReceiptRecord {
++            submission: row
++                .try_get::<Option<String>, _>("id")?
++                .map(|_| QueuedUserSubmissionRecord::try_from_row(&row))
++                .transpose()?,
++            state: row.try_get("state")?,
++        };
++        if receipt.state == "cancelled" {
++            sqlx::query("DELETE FROM queued_items WHERE thread_id = ? AND id = ?")
++                .bind(thread_id.to_string())
++                .bind(row.try_get::<Option<String>, _>("id")?)
++                .execute(tx.as_mut())
++                .await?;
++        }
++        tx.commit().await?;
++        Ok(receipt)
++    }
++
++    /// Finish only a pending receipt, in the same commit that removes its queue item.
++    pub async fn finish_receipt(
++        &self,
++        thread_id: ThreadId,
++        item_id: &str,
++        state: &str,
++    ) -> anyhow::Result<bool> {
++        if !matches!(state, "consumed" | "cancelled") {
++            return Err(std::io::Error::new(
++                std::io::ErrorKind::InvalidInput,
++                "invalid terminal receipt state",
++            )
++            .into());
++        }
++        let mut tx = self.pool.begin_with("BEGIN IMMEDIATE").await?;
++        sqlx::query("UPDATE queued_submission_receipts SET state = ? WHERE thread_id = ? AND item_id = ? AND state = 'pending'")
++            .bind(state).bind(thread_id.to_string()).bind(item_id).execute(tx.as_mut()).await?;
++        let deleted = sqlx::query("DELETE FROM queued_items WHERE thread_id = ? AND id = ?")
++            .bind(thread_id.to_string())
++            .bind(item_id)
++            .execute(tx.as_mut())
++            .await?
++            .rows_affected()
++            > 0;
++        tx.commit().await?;
++        Ok(deleted)
++    }
++
+     pub async fn list_page(
+         &self,
+         thread_id: ThreadId,
+@@ -150,15 +329,7 @@ impl SqliteQueueStore {
+     }
+ 
+     pub async fn delete(&self, thread_id: ThreadId, item_id: &str) -> anyhow::Result<bool> {
+-        Ok(
+-            sqlx::query("DELETE FROM queued_items WHERE thread_id = ? AND id = ?")
+-                .bind(thread_id.to_string())
+-                .bind(item_id)
+-                .execute(self.pool.as_ref())
+-                .await?
+-                .rows_affected()
+-                > 0,
+-        )
++        self.finish_receipt(thread_id, item_id, "cancelled").await
+     }
+ 
+     pub async fn reorder(&self, thread_id: ThreadId, ordered_ids: &[String]) -> anyhow::Result<()> {
+@@ -201,12 +372,19 @@ impl SqliteQueueStore {
+     }
+ 
+     pub(crate) async fn delete_thread_queue(&self, thread_id: ThreadId) -> anyhow::Result<bool> {
+-        Ok(sqlx::query("DELETE FROM queued_items WHERE thread_id = ?")
++        let mut tx = self.pool.begin_with("BEGIN IMMEDIATE").await?;
++        sqlx::query("DELETE FROM queued_submission_receipts WHERE thread_id = ?")
++            .bind(thread_id.to_string())
++            .execute(tx.as_mut())
++            .await?;
++        let deleted = sqlx::query("DELETE FROM queued_items WHERE thread_id = ?")
+             .bind(thread_id.to_string())
+-            .execute(self.pool.as_ref())
++            .execute(tx.as_mut())
+             .await?
+             .rows_affected()
+-            > 0)
++            > 0;
++        tx.commit().await?;
++        Ok(deleted)
+     }
+ }
+ 
+diff --git a/codex-rs/state/src/runtime/queued_items_tests.rs b/codex-rs/state/src/runtime/queued_items_tests.rs
+index 3f97eb3..2f5a0d2 100644
+--- a/codex-rs/state/src/runtime/queued_items_tests.rs
++++ b/codex-rs/state/src/runtime/queued_items_tests.rs
+@@ -276,3 +276,149 @@ async fn concurrent_inserts_enforce_the_queue_limit() {
+             .len()
+     );
+ }
++
++#[tokio::test]
++async fn keyed_enqueue_survives_retry_consume_cancel_and_reopen() {
++    let (runtime, thread_id) = runtime_with_thread().await;
++    let queue = runtime.thread_queue();
++    let first = queue
++        .enqueue_idempotent(thread_id, "wake-1", "payload")
++        .await
++        .unwrap();
++    let retry = queue
++        .enqueue_idempotent(thread_id, "wake-1", "payload")
++        .await
++        .unwrap();
++    assert_eq!(first, retry);
++    assert_eq!(1, queue.list_page(thread_id, 0, 10).await.unwrap().len());
++    assert!(
++        queue
++            .enqueue_idempotent(thread_id, "wake-1", "changed")
++            .await
++            .is_err()
++    );
++    queue
++        .finish_receipt(
++            thread_id,
++            &first.submission.as_ref().unwrap().id,
++            "consumed",
++        )
++        .await
++        .unwrap();
++    let other = StateRuntime::init(runtime.sqlite().clone(), "test-provider".to_owned())
++        .await
++        .unwrap();
++    let consumed = other
++        .thread_queue()
++        .enqueue_idempotent(thread_id, "wake-1", "payload")
++        .await
++        .unwrap();
++    assert_eq!(first.submission, consumed.submission);
++    assert_eq!("consumed", consumed.state);
++    assert!(queue.list_page(thread_id, 0, 10).await.unwrap().is_empty());
++    let cancelled = queue
++        .enqueue_idempotent(thread_id, "wake-2", "payload")
++        .await
++        .unwrap();
++    assert!(
++        queue
++            .delete(thread_id, &cancelled.submission.as_ref().unwrap().id)
++            .await
++            .unwrap()
++    );
++    assert_eq!(
++        "cancelled",
++        other
++            .thread_queue()
++            .enqueue_idempotent(thread_id, "wake-2", "payload")
++            .await
++            .unwrap()
++            .state
++    );
++    assert!(queue.list_page(thread_id, 0, 10).await.unwrap().is_empty());
++}
++
++#[tokio::test]
++async fn competing_keyed_enqueue_is_atomic() {
++    let (runtime, thread_id) = runtime_with_thread().await;
++    let other = StateRuntime::init(runtime.sqlite().clone(), "test-provider".to_owned())
++        .await
++        .unwrap();
++    let (first, second) = tokio::join!(
++        runtime
++            .thread_queue()
++            .enqueue_idempotent(thread_id, "same", "payload"),
++        other
++            .thread_queue()
++            .enqueue_idempotent(thread_id, "same", "payload"),
++    );
++    assert_eq!(first.unwrap(), second.unwrap());
++    assert_eq!(
++        1,
++        runtime
++            .thread_queue()
++            .list_page(thread_id, 0, 10)
++            .await
++            .unwrap()
++            .len()
++    );
++}
++
++#[tokio::test]
++async fn cancellation_tombstone_prevents_a_delayed_enqueue() {
++    let (runtime, thread_id) = runtime_with_thread().await;
++    let cancelled = runtime
++        .thread_queue()
++        .cancel_receipt_by_key(thread_id, "delayed")
++        .await
++        .unwrap();
++    assert_eq!(None, cancelled.submission);
++    assert_eq!("cancelled", cancelled.state);
++    let late = runtime
++        .thread_queue()
++        .enqueue_idempotent(thread_id, "delayed", "payload")
++        .await
++        .unwrap();
++    assert_eq!(cancelled, late);
++    assert!(
++        runtime
++            .thread_queue()
++            .list_page(thread_id, 0, 10)
++            .await
++            .unwrap()
++            .is_empty()
++    );
++}
++
++#[tokio::test]
++async fn deleting_thread_queue_cleans_terminal_receipts() {
++    let (runtime, thread_id) = runtime_with_thread().await;
++    let queue = runtime.thread_queue();
++    queue
++        .cancel_receipt_by_key(thread_id, "cancelled")
++        .await
++        .unwrap();
++    let pending = queue
++        .enqueue_idempotent(thread_id, "consumed", "payload")
++        .await
++        .unwrap();
++    queue
++        .finish_receipt(thread_id, &pending.submission.unwrap().id, "consumed")
++        .await
++        .unwrap();
++    queue.delete_thread_queue(thread_id).await.unwrap();
++    assert!(
++        queue
++            .receipt_by_key(thread_id, "cancelled")
++            .await
++            .unwrap()
++            .is_none()
++    );
++    assert!(
++        queue
++            .receipt_by_key(thread_id, "consumed")
++            .await
++            .unwrap()
++            .is_none()
++    );
++}
+diff --git a/codex-rs/thread-store/src/lib.rs b/codex-rs/thread-store/src/lib.rs
+index 9cf1267..203e30c 100644
+--- a/codex-rs/thread-store/src/lib.rs
++++ b/codex-rs/thread-store/src/lib.rs
+@@ -20,6 +20,7 @@ pub use codex_state::AddThreadAttachmentOutcome;
+ pub use codex_state::MAX_QUEUE_ITEMS;
+ pub use codex_state::MAX_THREAD_ATTACHMENT_PAYLOAD_BYTES;
+ pub use codex_state::ProjectSortKey;
++pub use codex_state::QueuedSubmissionReceiptRecord;
+ pub use codex_state::QueuedUserSubmissionRecord;
+ pub use codex_state::RemoveThreadAttachmentOutcome;
+ pub use codex_state::ThreadAttachment;
+diff --git a/codex-rs/thread-store/src/queue_store.rs b/codex-rs/thread-store/src/queue_store.rs
+index 74fc2fc..f840012 100644
+--- a/codex-rs/thread-store/src/queue_store.rs
++++ b/codex-rs/thread-store/src/queue_store.rs
+@@ -3,6 +3,7 @@ use std::future::Future;
+ 
+ use codex_protocol::ThreadId;
+ use codex_rollout::StateDbHandle;
++use codex_state::QueuedSubmissionReceiptRecord;
+ use codex_state::QueuedUserSubmissionRecord;
+ use codex_state::SqliteQueueStore;
+ 
+@@ -28,6 +29,38 @@ pub trait QueueStore: Send + Sync {
+         payload: String,
+     ) -> ThreadStoreFuture<'_, QueuedUserSubmissionRecord>;
+ 
++    fn enqueue_idempotent(
++        &self,
++        thread_id: ThreadId,
++        key: String,
++        payload: String,
++    ) -> ThreadStoreFuture<'_, QueuedSubmissionReceiptRecord>;
++
++    fn receipt_for_item(
++        &self,
++        thread_id: ThreadId,
++        item_id: String,
++    ) -> ThreadStoreFuture<'_, Option<QueuedSubmissionReceiptRecord>>;
++
++    fn receipt_by_key(
++        &self,
++        thread_id: ThreadId,
++        key: String,
++    ) -> ThreadStoreFuture<'_, Option<QueuedSubmissionReceiptRecord>>;
++
++    fn cancel_receipt_by_key(
++        &self,
++        thread_id: ThreadId,
++        key: String,
++    ) -> ThreadStoreFuture<'_, QueuedSubmissionReceiptRecord>;
++
++    fn finish_receipt(
++        &self,
++        thread_id: ThreadId,
++        item_id: String,
++        state: String,
++    ) -> ThreadStoreFuture<'_, bool>;
++
+     fn list_page(
+         &self,
+         thread_id: ThreadId,
+@@ -116,6 +149,66 @@ impl QueueStore for LocalQueueStore {
+         })
+     }
+ 
++    fn enqueue_idempotent(
++        &self,
++        thread_id: ThreadId,
++        key: String,
++        payload: String,
++    ) -> ThreadStoreFuture<'_, QueuedSubmissionReceiptRecord> {
++        Box::pin(async move {
++            self.queue()
++                .enqueue_idempotent(thread_id, &key, &payload)
++                .await
++                .map_err(|error| match error.downcast_ref::<std::io::Error>() {
++                    Some(error) if error.kind() == std::io::ErrorKind::InvalidInput => {
++                        ThreadStoreError::InvalidRequest {
++                            message: error.to_string(),
++                        }
++                    }
++                    _ => ThreadStoreError::Internal {
++                        message: format!("queue storage failed: {error}"),
++                    },
++                })
++        })
++    }
++
++    fn receipt_for_item(
++        &self,
++        thread_id: ThreadId,
++        item_id: String,
++    ) -> ThreadStoreFuture<'_, Option<QueuedSubmissionReceiptRecord>> {
++        queue_future(async move { self.queue().receipt_for_item(thread_id, &item_id).await })
++    }
++
++    fn receipt_by_key(
++        &self,
++        thread_id: ThreadId,
++        key: String,
++    ) -> ThreadStoreFuture<'_, Option<QueuedSubmissionReceiptRecord>> {
++        queue_future(async move { self.queue().receipt_by_key(thread_id, &key).await })
++    }
++
++    fn cancel_receipt_by_key(
++        &self,
++        thread_id: ThreadId,
++        key: String,
++    ) -> ThreadStoreFuture<'_, QueuedSubmissionReceiptRecord> {
++        queue_future(async move { self.queue().cancel_receipt_by_key(thread_id, &key).await })
++    }
++
++    fn finish_receipt(
++        &self,
++        thread_id: ThreadId,
++        item_id: String,
++        state: String,
++    ) -> ThreadStoreFuture<'_, bool> {
++        queue_future(async move {
++            self.queue()
++                .finish_receipt(thread_id, &item_id, &state)
++                .await
++        })
++    }
++
+     fn list_page(
+         &self,
+         thread_id: ThreadId,
+diff --git a/codex-rs/tui/src/session_queue_commands.rs b/codex-rs/tui/src/session_queue_commands.rs
+index 9752a42..3295d4f 100644
+--- a/codex-rs/tui/src/session_queue_commands.rs
++++ b/codex-rs/tui/src/session_queue_commands.rs
+@@ -114,6 +114,7 @@ pub(super) async fn run_session_queue_action_with_app_server(
+         .request_typed(ClientRequest::ThreadQueueAdd {
+             request_id,
+             params: ThreadQueueAddParams {
++                idempotency_key: None,
+                 thread_id: thread_id.to_string(),
+                 input: vec![UserInput::Text {
+                     text: message.to_string(),

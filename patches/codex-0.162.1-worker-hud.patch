@@ -1,5 +1,5 @@
 diff --git a/codex-rs/Cargo.lock b/codex-rs/Cargo.lock
-index 1cee117..5c2e408 100644
+index 1cee117..4e19a5c 100644
 --- a/codex-rs/Cargo.lock
 +++ b/codex-rs/Cargo.lock
 @@ -276,7 +276,7 @@ checksum = "2a4385e2e34eb35d6b3efe798b9eb88096925d87726c0798709bf56d9ed84af3"
@@ -885,7 +885,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "anyhow",
   "chardetng",
-@@ -4344,12 +4344,13 @@ dependencies = [
+@@ -4344,7 +4344,7 @@ dependencies = [
  
  [[package]]
  name = "codex-queue-extension"
@@ -894,13 +894,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "anyhow",
   "codex-core",
-  "codex-extension-api",
-  "codex-protocol",
-+ "codex-rollout",
-  "codex-state",
-  "codex-thread-store",
-  "codex-utils-absolute-path",
-@@ -4365,7 +4366,7 @@ dependencies = [
+@@ -4365,7 +4365,7 @@ dependencies = [
  
  [[package]]
  name = "codex-realtime-webrtc"
@@ -909,7 +903,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "anyhow",
   "codex-build-info",
-@@ -4384,7 +4385,7 @@ dependencies = [
+@@ -4384,7 +4384,7 @@ dependencies = [
  
  [[package]]
  name = "codex-response-debug-context"
@@ -918,7 +912,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "base64 0.22.1",
   "codex-api",
-@@ -4395,7 +4396,7 @@ dependencies = [
+@@ -4395,7 +4395,7 @@ dependencies = [
  
  [[package]]
  name = "codex-responses-api-proxy"
@@ -927,7 +921,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "anyhow",
   "clap",
-@@ -4412,7 +4413,7 @@ dependencies = [
+@@ -4412,7 +4412,7 @@ dependencies = [
  
  [[package]]
  name = "codex-rmcp-client"
@@ -936,7 +930,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "anyhow",
   "axum",
-@@ -4463,7 +4464,7 @@ dependencies = [
+@@ -4463,7 +4463,7 @@ dependencies = [
  
  [[package]]
  name = "codex-rollout"
@@ -945,7 +939,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "anyhow",
   "chrono",
-@@ -4494,7 +4495,7 @@ dependencies = [
+@@ -4494,7 +4494,7 @@ dependencies = [
  
  [[package]]
  name = "codex-rollout-trace"
@@ -954,7 +948,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "anyhow",
   "codex-code-mode",
-@@ -4510,7 +4511,7 @@ dependencies = [
+@@ -4510,7 +4510,7 @@ dependencies = [
  
  [[package]]
  name = "codex-sandboxing"
@@ -963,7 +957,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "anyhow",
   "codex-mxc-sandbox",
-@@ -4538,7 +4539,7 @@ dependencies = [
+@@ -4538,7 +4538,7 @@ dependencies = [
  
  [[package]]
  name = "codex-secrets"
@@ -972,7 +966,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "age",
   "anyhow",
-@@ -4559,7 +4560,7 @@ dependencies = [
+@@ -4559,7 +4559,7 @@ dependencies = [
  
  [[package]]
  name = "codex-shell-command"
@@ -981,7 +975,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "anyhow",
   "base64 0.22.1",
-@@ -4582,7 +4583,7 @@ dependencies = [
+@@ -4582,7 +4582,7 @@ dependencies = [
  
  [[package]]
  name = "codex-shell-escalation"
@@ -990,7 +984,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "anyhow",
   "clap",
-@@ -4602,7 +4603,7 @@ dependencies = [
+@@ -4602,7 +4602,7 @@ dependencies = [
  
  [[package]]
  name = "codex-skills"
@@ -999,7 +993,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "codex-protocol",
   "codex-shell-command",
-@@ -4619,7 +4620,7 @@ dependencies = [
+@@ -4619,7 +4619,7 @@ dependencies = [
  
  [[package]]
  name = "codex-skills-extension"
@@ -1008,7 +1002,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "assert_matches",
   "blake3",
-@@ -4657,7 +4658,7 @@ dependencies = [
+@@ -4657,7 +4657,7 @@ dependencies = [
  
  [[package]]
  name = "codex-state"
@@ -1017,7 +1011,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "anyhow",
   "chrono",
-@@ -4684,7 +4685,7 @@ dependencies = [
+@@ -4684,7 +4684,7 @@ dependencies = [
  
  [[package]]
  name = "codex-stdio-to-uds"
@@ -1026,7 +1020,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "anyhow",
   "codex-uds",
-@@ -4696,7 +4697,7 @@ dependencies = [
+@@ -4696,7 +4696,7 @@ dependencies = [
  
  [[package]]
  name = "codex-tcp-tunnel"
@@ -1035,7 +1029,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "anyhow",
   "bytes",
-@@ -4717,7 +4718,7 @@ dependencies = [
+@@ -4717,7 +4717,7 @@ dependencies = [
  
  [[package]]
  name = "codex-terminal-detection"
@@ -1044,7 +1038,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "pretty_assertions",
   "tracing",
-@@ -4725,7 +4726,7 @@ dependencies = [
+@@ -4725,7 +4725,7 @@ dependencies = [
  
  [[package]]
  name = "codex-test-binary-support"
@@ -1053,7 +1047,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "codex-arg0",
   "tempfile",
-@@ -4733,7 +4734,7 @@ dependencies = [
+@@ -4733,7 +4733,7 @@ dependencies = [
  
  [[package]]
  name = "codex-thread-manager-sample"
@@ -1062,7 +1056,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "anyhow",
   "clap",
-@@ -4744,7 +4745,7 @@ dependencies = [
+@@ -4744,7 +4744,7 @@ dependencies = [
  
  [[package]]
  name = "codex-thread-store"
@@ -1071,7 +1065,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "chrono",
   "codex-app-server-protocol",
-@@ -4775,7 +4776,7 @@ dependencies = [
+@@ -4775,7 +4775,7 @@ dependencies = [
  
  [[package]]
  name = "codex-tools"
@@ -1080,7 +1074,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "bitflags 2.13.1",
   "codex-code-mode",
-@@ -4801,7 +4802,7 @@ dependencies = [
+@@ -4801,7 +4801,7 @@ dependencies = [
  
  [[package]]
  name = "codex-tui"
@@ -1089,7 +1083,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "anyhow",
   "app_test_support",
-@@ -4894,6 +4895,7 @@ dependencies = [
+@@ -4894,6 +4894,7 @@ dependencies = [
   "serial_test",
   "sha2 0.10.9",
   "shlex",
@@ -1097,7 +1091,7 @@ index 1cee117..5c2e408 100644
   "strum 0.27.2",
   "strum_macros 0.28.0",
   "supports-color 3.0.2",
-@@ -4927,7 +4929,7 @@ dependencies = [
+@@ -4927,7 +4928,7 @@ dependencies = [
  
  [[package]]
  name = "codex-uds"
@@ -1106,7 +1100,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "async-io",
   "libc",
-@@ -4941,7 +4943,7 @@ dependencies = [
+@@ -4941,7 +4942,7 @@ dependencies = [
  
  [[package]]
  name = "codex-user-verification"
@@ -1115,7 +1109,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "base64 0.22.1",
   "core-foundation 0.10.1",
-@@ -4961,7 +4963,7 @@ dependencies = [
+@@ -4961,7 +4962,7 @@ dependencies = [
  
  [[package]]
  name = "codex-utils-absolute-path"
@@ -1124,7 +1118,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "dirs",
   "dunce",
-@@ -4975,14 +4977,14 @@ dependencies = [
+@@ -4975,14 +4976,14 @@ dependencies = [
  
  [[package]]
  name = "codex-utils-approval-presets"
@@ -1141,7 +1135,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "base64 0.22.1",
   "codex-protocol",
-@@ -4996,7 +4998,7 @@ dependencies = [
+@@ -4996,7 +4997,7 @@ dependencies = [
  
  [[package]]
  name = "codex-utils-cache"
@@ -1150,7 +1144,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "lru",
   "sha1 0.10.6",
-@@ -5005,7 +5007,7 @@ dependencies = [
+@@ -5005,7 +5006,7 @@ dependencies = [
  
  [[package]]
  name = "codex-utils-cargo-bin"
@@ -1159,7 +1153,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "assert_cmd",
   "runfiles",
-@@ -5014,7 +5016,7 @@ dependencies = [
+@@ -5014,7 +5015,7 @@ dependencies = [
  
  [[package]]
  name = "codex-utils-cli"
@@ -1168,7 +1162,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "clap",
   "codex-protocol",
-@@ -5026,15 +5028,15 @@ dependencies = [
+@@ -5026,15 +5027,15 @@ dependencies = [
  
  [[package]]
  name = "codex-utils-elapsed"
@@ -1187,7 +1181,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "codex-git-utils",
   "codex-utils-absolute-path",
-@@ -5047,7 +5049,7 @@ dependencies = [
+@@ -5047,7 +5048,7 @@ dependencies = [
  
  [[package]]
  name = "codex-utils-home-dir"
@@ -1196,7 +1190,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "codex-utils-absolute-path",
   "dirs",
-@@ -5057,7 +5059,7 @@ dependencies = [
+@@ -5057,7 +5058,7 @@ dependencies = [
  
  [[package]]
  name = "codex-utils-image"
@@ -1205,7 +1199,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "base64 0.22.1",
   "codex-utils-cache",
-@@ -5071,7 +5073,7 @@ dependencies = [
+@@ -5071,7 +5072,7 @@ dependencies = [
  
  [[package]]
  name = "codex-utils-json-to-toml"
@@ -1214,7 +1208,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "pretty_assertions",
   "serde_json",
-@@ -5080,7 +5082,7 @@ dependencies = [
+@@ -5080,7 +5081,7 @@ dependencies = [
  
  [[package]]
  name = "codex-utils-oss"
@@ -1223,7 +1217,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "codex-core",
   "codex-lmstudio",
-@@ -5090,7 +5092,7 @@ dependencies = [
+@@ -5090,7 +5091,7 @@ dependencies = [
  
  [[package]]
  name = "codex-utils-output-truncation"
@@ -1232,7 +1226,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "codex-protocol",
   "codex-utils-string",
-@@ -5100,7 +5102,7 @@ dependencies = [
+@@ -5100,7 +5101,7 @@ dependencies = [
  
  [[package]]
  name = "codex-utils-path"
@@ -1241,7 +1235,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "codex-utils-absolute-path",
   "dunce",
-@@ -5111,7 +5113,7 @@ dependencies = [
+@@ -5111,7 +5112,7 @@ dependencies = [
  
  [[package]]
  name = "codex-utils-path-uri"
@@ -1250,7 +1244,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "base64 0.22.1",
   "codex-utils-absolute-path",
-@@ -5127,7 +5129,7 @@ dependencies = [
+@@ -5127,7 +5128,7 @@ dependencies = [
  
  [[package]]
  name = "codex-utils-plugins"
@@ -1259,7 +1253,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "codex-exec-server",
   "codex-exec-server-protocol",
-@@ -5141,7 +5143,7 @@ dependencies = [
+@@ -5141,7 +5142,7 @@ dependencies = [
  
  [[package]]
  name = "codex-utils-process"
@@ -1268,7 +1262,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "pretty_assertions",
   "tokio",
-@@ -5149,7 +5151,7 @@ dependencies = [
+@@ -5149,7 +5150,7 @@ dependencies = [
  
  [[package]]
  name = "codex-utils-pty"
@@ -1277,7 +1271,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "anyhow",
   "codex-utils-cargo-bin",
-@@ -5168,7 +5170,7 @@ dependencies = [
+@@ -5168,7 +5169,7 @@ dependencies = [
  
  [[package]]
  name = "codex-utils-readiness"
@@ -1286,7 +1280,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "assert_matches",
   "thiserror 2.0.18",
-@@ -5178,7 +5180,7 @@ dependencies = [
+@@ -5178,7 +5179,7 @@ dependencies = [
  
  [[package]]
  name = "codex-utils-redacted-string"
@@ -1295,7 +1289,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "schemars 0.8.22",
   "serde",
-@@ -5186,14 +5188,14 @@ dependencies = [
+@@ -5186,14 +5187,14 @@ dependencies = [
  
  [[package]]
  name = "codex-utils-rustls-provider"
@@ -1312,7 +1306,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "codex-protocol",
   "codex-utils-absolute-path",
-@@ -5203,7 +5205,7 @@ dependencies = [
+@@ -5203,7 +5204,7 @@ dependencies = [
  
  [[package]]
  name = "codex-utils-sleep-inhibitor"
@@ -1321,7 +1315,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "core-foundation 0.9.4",
   "libc",
-@@ -5213,14 +5215,14 @@ dependencies = [
+@@ -5213,14 +5214,14 @@ dependencies = [
  
  [[package]]
  name = "codex-utils-stream-parser"
@@ -1338,7 +1332,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "pretty_assertions",
   "regex-lite",
-@@ -5230,14 +5232,14 @@ dependencies = [
+@@ -5230,14 +5231,14 @@ dependencies = [
  
  [[package]]
  name = "codex-utils-template"
@@ -1355,7 +1349,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "pretty_assertions",
   "v8",
-@@ -5245,7 +5247,7 @@ dependencies = [
+@@ -5245,7 +5246,7 @@ dependencies = [
  
  [[package]]
  name = "codex-voice-host"
@@ -1364,7 +1358,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "anyhow",
   "codex-install-context",
-@@ -5272,7 +5274,7 @@ dependencies = [
+@@ -5272,7 +5273,7 @@ dependencies = [
  
  [[package]]
  name = "codex-web-search-extension"
@@ -1373,7 +1367,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "codex-api",
   "codex-core",
-@@ -5294,7 +5296,7 @@ dependencies = [
+@@ -5294,7 +5295,7 @@ dependencies = [
  
  [[package]]
  name = "codex-websocket-auth"
@@ -1382,7 +1376,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "anyhow",
   "base64 0.22.1",
-@@ -5313,7 +5315,7 @@ dependencies = [
+@@ -5313,7 +5314,7 @@ dependencies = [
  
  [[package]]
  name = "codex-websocket-client"
@@ -1391,7 +1385,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "codex-http-client",
   "codex-utils-rustls-provider",
-@@ -5329,7 +5331,7 @@ dependencies = [
+@@ -5329,7 +5330,7 @@ dependencies = [
  
  [[package]]
  name = "codex-windows-sandbox"
@@ -1400,7 +1394,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "anyhow",
   "base64 0.22.1",
-@@ -5359,7 +5361,7 @@ dependencies = [
+@@ -5359,7 +5360,7 @@ dependencies = [
  
  [[package]]
  name = "codex-windows-sandbox-service"
@@ -1409,7 +1403,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "anyhow",
   "codex-cloud-config",
-@@ -5376,14 +5378,14 @@ dependencies = [
+@@ -5376,14 +5377,14 @@ dependencies = [
  
  [[package]]
  name = "codex-windows-sandbox-test-support"
@@ -1426,7 +1420,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "codex-http-client",
   "pretty_assertions",
-@@ -5398,7 +5400,7 @@ dependencies = [
+@@ -5398,7 +5399,7 @@ dependencies = [
  
  [[package]]
  name = "codex-worktree"
@@ -1435,7 +1429,7 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "anyhow",
   "codex-git-utils",
-@@ -5639,7 +5641,7 @@ dependencies = [
+@@ -5639,7 +5640,7 @@ dependencies = [
  
  [[package]]
  name = "core_test_support"
@@ -1444,1756 +1438,6 @@ index 1cee117..5c2e408 100644
  dependencies = [
   "anyhow",
   "assert_cmd",
-diff --git a/codex-rs/app-server-protocol/src/protocol/common.rs b/codex-rs/app-server-protocol/src/protocol/common.rs
-index 3e73b44..1d78341 100644
---- a/codex-rs/app-server-protocol/src/protocol/common.rs
-+++ b/codex-rs/app-server-protocol/src/protocol/common.rs
-@@ -633,6 +633,18 @@ client_request_definitions! {
-         serialization: thread_id(params.thread_id),
-         response: v2::ThreadQueueAddResponse,
-     },
-+    #[experimental("thread/queue/receipt")]
-+    ThreadQueueReceipt => "thread/queue/receipt" {
-+        params: v2::ThreadQueueReceiptParams,
-+        serialization: thread_id(params.thread_id),
-+        response: v2::ThreadQueueReceiptResponse,
-+    },
-+    #[experimental("thread/queue/receipt/cancel")]
-+    ThreadQueueReceiptCancel => "thread/queue/receipt/cancel" {
-+        params: v2::ThreadQueueReceiptParams,
-+        serialization: thread_id(params.thread_id),
-+        response: v2::ThreadQueueReceiptCancelResponse,
-+    },
-     #[experimental("thread/queue/list")]
-     ThreadQueueList => "thread/queue/list" {
-         params: v2::ThreadQueueListParams,
-diff --git a/codex-rs/app-server-protocol/src/protocol/v1.rs b/codex-rs/app-server-protocol/src/protocol/v1.rs
-index 7d05fb1..5703cf6 100644
---- a/codex-rs/app-server-protocol/src/protocol/v1.rs
-+++ b/codex-rs/app-server-protocol/src/protocol/v1.rs
-@@ -72,6 +72,10 @@ pub struct InitializeCapabilities {
- #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, JsonSchema, TS)]
- #[serde(rename_all = "camelCase")]
- pub struct InitializeResponse {
-+    /// Durable queue receipts and cancellation by key are available.
-+    #[serde(default, skip_serializing_if = "Option::is_none")]
-+    #[ts(optional = nullable)]
-+    pub queue_idempotency: Option<bool>,
-     pub user_agent: String,
-     /// Absolute path to the server's $CODEX_HOME directory.
-     pub codex_home: AbsolutePathBuf,
-diff --git a/codex-rs/app-server-protocol/src/protocol/v2/thread.rs b/codex-rs/app-server-protocol/src/protocol/v2/thread.rs
-index c7f22e2..2f9f01d 100644
---- a/codex-rs/app-server-protocol/src/protocol/v2/thread.rs
-+++ b/codex-rs/app-server-protocol/src/protocol/v2/thread.rs
-@@ -924,6 +924,10 @@ pub struct QueuedSubmission {
- #[serde(rename_all = "camelCase")]
- #[ts(export_to = "v2/")]
- pub struct ThreadQueueAddParams {
-+    /// Opt-in durable deduplication; must equal clientUserMessageId.
-+    #[serde(default, skip_serializing_if = "Option::is_none")]
-+    #[ts(optional = nullable)]
-+    pub idempotency_key: Option<String>,
-     pub thread_id: String,
-     pub input: Vec<UserInput>,
-     pub client_user_message_id: String,
-@@ -934,6 +938,40 @@ pub struct ThreadQueueAddParams {
- #[ts(export_to = "v2/")]
- pub struct ThreadQueueAddResponse {
-     pub queued_submission: QueuedSubmission,
-+    #[serde(default, skip_serializing_if = "Option::is_none")]
-+    #[ts(optional = nullable)]
-+    pub receipt_state: Option<String>,
-+}
-+
-+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, JsonSchema, TS)]
-+#[serde(rename_all = "camelCase")]
-+#[ts(export_to = "v2/")]
-+pub struct ThreadQueueReceiptParams {
-+    pub thread_id: String,
-+    pub idempotency_key: String,
-+}
-+
-+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, JsonSchema, TS)]
-+#[serde(rename_all = "camelCase")]
-+#[ts(export_to = "v2/")]
-+pub struct ThreadQueueReceipt {
-+    pub queued_submission: Option<QueuedSubmission>,
-+    /// pending, consumed, or cancelled. Cancellation may precede enqueue.
-+    pub receipt_state: String,
-+}
-+
-+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, JsonSchema, TS)]
-+#[serde(rename_all = "camelCase")]
-+#[ts(export_to = "v2/")]
-+pub struct ThreadQueueReceiptResponse {
-+    pub receipt: Option<ThreadQueueReceipt>,
-+}
-+
-+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, JsonSchema, TS)]
-+#[serde(rename_all = "camelCase")]
-+#[ts(export_to = "v2/")]
-+pub struct ThreadQueueReceiptCancelResponse {
-+    pub receipt: Option<ThreadQueueReceipt>,
- }
- 
- #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, JsonSchema, TS)]
-diff --git a/codex-rs/app-server-transport/src/transport/mod.rs b/codex-rs/app-server-transport/src/transport/mod.rs
-index 232ce94..7277032 100644
---- a/codex-rs/app-server-transport/src/transport/mod.rs
-+++ b/codex-rs/app-server-transport/src/transport/mod.rs
-@@ -379,6 +379,7 @@ mod tests {
-             id: RequestId::Integer(7),
-             result: Box::new(ClientResponsePayload::Initialize(
-                 codex_app_server_protocol::InitializeResponse {
-+                    queue_idempotency: None,
-                     user_agent: "codex-test-agent".to_string(),
-                     codex_home,
-                     platform_family: "unix".to_string(),
-diff --git a/codex-rs/app-server-transport/src/transport/remote_control/segment_tests.rs b/codex-rs/app-server-transport/src/transport/remote_control/segment_tests.rs
-index 3b2406b..efc4d8a 100644
---- a/codex-rs/app-server-transport/src/transport/remote_control/segment_tests.rs
-+++ b/codex-rs/app-server-transport/src/transport/remote_control/segment_tests.rs
-@@ -136,6 +136,7 @@ fn invalid_response_becomes_remote_control_jsonrpc_error() {
-             message: Box::new(OutgoingMessage::Response(OutgoingResponse {
-                 id: RequestId::Integer(7),
-                 result: Box::new(ClientResponsePayload::Initialize(InitializeResponse {
-+                    queue_idempotency: None,
-                     user_agent: "codex-test-agent".to_string(),
-                     codex_home,
-                     platform_family: "unix".to_string(),
-diff --git a/codex-rs/app-server-transport/src/transport/remote_control/tests.rs b/codex-rs/app-server-transport/src/transport/remote_control/tests.rs
-index 490ac1e..983f18a 100644
---- a/codex-rs/app-server-transport/src/transport/remote_control/tests.rs
-+++ b/codex-rs/app-server-transport/src/transport/remote_control/tests.rs
-@@ -1888,6 +1888,7 @@ async fn remote_control_http_mode_enrolls_before_connecting() {
-                 result: Box::new(
-                     codex_app_server_protocol::ClientResponsePayload::Initialize(
-                         codex_app_server_protocol::InitializeResponse {
-+                            queue_idempotency: None,
-                             user_agent: "codex-test-agent".to_string(),
-                             codex_home: codex_home.path().abs(),
-                             platform_family: "test-family".to_string(),
-diff --git a/codex-rs/app-server/src/message_processor.rs b/codex-rs/app-server/src/message_processor.rs
-index 6b705c5..93024df 100644
---- a/codex-rs/app-server/src/message_processor.rs
-+++ b/codex-rs/app-server/src/message_processor.rs
-@@ -457,6 +457,7 @@ impl MessageProcessor {
-         );
-         let git_processor = GitRequestProcessor::new();
-         let initialize_processor = InitializeRequestProcessor::new(
-+            queue_service.is_some(),
-             gateway_login_control,
-             outgoing.clone(),
-             analytics_events_client.clone(),
-@@ -1370,6 +1371,23 @@ impl MessageProcessor {
-                 .add(params)
-                 .await
-                 .map(|response| Some(response.into())),
-+            ClientRequest::ThreadQueueReceipt { params, .. } => self
-+                .thread_queue_processor
-+                .receipt(params, false)
-+                .await
-+                .map(|response| Some(response.into())),
-+            ClientRequest::ThreadQueueReceiptCancel { params, .. } => self
-+                .thread_queue_processor
-+                .receipt(params, true)
-+                .await
-+                .map(|response| {
-+                    Some(
-+                        codex_app_server_protocol::ThreadQueueReceiptCancelResponse {
-+                            receipt: response.receipt,
-+                        }
-+                        .into(),
-+                    )
-+                }),
-             ClientRequest::ThreadQueueList { params, .. } => self
-                 .thread_queue_processor
-                 .list(params)
-diff --git a/codex-rs/app-server/src/request_processors/initialize_processor.rs b/codex-rs/app-server/src/request_processors/initialize_processor.rs
-index d68a29d..a0a224d 100644
---- a/codex-rs/app-server/src/request_processors/initialize_processor.rs
-+++ b/codex-rs/app-server/src/request_processors/initialize_processor.rs
-@@ -20,6 +20,7 @@ const NON_ORIGINATING_CLIENT_NAMES: &[&str] = &["codex_app_server_daemon", "code
- 
- #[derive(Clone)]
- pub(crate) struct InitializeRequestProcessor {
-+    queue_idempotency: bool,
-     gateway_login_control: Arc<codex_login::GatewayLoginControl>,
-     gateway_login_initialized: Arc<std::sync::OnceLock<()>>,
-     outgoing: Arc<OutgoingMessageSender>,
-@@ -33,6 +34,7 @@ pub(crate) struct InitializeRequestProcessor {
- impl InitializeRequestProcessor {
-     #[allow(clippy::too_many_arguments)]
-     pub(crate) fn new(
-+        queue_idempotency: bool,
-         gateway_login_control: Arc<codex_login::GatewayLoginControl>,
-         outgoing: Arc<OutgoingMessageSender>,
-         analytics_events_client: AnalyticsEventsClient,
-@@ -42,6 +44,7 @@ impl InitializeRequestProcessor {
-         user_verification: Arc<crate::user_verification::Service>,
-     ) -> Self {
-         Self {
-+            queue_idempotency,
-             gateway_login_control,
-             gateway_login_initialized: Arc::new(std::sync::OnceLock::new()),
-             outgoing,
-@@ -211,6 +214,7 @@ impl InitializeRequestProcessor {
- 
-         let user_agent = get_codex_user_agent();
-         let response = InitializeResponse {
-+            queue_idempotency: Some(self.queue_idempotency),
-             user_agent,
-             codex_home,
-             platform_family: std::env::consts::FAMILY.to_string(),
-diff --git a/codex-rs/app-server/src/request_processors/thread_queue_processor.rs b/codex-rs/app-server/src/request_processors/thread_queue_processor.rs
-index a2f5b5a..304a782 100644
---- a/codex-rs/app-server/src/request_processors/thread_queue_processor.rs
-+++ b/codex-rs/app-server/src/request_processors/thread_queue_processor.rs
-@@ -13,6 +13,9 @@ use codex_app_server_protocol::ThreadQueueDeleteParams;
- use codex_app_server_protocol::ThreadQueueDeleteResponse;
- use codex_app_server_protocol::ThreadQueueListParams;
- use codex_app_server_protocol::ThreadQueueListResponse;
-+use codex_app_server_protocol::ThreadQueueReceipt;
-+use codex_app_server_protocol::ThreadQueueReceiptParams;
-+use codex_app_server_protocol::ThreadQueueReceiptResponse;
- use codex_app_server_protocol::ThreadQueueReorderParams;
- use codex_app_server_protocol::ThreadQueueReorderResponse;
- use codex_app_server_protocol::ThreadQueueStartParams;
-@@ -81,16 +84,60 @@ impl ThreadQueueRequestProcessor {
-         validate_user_input_image_urls(&params.input)?;
-         let (thread_id, loaded_thread, source) = self.require_thread(&params.thread_id).await?;
-         ensure_direct_input_allowed(loaded_thread.as_deref(), &source)?;
--        let queued_item = self
--            .service()?
--            .enqueue(
--                thread_id,
--                submission_into_turn_input(params.input, Some(params.client_user_message_id)),
--            )
--            .await
--            .map_err(queue_error)?;
-+        let input = submission_into_turn_input(params.input, Some(params.client_user_message_id));
-+        let (queued_item, receipt_state) = match params.idempotency_key {
-+            Some(key) => {
-+                let (item, state) = self
-+                    .service()?
-+                    .enqueue_idempotent(thread_id, key, input)
-+                    .await
-+                    .map_err(queue_error)?;
-+                let item =
-+                    item.ok_or_else(|| invalid_request("idempotencyKey has been cancelled"))?;
-+                (item, Some(state))
-+            }
-+            None => (
-+                self.service()?
-+                    .enqueue(thread_id, input)
-+                    .await
-+                    .map_err(queue_error)?,
-+                None,
-+            ),
-+        };
-         Ok(ThreadQueueAddResponse {
-             queued_submission: api_queued_submission(queued_item)?,
-+            receipt_state,
-+        })
-+    }
-+
-+    pub(crate) async fn receipt(
-+        &self,
-+        params: ThreadQueueReceiptParams,
-+        cancel: bool,
-+    ) -> Result<ThreadQueueReceiptResponse, JSONRPCErrorError> {
-+        let (thread_id, _, _) = self.require_thread(&params.thread_id).await?;
-+        let receipt = if cancel {
-+            Some(
-+                self.service()?
-+                    .cancel_receipt_by_key(thread_id, params.idempotency_key)
-+                    .await
-+                    .map_err(queue_error)?,
-+            )
-+        } else {
-+            self.service()?
-+                .receipt_by_key(thread_id, params.idempotency_key)
-+                .await
-+                .map_err(queue_error)?
-+        };
-+        Ok(ThreadQueueReceiptResponse {
-+            receipt: receipt
-+                .map(|(item, state)| {
-+                    Ok(ThreadQueueReceipt {
-+                        queued_submission: item.map(api_queued_submission).transpose()?,
-+                        receipt_state: state,
-+                    })
-+                })
-+                .transpose()?,
-         })
-     }
- 
-diff --git a/codex-rs/app-server/tests/suite/v2/initialize.rs b/codex-rs/app-server/tests/suite/v2/initialize.rs
-index 1ba0f26..9b799d3 100644
---- a/codex-rs/app-server/tests/suite/v2/initialize.rs
-+++ b/codex-rs/app-server/tests/suite/v2/initialize.rs
-@@ -59,8 +59,10 @@ async fn initialize_uses_client_info_name_as_originator() -> Result<()> {
-         codex_home: response_codex_home,
-         platform_family,
-         platform_os,
-+        queue_idempotency,
-     } = to_response::<InitializeResponse>(response)?;
- 
-+    assert_eq!(queue_idempotency, Some(true));
-     assert!(user_agent.starts_with("codex_vscode/"));
-     assert_eq!(response_codex_home, expected_codex_home);
-     assert_eq!(platform_family, std::env::consts::FAMILY);
-@@ -95,8 +97,13 @@ async fn initialize_probe_does_not_override_originator() -> Result<()> {
-     let JSONRPCMessage::Response(response) = message else {
-         anyhow::bail!("expected initialize response, got {message:?}");
-     };
--    let InitializeResponse { user_agent, .. } = to_response::<InitializeResponse>(response)?;
-+    let InitializeResponse {
-+        user_agent,
-+        queue_idempotency,
-+        ..
-+    } = to_response::<InitializeResponse>(response)?;
- 
-+    assert_eq!(queue_idempotency, Some(true));
-     assert!(user_agent.starts_with("codex_cli_rs/"));
-     Ok(())
- }
-@@ -128,8 +135,13 @@ async fn initialize_codex_backend_does_not_override_originator() -> Result<()> {
-     let JSONRPCMessage::Response(response) = message else {
-         anyhow::bail!("expected initialize response, got {message:?}");
-     };
--    let InitializeResponse { user_agent, .. } = to_response::<InitializeResponse>(response)?;
-+    let InitializeResponse {
-+        user_agent,
-+        queue_idempotency,
-+        ..
-+    } = to_response::<InitializeResponse>(response)?;
- 
-+    assert_eq!(queue_idempotency, Some(true));
-     assert!(user_agent.starts_with("codex_cli_rs/"));
-     Ok(())
- }
-@@ -171,8 +183,10 @@ async fn initialize_respects_originator_override_env_var() -> Result<()> {
-         codex_home: response_codex_home,
-         platform_family,
-         platform_os,
-+        queue_idempotency,
-     } = to_response::<InitializeResponse>(response)?;
- 
-+    assert_eq!(queue_idempotency, Some(true));
-     assert!(user_agent.starts_with("codex_originator_via_env_var/"));
-     assert_eq!(response_codex_home, expected_codex_home);
-     assert_eq!(platform_family, std::env::consts::FAMILY);
-diff --git a/codex-rs/app-server/tests/suite/v2/model_provider_enforcement_tests.rs b/codex-rs/app-server/tests/suite/v2/model_provider_enforcement_tests.rs
-index 15bd32e..cfa37da 100644
---- a/codex-rs/app-server/tests/suite/v2/model_provider_enforcement_tests.rs
-+++ b/codex-rs/app-server/tests/suite/v2/model_provider_enforcement_tests.rs
-@@ -105,6 +105,7 @@ base_url = "{}/v1"
-         .request(|request_id| ClientRequest::ThreadQueueAdd {
-             request_id,
-             params: ThreadQueueAddParams {
-+                idempotency_key: None,
-                 thread_id: started.thread.id.clone(),
-                 input: input.clone(),
-                 client_user_message_id: "queued-message".into(),
-diff --git a/codex-rs/app-server/tests/suite/v2/thread_queue.rs b/codex-rs/app-server/tests/suite/v2/thread_queue.rs
-index a27c3b5..c69c7b1 100644
---- a/codex-rs/app-server/tests/suite/v2/thread_queue.rs
-+++ b/codex-rs/app-server/tests/suite/v2/thread_queue.rs
-@@ -135,6 +135,7 @@ async fn queue_crud_preserves_identity_order_and_notifications() -> Result<()> {
-     let first = queue_item(
-         &mut app,
-         ThreadQueueAddParams {
-+            idempotency_key: None,
-             client_user_message_id: "first-client-message".to_string(),
-             ..submission(&thread_id, "first")
-         },
-@@ -271,6 +272,7 @@ async fn queue_list_returns_ordered_pages_and_lightweight_notifications() -> Res
-     let queued = queue_item(
-         &mut app,
-         ThreadQueueAddParams {
-+            idempotency_key: None,
-             thread_id: thread_id.clone(),
-             input: vec![text(&"x".repeat(64 * 1024))],
-             client_user_message_id: "oversized-snapshot".to_string(),
-@@ -375,6 +377,7 @@ async fn idle_queue_dispatch_preserves_client_id() -> Result<()> {
-         .thread
-         .id;
-     let queued_submission = ThreadQueueAddParams {
-+        idempotency_key: None,
-         thread_id: thread_id.clone(),
-         input: vec![text("durable queued message")],
-         client_user_message_id: "stable-queued-client-id".to_string(),
-@@ -475,6 +478,7 @@ async fn cold_thread_resume_dispatches_a_persisted_queued_submission() -> Result
-     let queued = queue_item(
-         &mut resumed,
-         ThreadQueueAddParams {
-+            idempotency_key: None,
-             client_user_message_id: "cold-resumed-queue-item".to_string(),
-             ..submission(&thread_id, "dispatch this after a cold thread resume")
-         },
-@@ -582,6 +586,7 @@ async fn interrupt_preserves_queue_and_queue_start_can_resume_a_non_head_item()
-     let second = queue_item(
-         &mut app,
-         ThreadQueueAddParams {
-+            idempotency_key: None,
-             client_user_message_id: "second-queued-client-id".to_string(),
-             ..submission(&thread_id, "second queued message")
-         },
-@@ -720,6 +725,7 @@ async fn queue_start_while_active_returns_busy_and_preserves_the_queue() -> Resu
-     let queued = queue_item(
-         &mut app,
-         ThreadQueueAddParams {
-+            idempotency_key: None,
-             client_user_message_id: "active-queued-client-id".to_string(),
-             ..submission(&thread_id, "send this queued message now")
-         },
-@@ -885,6 +891,7 @@ async fn a_new_turn_preserves_queued_messages_until_it_completes() -> Result<()>
-     let first = queue_item(
-         &mut app,
-         ThreadQueueAddParams {
-+            idempotency_key: None,
-             client_user_message_id: "first-queued-client-id".to_string(),
-             ..submission(&thread_id, "first queued message")
-         },
-@@ -893,6 +900,7 @@ async fn a_new_turn_preserves_queued_messages_until_it_completes() -> Result<()>
-     let second = queue_item(
-         &mut app,
-         ThreadQueueAddParams {
-+            idempotency_key: None,
-             client_user_message_id: "second-queued-client-id".to_string(),
-             ..submission(&thread_id, "second queued message")
-         },
-@@ -1056,6 +1064,7 @@ async fn decline_approval(app: &mut TestAppServer, request_id: RequestId) -> Res
- 
- fn submission(thread_id: &str, value: &str) -> ThreadQueueAddParams {
-     ThreadQueueAddParams {
-+        idempotency_key: None,
-         thread_id: thread_id.to_string(),
-         input: vec![text(value)],
-         client_user_message_id: format!("queued-{value}"),
-@@ -1068,3 +1077,77 @@ fn text(value: &str) -> UserInput {
-         text_elements: Vec::new(),
-     }
- }
-+
-+#[tokio::test]
-+async fn queue_keyed_receipts_deduplicate_and_cancel_before_late_add() -> Result<()> {
-+    skip_if_remote!(Ok(()), "uses a host-local command approval fixture");
-+    let (mut app, _home, _server) = queue_app(vec![blocked_turn_response()?]).await?;
-+    let thread_id = app
-+        .start_thread(ThreadStartParams::default())
-+        .await?
-+        .thread
-+        .id;
-+    let _active = start_blocked_turn(&mut app, &thread_id).await?;
-+    let mut params = submission(&thread_id, "keyed notification");
-+    params.client_user_message_id = "receipt-key".into();
-+    params.idempotency_key = Some("receipt-key".into());
-+    let first: ThreadQueueAddResponse = app
-+        .request(|request_id| ClientRequest::ThreadQueueAdd {
-+            request_id,
-+            params: params.clone(),
-+        })
-+        .await?;
-+    let retry: ThreadQueueAddResponse = app
-+        .request(|request_id| ClientRequest::ThreadQueueAdd { request_id, params })
-+        .await?;
-+    assert_eq!(first, retry);
-+    assert_eq!(Some("pending".into()), first.receipt_state);
-+    assert_eq!(1, list_queue(&mut app, &thread_id).await?.data.len());
-+    let get: codex_app_server_protocol::ThreadQueueReceiptResponse = app
-+        .request(|request_id| ClientRequest::ThreadQueueReceipt {
-+            request_id,
-+            params: codex_app_server_protocol::ThreadQueueReceiptParams {
-+                thread_id: thread_id.clone(),
-+                idempotency_key: "receipt-key".into(),
-+            },
-+        })
-+        .await?;
-+    assert_eq!(
-+        Some(first.queued_submission),
-+        get.receipt.unwrap().queued_submission
-+    );
-+    let cancel: codex_app_server_protocol::ThreadQueueReceiptCancelResponse = app
-+        .request(|request_id| ClientRequest::ThreadQueueReceiptCancel {
-+            request_id,
-+            params: codex_app_server_protocol::ThreadQueueReceiptParams {
-+                thread_id: thread_id.clone(),
-+                idempotency_key: "receipt-key".into(),
-+            },
-+        })
-+        .await?;
-+    assert_eq!("cancelled", cancel.receipt.unwrap().receipt_state);
-+    let tombstone: codex_app_server_protocol::ThreadQueueReceiptCancelResponse = app
-+        .request(|request_id| ClientRequest::ThreadQueueReceiptCancel {
-+            request_id,
-+            params: codex_app_server_protocol::ThreadQueueReceiptParams {
-+                thread_id: thread_id.clone(),
-+                idempotency_key: "late-key".into(),
-+            },
-+        })
-+        .await?;
-+    let tombstone = tombstone.receipt.unwrap();
-+    assert_eq!(None, tombstone.queued_submission);
-+    assert_eq!("cancelled", tombstone.receipt_state);
-+    let id = app.send_raw_request("thread/queue/add", Some(json!({
-+        "threadId": thread_id, "idempotencyKey": "late-key", "clientUserMessageId": "late-key",
-+        "input": [{"type": "text", "text": "must not deliver"}],
-+    }))).await?;
-+    let error = timeout(
-+        READ_TIMEOUT,
-+        app.read_stream_until_error_message(RequestId::Integer(id)),
-+    )
-+    .await??;
-+    assert!(error.error.message.contains("cancelled"));
-+    assert!(list_queue(&mut app, &thread_id).await?.data.is_empty());
-+    Ok(())
-+}
-diff --git a/codex-rs/core/src/session/turn.rs b/codex-rs/core/src/session/turn.rs
-index 64e8786..a0e8ee8 100644
---- a/codex-rs/core/src/session/turn.rs
-+++ b/codex-rs/core/src/session/turn.rs
-@@ -878,6 +878,40 @@ pub(crate) async fn run_hooks_and_record_inputs(
-     {
-         return false;
-     }
-+    let mut queued_item_id = turn_context
-+        .turn_metadata_state
-+        .current_turn_trigger()
-+        .and_then(|trigger| trigger.strip_prefix("queue-idempotent:").map(str::to_owned));
-+    if let Some(item_id) = &queued_item_id
-+        && !input.is_empty()
-+    {
-+        let Some(state_db) = sess.state_db() else {
-+            return true;
-+        };
-+        let receipt = match state_db
-+            .thread_queue()
-+            .receipt_for_item(sess.thread_id, item_id)
-+            .await
-+        {
-+            Ok(Some(receipt)) => receipt,
-+            _ => return true,
-+        };
-+        let client_id =
-+            receipt.submission.as_ref().and_then(|record| {
-+                match serde_json::from_str::<crate::TurnInput>(&record.payload).ok()? {
-+                    crate::TurnInput::UserInput { client_id, .. } => client_id,
-+                    _ => None,
-+                }
-+            });
-+        if !input.iter().any(|item| {
-+            matches!(item,
-+            TurnInput::UserInput { client_id: Some(id), .. } if Some(id) == client_id.as_ref())
-+        }) {
-+            queued_item_id = None;
-+        } else if receipt.state != "pending" {
-+            return true;
-+        }
-+    }
-     let mut blocked_input = false;
-     let mut accepted_user_input = false;
-     for input_item in input {
-@@ -908,6 +942,40 @@ pub(crate) async fn run_hooks_and_record_inputs(
-             .await;
-         }
-     }
-+    if let Some(queued_item_id) = queued_item_id
-+        && !input.is_empty()
-+    {
-+        // A queued receipt is terminal only after its canonical user input is durable.
-+        let Some(state_db) = sess.state_db() else {
-+            return true;
-+        };
-+        let receipt_state = if blocked_input && !accepted_user_input {
-+            "cancelled"
-+        } else {
-+            if let Err(error) = sess.flush_rollout().await {
-+                tracing::warn!(%error, "failed to persist queued input before sampling");
-+                return true;
-+            }
-+            "consumed"
-+        };
-+        if let Err(error) = state_db
-+            .thread_queue()
-+            .finish_receipt(sess.thread_id, &queued_item_id, receipt_state)
-+            .await
-+        {
-+            tracing::warn!(%error, "failed to finish queued input receipt");
-+            return true;
-+        }
-+        // Cancellation may have won the race while hooks or persistence ran.
-+        if receipt_state == "consumed"
-+            && !matches!(
-+                state_db.thread_queue().receipt_for_item(sess.thread_id, &queued_item_id).await,
-+                Ok(Some(receipt)) if receipt.state == "consumed"
-+            )
-+        {
-+            return true;
-+        }
-+    }
-     blocked_input && !accepted_user_input
- }
- 
-diff --git a/codex-rs/ext/queue/Cargo.toml b/codex-rs/ext/queue/Cargo.toml
-index 4b5e5d0..dfbd91f 100644
---- a/codex-rs/ext/queue/Cargo.toml
-+++ b/codex-rs/ext/queue/Cargo.toml
-@@ -15,6 +15,7 @@ workspace = true
- 
- [dependencies]
- codex-core = { workspace = true }
-+codex-rollout = { workspace = true }
- codex-extension-api = { workspace = true }
- codex-protocol = { workspace = true }
- codex-thread-store = { workspace = true }
-diff --git a/codex-rs/ext/queue/src/service.rs b/codex-rs/ext/queue/src/service.rs
-index 06aeb63..9ccc113 100644
---- a/codex-rs/ext/queue/src/service.rs
-+++ b/codex-rs/ext/queue/src/service.rs
-@@ -19,6 +19,7 @@ use codex_extension_api::ThreadLifecycleContributor;
- use codex_extension_api::ThreadResumeInput;
- use codex_protocol::ThreadId;
- use codex_protocol::error::CodexErr;
-+use codex_protocol::items::TurnItem;
- use codex_protocol::models::snapshot_local_user_input;
- use codex_protocol::protocol::AgentStatus;
- use codex_protocol::protocol::Event;
-@@ -27,8 +28,11 @@ use codex_protocol::protocol::ThreadQueueChangedEvent;
- use codex_protocol::protocol::W3cTraceContext;
- use codex_protocol::user_input::MAX_USER_INPUT_TEXT_CHARS;
- use codex_protocol::user_input::UserInput;
-+use codex_rollout::RolloutItem;
-+use codex_rollout::RolloutRecorder;
- use codex_thread_store::MAX_QUEUE_ITEMS;
- use codex_thread_store::QueueStore;
-+use codex_thread_store::QueuedSubmissionReceiptRecord;
- use codex_thread_store::QueuedUserSubmissionRecord;
- use codex_thread_store::ThreadStoreError;
- use thiserror::Error;
-@@ -52,6 +56,8 @@ pub enum QueueServiceError {
-     InvalidPayload(#[from] serde_json::Error),
-     #[error("local queued attachment is invalid: {0}")]
-     InvalidAttachment(#[from] std::io::Error),
-+    #[error("failed to checkpoint queued user input: {0}")]
-+    Durability(std::io::Error),
-     #[error("Core failed to submit queued user message: {0}")]
-     CoreSubmissionError(#[from] CodexErr),
-     #[error("only user input can be added to the user-message queue")]
-@@ -279,6 +285,140 @@ impl QueuedItemService {
-         Ok(item)
-     }
- 
-+    /// Opt-in enqueue with a permanent receipt shared atomically with the queue.
-+    pub async fn enqueue_idempotent(
-+        &self,
-+        thread_id: ThreadId,
-+        key: String,
-+        input: TurnInput,
-+    ) -> Result<(Option<QueuedItem>, String), QueueServiceError> {
-+        validate_receipt_key(&key)?;
-+        if !matches!(&input, TurnInput::UserInput { client_id: Some(client_id), .. } if client_id == &key)
-+        {
-+            return Err(ThreadStoreError::InvalidRequest {
-+                message: "idempotencyKey must equal clientUserMessageId".to_owned(),
-+            }
-+            .into());
-+        }
-+        let input = prepare_queued_user_input(input).await?;
-+        let payload = serde_json::to_string(&input)?;
-+        let receipt = {
-+            let _guard = self.dispatch_guard(thread_id).await;
-+            let receipt = self
-+                .queue
-+                .enqueue_idempotent(thread_id, key, payload)
-+                .await?;
-+            if receipt.state == "pending" {
-+                self.emit_changed(thread_id);
-+            }
-+            receipt
-+        };
-+        if receipt.state == "pending" {
-+            self.wake_if_loaded(thread_id).await;
-+        }
-+        receipt_into_item(receipt)
-+    }
-+
-+    pub async fn receipt_by_key(
-+        &self,
-+        thread_id: ThreadId,
-+        key: String,
-+    ) -> Result<Option<(Option<QueuedItem>, String)>, QueueServiceError> {
-+        validate_receipt_key(&key)?;
-+        self.queue
-+            .receipt_by_key(thread_id, key)
-+            .await?
-+            .map(receipt_into_item)
-+            .transpose()
-+    }
-+
-+    pub async fn cancel_receipt_by_key(
-+        &self,
-+        thread_id: ThreadId,
-+        key: String,
-+    ) -> Result<(Option<QueuedItem>, String), QueueServiceError> {
-+        validate_receipt_key(&key)?;
-+        let _guard = self.dispatch_guard(thread_id).await;
-+        if let Some(receipt) = self.queue.receipt_by_key(thread_id, key.clone()).await?
-+            && receipt.state == "pending"
-+            && let Some(record) = receipt.submission
-+            && let Some(manager) = self.thread_manager.upgrade()
-+            && let Ok(thread) = manager.get_thread(thread_id).await
-+        {
-+            self.reconcile_receipt(thread.as_ref(), &queued_item_from_record(record)?)
-+                .await?;
-+        }
-+        let receipt = self.queue.cancel_receipt_by_key(thread_id, key).await?;
-+        self.emit_changed(thread_id);
-+        receipt_into_item(receipt)
-+    }
-+
-+    /// Read the full persisted transcript only after its writer's durability fence.
-+    async fn reconcile_receipt(
-+        &self,
-+        thread: &CodexThread,
-+        item: &QueuedItem,
-+    ) -> Result<Option<String>, QueueServiceError> {
-+        let TurnInput::UserInput {
-+            client_id: Some(client_id),
-+            ..
-+        } = &item.input
-+        else {
-+            return Err(QueueServiceError::InvalidInput);
-+        };
-+        // A newly prepared thread can still have a deferred, absent rollout file.
-+        thread.ensure_rollout_materialized().await;
-+        thread
-+            .flush_rollout()
-+            .await
-+            .map_err(QueueServiceError::Durability)?;
-+        let thread_id = thread.startup_metadata().thread_id;
-+        let rollout_path =
-+            thread
-+                .rollout_path()
-+                .ok_or_else(|| ThreadStoreError::InvalidRequest {
-+                    message: "durable queue requires a local rollout".to_owned(),
-+                })?;
-+        let (items, _, parse_errors) = RolloutRecorder::load_rollout_items(&rollout_path)
-+            .await
-+            .map_err(QueueServiceError::Durability)?;
-+        let mut current_turn_id = None;
-+        let mut turn_id = None;
-+        for entry in &items {
-+            match entry {
-+                RolloutItem::EventMsg(EventMsg::TurnStarted(event)) => {
-+                    current_turn_id = Some(event.turn_id.clone());
-+                }
-+                RolloutItem::EventMsg(EventMsg::UserMessage(message))
-+                    if message.client_id.as_ref() == Some(client_id) =>
-+                {
-+                    turn_id = current_turn_id.clone();
-+                    break;
-+                }
-+                RolloutItem::EventMsg(EventMsg::ItemCompleted(event))
-+                    if matches!(&event.item, TurnItem::UserMessage(message)
-+                        if message.client_id.as_ref() == Some(client_id)) =>
-+                {
-+                    turn_id = Some(event.turn_id.clone());
-+                    break;
-+                }
-+                _ => {}
-+            }
-+        }
-+        if turn_id.is_none() && parse_errors != 0 {
-+            return Err(QueueServiceError::Durability(std::io::Error::other(
-+                "cannot reconcile queued input against malformed persisted history",
-+            )));
-+        }
-+        if turn_id.is_some() {
-+            self.queue
-+                .finish_receipt(thread_id, item.id.clone(), "consumed".to_owned())
-+                .await?;
-+            self.emit_changed(thread_id);
-+        }
-+        Ok(turn_id)
-+    }
-+
-     pub async fn list(&self, thread_id: ThreadId) -> Result<Vec<QueuedItem>, QueueServiceError> {
-         self.list_page(thread_id, /*offset*/ 0, MAX_QUEUE_ITEMS)
-             .await
-@@ -305,6 +445,17 @@ impl QueuedItemService {
-         mut input: TurnInput,
-     ) -> Result<Option<QueuedItem>, QueueServiceError> {
-         let _dispatch_guard = self.dispatch_guard(thread_id).await;
-+        if self
-+            .queue
-+            .receipt_for_item(thread_id, queued_item_id.clone())
-+            .await?
-+            .is_some()
-+        {
-+            return Err(ThreadStoreError::InvalidRequest {
-+                message: "idempotent queued submissions cannot be edited".to_owned(),
-+            }
-+            .into());
-+        }
-         if let TurnInput::UserInput { client_id, .. } = &mut input {
-             *client_id = self
-                 .list(thread_id)
-@@ -385,18 +536,33 @@ impl QueuedItemService {
-                 ),
-             })?;
-         let queued_item_id = item.id.clone();
-+        let keyed = self
-+            .queue
-+            .receipt_for_item(thread_id, queued_item_id.clone())
-+            .await?
-+            .is_some();
-+        if keyed && let Some(turn_id) = self.reconcile_receipt(thread, &item).await? {
-+            return Ok(StartIfIdleSubmission::Started {
-+                root_turn_id: turn_id.clone(),
-+                turn_id,
-+            });
-+        }
-         let input @ TurnInput::UserInput { .. } = item.input else {
-             return Err(QueueServiceError::InvalidInput);
-         };
-         let submission = thread
-             .start_turn_if_idle(TurnInputRequest::new(input).with_trace(trace).on_start(
-                 TurnStartOptions {
--                    turn_trigger: Some("queue".to_string()),
-+                    turn_trigger: Some(if keyed {
-+                        format!("queue-idempotent:{queued_item_id}")
-+                    } else {
-+                        "queue".to_owned()
-+                    }),
-                     ..Default::default()
-                 },
-             ))
-             .await?;
--        if matches!(submission, StartIfIdleSubmission::Started { .. }) {
-+        if !keyed && matches!(submission, StartIfIdleSubmission::Started { .. }) {
-             self.delete_locked(thread_id, queued_item_id).await?;
-         }
-         Ok(submission)
-@@ -436,15 +602,39 @@ impl QueuedItemService {
-                 continue;
-             }
- 
-+            let keyed = self
-+                .queue
-+                .receipt_for_item(thread_id, queued_item_id.clone())
-+                .await?
-+                .is_some();
-+            if keyed {
-+                let item = QueuedItem {
-+                    id: queued_item_id.clone(),
-+                    input: input.clone(),
-+                };
-+                if self
-+                    .reconcile_receipt(thread.as_ref(), &item)
-+                    .await?
-+                    .is_some()
-+                {
-+                    continue;
-+                }
-+            }
-             match thread
-                 .start_turn_if_idle(TurnInputRequest::new(input).on_start(TurnStartOptions {
--                    turn_trigger: Some("queue".to_string()),
-+                    turn_trigger: Some(if keyed {
-+                        format!("queue-idempotent:{queued_item_id}")
-+                    } else {
-+                        "queue".to_owned()
-+                    }),
-                     ..Default::default()
-                 }))
-                 .await
-             {
-                 Ok(StartIfIdleSubmission::Started { .. }) => {
--                    self.delete_locked(thread_id, queued_item_id).await?;
-+                    if !keyed {
-+                        self.delete_locked(thread_id, queued_item_id).await?;
-+                    }
-                     return Ok(());
-                 }
-                 Ok(StartIfIdleSubmission::NotSubmitted { reason }) => {
-@@ -574,3 +764,25 @@ fn queued_item_from_record(
-         input: serde_json::from_str::<TurnInput>(&record.payload)?,
-     })
- }
-+
-+fn validate_receipt_key(key: &str) -> Result<(), QueueServiceError> {
-+    if key.is_empty() || key.len() > 512 {
-+        return Err(ThreadStoreError::InvalidRequest {
-+            message: "idempotencyKey must contain between 1 and 512 bytes".to_owned(),
-+        }
-+        .into());
-+    }
-+    Ok(())
-+}
-+
-+fn receipt_into_item(
-+    receipt: QueuedSubmissionReceiptRecord,
-+) -> Result<(Option<QueuedItem>, String), QueueServiceError> {
-+    Ok((
-+        receipt
-+            .submission
-+            .map(queued_item_from_record)
-+            .transpose()?,
-+        receipt.state,
-+    ))
-+}
-diff --git a/codex-rs/ext/queue/tests/queue_service.rs b/codex-rs/ext/queue/tests/queue_service.rs
-index 305b8ed..fe58284 100644
---- a/codex-rs/ext/queue/tests/queue_service.rs
-+++ b/codex-rs/ext/queue/tests/queue_service.rs
-@@ -1104,3 +1104,285 @@ async fn resumed_idle_dispatches_input_without_a_loaded_manager() -> anyhow::Res
-     assert!(service.list(thread_id).await?.is_empty());
-     Ok(())
- }
-+
-+fn keyed_input(key: &str, text: &str) -> TurnInput {
-+    let mut input = user_input(text);
-+    if let TurnInput::UserInput { client_id, .. } = &mut input {
-+        *client_id = Some(key.to_owned());
-+    }
-+    input
-+}
-+
-+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-+async fn keyed_queue_consumes_only_after_canonical_input_and_retries_once() -> anyhow::Result<()> {
-+    let server = start_mock_server().await;
-+    let responses =
-+        responses::mount_sse_once(&server, responses::sse_completed("keyed-turn")).await;
-+    let test = test_codex()
-+        .with_history_mode(codex_protocol::protocol::ThreadHistoryMode::Paginated)
-+        .with_config(|config| config.include_environment_context = false)
-+        .build_with_auto_env(&server)
-+        .await?;
-+    let thread_id = test.session_configured.thread_id;
-+    let store = loaded_thread_queue(&test)?;
-+    let queue =
-+        QueuedItemService::new(store.clone(), Weak::new(), Arc::new(NoopExtensionEventSink));
-+    let input = keyed_input("keyed-wake", "wake once");
-+    let (item, state) = queue
-+        .enqueue_idempotent(thread_id, "keyed-wake".into(), input.clone())
-+        .await?;
-+    assert_eq!("pending", state);
-+    let item = item.context("pending submission")?;
-+    assert_eq!(
-+        (Some(item.clone()), "pending".into()),
-+        queue
-+            .enqueue_idempotent(thread_id, "keyed-wake".into(), input.clone())
-+            .await?
-+    );
-+    assert!(
-+        queue
-+            .update(thread_id, item.id.clone(), user_input("changed"))
-+            .await
-+            .is_err()
-+    );
-+    queue
-+        .start(test.codex.as_ref(), Some(item.id), None)
-+        .await?;
-+    wait_for_event_match(test.codex.as_ref(), |event| {
-+        matches!(event, EventMsg::TurnComplete(_)).then_some(())
-+    })
-+    .await;
-+    assert!(queue.list(thread_id).await?.is_empty());
-+    let (items, _, _) =
-+        codex_rollout::RolloutRecorder::load_rollout_items(&test.codex.rollout_path().unwrap())
-+            .await?;
-+    assert!(items.iter().any(|item| matches!(item,
-+        codex_rollout::RolloutItem::EventMsg(EventMsg::ItemCompleted(event))
-+            if matches!(&event.item, TurnItem::UserMessage(message) if message.client_id.as_deref() == Some("keyed-wake")))));
-+    let reopened = QueuedItemService::new(store, Weak::new(), Arc::new(NoopExtensionEventSink));
-+    assert_eq!(
-+        "consumed",
-+        reopened
-+            .enqueue_idempotent(thread_id, "keyed-wake".into(), input)
-+            .await?
-+            .1
-+    );
-+    assert_eq!(
-+        "consumed",
-+        reopened
-+            .cancel_receipt_by_key(thread_id, "keyed-wake".into())
-+            .await?
-+            .1
-+    );
-+    assert!(reopened.list(thread_id).await?.is_empty());
-+    assert_eq!(1, responses.requests().len());
-+    Ok(())
-+}
-+
-+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-+async fn keyed_queue_hook_rejection_is_terminal() -> anyhow::Result<()> {
-+    let server = start_mock_server().await;
-+    let responses =
-+        responses::mount_sse_once(&server, responses::sse_completed("unexpected-turn")).await;
-+    let test = test_codex()
-+        .with_pre_build_hook(write_rejecting_prompt_hook)
-+        .with_config(trust_discovered_hooks)
-+        .with_config(|config| config.include_environment_context = false)
-+        .build_with_auto_env(&server)
-+        .await?;
-+    let thread_id = test.session_configured.thread_id;
-+    let queue = QueuedItemService::new(
-+        loaded_thread_queue(&test)?,
-+        Weak::new(),
-+        Arc::new(NoopExtensionEventSink),
-+    );
-+    let input = keyed_input("rejected-wake", "blocked");
-+    let item = queue
-+        .enqueue_idempotent(thread_id, "rejected-wake".into(), input.clone())
-+        .await?
-+        .0
-+        .unwrap();
-+    queue
-+        .start(test.codex.as_ref(), Some(item.id), None)
-+        .await?;
-+    wait_for_event_match(test.codex.as_ref(), |event| {
-+        matches!(event, EventMsg::TurnComplete(_)).then_some(())
-+    })
-+    .await;
-+    assert!(queue.list(thread_id).await?.is_empty());
-+    assert_eq!(
-+        "cancelled",
-+        queue
-+            .enqueue_idempotent(thread_id, "rejected-wake".into(), input)
-+            .await?
-+            .1
-+    );
-+    assert!(queue.start(test.codex.as_ref(), None, None).await.is_err());
-+    assert_eq!(
-+        vec!["blocked"],
-+        std::fs::read_to_string(test.codex_home_path().join("queue_prompt_hook.log"))?
-+            .lines()
-+            .collect::<Vec<_>>()
-+    );
-+    assert!(responses.requests().is_empty());
-+    Ok(())
-+}
-+
-+#[tokio::test]
-+async fn keyed_queue_cancel_before_enqueue_is_terminal() -> anyhow::Result<()> {
-+    let (store, _home) = test_queue().await?;
-+    let queue = QueuedItemService::new(store, Weak::new(), Arc::new(NoopExtensionEventSink));
-+    assert_eq!(
-+        (None, "cancelled".into()),
-+        queue
-+            .cancel_receipt_by_key(ThreadId::new(), "unused".into())
-+            .await?
-+    );
-+    let thread_id = ThreadId::new();
-+    assert_eq!(None, queue.receipt_by_key(thread_id, "late".into()).await?);
-+    assert_eq!(
-+        (None, "cancelled".into()),
-+        queue
-+            .cancel_receipt_by_key(thread_id, "late".into())
-+            .await?
-+    );
-+    assert_eq!(
-+        (None, "cancelled".into()),
-+        queue
-+            .enqueue_idempotent(
-+                thread_id,
-+                "late".into(),
-+                keyed_input("late", "never deliver")
-+            )
-+            .await?
-+    );
-+    assert!(queue.list(thread_id).await?.is_empty());
-+    Ok(())
-+}
-+
-+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-+async fn keyed_queue_recovers_crash_after_history_flush_before_receipt_commit() -> anyhow::Result<()>
-+{
-+    let server = start_mock_server().await;
-+    let responses =
-+        responses::mount_sse_once(&server, responses::sse_completed("accepted-before-crash")).await;
-+    let test = test_codex()
-+        .with_config(|config| config.include_environment_context = false)
-+        .build_with_auto_env(&server)
-+        .await?;
-+    let thread_id = test.session_configured.thread_id;
-+    let store = loaded_thread_queue(&test)?;
-+    let queue =
-+        QueuedItemService::new(store.clone(), Weak::new(), Arc::new(NoopExtensionEventSink));
-+    let input = keyed_input("crash-window", "already accepted");
-+    let item = queue
-+        .enqueue_idempotent(thread_id, "crash-window".into(), input.clone())
-+        .await?
-+        .0
-+        .unwrap();
-+    // Leave the queued receipt pending while recording the canonical input, as a crashed handoff can.
-+    test.codex
-+        .start_turn_if_idle(TurnInputRequest::new(input.clone()))
-+        .await?;
-+    wait_for_event_match(test.codex.as_ref(), |event| {
-+        matches!(event, EventMsg::TurnComplete(_)).then_some(())
-+    })
-+    .await;
-+    test.codex.flush_rollout().await?;
-+    assert_eq!(1, queue.list(thread_id).await?.len());
-+    let recovered = QueuedItemService::new(store, Weak::new(), Arc::new(NoopExtensionEventSink));
-+    assert!(matches!(
-+        recovered
-+            .start(test.codex.as_ref(), Some(item.id), None)
-+            .await?,
-+        StartIfIdleSubmission::Started { .. }
-+    ));
-+    assert_eq!(
-+        "consumed",
-+        recovered
-+            .enqueue_idempotent(thread_id, "crash-window".into(), input)
-+            .await?
-+            .1
-+    );
-+    assert!(recovered.list(thread_id).await?.is_empty());
-+    assert_eq!(1, responses.requests().len());
-+    Ok(())
-+}
-+
-+fn write_waiting_queue_hook(home: &Path) {
-+    let script_path = home.join("waiting_queue_hook.py");
-+    std::fs::write(
-+        &script_path,
-+        format!(
-+            r#"from pathlib import Path
-+import time
-+Path(r"{home}/hook_started").touch()
-+while not Path(r"{home}/hook_release").exists():
-+    time.sleep(0.01)
-+"#,
-+            home = home.display()
-+        ),
-+    )
-+    .unwrap();
-+    std::fs::write(home.join("hooks.json"), serde_json::json!({"hooks": {
-+        "UserPromptSubmit": [{"hooks": [{"type": "command", "command": format!("python3 {}", script_path.display())}]}]
-+    }}).to_string()).unwrap();
-+}
-+
-+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-+async fn keyed_queue_cancellation_wins_while_core_is_recording() -> anyhow::Result<()> {
-+    let server = start_mock_server().await;
-+    let responses =
-+        responses::mount_sse_once(&server, responses::sse_completed("must-not-run")).await;
-+    let test = test_codex()
-+        .with_pre_build_hook(write_waiting_queue_hook)
-+        .with_config(trust_discovered_hooks)
-+        .with_config(|config| config.include_environment_context = false)
-+        .build_with_auto_env(&server)
-+        .await?;
-+    let thread_id = test.session_configured.thread_id;
-+    let queue = QueuedItemService::new(
-+        loaded_thread_queue(&test)?,
-+        Weak::new(),
-+        Arc::new(NoopExtensionEventSink),
-+    );
-+    let input = keyed_input("cancel-inflight", "stop before sampling");
-+    let item = queue
-+        .enqueue_idempotent(thread_id, "cancel-inflight".into(), input.clone())
-+        .await?
-+        .0
-+        .unwrap();
-+    queue
-+        .start(test.codex.as_ref(), Some(item.id), None)
-+        .await?;
-+    tokio::time::timeout(Duration::from_secs(10), async {
-+        while !test.codex_home_path().join("hook_started").exists() {
-+            tokio::time::sleep(Duration::from_millis(10)).await;
-+        }
-+    })
-+    .await?;
-+    // Core accepted the task, but the queued input remains durable until canonical input is flushed.
-+    assert_eq!(1, queue.list(thread_id).await?.len());
-+    assert_eq!(
-+        "cancelled",
-+        queue
-+            .cancel_receipt_by_key(thread_id, "cancel-inflight".into())
-+            .await?
-+            .1
-+    );
-+    std::fs::write(test.codex_home_path().join("hook_release"), "")?;
-+    wait_for_event_match(test.codex.as_ref(), |event| {
-+        matches!(event, EventMsg::TurnComplete(_)).then_some(())
-+    })
-+    .await;
-+    assert!(queue.list(thread_id).await?.is_empty());
-+    assert_eq!(
-+        "cancelled",
-+        queue
-+            .enqueue_idempotent(thread_id, "cancel-inflight".into(), input)
-+            .await?
-+            .1
-+    );
-+    assert!(responses.requests().is_empty());
-+    Ok(())
-+}
-diff --git a/codex-rs/state/src/lib.rs b/codex-rs/state/src/lib.rs
-index 5ae36f8..5abcc13 100644
---- a/codex-rs/state/src/lib.rs
-+++ b/codex-rs/state/src/lib.rs
-@@ -30,6 +30,7 @@ pub use model::Project;
- pub use model::ProjectRoot;
- pub use model::ProjectSortKey;
- pub use model::ProjectsPage;
-+pub use model::QueuedSubmissionReceiptRecord;
- pub use model::QueuedUserSubmissionRecord;
- pub use model::RolloutMigrationCursor;
- pub use model::RolloutMigrationSkippedRollout;
-diff --git a/codex-rs/state/src/model/mod.rs b/codex-rs/state/src/model/mod.rs
-index c0b9f44..3375cbb 100644
---- a/codex-rs/state/src/model/mod.rs
-+++ b/codex-rs/state/src/model/mod.rs
-@@ -25,6 +25,7 @@ pub use project::Project;
- pub use project::ProjectRoot;
- pub use project::ProjectSortKey;
- pub use project::ProjectsPage;
-+pub use queued_item::QueuedSubmissionReceiptRecord;
- pub use queued_item::QueuedUserSubmissionRecord;
- pub use rollout_migration_state::RolloutMigrationCursor;
- pub use rollout_migration_state::RolloutMigrationSkippedRollout;
-diff --git a/codex-rs/state/src/model/queued_item.rs b/codex-rs/state/src/model/queued_item.rs
-index ae7ec0c..bd3debb 100644
---- a/codex-rs/state/src/model/queued_item.rs
-+++ b/codex-rs/state/src/model/queued_item.rs
-@@ -20,3 +20,10 @@ impl QueuedUserSubmissionRecord {
-         })
-     }
- }
-+
-+/// Permanent keyed enqueue receipt; terminal receipts prevent re-enqueueing.
-+#[derive(Debug, Clone, PartialEq, Eq)]
-+pub struct QueuedSubmissionReceiptRecord {
-+    pub submission: Option<QueuedUserSubmissionRecord>,
-+    pub state: String,
-+}
-diff --git a/codex-rs/state/src/runtime/queued_items.rs b/codex-rs/state/src/runtime/queued_items.rs
-index 3cbf32b..910f6eb 100644
---- a/codex-rs/state/src/runtime/queued_items.rs
-+++ b/codex-rs/state/src/runtime/queued_items.rs
-@@ -1,5 +1,6 @@
- use super::*;
- use crate::MAX_QUEUE_ITEMS;
-+use crate::QueuedSubmissionReceiptRecord;
- use crate::QueuedUserSubmissionRecord;
- use sqlx::Connection;
- use tokio::sync::Mutex;
-@@ -104,6 +105,184 @@ impl SqliteQueueStore {
-         QueuedUserSubmissionRecord::try_from_row(&row)
-     }
- 
-+    /// Atomically persist the enqueue and its permanent receipt.
-+    pub async fn enqueue_idempotent(
-+        &self,
-+        thread_id: ThreadId,
-+        key: &str,
-+        payload_json: &str,
-+    ) -> anyhow::Result<QueuedSubmissionReceiptRecord> {
-+        let mut tx = self.pool.begin_with("BEGIN IMMEDIATE").await?;
-+        if let Some(row) = sqlx::query(
-+            "SELECT item_id AS id, thread_id, payload_json, state
-+             FROM queued_submission_receipts WHERE thread_id = ? AND idempotency_key = ?",
-+        )
-+        .bind(thread_id.to_string())
-+        .bind(key)
-+        .fetch_optional(tx.as_mut())
-+        .await?
-+        {
-+            let submission = row
-+                .try_get::<Option<String>, _>("id")?
-+                .map(|_| QueuedUserSubmissionRecord::try_from_row(&row))
-+                .transpose()?;
-+            if submission
-+                .as_ref()
-+                .is_some_and(|submission| submission.payload != payload_json)
-+            {
-+                return Err(std::io::Error::new(
-+                    std::io::ErrorKind::InvalidInput,
-+                    "idempotencyKey was already used with a different submission",
-+                )
-+                .into());
-+            }
-+            return Ok(QueuedSubmissionReceiptRecord {
-+                submission,
-+                state: row.try_get("state")?,
-+            });
-+        }
-+        let now_ms = datetime_to_epoch_millis(Utc::now());
-+        let row = sqlx::query(
-+            "INSERT INTO queued_items (id, thread_id, payload_json, queue_order, created_at_ms, updated_at_ms)
-+             SELECT ?, ?, ?, COALESCE((SELECT MAX(queue_order) FROM queued_items WHERE thread_id = ?), -1) + 1, ?, ?
-+             WHERE (SELECT COUNT(*) FROM queued_items WHERE thread_id = ?) < ?
-+             RETURNING id, thread_id, payload_json",
-+        )
-+        .bind(Uuid::now_v7().to_string()).bind(thread_id.to_string()).bind(payload_json)
-+        .bind(thread_id.to_string()).bind(now_ms).bind(now_ms).bind(thread_id.to_string())
-+        .bind(i64::try_from(MAX_QUEUE_ITEMS)?).fetch_one(tx.as_mut()).await?;
-+        let submission = QueuedUserSubmissionRecord::try_from_row(&row)?;
-+        sqlx::query(
-+            "INSERT INTO queued_submission_receipts (thread_id, idempotency_key, item_id, payload_json, state)
-+             VALUES (?, ?, ?, ?, 'pending')",
-+        ).bind(thread_id.to_string()).bind(key).bind(&submission.id).bind(payload_json)
-+            .execute(tx.as_mut()).await?;
-+        tx.commit().await?;
-+        Ok(QueuedSubmissionReceiptRecord {
-+            submission: Some(submission),
-+            state: "pending".to_owned(),
-+        })
-+    }
-+
-+    pub async fn receipt_for_item(
-+        &self,
-+        thread_id: ThreadId,
-+        item_id: &str,
-+    ) -> anyhow::Result<Option<QueuedSubmissionReceiptRecord>> {
-+        let row = sqlx::query(
-+            "SELECT item_id AS id, thread_id, payload_json, state
-+             FROM queued_submission_receipts WHERE thread_id = ? AND item_id = ?",
-+        )
-+        .bind(thread_id.to_string())
-+        .bind(item_id)
-+        .fetch_optional(self.pool.as_ref())
-+        .await?;
-+        row.as_ref()
-+            .map(|row| {
-+                Ok(QueuedSubmissionReceiptRecord {
-+                    submission: Some(QueuedUserSubmissionRecord::try_from_row(row)?),
-+                    state: row.try_get("state")?,
-+                })
-+            })
-+            .transpose()
-+    }
-+
-+    pub async fn receipt_by_key(
-+        &self,
-+        thread_id: ThreadId,
-+        key: &str,
-+    ) -> anyhow::Result<Option<QueuedSubmissionReceiptRecord>> {
-+        let row = sqlx::query(
-+            "SELECT item_id AS id, thread_id, payload_json, state
-+             FROM queued_submission_receipts WHERE thread_id = ? AND idempotency_key = ?",
-+        )
-+        .bind(thread_id.to_string())
-+        .bind(key)
-+        .fetch_optional(self.pool.as_ref())
-+        .await?;
-+        row.as_ref()
-+            .map(|row| {
-+                Ok(QueuedSubmissionReceiptRecord {
-+                    submission: row
-+                        .try_get::<Option<String>, _>("id")?
-+                        .map(|_| QueuedUserSubmissionRecord::try_from_row(row))
-+                        .transpose()?,
-+                    state: row.try_get("state")?,
-+                })
-+            })
-+            .transpose()
-+    }
-+
-+    /// A tombstone also cancels an enqueue whose request has not arrived yet.
-+    pub async fn cancel_receipt_by_key(
-+        &self,
-+        thread_id: ThreadId,
-+        key: &str,
-+    ) -> anyhow::Result<QueuedSubmissionReceiptRecord> {
-+        let mut tx = self.pool.begin_with("BEGIN IMMEDIATE").await?;
-+        sqlx::query(
-+            "INSERT INTO queued_submission_receipts (thread_id, idempotency_key, state)
-+             VALUES (?, ?, 'cancelled') ON CONFLICT(thread_id, idempotency_key)
-+             DO UPDATE SET state = 'cancelled' WHERE state = 'pending'",
-+        )
-+        .bind(thread_id.to_string())
-+        .bind(key)
-+        .execute(tx.as_mut())
-+        .await?;
-+        let row = sqlx::query(
-+            "SELECT item_id AS id, thread_id, payload_json, state
-+             FROM queued_submission_receipts WHERE thread_id = ? AND idempotency_key = ?",
-+        )
-+        .bind(thread_id.to_string())
-+        .bind(key)
-+        .fetch_one(tx.as_mut())
-+        .await?;
-+        let receipt = QueuedSubmissionReceiptRecord {
-+            submission: row
-+                .try_get::<Option<String>, _>("id")?
-+                .map(|_| QueuedUserSubmissionRecord::try_from_row(&row))
-+                .transpose()?,
-+            state: row.try_get("state")?,
-+        };
-+        if receipt.state == "cancelled" {
-+            sqlx::query("DELETE FROM queued_items WHERE thread_id = ? AND id = ?")
-+                .bind(thread_id.to_string())
-+                .bind(row.try_get::<Option<String>, _>("id")?)
-+                .execute(tx.as_mut())
-+                .await?;
-+        }
-+        tx.commit().await?;
-+        Ok(receipt)
-+    }
-+
-+    /// Finish only a pending receipt, in the same commit that removes its queue item.
-+    pub async fn finish_receipt(
-+        &self,
-+        thread_id: ThreadId,
-+        item_id: &str,
-+        state: &str,
-+    ) -> anyhow::Result<bool> {
-+        if !matches!(state, "consumed" | "cancelled") {
-+            return Err(std::io::Error::new(
-+                std::io::ErrorKind::InvalidInput,
-+                "invalid terminal receipt state",
-+            )
-+            .into());
-+        }
-+        let mut tx = self.pool.begin_with("BEGIN IMMEDIATE").await?;
-+        sqlx::query("UPDATE queued_submission_receipts SET state = ? WHERE thread_id = ? AND item_id = ? AND state = 'pending'")
-+            .bind(state).bind(thread_id.to_string()).bind(item_id).execute(tx.as_mut()).await?;
-+        let deleted = sqlx::query("DELETE FROM queued_items WHERE thread_id = ? AND id = ?")
-+            .bind(thread_id.to_string())
-+            .bind(item_id)
-+            .execute(tx.as_mut())
-+            .await?
-+            .rows_affected()
-+            > 0;
-+        tx.commit().await?;
-+        Ok(deleted)
-+    }
-+
-     pub async fn list_page(
-         &self,
-         thread_id: ThreadId,
-@@ -150,15 +329,7 @@ impl SqliteQueueStore {
-     }
- 
-     pub async fn delete(&self, thread_id: ThreadId, item_id: &str) -> anyhow::Result<bool> {
--        Ok(
--            sqlx::query("DELETE FROM queued_items WHERE thread_id = ? AND id = ?")
--                .bind(thread_id.to_string())
--                .bind(item_id)
--                .execute(self.pool.as_ref())
--                .await?
--                .rows_affected()
--                > 0,
--        )
-+        self.finish_receipt(thread_id, item_id, "cancelled").await
-     }
- 
-     pub async fn reorder(&self, thread_id: ThreadId, ordered_ids: &[String]) -> anyhow::Result<()> {
-@@ -201,12 +372,19 @@ impl SqliteQueueStore {
-     }
- 
-     pub(crate) async fn delete_thread_queue(&self, thread_id: ThreadId) -> anyhow::Result<bool> {
--        Ok(sqlx::query("DELETE FROM queued_items WHERE thread_id = ?")
-+        let mut tx = self.pool.begin_with("BEGIN IMMEDIATE").await?;
-+        sqlx::query("DELETE FROM queued_submission_receipts WHERE thread_id = ?")
-+            .bind(thread_id.to_string())
-+            .execute(tx.as_mut())
-+            .await?;
-+        let deleted = sqlx::query("DELETE FROM queued_items WHERE thread_id = ?")
-             .bind(thread_id.to_string())
--            .execute(self.pool.as_ref())
-+            .execute(tx.as_mut())
-             .await?
-             .rows_affected()
--            > 0)
-+            > 0;
-+        tx.commit().await?;
-+        Ok(deleted)
-     }
- }
- 
-diff --git a/codex-rs/state/src/runtime/queued_items_tests.rs b/codex-rs/state/src/runtime/queued_items_tests.rs
-index 3f97eb3..2f5a0d2 100644
---- a/codex-rs/state/src/runtime/queued_items_tests.rs
-+++ b/codex-rs/state/src/runtime/queued_items_tests.rs
-@@ -276,3 +276,149 @@ async fn concurrent_inserts_enforce_the_queue_limit() {
-             .len()
-     );
- }
-+
-+#[tokio::test]
-+async fn keyed_enqueue_survives_retry_consume_cancel_and_reopen() {
-+    let (runtime, thread_id) = runtime_with_thread().await;
-+    let queue = runtime.thread_queue();
-+    let first = queue
-+        .enqueue_idempotent(thread_id, "wake-1", "payload")
-+        .await
-+        .unwrap();
-+    let retry = queue
-+        .enqueue_idempotent(thread_id, "wake-1", "payload")
-+        .await
-+        .unwrap();
-+    assert_eq!(first, retry);
-+    assert_eq!(1, queue.list_page(thread_id, 0, 10).await.unwrap().len());
-+    assert!(
-+        queue
-+            .enqueue_idempotent(thread_id, "wake-1", "changed")
-+            .await
-+            .is_err()
-+    );
-+    queue
-+        .finish_receipt(
-+            thread_id,
-+            &first.submission.as_ref().unwrap().id,
-+            "consumed",
-+        )
-+        .await
-+        .unwrap();
-+    let other = StateRuntime::init(runtime.sqlite().clone(), "test-provider".to_owned())
-+        .await
-+        .unwrap();
-+    let consumed = other
-+        .thread_queue()
-+        .enqueue_idempotent(thread_id, "wake-1", "payload")
-+        .await
-+        .unwrap();
-+    assert_eq!(first.submission, consumed.submission);
-+    assert_eq!("consumed", consumed.state);
-+    assert!(queue.list_page(thread_id, 0, 10).await.unwrap().is_empty());
-+    let cancelled = queue
-+        .enqueue_idempotent(thread_id, "wake-2", "payload")
-+        .await
-+        .unwrap();
-+    assert!(
-+        queue
-+            .delete(thread_id, &cancelled.submission.as_ref().unwrap().id)
-+            .await
-+            .unwrap()
-+    );
-+    assert_eq!(
-+        "cancelled",
-+        other
-+            .thread_queue()
-+            .enqueue_idempotent(thread_id, "wake-2", "payload")
-+            .await
-+            .unwrap()
-+            .state
-+    );
-+    assert!(queue.list_page(thread_id, 0, 10).await.unwrap().is_empty());
-+}
-+
-+#[tokio::test]
-+async fn competing_keyed_enqueue_is_atomic() {
-+    let (runtime, thread_id) = runtime_with_thread().await;
-+    let other = StateRuntime::init(runtime.sqlite().clone(), "test-provider".to_owned())
-+        .await
-+        .unwrap();
-+    let (first, second) = tokio::join!(
-+        runtime
-+            .thread_queue()
-+            .enqueue_idempotent(thread_id, "same", "payload"),
-+        other
-+            .thread_queue()
-+            .enqueue_idempotent(thread_id, "same", "payload"),
-+    );
-+    assert_eq!(first.unwrap(), second.unwrap());
-+    assert_eq!(
-+        1,
-+        runtime
-+            .thread_queue()
-+            .list_page(thread_id, 0, 10)
-+            .await
-+            .unwrap()
-+            .len()
-+    );
-+}
-+
-+#[tokio::test]
-+async fn cancellation_tombstone_prevents_a_delayed_enqueue() {
-+    let (runtime, thread_id) = runtime_with_thread().await;
-+    let cancelled = runtime
-+        .thread_queue()
-+        .cancel_receipt_by_key(thread_id, "delayed")
-+        .await
-+        .unwrap();
-+    assert_eq!(None, cancelled.submission);
-+    assert_eq!("cancelled", cancelled.state);
-+    let late = runtime
-+        .thread_queue()
-+        .enqueue_idempotent(thread_id, "delayed", "payload")
-+        .await
-+        .unwrap();
-+    assert_eq!(cancelled, late);
-+    assert!(
-+        runtime
-+            .thread_queue()
-+            .list_page(thread_id, 0, 10)
-+            .await
-+            .unwrap()
-+            .is_empty()
-+    );
-+}
-+
-+#[tokio::test]
-+async fn deleting_thread_queue_cleans_terminal_receipts() {
-+    let (runtime, thread_id) = runtime_with_thread().await;
-+    let queue = runtime.thread_queue();
-+    queue
-+        .cancel_receipt_by_key(thread_id, "cancelled")
-+        .await
-+        .unwrap();
-+    let pending = queue
-+        .enqueue_idempotent(thread_id, "consumed", "payload")
-+        .await
-+        .unwrap();
-+    queue
-+        .finish_receipt(thread_id, &pending.submission.unwrap().id, "consumed")
-+        .await
-+        .unwrap();
-+    queue.delete_thread_queue(thread_id).await.unwrap();
-+    assert!(
-+        queue
-+            .receipt_by_key(thread_id, "cancelled")
-+            .await
-+            .unwrap()
-+            .is_none()
-+    );
-+    assert!(
-+        queue
-+            .receipt_by_key(thread_id, "consumed")
-+            .await
-+            .unwrap()
-+            .is_none()
-+    );
-+}
-diff --git a/codex-rs/thread-store/src/lib.rs b/codex-rs/thread-store/src/lib.rs
-index 9cf1267..203e30c 100644
---- a/codex-rs/thread-store/src/lib.rs
-+++ b/codex-rs/thread-store/src/lib.rs
-@@ -20,6 +20,7 @@ pub use codex_state::AddThreadAttachmentOutcome;
- pub use codex_state::MAX_QUEUE_ITEMS;
- pub use codex_state::MAX_THREAD_ATTACHMENT_PAYLOAD_BYTES;
- pub use codex_state::ProjectSortKey;
-+pub use codex_state::QueuedSubmissionReceiptRecord;
- pub use codex_state::QueuedUserSubmissionRecord;
- pub use codex_state::RemoveThreadAttachmentOutcome;
- pub use codex_state::ThreadAttachment;
-diff --git a/codex-rs/thread-store/src/queue_store.rs b/codex-rs/thread-store/src/queue_store.rs
-index 74fc2fc..f840012 100644
---- a/codex-rs/thread-store/src/queue_store.rs
-+++ b/codex-rs/thread-store/src/queue_store.rs
-@@ -3,6 +3,7 @@ use std::future::Future;
- 
- use codex_protocol::ThreadId;
- use codex_rollout::StateDbHandle;
-+use codex_state::QueuedSubmissionReceiptRecord;
- use codex_state::QueuedUserSubmissionRecord;
- use codex_state::SqliteQueueStore;
- 
-@@ -28,6 +29,38 @@ pub trait QueueStore: Send + Sync {
-         payload: String,
-     ) -> ThreadStoreFuture<'_, QueuedUserSubmissionRecord>;
- 
-+    fn enqueue_idempotent(
-+        &self,
-+        thread_id: ThreadId,
-+        key: String,
-+        payload: String,
-+    ) -> ThreadStoreFuture<'_, QueuedSubmissionReceiptRecord>;
-+
-+    fn receipt_for_item(
-+        &self,
-+        thread_id: ThreadId,
-+        item_id: String,
-+    ) -> ThreadStoreFuture<'_, Option<QueuedSubmissionReceiptRecord>>;
-+
-+    fn receipt_by_key(
-+        &self,
-+        thread_id: ThreadId,
-+        key: String,
-+    ) -> ThreadStoreFuture<'_, Option<QueuedSubmissionReceiptRecord>>;
-+
-+    fn cancel_receipt_by_key(
-+        &self,
-+        thread_id: ThreadId,
-+        key: String,
-+    ) -> ThreadStoreFuture<'_, QueuedSubmissionReceiptRecord>;
-+
-+    fn finish_receipt(
-+        &self,
-+        thread_id: ThreadId,
-+        item_id: String,
-+        state: String,
-+    ) -> ThreadStoreFuture<'_, bool>;
-+
-     fn list_page(
-         &self,
-         thread_id: ThreadId,
-@@ -116,6 +149,66 @@ impl QueueStore for LocalQueueStore {
-         })
-     }
- 
-+    fn enqueue_idempotent(
-+        &self,
-+        thread_id: ThreadId,
-+        key: String,
-+        payload: String,
-+    ) -> ThreadStoreFuture<'_, QueuedSubmissionReceiptRecord> {
-+        Box::pin(async move {
-+            self.queue()
-+                .enqueue_idempotent(thread_id, &key, &payload)
-+                .await
-+                .map_err(|error| match error.downcast_ref::<std::io::Error>() {
-+                    Some(error) if error.kind() == std::io::ErrorKind::InvalidInput => {
-+                        ThreadStoreError::InvalidRequest {
-+                            message: error.to_string(),
-+                        }
-+                    }
-+                    _ => ThreadStoreError::Internal {
-+                        message: format!("queue storage failed: {error}"),
-+                    },
-+                })
-+        })
-+    }
-+
-+    fn receipt_for_item(
-+        &self,
-+        thread_id: ThreadId,
-+        item_id: String,
-+    ) -> ThreadStoreFuture<'_, Option<QueuedSubmissionReceiptRecord>> {
-+        queue_future(async move { self.queue().receipt_for_item(thread_id, &item_id).await })
-+    }
-+
-+    fn receipt_by_key(
-+        &self,
-+        thread_id: ThreadId,
-+        key: String,
-+    ) -> ThreadStoreFuture<'_, Option<QueuedSubmissionReceiptRecord>> {
-+        queue_future(async move { self.queue().receipt_by_key(thread_id, &key).await })
-+    }
-+
-+    fn cancel_receipt_by_key(
-+        &self,
-+        thread_id: ThreadId,
-+        key: String,
-+    ) -> ThreadStoreFuture<'_, QueuedSubmissionReceiptRecord> {
-+        queue_future(async move { self.queue().cancel_receipt_by_key(thread_id, &key).await })
-+    }
-+
-+    fn finish_receipt(
-+        &self,
-+        thread_id: ThreadId,
-+        item_id: String,
-+        state: String,
-+    ) -> ThreadStoreFuture<'_, bool> {
-+        queue_future(async move {
-+            self.queue()
-+                .finish_receipt(thread_id, &item_id, &state)
-+                .await
-+        })
-+    }
-+
-     fn list_page(
-         &self,
-         thread_id: ThreadId,
 diff --git a/codex-rs/tui/Cargo.toml b/codex-rs/tui/Cargo.toml
 index 45f5866..91c232f 100644
 --- a/codex-rs/tui/Cargo.toml
@@ -3328,6 +1572,746 @@ index 73bc892..5cd9303 100644
              pending_server_profiles: HashMap::new(),
              agents_overview: Default::default(),
              side_threads: HashMap::new(),
+diff --git a/codex-rs/tui/src/app_event.rs b/codex-rs/tui/src/app_event.rs
+index 4c6ede3..8f06bf2 100644
+--- a/codex-rs/tui/src/app_event.rs
++++ b/codex-rs/tui/src/app_event.rs
+@@ -404,6 +404,21 @@ pub(crate) enum AppEvent {
+         request_id: Uuid,
+         result: Result<AgentPickerThreadRefresh, String>,
+     },
++    WorkerHudLoaded {
++        primary_thread_id: ThreadId,
++        request_id: Uuid,
++        result: Result<Vec<crate::bottom_pane::worker_hud::WorkerRow>, String>,
++    },
++    ShellHudLoaded {
++        primary_thread_id: ThreadId,
++        request_id: Uuid,
++        result: Result<Vec<codex_app_server_protocol::ThreadBackgroundTerminal>, String>,
++    },
++    WatcherHealthLoaded {
++        primary_thread_id: ThreadId,
++        request_id: Uuid,
++        health: Option<crate::bottom_pane::worker_hud::WatcherHealth>,
++    },
+     /// Switch the active thread to the selected agent.
+     SelectAgentThread(ThreadId),
+ 
+diff --git a/codex-rs/tui/src/bottom_pane/mod.rs b/codex-rs/tui/src/bottom_pane/mod.rs
+index c0e3902..307ce15 100644
+--- a/codex-rs/tui/src/bottom_pane/mod.rs
++++ b/codex-rs/tui/src/bottom_pane/mod.rs
+@@ -202,6 +202,7 @@ mod paste_burst;
+ mod pending_input_preview;
+ mod pending_thread_approvals;
+ mod picker_option;
++pub(crate) mod worker_hud;
+ pub(crate) use picker_option::picker_option_list;
+ pub(crate) use picker_option::picker_option_row;
+ pub(crate) mod popup_consts;
+@@ -323,6 +324,7 @@ pub(crate) struct BottomPane {
+     pending_input_preview: PendingInputPreview,
+     /// Inactive threads with pending approval requests.
+     pending_thread_approvals: PendingThreadApprovals,
++    worker_hud: worker_hud::WorkerHud,
+     context_window_percent: Option<i64>,
+     context_window_used_tokens: Option<i64>,
+     keymap: RuntimeKeymap,
+@@ -395,6 +397,7 @@ impl BottomPane {
+             unified_exec_footer: UnifiedExecFooter::new(),
+             pending_input_preview: PendingInputPreview::new(),
+             pending_thread_approvals: PendingThreadApprovals::new(),
++            worker_hud: worker_hud::WorkerHud::default(),
+             esc_backtrack_hint: false,
+             animations_enabled,
+             effects,
+@@ -1644,6 +1647,34 @@ impl BottomPane {
+         self.request_redraw();
+     }
+ 
++    pub(crate) fn set_worker_hud(
++        &mut self,
++        rows: Vec<worker_hud::WorkerRow>,
++        stale: bool,
++        visible: bool,
++    ) {
++        if self.worker_hud.set(rows, stale, visible) {
++            self.request_redraw();
++        }
++    }
++
++    pub(crate) fn set_shell_hud(
++        &mut self,
++        rows: Vec<worker_hud::ShellRow>,
++        stale: bool,
++        visible: bool,
++    ) {
++        if self.worker_hud.set_shells(rows, stale, visible) {
++            self.request_redraw();
++        }
++    }
++
++    pub(crate) fn set_watcher_health(&mut self, health: Option<worker_hud::WatcherHealth>) {
++        if self.worker_hud.set_watcher(health) {
++            self.request_redraw();
++        }
++    }
++
+     /// Update the inactive-thread approval list shown above the composer.
+     pub(crate) fn set_pending_thread_approvals(&mut self, threads: Vec<String>) {
+         if self.pending_thread_approvals.set_threads(threads) {
+@@ -2357,6 +2388,7 @@ impl BottomPane {
+                 }))
+             };
+             flex2.push(/*flex*/ 0, composer);
++            flex2.push(/*flex*/ 1, RenderableItem::Borrowed(&self.worker_hud));
+             RenderableItem::Owned(Box::new(flex2))
+         }
+     }
+@@ -2591,6 +2623,85 @@ mod tests {
+         assert_eq!(pane.composer_text(), "main draft");
+     }
+ 
++    #[test]
++    fn worker_hud_keeps_idle_and_running_composer_editable_on_resize() {
++        let (tx, _rx) = unbounded_channel();
++        let mut pane = test_pane_with_disable_paste_burst(AppEventSender::new(tx), true);
++        pane.set_worker_hud(
++            vec![worker_hud::WorkerRow {
++                group: None,
++                dispatch_elapsed_secs: None,
++                task: "/root/build".to_string(),
++                state: worker_hud::WorkerState::Active,
++                elapsed_secs: Some(60),
++                total_tokens: Some(0),
++                model: Some("gpt-6-sol".to_string()),
++                reasoning_effort: None,
++            }],
++            false,
++            true,
++        );
++        pane.set_shell_hud(
++            (0..5)
++                .map(|n| worker_hud::ShellRow {
++                    command: format!("cargo test {n}"),
++                    job_id: n.to_string(),
++                    seen_secs: Some(60),
++                })
++                .collect(),
++            false,
++            true,
++        );
++        for running in [false, true] {
++            pane.set_task_running(running);
++            pane.handle_key_event(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE));
++            for width in [12, 40, 120] {
++                let full = Rect::new(0, 0, width, pane.desired_height(width));
++                assert!(render_snapshot(&pane, full).contains("Workers 1"));
++                for height in [3, full.height] {
++                    let area = Rect::new(0, 0, width, height);
++                    assert!(
++                        pane.cursor_pos(area)
++                            .is_some_and(|(_, y)| y < area.bottom())
++                    );
++                    assert!(render_snapshot(&pane, area).contains('x'));
++                }
++            }
++        }
++        assert_eq!(pane.composer_text(), "xx");
++    }
++
++    #[test]
++    fn worker_hud_watcher_warning_keeps_draft_and_cursor_on_resize() {
++        let (tx, _rx) = unbounded_channel();
++        let mut pane = test_pane_with_disable_paste_burst(AppEventSender::new(tx), true);
++        for running in [false, true] {
++            pane.set_task_running(running);
++            pane.handle_key_event(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE));
++            for health in [
++                worker_hud::WatcherHealth::Uncertain(1),
++                worker_hud::WatcherHealth::Unavailable,
++                worker_hud::WatcherHealth::Report(1),
++            ] {
++                pane.set_watcher_health(Some(health));
++                for width in [12, 40, 120] {
++                    let full = Rect::new(0, 0, width, pane.desired_height(width));
++                    assert!(render_snapshot(&pane, full).contains('x'));
++                    for height in [3, full.height] {
++                        let area = Rect::new(0, 0, width, height);
++                        assert!(
++                            pane.cursor_pos(area)
++                                .is_some_and(|(_, y)| y < area.bottom())
++                        );
++                        assert!(render_snapshot(&pane, area).contains('x'));
++                    }
++                }
++            }
++        }
++        pane.set_watcher_health(None);
++        assert_eq!(pane.composer_text(), "xx");
++    }
++
+     #[test]
+     fn inline_banner_snapshot() {
+         let (tx, _rx) = unbounded_channel();
+diff --git a/codex-rs/tui/src/chatwidget.rs b/codex-rs/tui/src/chatwidget.rs
+index 7dbb54b..7418bdd 100644
+--- a/codex-rs/tui/src/chatwidget.rs
++++ b/codex-rs/tui/src/chatwidget.rs
+@@ -257,6 +257,7 @@ use crate::tui::FrameRequester;
+ mod activity_groups;
+ mod activity_presentation;
+ mod command_lifecycle;
++pub(crate) mod shell_policy;
+ mod connector_mentions;
+ mod connectors;
+ mod constructor;
+@@ -599,6 +600,8 @@ pub(crate) struct ChatWidget {
+     suppress_image_paste_until: Instant,
+     copy_last_response_binding: Vec<KeyBinding>,
+     running_commands: HashMap<String, RunningCommand>,
++    managed_shells: HashMap<String, shell_policy::ManagedShell>,
++    remote_shell_hud: (Vec<crate::bottom_pane::worker_hud::ShellRow>, bool, bool),
+     collab_agent_metadata: HashMap<ThreadId, AgentMetadata>,
+     pending_collab_spawn_requests: HashMap<String, multi_agents::SpawnRequestSummary>,
+     suppressed_exec_calls: HashSet<String>,
+@@ -1162,6 +1165,7 @@ impl ChatWidget {
+     }
+ 
+     pub(crate) fn pre_draw_tick(&mut self) {
++        self.update_shell_visibility();
+         self.update_due_hook_visibility();
+         self.schedule_hook_timer_if_needed();
+         self.bottom_pane.pre_draw_tick();
+@@ -1184,6 +1188,7 @@ impl ChatWidget {
+     }
+ 
+     fn flush_active_cell(&mut self) {
++        self.discard_managed_shell_preview(false);
+         if let Some(active) = self.transcript.take_active_cell() {
+             self.app_event_tx.send(AppEvent::InsertHistoryCell(active));
+             self.request_pending_usage_output_insertion();
+@@ -1227,6 +1232,7 @@ impl ChatWidget {
+         &mut self,
+         cell: &dyn HistoryCell,
+     ) -> Option<Box<dyn HistoryCell>> {
++        self.discard_managed_shell_preview(false);
+         // Keep the placeholder session header as the active cell until real session info arrives,
+         // so we can merge headers instead of committing a duplicate box to history.
+         let keep_placeholder_header_active = !self.is_session_configured()
+@@ -1418,6 +1424,7 @@ impl ChatWidget {
+ 
+     /// Mark the active cell as failed (✗) and flush it into history.
+     fn finalize_active_cell_as_failed(&mut self) {
++        self.discard_managed_shell_preview(false);
+         if let Some(mut cell) = self.transcript.take_active_cell() {
+             // Insert finalized cell into history and keep grouping consistent.
+             if let Some(exec) = cell.as_any_mut().downcast_mut::<ExecCell>() {
+@@ -1435,6 +1442,32 @@ impl ChatWidget {
+         }
+     }
+ 
++    pub(crate) fn set_worker_hud(
++        &mut self,
++        rows: Vec<crate::bottom_pane::worker_hud::WorkerRow>,
++        stale: bool,
++        visible: bool,
++    ) {
++        self.bottom_pane.set_worker_hud(rows, stale, visible);
++    }
++
++    pub(crate) fn set_shell_hud(
++        &mut self,
++        rows: Vec<crate::bottom_pane::worker_hud::ShellRow>,
++        stale: bool,
++        visible: bool,
++    ) {
++        self.remote_shell_hud = (rows, stale, visible);
++        self.publish_shell_hud();
++    }
++
++    pub(crate) fn set_watcher_health(
++        &mut self,
++        health: Option<crate::bottom_pane::worker_hud::WatcherHealth>,
++    ) {
++        self.bottom_pane.set_watcher_health(health);
++    }
++
+     pub(crate) fn set_pending_thread_approvals(&mut self, threads: Vec<String>) {
+         self.bottom_pane.set_pending_thread_approvals(threads);
+     }
+@@ -1481,6 +1514,8 @@ impl ChatWidget {
+     fn clean_background_terminals(&mut self) {
+         self.submit_op(AppCommand::clean_background_terminals());
+         self.unified_exec_processes.clear();
++        self.managed_shells.clear();
++        self.publish_shell_hud();
+         self.sync_unified_exec_footer();
+         self.add_info_message(
+             "Stopping all background terminals.".to_string(),
+diff --git a/codex-rs/tui/src/chatwidget/command_lifecycle.rs b/codex-rs/tui/src/chatwidget/command_lifecycle.rs
+index a0533b3..dd4f367 100644
+--- a/codex-rs/tui/src/chatwidget/command_lifecycle.rs
++++ b/codex-rs/tui/src/chatwidget/command_lifecycle.rs
+@@ -3,8 +3,12 @@
+ //! This module owns command start/output/completion rendering, including active
+ //! exec-cell grouping and unified exec wait state.
+ 
++use super::shell_policy::{
++    ShellVisibility, eligible_shell, quiet_shell, shell_directive, shell_result,
++};
+ use super::*;
+ use crate::exec_cell::CommandOutput;
++use codex_protocol::parse_command::ParsedCommand;
+ 
+ impl ChatWidget {
+     pub(super) fn flush_unified_exec_wait_streak(&mut self) {
+@@ -30,18 +34,29 @@ impl ChatWidget {
+         else {
+             return;
+         };
++        if *source == ExecCommandSource::UnifiedExecInteraction
++            && process_id.as_ref().is_some_and(|process_id| {
++                self.managed_shells
++                    .values()
++                    .any(|shell| shell.process_id.as_ref() == Some(process_id))
++            })
++        {
++            self.suppressed_exec_calls.insert(id.clone());
++            return;
++        }
++        let managed = self.register_managed_shell(&item);
+         let (_command, parsed_cmd) = command_execution_command_and_parsed(command, command_actions);
+         self.flush_answer_stream_with_separator();
+         if is_unified_exec_source(*source) {
+             if *source == ExecCommandSource::UnifiedExecStartup {
+                 self.track_unified_exec_process_begin(id, process_id.as_deref(), command);
+             }
+-            if !self.bottom_pane.is_task_running() {
++            if !managed && !self.bottom_pane.is_task_running() {
+                 return;
+             }
+             // Unified exec may be parsed as Unknown; keep the working indicator visible regardless.
+             self.bottom_pane.ensure_status_indicator();
+-            if !is_standard_tool_call(&parsed_cmd) {
++            if !managed && !is_standard_tool_call(&parsed_cmd) {
+                 return;
+             }
+         }
+@@ -54,7 +69,15 @@ impl ChatWidget {
+ 
+     pub(super) fn on_exec_command_output_delta(&mut self, call_id: &str, delta: &str) {
+         self.track_unified_exec_output_chunk(call_id, delta.as_bytes());
+-        if !self.bottom_pane.is_task_running() {
++        self.update_shell_visibility();
++        if self
++            .managed_shells
++            .get(call_id)
++            .is_some_and(|shell| shell.quiet)
++        {
++            return;
++        }
++        if !self.managed_shells.contains_key(call_id) && !self.bottom_pane.is_task_running() {
+             return;
+         }
+ 
+@@ -74,14 +97,37 @@ impl ChatWidget {
+     }
+ 
+     pub(super) fn on_terminal_interaction(&mut self, process_id: String, stdin: String) {
+-        if !self.bottom_pane.is_task_running() {
++        let managed_id = self
++            .managed_shells
++            .iter()
++            .find(|(_, shell)| shell.process_id.as_deref() == Some(&process_id))
++            .map(|(id, _)| id.clone());
++        if let Some(id) = managed_id.as_ref() {
++            if stdin.is_empty() {
++                return;
++            }
++            if let Some(shell) = self.managed_shells.get_mut(id) {
++                shell.policy = ShellVisibility::Foreground;
++                shell.quiet = false;
++            }
++            self.publish_shell_hud();
++        }
++        if managed_id.is_none() && !self.bottom_pane.is_task_running() {
+             return;
+         }
+-        let command_display = self
+-            .unified_exec_processes
+-            .iter()
+-            .find(|process| process.key == process_id)
+-            .map(|process| process.command_display.clone());
++        let command_display = managed_id
++            .as_ref()
++            .and_then(|id| {
++                self.managed_shells
++                    .get(id)
++                    .map(|shell| shell.command.clone())
++            })
++            .or_else(|| {
++                self.unified_exec_processes
++                    .iter()
++                    .find(|process| process.key == process_id)
++                    .map(|process| process.command_display.clone())
++            });
+         if stdin.is_empty() && command_display.is_none() {
+             return;
+         }
+@@ -135,6 +181,7 @@ impl ChatWidget {
+     pub(super) fn on_command_execution_completed(&mut self, item: ThreadItem) {
+         let ThreadItem::CommandExecution {
+             id,
++            command,
+             process_id,
+             source,
+             ..
+@@ -142,6 +189,16 @@ impl ChatWidget {
+         else {
+             return;
+         };
++        if *source == ExecCommandSource::UnifiedExecInteraction
++            && process_id.as_ref().is_some_and(|process_id| {
++                self.managed_shells
++                    .values()
++                    .any(|shell| shell.process_id.as_ref() == Some(process_id))
++            })
++        {
++            self.suppressed_exec_calls.remove(id);
++            return;
++        }
+         if is_unified_exec_source(*source) {
+             if let Some(process_id) = process_id.as_deref()
+                 && self
+@@ -152,7 +209,10 @@ impl ChatWidget {
+                 self.flush_unified_exec_wait_streak();
+             }
+             self.track_unified_exec_process_end(id, process_id.as_deref());
+-            if !self.bottom_pane.is_task_running() {
++            if !self.managed_shells.contains_key(id)
++                && !(eligible_shell(*source) && shell_directive(command).is_some())
++                && !self.bottom_pane.is_task_running()
++            {
+                 return;
+             }
+         }
+@@ -171,7 +231,9 @@ impl ChatWidget {
+     ) {
+         let key = process_id.unwrap_or(call_id).to_string();
+         let command = split_command_string(command);
+-        let command_display = strip_bash_lc_and_escape(&command);
++        let command_display = shell_directive(&strip_bash_lc_and_escape(&command))
++            .map(|(_, command)| command)
++            .unwrap_or_else(|| strip_bash_lc_and_escape(&command));
+         if let Some(existing) = self
+             .unified_exec_processes
+             .iter_mut()
+@@ -241,6 +303,8 @@ impl ChatWidget {
+     }
+ 
+     pub(crate) fn handle_command_execution_started_now(&mut self, item: ThreadItem) {
++        self.register_managed_shell(&item);
++        self.update_shell_visibility();
+         let ThreadItem::CommandExecution {
+             id,
+             command,
+@@ -251,8 +315,24 @@ impl ChatWidget {
+         else {
+             return;
+         };
+-        let (command, parsed_cmd) =
++        let directive = eligible_shell(source)
++            .then(|| shell_directive(&command))
++            .flatten();
++        let (mut command, mut parsed_cmd) =
+             command_execution_command_and_parsed(&command, &command_actions);
++        if let Some((_, body)) = directive {
++            command = vec!["bash".to_string(), "-lc".to_string(), body.clone()];
++            parsed_cmd = vec![ParsedCommand::Unknown { cmd: body }];
++        }
++        if self
++            .managed_shells
++            .get(&id)
++            .is_some_and(|shell| shell.quiet)
++        {
++            self.publish_shell_hud();
++            self.request_redraw();
++            return;
++        }
+         // Ensure the status indicator is visible while the command runs.
+         self.bottom_pane.ensure_status_indicator();
+         let parsed_cmd = self.annotate_skill_reads_in_parsed_cmd(parsed_cmd);
+@@ -333,7 +413,7 @@ impl ChatWidget {
+         let ThreadItem::CommandExecution {
+             id,
+             command,
+-            process_id: _,
++            process_id,
+             source,
+             status,
+             command_actions,
+@@ -345,11 +425,21 @@ impl ChatWidget {
+         else {
+             return;
+         };
+-        let event_command = split_command_string(&command);
+-        let event_parsed = command_actions
++        let directive = eligible_shell(source)
++            .then(|| shell_directive(&command))
++            .flatten();
++        let event_command = directive
++            .as_ref()
++            .map(|(_, body)| vec!["bash".to_string(), "-lc".to_string(), body.clone()])
++            .unwrap_or_else(|| split_command_string(&command));
++        let event_parsed: Vec<_> = command_actions
+             .into_iter()
+             .map(codex_app_server_protocol::CommandAction::into_core)
+             .collect();
++        let event_parsed = directive
++            .as_ref()
++            .map(|(_, body)| vec![ParsedCommand::Unknown { cmd: body.clone() }])
++            .unwrap_or(event_parsed);
+         let duration = Duration::from_millis(duration_ms.unwrap_or_default().max(0) as u64);
+         let exit_code = if status == codex_app_server_protocol::CommandExecutionStatus::Completed {
+             exit_code.unwrap_or_default()
+@@ -358,7 +448,52 @@ impl ChatWidget {
+         };
+         let aggregated_output = aggregated_output.unwrap_or_default();
+ 
++        self.update_shell_visibility();
++        let reported_duration = duration_ms
++            .filter(|ms| *ms >= 0)
++            .map(|ms| Duration::from_millis(ms as u64));
++        // Stock replay omits stdin notifications; interactive commands must launch foreground.
++        let quiet = self
++            .managed_shells
++            .get(&id)
++            .map(|shell| shell.quiet || quiet_shell(shell.policy, reported_duration))
++            .unwrap_or_else(|| {
++                directive.as_ref().is_some_and(|(policy, _)| {
++                    quiet_shell(
++                        *policy,
++                        duration_ms
++                            .filter(|ms| *ms >= 0)
++                            .map(|ms| Duration::from_millis(ms as u64)),
++                    )
++                })
++            });
++        let command_display = self
++            .managed_shells
++            .get(&id)
++            .map(|shell| shell.command.clone())
++            .or_else(|| directive.map(|(_, command)| command));
++        if quiet && let Some(shell) = self.managed_shells.get_mut(&id) {
++            shell.quiet = true;
++        }
++        self.discard_managed_shell_preview(true);
++        self.managed_shells.remove(&id);
++        if command_display.is_some() {
++            self.track_unified_exec_process_end(&id, process_id.as_deref());
++        }
++        self.publish_shell_hud();
+         let running = self.running_commands.remove(&id);
++        if quiet {
++            self.suppressed_exec_calls.remove(&id);
++            let cell = PlainHistoryCell::new(shell_result(
++                command_display.as_deref().unwrap_or(&command),
++                &aggregated_output,
++                exit_code,
++            ));
++            self.app_event_tx
++                .send(AppEvent::InsertHistoryCell(Box::new(cell)));
++            self.request_redraw();
++            return;
++        }
+         if self.suppressed_exec_calls.remove(&id) {
+             return;
+         }
+diff --git a/codex-rs/tui/src/chatwidget/constructor.rs b/codex-rs/tui/src/chatwidget/constructor.rs
+index dc5adf7..6196a6a 100644
+--- a/codex-rs/tui/src/chatwidget/constructor.rs
++++ b/codex-rs/tui/src/chatwidget/constructor.rs
+@@ -182,6 +182,8 @@ impl ChatWidget {
+             suppress_image_paste_until: Instant::now(),
+             copy_last_response_binding,
+             running_commands: HashMap::new(),
++            managed_shells: HashMap::new(),
++            remote_shell_hud: (Vec::new(), false, false),
+             collab_agent_metadata: HashMap::new(),
+             pending_collab_spawn_requests: HashMap::new(),
+             suppressed_exec_calls: HashSet::new(),
+diff --git a/codex-rs/tui/src/chatwidget/session_flow.rs b/codex-rs/tui/src/chatwidget/session_flow.rs
+index 97c7de5..577c181 100644
+--- a/codex-rs/tui/src/chatwidget/session_flow.rs
++++ b/codex-rs/tui/src/chatwidget/session_flow.rs
+@@ -324,6 +324,8 @@ impl ChatWidget {
+         self.turn_lifecycle.reset_thread();
+         self.review = Default::default();
+         self.transcript.take_active_cell();
++        self.managed_shells.clear();
++        self.publish_shell_hud();
+         self.transcript.reset_copy_history();
+         self.transcript.reset_turn_flags();
+         for turn in retained_turns {
+diff --git a/codex-rs/tui/src/chatwidget/tests.rs b/codex-rs/tui/src/chatwidget/tests.rs
+index fd24d32..a36371a 100644
+--- a/codex-rs/tui/src/chatwidget/tests.rs
++++ b/codex-rs/tui/src/chatwidget/tests.rs
+@@ -248,6 +248,7 @@ mod copy_export_picker_tests;
+ #[path = "tests/dynamic_activity_tests.rs"]
+ mod dynamic_activity_tests;
+ mod exec_flow;
++mod shell_policy;
+ mod goal_menu;
+ mod goal_validation;
+ mod guardian;
+diff --git a/codex-rs/tui/src/thread_transcript/tools.rs b/codex-rs/tui/src/thread_transcript/tools.rs
+index 73e80d6..e665186 100644
+--- a/codex-rs/tui/src/thread_transcript/tools.rs
++++ b/codex-rs/tui/src/thread_transcript/tools.rs
+@@ -6,6 +6,7 @@
+ 
+ use std::time::Duration;
+ 
++use crate::chatwidget::shell_policy::{eligible_shell, quiet_shell, shell_directive, shell_result};
+ use crate::exec_cell::CommandOutput;
+ use crate::exec_cell::ExecCell;
+ use crate::exec_cell::new_active_exec_command;
+@@ -28,6 +29,39 @@ use ratatui::text::Line;
+ /// Declined commands never ran, and historical terminal interactions do not carry stdin details.
+ /// Pending items retain their last known state without starting a running clock.
+ pub(crate) fn historical_tool_fallback(item: &ThreadItem) -> Option<PlainHistoryCell> {
++    if let ThreadItem::CommandExecution {
++        command,
++        source,
++        status,
++        aggregated_output,
++        exit_code,
++        duration_ms,
++        ..
++    } = item
++        && eligible_shell(*source)
++        && let Some((policy, command)) = shell_directive(command)
++        && matches!(
++            status,
++            CommandExecutionStatus::Completed | CommandExecutionStatus::Failed
++        )
++        && quiet_shell(
++            policy,
++            duration_ms
++                .filter(|ms| *ms >= 0)
++                .map(|ms| Duration::from_millis(ms as u64)),
++        )
++    {
++        let exit = if *status == CommandExecutionStatus::Completed {
++            exit_code.unwrap_or_default()
++        } else {
++            exit_code.filter(|code| *code != 0).unwrap_or(1)
++        };
++        return Some(PlainHistoryCell::new(shell_result(
++            &command,
++            aggregated_output.as_deref().unwrap_or_default(),
++            exit,
++        )));
++    }
+     let lines = match item {
+         ThreadItem::CommandExecution {
+             command,
+@@ -156,11 +190,23 @@ impl CommandHistory {
+         };
+         Some(Self {
+             id,
+-            command: replay_command_args(&command)?,
+-            parsed: command_actions
+-                .into_iter()
+-                .map(codex_app_server_protocol::CommandAction::into_core)
+-                .collect(),
++            command: if eligible_shell(source)
++                && let Some((_, body)) = shell_directive(&command)
++            {
++                vec!["bash".into(), "-lc".into(), body]
++            } else {
++                replay_command_args(&command)?
++            },
++            parsed: if eligible_shell(source)
++                && let Some((_, body)) = shell_directive(&command)
++            {
++                vec![ParsedCommand::Unknown { cmd: body }]
++            } else {
++                command_actions
++                    .into_iter()
++                    .map(codex_app_server_protocol::CommandAction::into_core)
++                    .collect()
++            },
+             source,
+             aggregated_output: aggregated_output.unwrap_or_default(),
+             exit_code,
+diff --git a/codex-rs/tui/src/thread_transcript/tools_tests.rs b/codex-rs/tui/src/thread_transcript/tools_tests.rs
+index 267168c..00163ef 100644
+--- a/codex-rs/tui/src/thread_transcript/tools_tests.rs
++++ b/codex-rs/tui/src/thread_transcript/tools_tests.rs
+@@ -337,3 +337,59 @@ fn agent_tool_fallbacks_preserve_status_without_duplicating_v2_activity() {
+     }
+     insta::assert_snapshot!(snapshots.join("\n"));
+ }
++
++#[test]
++fn shell_policy_persisted_pages_match_compact_and_quick_replay() {
++    let cwd = test_path_buf("/workspace").abs();
++    for (policy, duration, compact) in [
++        ("auto", Some(2000), false),
++        ("auto", Some(2001), true),
++        ("auto", None, false),
++        ("background", None, true),
++        ("foreground", Some(9000), false),
++    ] {
++        let mut item = command_item(CommandExecutionStatus::Completed);
++        if let ThreadItem::CommandExecution {
++            command,
++            duration_ms,
++            aggregated_output,
++            ..
++        } = &mut item
++        {
++            *command = shlex::try_join([
++                "bash",
++                "-lc",
++                &format!("# codex-plus-shell: {policy}\necho result"),
++            ])
++            .unwrap();
++            *duration_ms = duration;
++            *aggregated_output = Some(
++                "codex-plus log: /tmp/job.log\nnoise\ncodex-plus result: exit=0 log=/tmp/job.log\n"
++                    .into(),
++            );
++        }
++        let cells = thread_items_to_transcript_cells(
++            None,
++            &cwd,
++            [item],
++            RawReasoningVisibility::Hidden,
++            None,
++        );
++        let text = cells
++            .iter()
++            .flat_map(|cell| cell.transcript_lines(80))
++            .flat_map(|line| line.spans)
++            .map(|span| span.content.into_owned())
++            .collect::<String>();
++        assert_eq!(
++            text.contains("Shell completed"),
++            compact,
++            "{policy} {duration:?}: {text}"
++        );
++        assert_eq!(text.contains("noise"), !compact);
++        assert!(!text.contains("codex-plus-shell"));
++        if compact {
++            assert!(text.contains("Log: /tmp/job.log"));
++        }
++    }
++}
 diff --git a/codex-rs/tui/src/app/worker_hud.rs b/codex-rs/tui/src/app/worker_hud.rs
 new file mode 100644
 index 0000000..109777c
@@ -4728,189 +3712,6 @@ index 0000000..109777c
 +        assert!(a.pending.is_none());
 +    }
 +}
-diff --git a/codex-rs/tui/src/app_event.rs b/codex-rs/tui/src/app_event.rs
-index 4c6ede3..8f06bf2 100644
---- a/codex-rs/tui/src/app_event.rs
-+++ b/codex-rs/tui/src/app_event.rs
-@@ -404,6 +404,21 @@ pub(crate) enum AppEvent {
-         request_id: Uuid,
-         result: Result<AgentPickerThreadRefresh, String>,
-     },
-+    WorkerHudLoaded {
-+        primary_thread_id: ThreadId,
-+        request_id: Uuid,
-+        result: Result<Vec<crate::bottom_pane::worker_hud::WorkerRow>, String>,
-+    },
-+    ShellHudLoaded {
-+        primary_thread_id: ThreadId,
-+        request_id: Uuid,
-+        result: Result<Vec<codex_app_server_protocol::ThreadBackgroundTerminal>, String>,
-+    },
-+    WatcherHealthLoaded {
-+        primary_thread_id: ThreadId,
-+        request_id: Uuid,
-+        health: Option<crate::bottom_pane::worker_hud::WatcherHealth>,
-+    },
-     /// Switch the active thread to the selected agent.
-     SelectAgentThread(ThreadId),
- 
-diff --git a/codex-rs/tui/src/bottom_pane/mod.rs b/codex-rs/tui/src/bottom_pane/mod.rs
-index c0e3902..307ce15 100644
---- a/codex-rs/tui/src/bottom_pane/mod.rs
-+++ b/codex-rs/tui/src/bottom_pane/mod.rs
-@@ -202,6 +202,7 @@ mod paste_burst;
- mod pending_input_preview;
- mod pending_thread_approvals;
- mod picker_option;
-+pub(crate) mod worker_hud;
- pub(crate) use picker_option::picker_option_list;
- pub(crate) use picker_option::picker_option_row;
- pub(crate) mod popup_consts;
-@@ -323,6 +324,7 @@ pub(crate) struct BottomPane {
-     pending_input_preview: PendingInputPreview,
-     /// Inactive threads with pending approval requests.
-     pending_thread_approvals: PendingThreadApprovals,
-+    worker_hud: worker_hud::WorkerHud,
-     context_window_percent: Option<i64>,
-     context_window_used_tokens: Option<i64>,
-     keymap: RuntimeKeymap,
-@@ -395,6 +397,7 @@ impl BottomPane {
-             unified_exec_footer: UnifiedExecFooter::new(),
-             pending_input_preview: PendingInputPreview::new(),
-             pending_thread_approvals: PendingThreadApprovals::new(),
-+            worker_hud: worker_hud::WorkerHud::default(),
-             esc_backtrack_hint: false,
-             animations_enabled,
-             effects,
-@@ -1644,6 +1647,34 @@ impl BottomPane {
-         self.request_redraw();
-     }
- 
-+    pub(crate) fn set_worker_hud(
-+        &mut self,
-+        rows: Vec<worker_hud::WorkerRow>,
-+        stale: bool,
-+        visible: bool,
-+    ) {
-+        if self.worker_hud.set(rows, stale, visible) {
-+            self.request_redraw();
-+        }
-+    }
-+
-+    pub(crate) fn set_shell_hud(
-+        &mut self,
-+        rows: Vec<worker_hud::ShellRow>,
-+        stale: bool,
-+        visible: bool,
-+    ) {
-+        if self.worker_hud.set_shells(rows, stale, visible) {
-+            self.request_redraw();
-+        }
-+    }
-+
-+    pub(crate) fn set_watcher_health(&mut self, health: Option<worker_hud::WatcherHealth>) {
-+        if self.worker_hud.set_watcher(health) {
-+            self.request_redraw();
-+        }
-+    }
-+
-     /// Update the inactive-thread approval list shown above the composer.
-     pub(crate) fn set_pending_thread_approvals(&mut self, threads: Vec<String>) {
-         if self.pending_thread_approvals.set_threads(threads) {
-@@ -2357,6 +2388,7 @@ impl BottomPane {
-                 }))
-             };
-             flex2.push(/*flex*/ 0, composer);
-+            flex2.push(/*flex*/ 1, RenderableItem::Borrowed(&self.worker_hud));
-             RenderableItem::Owned(Box::new(flex2))
-         }
-     }
-@@ -2591,6 +2623,85 @@ mod tests {
-         assert_eq!(pane.composer_text(), "main draft");
-     }
- 
-+    #[test]
-+    fn worker_hud_keeps_idle_and_running_composer_editable_on_resize() {
-+        let (tx, _rx) = unbounded_channel();
-+        let mut pane = test_pane_with_disable_paste_burst(AppEventSender::new(tx), true);
-+        pane.set_worker_hud(
-+            vec![worker_hud::WorkerRow {
-+                group: None,
-+                dispatch_elapsed_secs: None,
-+                task: "/root/build".to_string(),
-+                state: worker_hud::WorkerState::Active,
-+                elapsed_secs: Some(60),
-+                total_tokens: Some(0),
-+                model: Some("gpt-6-sol".to_string()),
-+                reasoning_effort: None,
-+            }],
-+            false,
-+            true,
-+        );
-+        pane.set_shell_hud(
-+            (0..5)
-+                .map(|n| worker_hud::ShellRow {
-+                    command: format!("cargo test {n}"),
-+                    job_id: n.to_string(),
-+                    seen_secs: Some(60),
-+                })
-+                .collect(),
-+            false,
-+            true,
-+        );
-+        for running in [false, true] {
-+            pane.set_task_running(running);
-+            pane.handle_key_event(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE));
-+            for width in [12, 40, 120] {
-+                let full = Rect::new(0, 0, width, pane.desired_height(width));
-+                assert!(render_snapshot(&pane, full).contains("Workers 1"));
-+                for height in [3, full.height] {
-+                    let area = Rect::new(0, 0, width, height);
-+                    assert!(
-+                        pane.cursor_pos(area)
-+                            .is_some_and(|(_, y)| y < area.bottom())
-+                    );
-+                    assert!(render_snapshot(&pane, area).contains('x'));
-+                }
-+            }
-+        }
-+        assert_eq!(pane.composer_text(), "xx");
-+    }
-+
-+    #[test]
-+    fn worker_hud_watcher_warning_keeps_draft_and_cursor_on_resize() {
-+        let (tx, _rx) = unbounded_channel();
-+        let mut pane = test_pane_with_disable_paste_burst(AppEventSender::new(tx), true);
-+        for running in [false, true] {
-+            pane.set_task_running(running);
-+            pane.handle_key_event(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE));
-+            for health in [
-+                worker_hud::WatcherHealth::Uncertain(1),
-+                worker_hud::WatcherHealth::Unavailable,
-+                worker_hud::WatcherHealth::Report(1),
-+            ] {
-+                pane.set_watcher_health(Some(health));
-+                for width in [12, 40, 120] {
-+                    let full = Rect::new(0, 0, width, pane.desired_height(width));
-+                    assert!(render_snapshot(&pane, full).contains('x'));
-+                    for height in [3, full.height] {
-+                        let area = Rect::new(0, 0, width, height);
-+                        assert!(
-+                            pane.cursor_pos(area)
-+                                .is_some_and(|(_, y)| y < area.bottom())
-+                        );
-+                        assert!(render_snapshot(&pane, area).contains('x'));
-+                    }
-+                }
-+            }
-+        }
-+        pane.set_watcher_health(None);
-+        assert_eq!(pane.composer_text(), "xx");
-+    }
-+
-     #[test]
-     fn inline_banner_snapshot() {
-         let (tx, _rx) = unbounded_channel();
 diff --git a/codex-rs/tui/src/bottom_pane/worker_hud.rs b/codex-rs/tui/src/bottom_pane/worker_hud.rs
 new file mode 100644
 index 0000000..5cedcb4
@@ -5889,66 +4690,675 @@ index 0000000..5cedcb4
 +        assert_eq!(model_label(None), "?");
 +    }
 +}
-diff --git a/codex-rs/tui/src/chatwidget.rs b/codex-rs/tui/src/chatwidget.rs
-index 7dbb54b..facd3b1 100644
---- a/codex-rs/tui/src/chatwidget.rs
-+++ b/codex-rs/tui/src/chatwidget.rs
-@@ -1435,6 +1435,31 @@ impl ChatWidget {
-         }
-     }
- 
-+    pub(crate) fn set_worker_hud(
-+        &mut self,
-+        rows: Vec<crate::bottom_pane::worker_hud::WorkerRow>,
-+        stale: bool,
-+        visible: bool,
-+    ) {
-+        self.bottom_pane.set_worker_hud(rows, stale, visible);
-+    }
-+
-+    pub(crate) fn set_shell_hud(
-+        &mut self,
-+        rows: Vec<crate::bottom_pane::worker_hud::ShellRow>,
-+        stale: bool,
-+        visible: bool,
-+    ) {
-+        self.bottom_pane.set_shell_hud(rows, stale, visible);
-+    }
-+
-+    pub(crate) fn set_watcher_health(
-+        &mut self,
-+        health: Option<crate::bottom_pane::worker_hud::WatcherHealth>,
-+    ) {
-+        self.bottom_pane.set_watcher_health(health);
-+    }
-+
-     pub(crate) fn set_pending_thread_approvals(&mut self, threads: Vec<String>) {
-         self.bottom_pane.set_pending_thread_approvals(threads);
-     }
-diff --git a/codex-rs/tui/src/session_queue_commands.rs b/codex-rs/tui/src/session_queue_commands.rs
-index 9752a42..3295d4f 100644
---- a/codex-rs/tui/src/session_queue_commands.rs
-+++ b/codex-rs/tui/src/session_queue_commands.rs
-@@ -114,6 +114,7 @@ pub(super) async fn run_session_queue_action_with_app_server(
-         .request_typed(ClientRequest::ThreadQueueAdd {
-             request_id,
-             params: ThreadQueueAddParams {
-+                idempotency_key: None,
-                 thread_id: thread_id.to_string(),
-                 input: vec![UserInput::Text {
-                     text: message.to_string(),
-diff --git a/codex-rs/state/queue_migrations/0003_queued_submission_receipts.sql b/codex-rs/state/queue_migrations/0003_queued_submission_receipts.sql
+diff --git a/codex-rs/tui/src/chatwidget/shell_policy.rs b/codex-rs/tui/src/chatwidget/shell_policy.rs
 new file mode 100644
-index 0000000..f14c026
+index 0000000..44a8af4
 --- /dev/null
-+++ b/codex-rs/state/queue_migrations/0003_queued_submission_receipts.sql
-@@ -0,0 +1,9 @@
-+CREATE TABLE queued_submission_receipts (
-+    thread_id TEXT NOT NULL,
-+    idempotency_key TEXT NOT NULL,
-+    item_id TEXT,
-+    payload_json TEXT,
-+    state TEXT NOT NULL CHECK (state IN ('pending', 'consumed', 'cancelled')),
-+    PRIMARY KEY (thread_id, idempotency_key),
-+    UNIQUE (thread_id, item_id)
-+);
++++ b/codex-rs/tui/src/chatwidget/shell_policy.rs
+@@ -0,0 +1,282 @@
++//! Explicit presentation policy for noninteractive agent shell commands.
++
++use super::*;
++use crate::bottom_pane::worker_hud::ShellRow;
++use codex_shell_command::parse_command::extract_shell_command;
++
++pub(crate) const SHELL_FOREGROUND_LIMIT: Duration = Duration::from_secs(2);
++
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++pub(crate) enum ShellVisibility {
++    Auto,
++    Background,
++    Foreground,
++}
++
++pub(super) struct ManagedShell {
++    pub(super) policy: ShellVisibility,
++    pub(super) started: Instant,
++    pub(super) quiet: bool,
++    pub(super) process_id: Option<String>,
++    pub(super) command: String,
++}
++
++/// Recognize only a complete first directive line, after shell wrappers.
++pub(crate) fn shell_directive(command: &str) -> Option<(ShellVisibility, String)> {
++    let mut script = command.to_string();
++    // Each unwrap removes a shell invocation; repeated scripts cannot make progress.
++    for _ in 0..16 {
++        let (first, body) = script.split_once('\n').unwrap_or((&script, ""));
++        let policy = match first {
++            "# codex-plus-shell: auto" => Some(ShellVisibility::Auto),
++            "# codex-plus-shell: background" => Some(ShellVisibility::Background),
++            "# codex-plus-shell: foreground" => Some(ShellVisibility::Foreground),
++            _ => None,
++        };
++        if let Some(policy) = policy {
++            return Some((policy, shell_command_label(body)));
++        }
++        let parts = split_command_string(&script);
++        let (_, inner) = extract_shell_command(&parts)?;
++        if inner == script {
++            return None;
++        }
++        script = inner.to_string();
++    }
++    None
++}
++
++fn shell_command_label(body: &str) -> String {
++    let parts = split_command_string(body);
++    if parts.len() > 3
++        && std::path::Path::new(&parts[0])
++            .file_name()
++            .is_some_and(|name| name == "codex-plus")
++        && parts[1] == "run"
++        && parts[2] == "--"
++    {
++        return crate::exec_command::escape_command(&parts[3..]);
++    }
++    body.to_string()
++}
++
++pub(crate) fn eligible_shell(source: ExecCommandSource) -> bool {
++    matches!(
++        source,
++        ExecCommandSource::Agent | ExecCommandSource::UnifiedExecStartup
++    )
++}
++
++pub(crate) fn quiet_shell(policy: ShellVisibility, duration: Option<Duration>) -> bool {
++    policy == ShellVisibility::Background
++        || (policy == ShellVisibility::Auto
++            && duration.is_some_and(|duration| duration > SHELL_FOREGROUND_LIMIT))
++}
++
++fn shell_text(text: &str, limit: usize) -> String {
++    let text = codex_ansi_escape::ansi_escape_line(text)
++        .spans
++        .into_iter()
++        .map(|span| span.content.into_owned())
++        .collect::<String>();
++    let mut chars = text
++        .chars()
++        .map(|ch| if ch.is_control() { ' ' } else { ch });
++    let mut clean: String = chars.by_ref().take(limit).collect();
++    if chars.next().is_some() {
++        clean.push('…');
++    }
++    clean
++}
++
++pub(crate) fn shell_result(command: &str, output: &str, exit: i32) -> Vec<Line<'static>> {
++    let command = command.split_whitespace().collect::<Vec<_>>().join(" ");
++    let command = shell_text(&command, 240);
++    let outcome = if exit == 0 { "completed" } else { "failed" };
++    let mut lines = vec![Line::from(format!(
++        "Shell {outcome} (exit {exit}): {command}"
++    ))];
++    // Output is untrusted text. A log reference is displayed, never opened or executed.
++    let first_log = output
++        .lines()
++        .next()
++        .and_then(|line| line.strip_prefix("codex-plus log: "));
++    let last_result = output
++        .lines()
++        .last()
++        .filter(|line| line.starts_with("codex-plus result: exit="));
++    let final_log = last_result
++        .and_then(|line| line.split_once(" log="))
++        .map(|(_, log)| log.strip_suffix(" log_incomplete=true").unwrap_or(log));
++    let log = first_log
++        .or(final_log)
++        .filter(|log| std::path::Path::new(log).is_absolute());
++    if let Some(log) = log {
++        lines.push(Line::from(format!("Log: {}", shell_text(log, 512))));
++    }
++    if last_result.is_some_and(|line| line.ends_with(" log_incomplete=true")) {
++        lines.push(Line::from("Log incomplete"));
++    } else if log.is_none() {
++        lines.push(Line::from("Log unavailable"));
++    }
++    if exit != 0 {
++        let excerpt: Vec<_> = output
++            .lines()
++            .filter(|line| {
++                !line.is_empty()
++                    && !line.starts_with("codex-plus log: ")
++                    && !line.starts_with("codex-plus result: ")
++            })
++            .rev()
++            .take(5)
++            .collect();
++        lines.extend(
++            excerpt
++                .into_iter()
++                .rev()
++                .map(|line| Line::from(shell_text(line, 240))),
++        );
++    }
++    lines
++}
++
++impl ChatWidget {
++    pub(super) fn register_managed_shell(&mut self, item: &ThreadItem) -> bool {
++        let ThreadItem::CommandExecution {
++            id,
++            command,
++            source,
++            process_id,
++            ..
++        } = item
++        else {
++            return false;
++        };
++        if !eligible_shell(*source) {
++            return false;
++        }
++        let Some((policy, command)) = shell_directive(command) else {
++            return false;
++        };
++        if let Some(shell) = self.managed_shells.get_mut(id) {
++            if process_id.is_some() {
++                shell.process_id = process_id.clone();
++            }
++        } else {
++            self.managed_shells.insert(
++                id.clone(),
++                ManagedShell {
++                    policy,
++                    started: Instant::now(),
++                    quiet: policy == ShellVisibility::Background,
++                    process_id: process_id.clone(),
++                    command: command.clone(),
++                },
++            );
++            if policy == ShellVisibility::Auto {
++                self.frame_requester
++                    .schedule_frame_in(SHELL_FOREGROUND_LIMIT + Duration::from_millis(1));
++            }
++        }
++        if *source == ExecCommandSource::Agent
++            && !self
++                .unified_exec_processes
++                .iter()
++                .any(|process| process.call_id == *id)
++        {
++            self.track_unified_exec_process_begin(id, process_id.as_deref(), command.as_str());
++        }
++        true
++    }
++
++    pub(super) fn update_shell_visibility(&mut self) {
++        self.update_shell_visibility_at(Instant::now());
++    }
++
++    pub(super) fn update_shell_visibility_at(&mut self, now: Instant) {
++        let mut changed = false;
++        let mut next_deadline: Option<Duration> = None;
++        for shell in self.managed_shells.values_mut() {
++            if !shell.quiet
++                && quiet_shell(
++                    shell.policy,
++                    Some(now.saturating_duration_since(shell.started)),
++                )
++            {
++                shell.quiet = true;
++                changed = true;
++            }
++            if shell.policy == ShellVisibility::Auto && !shell.quiet {
++                let remaining = (SHELL_FOREGROUND_LIMIT + Duration::from_millis(1))
++                    .saturating_sub(now.saturating_duration_since(shell.started));
++                next_deadline =
++                    Some(next_deadline.map_or(remaining, |current| current.min(remaining)));
++            }
++        }
++        // FrameRequester coalesces deadlines: every earlier draw must rearm this timer.
++        if let Some(remaining) = next_deadline {
++            self.frame_requester.schedule_frame_in(remaining);
++        }
++        if changed {
++            self.discard_managed_shell_preview(true);
++            self.publish_shell_hud();
++            self.request_redraw();
++        }
++    }
++
++    /// Managed previews never become persisted progress when another activity arrives.
++    pub(super) fn discard_managed_shell_preview(&mut self, quiet_only: bool) {
++        let discard = self
++            .transcript
++            .active_cell
++            .as_ref()
++            .and_then(|cell| cell.as_any().downcast_ref::<ExecCell>())
++            .is_some_and(|cell| {
++                !cell.group.calls.is_empty()
++                    && cell.iter_calls().all(|call| {
++                        call.duration.is_none()
++                            && self.managed_shells.get(&call.call_id).is_some_and(|shell| {
++                                shell.policy != ShellVisibility::Foreground
++                                    && (!quiet_only || shell.quiet)
++                            })
++                    })
++            });
++        if discard {
++            self.transcript.take_active_cell();
++            self.bump_active_cell_revision();
++        }
++    }
++
++    pub(super) fn publish_shell_hud(&mut self) {
++        let (remote, stale, visible) = &self.remote_shell_hud;
++        let mut rows = remote.clone();
++        rows.retain(|row| {
++            !self.managed_shells.iter().any(|(id, shell)| {
++                !shell.quiet && shell.process_id.as_ref().unwrap_or(id) == &row.job_id
++            })
++        });
++        for row in &mut rows {
++            if let Some((_, command)) = shell_directive(&row.command) {
++                row.command = command;
++            }
++        }
++        for (id, shell) in &self.managed_shells {
++            if !shell.quiet {
++                continue;
++            }
++            let job_id = shell.process_id.as_ref().unwrap_or(id);
++            if !rows.iter().any(|row| &row.job_id == job_id) {
++                rows.push(ShellRow {
++                    command: shell.command.clone(),
++                    job_id: job_id.clone(),
++                    seen_secs: Some(shell.started.elapsed().as_secs()),
++                });
++            }
++        }
++        self.bottom_pane.set_shell_hud(
++            rows,
++            *stale,
++            *visible || self.managed_shells.values().any(|shell| shell.quiet),
++        );
++    }
++}
+diff --git a/codex-rs/tui/src/chatwidget/tests/shell_policy.rs b/codex-rs/tui/src/chatwidget/tests/shell_policy.rs
+new file mode 100644
+index 0000000..9997462
+--- /dev/null
++++ b/codex-rs/tui/src/chatwidget/tests/shell_policy.rs
+@@ -0,0 +1,378 @@
++use super::*;
++use crate::chatwidget::shell_policy::{
++    SHELL_FOREGROUND_LIMIT, ShellVisibility, eligible_shell, quiet_shell, shell_directive,
++    shell_result,
++};
++
++fn completed(
++    mut item: AppServerThreadItem,
++    duration: Option<i64>,
++    exit: i32,
++    output: &str,
++) -> AppServerThreadItem {
++    if let AppServerThreadItem::CommandExecution {
++        status,
++        duration_ms,
++        exit_code,
++        aggregated_output,
++        ..
++    } = &mut item
++    {
++        *status = if exit == 0 {
++            AppServerCommandExecutionStatus::Completed
++        } else {
++            AppServerCommandExecutionStatus::Failed
++        };
++        *duration_ms = duration;
++        *exit_code = Some(exit);
++        *aggregated_output = Some(output.to_string());
++    }
++    item
++}
++
++#[test]
++fn shell_policy_exact_marker_and_nested_wrappers() {
++    for (marker, policy) in [
++        ("auto", ShellVisibility::Auto),
++        ("background", ShellVisibility::Background),
++        ("foreground", ShellVisibility::Foreground),
++    ] {
++        let body = format!("# codex-plus-shell: {marker}\necho ok");
++        assert_eq!(shell_directive(&body), Some((policy, "echo ok".into())));
++        let inner = shlex::try_join(["bash", "-lc", &body]).unwrap();
++        let outer = shlex::try_join(["/bin/zsh", "-lc", &inner]).unwrap();
++        assert_eq!(shell_directive(&outer), Some((policy, "echo ok".into())));
++    }
++    for text in [
++        "echo '# codex-plus-shell: auto'",
++        "echo ok\n# codex-plus-shell: background",
++        " # codex-plus-shell: auto\necho ok",
++        "# codex-plus-shell: auto extra\necho ok",
++        "# codex-plus-shell: automatic\necho ok",
++    ] {
++        assert!(shell_directive(text).is_none(), "{text}");
++    }
++    assert!(!eligible_shell(ExecCommandSource::UserShell));
++    assert!(!eligible_shell(ExecCommandSource::UnifiedExecInteraction));
++}
++
++#[test]
++fn shell_policy_threshold_and_missing_duration() {
++    assert!(!quiet_shell(ShellVisibility::Auto, None));
++    assert!(!quiet_shell(
++        ShellVisibility::Auto,
++        Some(SHELL_FOREGROUND_LIMIT)
++    ));
++    assert!(quiet_shell(
++        ShellVisibility::Auto,
++        Some(SHELL_FOREGROUND_LIMIT + Duration::from_millis(1))
++    ));
++    assert!(quiet_shell(ShellVisibility::Background, None));
++    assert!(!quiet_shell(
++        ShellVisibility::Foreground,
++        Some(Duration::from_secs(60))
++    ));
++}
++
++#[test]
++fn shell_policy_bounded_failure_and_untrusted_log() {
++    let output = format!(
++        "codex-plus log: /tmp/log\n\x1b[31merror\x1b[0m\r{}\nlast error\ncodex-plus result: exit=7 log=/tmp/log log_incomplete=true\n",
++        "x".repeat(10000)
++    );
++    let lines = shell_result("echo \x1b[2Jbad", &output, 7);
++    let text = lines_to_single_string(&lines);
++    assert!(text.contains("exit 7"));
++    assert!(text.contains("Log: /tmp/log"));
++    assert!(text.contains("Log incomplete"));
++    assert!(text.contains("last error"));
++    assert!(!text.contains('\x1b'));
++    assert!(!text.contains('\r'));
++    assert!(text.len() < 1200);
++    assert!(
++        lines_to_single_string(&shell_result("ok", "success\n", 0)).contains("Log unavailable")
++    );
++    assert!(
++        lines_to_single_string(&shell_result("ok", "codex-plus log: relative\n", 0))
++            .contains("Log unavailable")
++    );
++}
++
++#[tokio::test]
++async fn shell_policy_auto_timer_hides_preview_without_output_and_keeps_ps() {
++    let (mut chat, mut rx, _) = make_chatwidget_manual(None).await;
++    chat.on_task_started();
++    let item = begin_unified_exec_startup(
++        &mut chat,
++        "managed",
++        "proc",
++        "# codex-plus-shell: auto\nsleep 9",
++    );
++    assert!(active_blob(&chat).contains("sleep 9"));
++    assert!(!active_blob(&chat).contains("codex-plus-shell"));
++    let started = chat.managed_shells["managed"].started;
++    chat.update_shell_visibility_at(started + SHELL_FOREGROUND_LIMIT);
++    assert!(!chat.managed_shells["managed"].quiet);
++    chat.update_shell_visibility_at(started + SHELL_FOREGROUND_LIMIT + Duration::from_millis(1));
++    assert!(chat.managed_shells["managed"].quiet);
++    assert!(chat.transcript.active_cell.is_none());
++    chat.on_exec_command_output_delta("managed", "noise\n");
++    assert_eq!(chat.unified_exec_processes[0].recent_chunks, vec!["noise"]);
++    assert!(drain_insert_history(&mut rx).is_empty());
++    handle_exec_end(
++        &mut chat,
++        completed(
++            item,
++            Some(9000),
++            0,
++            "codex-plus log: /tmp/run.log\nnoise\ncodex-plus result: exit=0 log=/tmp/run.log\n",
++        ),
++    );
++    let text = lines_to_single_string(&drain_insert_history(&mut rx).concat());
++    assert!(text.contains("Shell completed (exit 0): sleep 9"));
++    assert!(text.contains("Log: /tmp/run.log"));
++    assert!(!text.contains("noise"));
++    assert!(chat.managed_shells.is_empty());
++    assert!(chat.unified_exec_processes.is_empty());
++}
++
++#[tokio::test]
++async fn shell_policy_quick_foreground_user_shell_and_unmarked_stay_visible() {
++    for (source, cmd, marked) in [
++        (
++            ExecCommandSource::Agent,
++            "# codex-plus-shell: auto\necho fast",
++            true,
++        ),
++        (
++            ExecCommandSource::UnifiedExecStartup,
++            "# codex-plus-shell: foreground\necho fast",
++            true,
++        ),
++        (
++            ExecCommandSource::UserShell,
++            "# codex-plus-shell: background\necho fast",
++            false,
++        ),
++        (ExecCommandSource::Agent, "echo fast", false),
++    ] {
++        let (mut chat, mut rx, _) = make_chatwidget_manual(None).await;
++        chat.on_task_started();
++        let item = begin_exec_with_source(&mut chat, "call", cmd, source);
++        assert!(chat.transcript.active_cell.is_some());
++        assert_eq!(chat.managed_shells.contains_key("call"), marked);
++        handle_exec_end(&mut chat, completed(item, Some(2000), 0, "fast result\n"));
++        chat.flush_active_cell();
++        let text = lines_to_single_string(&drain_insert_history(&mut rx).concat());
++        assert!(text.contains("fast result"), "{source:?}: {text}");
++        assert!(!text.contains("Shell completed"));
++        if marked {
++            assert!(!text.contains("codex-plus-shell"));
++        }
++    }
++}
++
++#[tokio::test]
++async fn shell_policy_reported_duration_replay_and_unknown_duration() {
++    for (duration, expected_quiet) in [
++        (Some(2000), false),
++        (Some(2001), true),
++        (None, false),
++        (Some(-1), false),
++    ] {
++        let (mut chat, mut rx, _) = make_chatwidget_manual(None).await;
++        chat.on_task_started();
++        let item = begin_exec(&mut chat, "call", "# codex-plus-shell: auto\necho result");
++        let item = completed(item, duration, 0, "result\n");
++        chat.handle_command_execution_completed_now(item.clone());
++        chat.flush_active_cell();
++        let live = lines_to_single_string(&drain_insert_history(&mut rx).concat());
++        let (mut replay, mut replay_rx, _) = make_chatwidget_manual(None).await;
++        replay.handle_command_execution_completed_now(item);
++        replay.flush_active_cell();
++        let restored = lines_to_single_string(&drain_insert_history(&mut replay_rx).concat());
++        assert_eq!(live.contains("Shell completed"), expected_quiet);
++        assert_eq!(restored.contains("Shell completed"), expected_quiet);
++        assert!(!restored.contains("codex-plus-shell"));
++    }
++}
++
++#[tokio::test]
++async fn shell_policy_background_inactive_completion_and_unrelated_cell() {
++    let (mut chat, mut rx, _) = make_chatwidget_manual(None).await;
++    chat.on_task_started();
++    begin_exec(&mut chat, "foreground", "ls");
++    let item = begin_unified_exec_startup(
++        &mut chat,
++        "background",
++        "proc",
++        "# codex-plus-shell: background\necho job",
++    );
++    assert!(chat.managed_shells["background"].quiet);
++    assert!(
++        chat.transcript
++            .active_cell
++            .as_ref()
++            .unwrap()
++            .as_any()
++            .downcast_ref::<ExecCell>()
++            .unwrap()
++            .iter_calls()
++            .any(|call| call.call_id == "foreground")
++    );
++    terminal_interaction(&mut chat, "poll", "proc", "");
++    assert!(chat.unified_exec_wait_streak.is_none());
++    assert!(drain_insert_history(&mut rx).is_empty());
++    // An ended agent turn must not swallow this managed command's eventual result.
++    chat.bottom_pane.set_task_running(false);
++    handle_exec_end(
++        &mut chat,
++        completed(item, Some(9000), 3, "one\ntwo\nuseful failure\n"),
++    );
++    assert!(
++        chat.transcript
++            .active_cell
++            .as_ref()
++            .unwrap()
++            .as_any()
++            .downcast_ref::<ExecCell>()
++            .unwrap()
++            .iter_calls()
++            .any(|call| call.call_id == "foreground")
++    );
++    let text = lines_to_single_string(&drain_insert_history(&mut rx).concat());
++    assert!(text.contains("Shell failed (exit 3)"));
++    assert!(text.contains("useful failure"));
++    assert!(!text.contains("Waited"));
++}
++
++#[tokio::test]
++async fn shell_policy_transient_preview_never_flushes_progress() {
++    let (mut chat, mut rx, _) = make_chatwidget_manual(None).await;
++    chat.on_task_started();
++    let item = begin_exec(&mut chat, "managed", "# codex-plus-shell: auto\nls");
++    chat.on_exec_command_output_delta("managed", "progress\n");
++    begin_exec(&mut chat, "other", "cat another-file");
++    assert!(drain_insert_history(&mut rx).is_empty());
++    handle_exec_end(&mut chat, completed(item, Some(5000), 0, "progress\n"));
++    assert!(active_blob(&chat).contains("another-file"));
++    let text = lines_to_single_string(&drain_insert_history(&mut rx).concat());
++    assert!(text.contains("Shell completed"));
++    assert!(!text.contains("progress"));
++}
++
++#[tokio::test]
++async fn shell_policy_stdin_restores_foreground_and_poll_does_not() {
++    let (mut chat, mut rx, _) = make_chatwidget_manual(None).await;
++    chat.on_task_started();
++    let item = begin_unified_exec_startup(
++        &mut chat,
++        "managed",
++        "proc",
++        "# codex-plus-shell: background\ncat",
++    );
++    terminal_interaction(&mut chat, "poll", "proc", "");
++    assert!(chat.managed_shells["managed"].quiet);
++    terminal_interaction(&mut chat, "input", "proc", "hello\n");
++    assert!(!chat.managed_shells["managed"].quiet);
++    assert_eq!(
++        chat.managed_shells["managed"].policy,
++        ShellVisibility::Foreground
++    );
++    handle_exec_end(&mut chat, completed(item, Some(9000), 0, "echoed hello\n"));
++    chat.flush_active_cell();
++    let text = lines_to_single_string(&drain_insert_history(&mut rx).concat());
++    assert!(text.contains("hello"));
++    assert!(text.contains("echoed hello"));
++    assert!(!text.contains("Shell completed"));
++}
++
++#[tokio::test]
++async fn shell_policy_timer_rearms_after_an_earlier_coalesced_frame() {
++    let (mut chat, _, _) = make_chatwidget_manual(None).await;
++    let (requester, mut frames) = crate::tui::FrameRequester::test_channel();
++    chat.frame_requester = requester;
++    chat.on_task_started();
++    begin_exec(&mut chat, "managed", "# codex-plus-shell: auto\nsleep 9");
++    while frames.try_recv().is_ok() {}
++    let now = Instant::now();
++    let started = chat.managed_shells["managed"].started;
++    chat.update_shell_visibility_at(started + Duration::from_secs(1));
++    let deadline = frames
++        .try_recv()
++        .expect("timer must survive a coalesced early redraw");
++    assert!(deadline > now + Duration::from_millis(900));
++    assert!(!chat.managed_shells["managed"].quiet);
++}
++
++#[test]
++fn shell_policy_helper_plumbing_is_display_only() {
++    let body = "# codex-plus-shell: background\n/home/me/bin/codex-plus run -- python3 'script with spaces.py'";
++    assert_eq!(
++        shell_directive(body),
++        Some((
++            ShellVisibility::Background,
++            "python3 'script with spaces.py'".into()
++        ))
++    );
++}
++
++#[tokio::test]
++async fn shell_policy_remote_rows_respect_foreground_and_deduplicate_quiet() {
++    let (mut chat, _, _) = make_chatwidget_manual(None).await;
++    chat.on_task_started();
++    begin_unified_exec_startup(
++        &mut chat,
++        "managed",
++        "proc",
++        "# codex-plus-shell: auto\nsleep 9",
++    );
++    chat.set_shell_hud(
++        vec![crate::bottom_pane::worker_hud::ShellRow {
++            command: "# codex-plus-shell: auto\nsleep 9".into(),
++            job_id: "proc".into(),
++            seen_secs: Some(1),
++        }],
++        false,
++        true,
++    );
++    // Reconciled rows are observable through the same composer buffer used in HUD tests.
++    let before = render_bottom_popup(&chat, 100);
++    assert!(!before.contains("Shells 1"), "{before}");
++    let started = chat.managed_shells["managed"].started;
++    chat.update_shell_visibility_at(started + Duration::from_secs(3));
++    let after = render_bottom_popup(&chat, 100);
++    assert!(after.contains("Shells 1"), "{after}");
++    terminal_interaction(&mut chat, "input", "proc", "hello");
++    let foreground = render_bottom_popup(&chat, 100);
++    assert!(!foreground.contains("Shells 1"), "{foreground}");
++}
++
++#[tokio::test]
++async fn shell_policy_cleanup_keeps_delayed_final_result_when_idle() {
++    let (mut chat, mut rx, _) = make_chatwidget_manual(None).await;
++    chat.on_task_started();
++    let item = begin_unified_exec_startup(
++        &mut chat,
++        "managed",
++        "proc",
++        "# codex-plus-shell: background\nsleep 9",
++    );
++    chat.clean_background_terminals();
++    assert!(chat.managed_shells.is_empty());
++    chat.bottom_pane.set_task_running(false);
++    let _ = drain_insert_history(&mut rx);
++    handle_exec_end(
++        &mut chat,
++        completed(
++            item,
++            Some(9000),
++            130,
++            "codex-plus log: /tmp/run.log\nterminated\ncodex-plus result: exit=130 log=/tmp/run.log\n",
++        ),
++    );
++    let text = lines_to_single_string(&drain_insert_history(&mut rx).concat());
++    assert!(text.contains("Shell failed (exit 130)"));
++    assert!(text.contains("terminated"));
++    assert!(text.contains("Log: /tmp/run.log"));
++}

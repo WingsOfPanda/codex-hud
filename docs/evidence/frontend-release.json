@@ -1,0 +1,164 @@
+{
+  "verified_at": "2026-10-14T03:33:24.963135+00:00",
+  "upstream_commit": "092d3acd6bec3e3a14bdc7e7a2810ab628ab759d",
+  "release_kind": "frontend-only with upstream backend source",
+  "patch_split": {
+    "passed": true,
+    "upstream": "092d3acd6bec3e3a14bdc7e7a2810ab628ab759d",
+    "frontend_tree": "3fb81c75ccfce035039b56d19aecdb8af807fcfd",
+    "combined_tree": "aeeaa74a7dc9a290b7049a70397265ae83b75577",
+    "backend_directories_identical_to_upstream": [
+      "app-server",
+      "app-server-protocol",
+      "app-server-transport",
+      "core",
+      "ext/queue",
+      "state",
+      "thread-store"
+    ],
+    "combined_reconstruction_identical": true,
+    "frontend_changed_paths": [
+      "codex-rs/Cargo.lock",
+      "codex-rs/tui/Cargo.toml",
+      "codex-rs/tui/src/app.rs",
+      "codex-rs/tui/src/app/event_dispatch.rs",
+      "codex-rs/tui/src/app/reconnect.rs",
+      "codex-rs/tui/src/app/session_lifecycle.rs",
+      "codex-rs/tui/src/app/startup.rs",
+      "codex-rs/tui/src/app/test_support.rs",
+      "codex-rs/tui/src/app/tests.rs",
+      "codex-rs/tui/src/app/worker_hud.rs",
+      "codex-rs/tui/src/app_event.rs",
+      "codex-rs/tui/src/bottom_pane/mod.rs",
+      "codex-rs/tui/src/bottom_pane/worker_hud.rs",
+      "codex-rs/tui/src/chatwidget.rs"
+    ],
+    "patch_sha256": {
+      "patches/codex-0.162.1-worker-hud.patch": "1564a2e3d13337a32b45dfb37da7ac29a250f155cb5dfd12abb09f12f3ffa5ef",
+      "patches/experimental/codex-0.162.1-daemon-receipts.patch": "ade73dcf59b0379b9e6eaab59125983bb4754a74fbe147f630e03fc78c1bb8a5"
+    }
+  },
+  "build": {
+    "profile": "release",
+    "rust": "1.99.0",
+    "target": "x86_64-unknown-linux-gnu",
+    "bytes": 282417304,
+    "sha256": "27f645a6ee410921a1c91e7d4812c6c3151084ec23f12ee5d255d41a4915ff82",
+    "log": ".build/frontend-release/release-build.log"
+  },
+  "primary_acceptance": {
+    "native_hud_tests": 33,
+    "source_guard_tests": 7,
+    "cli_selection_checks": 13,
+    "terminal_stages": 16,
+    "stock_backend_integration_cases": 8,
+    "checks": [
+      {
+        "name": "capability-schema",
+        "returncode": 0
+      },
+      {
+        "name": "native-smoke",
+        "returncode": 0,
+        "seconds": 42.53921800595708,
+        "log": ".build/frontend-release/root-acceptance/candidate/native-smoke.log",
+        "stages": 16
+      },
+      {
+        "name": "normal",
+        "returncode": 0,
+        "seconds": 6.8256572869140655,
+        "log": ".build/frontend-release/root-acceptance/candidate/normal.log",
+        "loopback_provider_requests": 3
+      },
+      {
+        "name": "shell-restart",
+        "returncode": 0,
+        "seconds": 8.779164380161092,
+        "log": ".build/frontend-release/root-acceptance/candidate/shell-restart.log",
+        "loopback_provider_requests": 3
+      },
+      {
+        "name": "worker-restart",
+        "returncode": 0,
+        "seconds": 10.982422861969098,
+        "log": ".build/frontend-release/root-acceptance/candidate/worker-restart.log",
+        "loopback_provider_requests": 4
+      },
+      {
+        "name": "observer-completed",
+        "returncode": 0,
+        "seconds": 9.029283937066793,
+        "log": ".build/frontend-release/root-acceptance/candidate/observer-completed.log",
+        "loopback_provider_requests": 3
+      },
+      {
+        "name": "observer-running",
+        "returncode": 0,
+        "seconds": 8.97961104195565,
+        "log": ".build/frontend-release/root-acceptance/candidate/observer-running.log",
+        "loopback_provider_requests": 3
+      },
+      {
+        "name": "after-enqueue",
+        "returncode": 0,
+        "seconds": 9.02937955991365,
+        "log": ".build/frontend-release/root-acceptance/candidate/after-enqueue.log",
+        "loopback_provider_requests": 3
+      },
+      {
+        "name": "after-start",
+        "returncode": 0,
+        "seconds": 9.029511500149965,
+        "log": ".build/frontend-release/root-acceptance/candidate/after-start.log",
+        "loopback_provider_requests": 3
+      },
+      {
+        "name": "uncertain-enqueue",
+        "returncode": 0,
+        "seconds": 8.528567984001711,
+        "log": ".build/frontend-release/root-acceptance/candidate/uncertain-enqueue.log",
+        "loopback_provider_requests": 2
+      }
+    ],
+    "external_model_requests": 0,
+    "hud_model_calls_after_setup": 0
+  },
+  "receipt_absence": {
+    "capability_omitted": true,
+    "unsupported_methods": [
+      "thread/queue/receipt",
+      "thread/queue/receipt/cancel"
+    ],
+    "queue_migrations": [
+      [
+        1,
+        "queued items",
+        1
+      ],
+      [
+        2,
+        "queued thread revisions",
+        1
+      ]
+    ],
+    "receipt_table_absent": true,
+    "provider_requests": 0
+  },
+  "local_artifact": {
+    "installed": ".build/codex",
+    "sha256": "27f645a6ee410921a1c91e7d4812c6c3151084ec23f12ee5d255d41a4915ff82",
+    "backup": ".build/codex.before-frontend-release",
+    "backup_sha256": "0ede2c5705a117073cdaf7a3dc5060abe904cc46be71fdcd1d7daa8111a54f5e",
+    "atomic_replace": true,
+    "shared_daemon_modified": false
+  },
+  "shared_daemon_changed": false,
+  "limits": [
+    "Existing running clients must relaunch to use the new local binary.",
+    "No fleet deployment or ARM64/musl packaging in this change.",
+    "Stock ambiguous delivery remains uncertain and is not blindly retried.",
+    "Historical experimental source is preserved, not qualified for release.",
+    "Full upstream test suite not run."
+  ]
+}

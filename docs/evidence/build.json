@@ -3,10 +3,13 @@
   "version": "0.162.1",
   "rust": "1.99.0",
   "profile": "release",
-  ".build/codex_sha256": "0ede2c5705a117073cdaf7a3dc5060abe904cc46be71fdcd1d7daa8111a54f5e",
-  "patches/codex-0.162.1-worker-hud.patch_sha256": "4d5518e7f77d147095f28980ae7d3bae5f09fc878a744c0aab14dc3a91c9cdff",
+  ".build/codex_sha256": "89133a6597e9f23d0071996d35fa6483a281c86ef4ee7499282e4caad4e3c9ba",
+  "patches/codex-0.162.1-worker-hud.patch_sha256": "0967e438bb57f69f773f037137a1c87f581143d8ae6ce5f010bc25d68fde8411",
   "packaging": "install -s",
-  "recovery_acceptance": "docs/evidence/wake-recovery.json",
   "watcher_acceptance": "docs/evidence/watcher-lessons.json",
-  "shell_hud_acceptance": "docs/evidence/shell-hud.json"
+  "shell_hud_acceptance": "docs/evidence/shell-hud.json",
+  "release_kind": "frontend-only",
+  "frontend_release_acceptance": "docs/evidence/frontend-release.json",
+  "historical_recovery_acceptance": "docs/evidence/wake-recovery.json",
+  "shell_policy_acceptance": "docs/evidence/shell-policy.json"
 }
