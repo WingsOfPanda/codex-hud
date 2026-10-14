@@ -60,6 +60,19 @@ appear as `+N more`. Finished,
 interrupted, failed, and idle workers disappear; the strip hides when no workers
 are active or waiting. Small terminals clip rows to preserve the prompt.
 
+Native background shell commands belonging to this root session also appear in
+the HUD, without a `park` registration. A shell row shows a compact command label,
+`running`, a `seen M:SS` timer, and its native job ID. Shell rows have no model or
+token fields. The stock terminal API has no start timestamp: **seen measures time
+observed by this client**, not the command's total runtime, and resets when the
+client restarts or sees a new command identity.
+
+Worker groups and shell jobs share the three-detail-row limit. When both exist,
+at least one row from each is shown; remaining rows use the overflow count.
+Worker and shell queries fail independently, so unavailable shell metadata does
+not hide valid workers. A successful terminal-list refresh removes commands no
+longer present; disappearance does not claim successful completion.
+
 Elapsed time uses the latest turn's reliable timestamps. Explicit approval/input
 flags produce waiting labels. An active runtime overrides an older completed
 turn. Thinking and tool execution are not separately identifiable from this
@@ -111,8 +124,8 @@ from the remaining active/waiting members; differing known settings show `mixed`
 
 Different batches and parent threads stay separate. Untagged or malformed names
 remain standalone rows. Grouping never guesses purpose from timing or similar
-names and makes no model calls. The summary still counts individual agents;
-the three-row limit and `+N more` count groups and standalone rows.
+names and makes no model calls. The worker summary still counts individual agents; shell counts are separate.
+The three-row limit and `+N more` count groups, standalone workers, and shell jobs.
 
 ## Background completion
 
@@ -125,6 +138,12 @@ rendering. Full crash recovery uses durable receipts in the patched daemon,
 supervised observers, and explicit recovery of registered jobs after a daemon
 restart. Older daemons retain conservative delivery handling; see the workflow
 for activation and compatibility limits.
+
+The HUD also shows local watcher health when a wake is uncertain or monitoring
+is unavailable. Completion notices are short: `LIVE` continues the authorized
+task after verification; `REPORT ONLY` reports results discovered after a restart
+and waits for renewed direction. These features work with the stock daemon;
+stronger native receipt guarantees remain a separate, staged extension.
 
 ## Verification
 

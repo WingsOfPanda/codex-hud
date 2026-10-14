@@ -67,9 +67,10 @@ identical to upstream. The launcher and build script pass `bash -n`.
 
 ## Optimized release
 
-These startup measurements describe the earlier HUD-only release. The current
-recovery build and its artifact hashes are recorded in
-[wake-recovery.json](evidence/wake-recovery.json).
+These startup measurements describe the earlier HUD-only release. The recovery
+build is recorded in [wake-recovery.json](evidence/wake-recovery.json); the newer
+watcher build is recorded in [watcher-lessons.json](evidence/watcher-lessons.json).
+The newest shell display build is recorded in [shell-hud.json](evidence/shell-hud.json).
 
 The optimized release executable passed the native terminal suite independently
 before replacing `.build/codex`. A copy of the prior development executable is
@@ -104,6 +105,52 @@ is retained as `.build/codex.release-before-recovery`. Full recovery additionall
 requires activating the patched shared daemon; the running old daemon does not
 gain capabilities from a TUI relaunch.
 
+## Watcher health and notification modes
+
+The watcher changes passed 92 coordinator tests and 29 focused native HUD tests.
+The primary agent also ran normal completion plus seven recovery cases against
+the unmodified official 0.162.1 daemon: observer and daemon restarts, already
+submitted callbacks, and ambiguous stock enqueue without blind retries. Results
+discovered after restart are report-only; work positively observed still running
+can later produce a live completion.
+
+The rebuilt client passed 14 terminal smoke stages. They cover local health with
+no active workers, waiting/stale/uncertain/report/idle transitions, remote
+suppression, parent isolation, and draft editing in narrow terminals. The private
+local fixture creates two initial loopback model turns to materialize its roots;
+health changes produce zero further model calls or turns.
+
+The short live notification also woke this real session through the stock daemon.
+The native patch applies cleanly to the pinned source, and all non-TUI sections
+are unchanged. The new local executable is installed at `.build/codex`; the prior
+binary is kept as `.build/codex.before-watcher-lessons`. Existing CLI processes
+need to be relaunched to display the health line. The shared daemon was untouched.
+See [watcher-lessons.json](evidence/watcher-lessons.json) for hashes and reports.
+
+## Background shell HUD
+
+The shell display passed 33 focused native tests and 16 terminal smoke stages.
+The original worker and watcher-health behavior is retained. New checks exercise
+shell-only and mixed rows, the combined three-row cap, independent metadata
+failures, complete pagination, command identity changes, and Unicode/narrow input.
+
+A real finite command was started through a private local TUI and loopback
+provider. After its main turn completed, the command remained visible without a
+park registration, the prompt stayed editable, and completing the command removed
+its row. The fixture used two model requests to start the command and finish the
+turn; HUD monitoring added none. A separate health fixture uses two seed turns.
+The full suite includes isolated split-tmux tests and remote-parent isolation.
+
+The primary agent reran the native tests and full smoke suite, then separately
+rechecked a final readiness-only fixture adjustment. The coordinator source and
+its accepted 92-test behavior are unchanged. Native patch changes are confined to
+the TUI; the shared stock daemon was not replaced. See
+[shell-hud.json](evidence/shell-hud.json), the
+[mixed display](evidence/shell-mixed-screen.txt), and the
+[idle main turn with a running shell](evidence/local-shell-idle-screen.txt).
+The installed client is `.build/codex`, with its predecessor preserved as
+`.build/codex.before-shell-hud`. Relaunch the client to display shell rows.
+
 ## Limits
 
 - Live workers and the strip's placement were confirmed in the user's pane.
@@ -112,7 +159,8 @@ gain capabilities from a TUI relaunch.
 - This is a version-specific native build. Existing CLI processes must be
   relaunched to use it, and future Codex releases require rebasing/retesting.
 - Counts include only active or waiting direct, non-archived spawned workers.
-  At most three group or standalone rows appear, followed by `+N more` when needed.
+  At most three combined worker-group, standalone-worker, or shell rows appear,
+  followed by `+N more` when needed.
   Finished workers reduce their group's active count; empty groups disappear.
   A healthy empty strip collapses. Stale/unavailable metadata
   remains visibly uncertain. Long names shorten before metrics; terminal height

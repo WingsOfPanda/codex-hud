@@ -4,8 +4,10 @@
 main agent ends its current turn, the main session is genuinely idle. The worker
 HUD and native background-terminal UI can continue updating locally. A verified
 completion queues one notification and starts it only when the parent is idle.
-A supervisor restarts a crashed observer; the patched daemon provides durable
-notification receipts for safe retries across lost acknowledgements and restarts.
+A supervisor restarts a crashed observer. Watcher health, short notifications,
+and report-only restart handling run locally and work with the stock daemon.
+The separately staged daemon extension supplies stronger delivery receipts;
+these client features do not require activating it.
 
 The observer uses local app-server RPCs, not model turns. A completion wake starts
 a normal model turn so the main agent can review the result and continue. Other
@@ -32,14 +34,71 @@ workers may still use their models while the main session is idle.
 3. If jobs are armed or already registered, finish the main turn with a short
    waiting notice. **Do not keep the turn open with sleeps, `wait_agent`, or
    repeated process polls.** Already-finished jobs should be reviewed immediately.
-4. On a completion callback, verify the identified result and continue the user's
-   task. Existing registrations keep watching remaining jobs. Register any new
-   work before ending the turn again if only background work remains.
+4. Read the notification kind. For `LIVE`, inspect the identified results and
+   continue the current authorized task. For `REPORT ONLY`, report the outcomes
+   and wait for renewed user direction before resuming the old follow-up work.
+   Existing registrations keep watching remaining jobs. Register new work before
+   ending the turn again if only background work remains.
 
 The helper cannot force a model that keeps responding to become idle. Ending the
 main turn is part of this agent workflow, recorded in this repository's AGENTS.md.
 There are no global instruction changes. Full crash recovery requires the patched
 shared daemon described below; an older daemon retains the conservative fallback.
+
+## Shell display versus completion delivery
+
+The HUD lists this root session's native background commands automatically through
+`thread/backgroundTerminals/list`. Display does not require registering a watch,
+and refreshes do not call a model or launch a turn. To wake the main session on
+completion, register the command with `codex-plus park` before ending the turn.
+
+A command's `seen` timer starts when the current client first observes its item
+and process identity. It is not the total job runtime: the stock API supplies no
+start timestamp. Stale snapshots show uncertainty; a missing running entry only
+removes its display row. The coordinator still requires terminal evidence before
+reporting successful completion.
+
+## Live wakes and restart reports
+
+Notifications carry a kind, a compact job/outcome summary, and a lookup reference
+to the durable ledger. `codex-plus park --status --parent SESSION_UUID` returns
+the complete identities for locating native command items and worker turns.
+The standing response rules live in [AGENTS.md](../AGENTS.md); notifications do
+not repeat the full workflow or include command output.
+
+A fresh registration is eligible for `LIVE` completion. When an observer process
+or daemon restarts, the first reliable observation of previously watched work
+determines its treatment: a completed or lost job becomes `REPORT ONLY`; a job
+positively observed still running can produce a later live completion. An RPC
+error does not prove completion, and the recovery classification survives retries.
+An old reason does not renew permission to carry out follow-up actions.
+Reports use the same idle-session delivery path as live wakes: they may start a
+model turn to report the result, then wait for the user. They are not held until
+the next manual prompt.
+
+Notifications already submitted before the interruption keep their original
+identity and frozen text during reconciliation. They cannot safely be relabelled
+or blindly resent. The live/report split does not remove the stock daemon's
+ambiguous-delivery window or add exactly-once model/tool execution.
+
+## Watcher health in the HUD
+
+A compact line below the worker list shows waiting, pending delivery, an uncertain
+wake, an unavailable observer, or a restart report ready for delivery. It remains
+visible when no worker rows are active. Clean idle state hides the line. Waiting
+uses dim text; delivery problems and restart reports use normal brightness.
+
+The coordinator atomically writes a small private status file beside its ledger:
+`$CODEX_HOME/codex-plus/SESSION_UUID.status.json`. The TUI reads it locally without
+model calls and independently of worker-metadata RPCs. A waiting heartbeat older
+than 15 seconds is shown as unavailable, rather than as proof that the job failed.
+Uncertain/error/report states remain visible while unresolved, even if monitoring
+has exited. A delivered report is no longer marked ready.
+
+Missing status files hide the line; invalid or unreadable files show unavailable.
+Remote-workspace clients do not display an unrelated local status file. Explicit
+cancellation can clear unresolved local watcher status without deleting history
+or stopping the actual job.
 
 ## Status and cancellation
 
@@ -64,9 +123,10 @@ An already-started callback cannot be undone by cancelling its registration.
   item becomes available in history.
 - Completions observed together can share one callback. Completed, failed, and
   interrupted outcomes are reported; success is never inferred from silence.
-- The observer waits through an active parent or approval/input wait. It does not
-  resume unloaded threads or steer active turns, and it does not bypass queued
-  user input.
+- The observer waits through an active parent or approval/input wait. It resumes
+  an unloaded registered root only during verified daemon-generation recovery,
+  after cancellation and queue checks. It does not steer active turns or bypass
+  queued user input.
 - Observer state lives under `$CODEX_HOME/codex-plus/` (normally
   `~/.codex/codex-plus/`). It contains job IDs, daemon identities, delivery records,
   the supplied reason, and the immutable callback text, without command output
@@ -136,10 +196,11 @@ CODEX_HOME=/home/liupan/.codex \
   app-server daemon update --from-cli --yes
 ```
 
-Rollback also restarts the daemon and pins the stock package. To return to normal
-production daemon updates instead, use `codex app-server daemon update`; this can
-replace the custom recovery backend. The separate ordinary CLI installation and
-model configuration are not modified by this package selection.
+Rollback also restarts the daemon and pins the stock package. Fleet policy keeps
+automatic updates disabled and requires an approved version for manual updates;
+plain `codex app-server daemon update` fetches latest and is not that procedure.
+The separate ordinary CLI installation and model configuration are not modified
+by this package selection.
 
 After activation, verify the running executable hash and the daemon's
 `initialize.queueIdempotency` response, then exercise one registered completion.
@@ -160,6 +221,23 @@ python3 -m codex_plus.background observe --parent SESSION_UUID
 Do not delete either receipt ledger to retry delivery: doing so removes duplicate
 protection. The observer status records errors if its supervisor restart limit or
 monitoring deadline is reached.
+
+## Coordinator ownership
+
+`codex_plus/ledger.py` owns the durable lifecycle: registration deduplication,
+recovery classification, callback batching and frozen payloads, cancellation,
+delivery transitions, and watcher health. Its `Store` operations check current
+durable state; callers supply observed facts rather than write table state.
+
+`codex_plus/background.py` validates RPC identities, gathers queue/history and
+job evidence, and schedules observation and delivery. Process locks, deadlines,
+backoff, and supervision stay there. `rpc.py` owns transport. Keep SQL inside the
+ledger and test lifecycle behavior through its operations and observer outcomes;
+old-schema migration fixtures may construct legacy tables directly.
+
+The [glossary](../GLOSSARY.md) defines parks, watched jobs, and callbacks. The
+ledger extraction retains the existing SQLite schema and status JSON, so it
+requires no data conversion or native rebuild.
 
 ## Verification
 
@@ -186,3 +264,14 @@ The recovery acceptance passed 64 coordinator tests, 51 native tests, seven
 real-daemon crash/restart scenarios, the normal integration test, and the HUD
 terminal smoke test. See [recovery evidence](evidence/wake-recovery.json).
 Production daemon activation is a separate step from these isolated checks.
+
+The newer watcher acceptance passed 92 coordinator checks, 29 native HUD tests,
+eight stock-daemon integration cases, and 14 native terminal stages. See
+[watcher-lessons.json](evidence/watcher-lessons.json).
+
+The ledger extraction retained those 92 coordinator checks and added six checks
+for cancellation races, frozen callback identity, stock ambiguity, keyed receipt
+requirements, and dispatch ordering. All 98 checks, eight stock-daemon integration
+cases, and three staged receipt cases passed the primary agent's acceptance run.
+An existing populated database retained its schema and status output and remained
+readable by the previous implementation. See [ledger-depth.json](evidence/ledger-depth.json).

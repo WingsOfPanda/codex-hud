@@ -1,0 +1,99 @@
+{
+  "verified_at": "2026-10-14T00:32:26.976497+00:00",
+  "base_commit": "58ee7eb1fc9342135e0b518abd7cda4c77fb4df6",
+  "upstream_commit": "092d3acd6bec3e3a14bdc7e7a2810ab628ab759d",
+  "coordinator_tests": {
+    "passed": 92,
+    "log": ".build/watcher-lessons/root-coordinator-final.log"
+  },
+  "native_hud_tests": {
+    "passed": 29,
+    "log": ".build/watcher-lessons/root-native-tests.log"
+  },
+  "stock_daemon_integration": [
+    {
+      "scenario": "normal",
+      "passed": true,
+      "model_requests_to_loopback": 3,
+      "report": ".build/watcher-lessons/root-stock/normal/report.json"
+    },
+    {
+      "scenario": "after-enqueue",
+      "passed": true,
+      "model_requests_to_loopback": 3,
+      "report": ".build/watcher-lessons/root-stock/recovery/after-enqueue/report.json"
+    },
+    {
+      "scenario": "after-start",
+      "passed": true,
+      "model_requests_to_loopback": 3,
+      "report": ".build/watcher-lessons/root-stock/recovery/after-start/report.json"
+    },
+    {
+      "scenario": "observer-completed",
+      "passed": true,
+      "model_requests_to_loopback": 3,
+      "report": ".build/watcher-lessons/root-stock/recovery/observer-completed/report.json"
+    },
+    {
+      "scenario": "observer-running",
+      "passed": true,
+      "model_requests_to_loopback": 3,
+      "report": ".build/watcher-lessons/root-stock/recovery/observer-running/report.json"
+    },
+    {
+      "scenario": "shell-restart",
+      "passed": true,
+      "model_requests_to_loopback": 3,
+      "report": ".build/watcher-lessons/root-stock/recovery/shell-restart/report.json"
+    },
+    {
+      "scenario": "uncertain-enqueue",
+      "passed": true,
+      "model_requests_to_loopback": 2,
+      "report": ".build/watcher-lessons/root-stock/recovery/uncertain-enqueue/report.json"
+    },
+    {
+      "scenario": "worker-restart",
+      "passed": true,
+      "model_requests_to_loopback": 4,
+      "report": ".build/watcher-lessons/root-stock/recovery/worker-restart/report.json"
+    }
+  ],
+  "native_hud_smoke": {
+    "passed": true,
+    "stages": 14,
+    "loopback_seed_requests": 2,
+    "model_requests_after_setup": 0,
+    "report": ".build/watcher-lessons/root-native-smoke/report.json"
+  },
+  "native_patch": {
+    "sha256": "49f33edc530dded7f5a7dcaae361c16095be1d6d798bc1223180043cfb8a85be",
+    "clean_apply": true,
+    "reverse_check": true,
+    "non_tui_sections_unchanged": true
+  },
+  "artifact": {
+    "sha256": "85997714bb4c41e473717f55cbea14734dd500b8519464db31f14670e487c076",
+    "size_bytes": 282547768,
+    "profile": "release",
+    "packaging": "install -s"
+  },
+  "source_hashes": {
+    "codex_plus/background.py": "139a8c20b17fc577de2e603dc6421f084d4a8ec80816353e667d4e93dafecdc2",
+    "tests/test_background.py": "bc66b2ab5dfdc9169151018866beb98efd9912df81d9725f1e1865e4fb902dc1",
+    "tests/test_background_integration.py": "a587a3977759a8bffa5235774489f7f0c4cdf5dbb0a085e3270bdada0ba4272b",
+    "tests/test_background_recovery_integration.py": "c304a245508d9cce4ca38616b5367348fa2af6d8e83ef7098f918d1e7b1127d7",
+    "tests/native_smoke.py": "996909bdf934b1dcb7c4ed4fa4e0edb8675e4aea6523e4132b888b8fe3fdc21c",
+    "AGENTS.md": "bfd23975d63241652ea496b73b63833034a6fdbc17917fdd9fb47f053d7103e1"
+  },
+  "live_stock_short_wake_received": true,
+  "shared_daemon_changed": false,
+  "limits": [
+    "Stock ambiguous enqueue is still not blindly retried; uncertainty is displayed.",
+    "Report-only follow-up policy is a model instruction; notifications carry an explicit report-only guard.",
+    "Already submitted notifications keep their original identity and frozen payload.",
+    "Health lines may clip in very short terminals; composer priority is preserved.",
+    "Ordinary unloaded-parent wake handling and fleet frontend-only packaging remain separate work."
+  ]
+}

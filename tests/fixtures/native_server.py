@@ -102,6 +102,11 @@ class AppServer:
         self.metadata_pending, self.release_metadata = threading.Event(), threading.Event()
         self.hold_metadata = False
         self.reject_turn_metadata = False
+        self.shells = []
+        self.shell_page_size = 2
+        self.reject_shells = False
+        self.reject_shell_cursor = None
+        self.shell_next_cursor = None
         self.workers = [self.thread(f'{root[:-1]}{index + 2}', parent=root, status='active', name=f'worker_{index + 1}') for index in range(workers)]
         for index, worker in enumerate(self.workers):
             worker['model'] = 'gpt-6.1-sol' if index % 2 == 0 else 'gpt-6-astra'
@@ -120,6 +125,11 @@ class AppServer:
                 'preview': '', 'ephemeral': False, 'modelProvider': 'openai',
                 'createdAt': 1, 'updatedAt': 2, 'status': {'type': status, **({'activeFlags': []} if status == 'active' else {})},
                 'cwd': self.cwd, 'cliVersion': '0.162.1', 'source': 'cli' if parent is None else {'subAgent': {'thread_spawn': {'parent_thread_id': parent, 'depth': 1, 'agent_path': f'/root/{name}'}}}, 'name': name, 'turns': []}
+
+    def shell(self, process, command, item=None):
+        return {'itemId': item or f'item-{process}', 'processId': str(process),
+                'command': command, 'cwd': self.cwd, 'osPid': 987654,
+                'cpuPercent': 12.5, 'rssKb': 345678}
 
     def reply(self, method, params):
         result = None
@@ -152,6 +162,17 @@ class AppServer:
             if self.reject_turn_metadata:
                 return {'error': {'code': -32603, 'message': 'intentional metadata failure'}}
             result = {'data': self.turns[params['threadId']], 'nextCursor': None, 'backwardsCursor': None}
+        elif method == 'thread/backgroundTerminals/list':
+            assert params.get('threadId') == self.root, params
+            assert 1 <= params.get('limit', 100) <= 100, params
+            if self.reject_shells or (self.reject_shell_cursor is not None and
+                                     params.get('cursor') == self.reject_shell_cursor):
+                return {'error': {'code': -32603, 'message': 'intentional shell list failure'}}
+            offset = int(params.get('cursor') or 0)
+            size = min(params.get('limit', 100), self.shell_page_size)
+            end = min(offset + size, len(self.shells))
+            result = {'data': self.shells[offset:end],
+                      'nextCursor': self.shell_next_cursor or (str(end) if end < len(self.shells) else None)}
         if result is None:
             return {'error': {'code': -32601, 'message': f'fixture does not implement {method}'}}
         return {'result': result}

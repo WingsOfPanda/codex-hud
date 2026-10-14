@@ -1,0 +1,32 @@
+                                                                                                                        
+  >_ OpenAI Codex (v0.162.1)                                                                                            
+     /tmp/codex-plus-smoke-doxli1je/local-shell-workspace                                                               
+  permissions: YOLO mode                                                                                                
+                                                                                                                        
+                                                                                                                        
+› Start the finite held command and end this turn.                                                                      
+                                                                                                                        
+                                                                                                                        
+• parked                                                                                                                
+                                                                                                                        
+  Worked for 1s • 09:18                                                                                                 
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+  1 background terminal running · /ps to view · /stop to close                                                          
+                                                                                                                        
+                                                                                                                        
+› local-shell-idle-draft                                                                                                
+                                                                                                                        
+  local-shell-acceptance                                                                                                
+                                                                                               ⚠ 1 warning · f2 to view 
+  Shells 1                                                                                                              
+  deadline=$((SECONDS+60)); while [ ! -e /tmp/codex-plus-smoke-doxli1je/local-shell-w… · running · seen 0:01 · job 46114

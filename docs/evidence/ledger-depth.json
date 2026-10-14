@@ -1,0 +1,215 @@
+{
+  "date": "2026-10-14",
+  "scope": "Durable ledger extraction; observer retains RPC evidence and runtime scheduling.",
+  "unit_tests": {
+    "passed": 98,
+    "original_tests_retained": 92,
+    "new_checks": 6,
+    "log": ".build/ledger-depth/root/unit.log"
+  },
+  "integration": {
+    "stock_daemon": "official 0.162.1 x86_64-unknown-linux-musl",
+    "stock_cases_passed": 8,
+    "staged_native_receipt_cases_passed": 3,
+    "external_model_requests": 0,
+    "cases": [
+      {
+        "name": "normal-stock",
+        "command": [
+          "/usr/local/Python-3.12.11/bin/python3",
+          "tests/test_background_integration.py",
+          "/home/liupan/.codex/packages/app-server-daemon/releases/0.162.1-x86_64-unknown-linux-musl/bin/codex",
+          "--evidence",
+          "/home/liupan/Aerius/codex-plus/.build/ledger-depth/root/normal-stock"
+        ],
+        "passed": true,
+        "seconds": 6.876,
+        "log": ".build/ledger-depth/root/normal-stock.log"
+      },
+      {
+        "name": "stock-shell-restart",
+        "command": [
+          "/usr/local/Python-3.12.11/bin/python3",
+          "tests/test_background_recovery_integration.py",
+          "/home/liupan/.codex/packages/app-server-daemon/releases/0.162.1-x86_64-unknown-linux-musl/bin/codex",
+          "--scenario",
+          "shell-restart",
+          "--evidence",
+          "/home/liupan/Aerius/codex-plus/.build/ledger-depth/root/stock"
+        ],
+        "passed": true,
+        "seconds": 8.829,
+        "log": ".build/ledger-depth/root/stock-shell-restart.log"
+      },
+      {
+        "name": "stock-worker-restart",
+        "command": [
+          "/usr/local/Python-3.12.11/bin/python3",
+          "tests/test_background_recovery_integration.py",
+          "/home/liupan/.codex/packages/app-server-daemon/releases/0.162.1-x86_64-unknown-linux-musl/bin/codex",
+          "--scenario",
+          "worker-restart",
+          "--evidence",
+          "/home/liupan/Aerius/codex-plus/.build/ledger-depth/root/stock"
+        ],
+        "passed": true,
+        "seconds": 10.983,
+        "log": ".build/ledger-depth/root/stock-worker-restart.log"
+      },
+      {
+        "name": "stock-observer-completed",
+        "command": [
+          "/usr/local/Python-3.12.11/bin/python3",
+          "tests/test_background_recovery_integration.py",
+          "/home/liupan/.codex/packages/app-server-daemon/releases/0.162.1-x86_64-unknown-linux-musl/bin/codex",
+          "--scenario",
+          "observer-completed",
+          "--evidence",
+          "/home/liupan/Aerius/codex-plus/.build/ledger-depth/root/stock"
+        ],
+        "passed": true,
+        "seconds": 8.98,
+        "log": ".build/ledger-depth/root/stock-observer-completed.log"
+      },
+      {
+        "name": "stock-observer-running",
+        "command": [
+          "/usr/local/Python-3.12.11/bin/python3",
+          "tests/test_background_recovery_integration.py",
+          "/home/liupan/.codex/packages/app-server-daemon/releases/0.162.1-x86_64-unknown-linux-musl/bin/codex",
+          "--scenario",
+          "observer-running",
+          "--evidence",
+          "/home/liupan/Aerius/codex-plus/.build/ledger-depth/root/stock"
+        ],
+        "passed": true,
+        "seconds": 8.929,
+        "log": ".build/ledger-depth/root/stock-observer-running.log"
+      },
+      {
+        "name": "stock-after-enqueue",
+        "command": [
+          "/usr/local/Python-3.12.11/bin/python3",
+          "tests/test_background_recovery_integration.py",
+          "/home/liupan/.codex/packages/app-server-daemon/releases/0.162.1-x86_64-unknown-linux-musl/bin/codex",
+          "--scenario",
+          "after-enqueue",
+          "--evidence",
+          "/home/liupan/Aerius/codex-plus/.build/ledger-depth/root/stock"
+        ],
+        "passed": true,
+        "seconds": 8.98,
+        "log": ".build/ledger-depth/root/stock-after-enqueue.log"
+      },
+      {
+        "name": "stock-after-start",
+        "command": [
+          "/usr/local/Python-3.12.11/bin/python3",
+          "tests/test_background_recovery_integration.py",
+          "/home/liupan/.codex/packages/app-server-daemon/releases/0.162.1-x86_64-unknown-linux-musl/bin/codex",
+          "--scenario",
+          "after-start",
+          "--evidence",
+          "/home/liupan/Aerius/codex-plus/.build/ledger-depth/root/stock"
+        ],
+        "passed": true,
+        "seconds": 8.979,
+        "log": ".build/ledger-depth/root/stock-after-start.log"
+      },
+      {
+        "name": "stock-uncertain-enqueue",
+        "command": [
+          "/usr/local/Python-3.12.11/bin/python3",
+          "tests/test_background_recovery_integration.py",
+          "/home/liupan/.codex/packages/app-server-daemon/releases/0.162.1-x86_64-unknown-linux-musl/bin/codex",
+          "--scenario",
+          "uncertain-enqueue",
+          "--evidence",
+          "/home/liupan/Aerius/codex-plus/.build/ledger-depth/root/stock"
+        ],
+        "passed": true,
+        "seconds": 8.529,
+        "log": ".build/ledger-depth/root/stock-uncertain-enqueue.log"
+      },
+      {
+        "name": "native-before-enqueue",
+        "command": [
+          "/usr/local/Python-3.12.11/bin/python3",
+          "tests/test_background_recovery_integration.py",
+          "/home/liupan/Aerius/codex-plus/.build/codex",
+          "--scenario",
+          "before-enqueue",
+          "--evidence",
+          "/home/liupan/Aerius/codex-plus/.build/ledger-depth/root/native"
+        ],
+        "passed": true,
+        "seconds": 9.18,
+        "log": ".build/ledger-depth/root/native-before-enqueue.log"
+      },
+      {
+        "name": "native-queue-restart",
+        "command": [
+          "/usr/local/Python-3.12.11/bin/python3",
+          "tests/test_background_recovery_integration.py",
+          "/home/liupan/Aerius/codex-plus/.build/codex",
+          "--scenario",
+          "queue-restart",
+          "--evidence",
+          "/home/liupan/Aerius/codex-plus/.build/ledger-depth/root/native"
+        ],
+        "passed": true,
+        "seconds": 12.385,
+        "log": ".build/ledger-depth/root/native-queue-restart.log"
+      },
+      {
+        "name": "native-native-replay",
+        "command": [
+          "/usr/local/Python-3.12.11/bin/python3",
+          "tests/test_background_recovery_integration.py",
+          "/home/liupan/Aerius/codex-plus/.build/codex",
+          "--scenario",
+          "native-replay",
+          "--evidence",
+          "/home/liupan/Aerius/codex-plus/.build/ledger-depth/root/native"
+        ],
+        "passed": true,
+        "seconds": 2.618,
+        "log": ".build/ledger-depth/root/native-native-replay.log"
+      }
+    ]
+  },
+  "compatibility": {
+    "passed": true,
+    "checks": [
+      "pre-refactor populated database opens unchanged",
+      "status JSON and heartbeat preserved",
+      "sqlite schema identical",
+      "pre-refactor reader still opens database"
+    ],
+    "production_state_accessed": false
+  },
+  "source_checks": {
+    "passed": true,
+    "original_tests_retained": 92,
+    "current_tests": 98,
+    "observer_sql_and_private_state_absent": true,
+    "source_sha256": {
+      "codex_plus/background.py": "40b7e75d81e2bc37b38ddd3be6be2845e5494e811f4a59adc9d10009cd899485",
+      "codex_plus/ledger.py": "45d8763fc6f8a6710452f99e4f18a9d4e6d17322e020812842f0fb215a692944",
+      "tests/test_background.py": "04e58843b1b96eea74696fd3cc2ecbddbd52d16010e11f97c0676531aa6e7aff",
+      "tests/test_background_recovery_integration.py": "e34ec942bc17ed049057a4763a6cbba888cda21f87df206ac8dc8ddeb3370be7"
+    }
+  },
+  "binary_sha256": {
+    "/home/liupan/.codex/packages/app-server-daemon/releases/0.162.1-x86_64-unknown-linux-musl/bin/codex": "628e35487d888a28f0427fc37501da529dd3d81fcbad7a2c3421c1e8670d92e1",
+    "/home/liupan/Aerius/codex-plus/.build/codex": "0ede2c5705a117073cdaf7a3dc5060abe904cc46be71fdcd1d7daa8111a54f5e"
+  },
+  "production_daemon_changed": false,
+  "native_code_changed": false,
+  "limits": [
+    "No native rebuild or HUD rerun: native source and binary are unchanged.",
+    "Stock ambiguous enqueue remains uncertain without blind retry.",
+    "Legacy warning classification still uses existing persisted text inside the ledger.",
+    "No claim of exactly-once model/tool execution."
+  ]
+}

@@ -11,15 +11,11 @@ import time
 import uuid
 
 from .rpc import Client
+from .ledger import MAX_SECONDS, TERMINAL, RegistrationError, Store
 
-MAX_SECONDS = 24 * 60 * 60
 MAX_PAGES = 32
-TERMINAL = {'completed', 'failed', 'interrupted', 'lost'}
+HEARTBEAT_SECONDS = 5
 SOURCES = ['subAgent', 'subAgentThreadSpawn', 'subAgentOther', 'subAgentReview', 'subAgentCompact']
-
-
-class RegistrationError(ValueError):
-    """Safe, concrete selector/state failure for the CLI."""
 
 
 class HistoryLimitError(ValueError):
@@ -70,145 +66,58 @@ def state_home():
     return Path(os.environ.get('CODEX_HOME', Path.home() / '.codex'))
 
 
-class Store:
-    def __init__(self, home):
-        self.directory = Path(home) / 'codex-plus'
-        if self.directory.is_symlink():
-            raise ValueError('background directory must not be a symlink')
-        self.directory.mkdir(mode=0o700, parents=True, exist_ok=True)
-        os.chmod(self.directory, 0o700)
-        path = self.directory / 'background.sqlite'
-        # Refuse a substituted path before opening writable local state.
-        if path.is_symlink():
-            raise ValueError('background state must not be a symlink')
-        fd = os.open(path, os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
-        os.close(fd)
-        os.chmod(path, 0o600)
-        self.db = sqlite3.connect(path, timeout=10)
-        self.db.row_factory = sqlite3.Row
-        self.db.execute('PRAGMA synchronous=FULL')
-        self.db.executescript('''
-            CREATE TABLE IF NOT EXISTS parks (
-                id TEXT PRIMARY KEY, parent TEXT NOT NULL, origin TEXT NOT NULL,
-                reason TEXT NOT NULL, state TEXT NOT NULL, deadline REAL NOT NULL, error TEXT);
-            CREATE TABLE IF NOT EXISTS jobs (
-                id TEXT PRIMARY KEY, park TEXT NOT NULL, kind TEXT NOT NULL,
-                thread TEXT NOT NULL, turn TEXT, item TEXT, process TEXT,
-                status TEXT NOT NULL, exit_code INTEGER, callback TEXT);
-            CREATE TABLE IF NOT EXISTS callbacks (
-                id TEXT PRIMARY KEY, parent TEXT NOT NULL, client TEXT UNIQUE NOT NULL,
-                state TEXT NOT NULL, queue TEXT, error TEXT);
-        ''')
-        if 'error' not in {row[1] for row in self.db.execute('PRAGMA table_info(parks)')}:
-            self.db.execute('ALTER TABLE parks ADD COLUMN error TEXT')
-        columns = {row[1] for row in self.db.execute('PRAGMA table_info(parks)')}
-        for column in ('generation', 'recovery_generation'):
-            if column not in columns:
-                self.db.execute(f'ALTER TABLE parks ADD COLUMN {column} TEXT')
-        callback_columns = {row[1] for row in self.db.execute('PRAGMA table_info(callbacks)')}
-        if 'reconcile_attempts' not in callback_columns:
-            self.db.execute('ALTER TABLE callbacks ADD COLUMN reconcile_attempts INTEGER NOT NULL DEFAULT 0')
-        if 'idempotent' not in callback_columns:
-            self.db.execute('ALTER TABLE callbacks ADD COLUMN idempotent INTEGER NOT NULL DEFAULT 0')
-        if 'message' not in callback_columns:
-            self.db.execute('ALTER TABLE callbacks ADD COLUMN message TEXT')
-
-    def close(self):
-        self.db.close()
-
-    def status(self, parent):
-        parks = [dict(row) for row in self.db.execute('SELECT * FROM parks WHERE parent=?', (parent,))]
-        jobs = [dict(row) for row in self.db.execute(
-            'SELECT jobs.* FROM jobs JOIN parks ON parks.id=jobs.park WHERE parks.parent=?', (parent,))]
-        callbacks = [dict(row) for row in self.db.execute('SELECT * FROM callbacks WHERE parent=?', (parent,))]
-        return {'parent': parent, 'parks': parks, 'jobs': jobs, 'callbacks': callbacks}
-
-    def register(self, client, parent, workers, processes, reason):
-        meta = client.call('thread/read', {'threadId': parent, 'includeTurns': False})['thread']
-        if meta.get('id') != parent or meta.get('parentThreadId') or isinstance(meta.get('source'), dict) and 'subAgent' in meta['source']:
-            raise RegistrationError('park requires a root parent thread')
-        origin = latest(client, parent)
-        if meta.get('status', {}).get('type') != 'active' or origin.get('status') != 'inProgress':
-            raise RegistrationError('register park during the parent active turn, then end that turn')
-        resolved = []
-        children = list(pages(client, 'thread/list', {'parentThreadId': parent,
-                        'sourceKinds': SOURCES, 'useStateDbOnly': True})) if workers else []
-        for selector in dict.fromkeys(workers):
-            matches = []
-            for child in children:
-                source = child.get('source')
-                agent = source.get('subAgent') if isinstance(source, dict) else None
-                spawn = agent.get('thread_spawn') if isinstance(agent, dict) else None
-                path = spawn.get('agent_path') if isinstance(spawn, dict) else None
-                if child.get('parentThreadId') == parent and (child.get('id') == selector or path == selector):
-                    matches.append(child)
-            if len(matches) != 1:
-                raise RegistrationError(f'worker {selector!r} must uniquely match a direct child')
-            child = matches[0]
-            current = latest(client, child['id'])
-            resolved.append((f"{parent}:worker:{child['id']}:{current['id']}", 'worker',
-                             child['id'], current['id'], None, None,
-                             current['status'] if current.get('status') in TERMINAL else 'armed', None))
-        if processes:
-            running = {p['processId']: p['itemId'] for p in pages(client, 'thread/backgroundTerminals/list', {'threadId': parent})}
-            history = None
-            for process in dict.fromkeys(processes):
-                if process in running:
-                    # A running unified-exec begin is transient; terminal history supplies its exact turn.
-                    item_id = running[process]
-                    resolved.append((f'{parent}:process:item:{item_id}', 'process', parent,
-                                     None, item_id, process, 'armed', None))
-                    continue
-                if history is None:
-                    history = list(items(client, parent))
-                candidates = [entry for entry in history if entry.get('item', {}).get('type') == 'commandExecution'
-                              and entry['item'].get('processId') == process]
-                if len(candidates) != 1:
-                    raise RegistrationError(f'process {process!r} must uniquely match a parent command item')
-                entry = candidates[0]
-                item = entry['item']
-                resolved.append((f"{parent}:process:item:{item['id']}", 'process', parent,
-                                 entry['turnId'], item['id'], process, command_status(item), item.get('exitCode')))
-        resolved = list({job[0]: job for job in resolved}.values())
-        armed, existing, finished = [], [], []
-        park = None
-        with self.db:
-            self.db.execute('BEGIN IMMEDIATE')
-            for job in resolved:
-                prior = self.db.execute('''SELECT jobs.status,parks.state,callbacks.state AS delivery
-                    FROM jobs JOIN parks ON parks.id=jobs.park
-                    LEFT JOIN callbacks ON callbacks.id=jobs.callback WHERE jobs.id=?''', (job[0],)).fetchone()
-                report = {'id': job[0], 'kind': job[1], 'turn': job[3], 'status': job[6]}
-                if prior:
-                    if prior['state'] in ('cancelled', 'expired') or prior['status'] in ('cancelled', 'expired'):
-                        raise RegistrationError('Selected job was cancelled or expired; it cannot be rearmed. Select a new worker turn or command item.')
-                    report.update(status=prior['status'], delivery=prior['delivery'])
-                    if prior['delivery'] == 'delivered' or prior['state'] == 'complete':
-                        finished.append(report)
-                    else:
-                        existing.append(report)
-                elif job[6] in TERMINAL:
-                    finished.append(report)
-                else:
-                    armed.append(job)
-            if armed:
-                park = str(uuid.uuid4())
-                self.db.execute('INSERT INTO parks (id,parent,origin,reason,state,deadline,generation) VALUES (?,?,?,?,?,?,?)',
-                                (park, parent, origin['id'], reason, 'armed', time.time() + MAX_SECONDS,
-                                 getattr(client, 'generation', None)))
-                for job in armed:
-                    self.db.execute('INSERT INTO jobs VALUES (?,?,?,?,?,?,?,?,?,NULL)', (job[0], park, *job[1:]))
-        return {'parent': parent, 'park': park,
-                'state': 'armed' if armed else 'already_registered' if existing else 'already_finished',
-                'armed': [job[0] for job in armed], 'already_registered': existing, 'already_finished': finished}
-
-    def request_cancel(self, parent, origin=None):
-        scope = 'parent=?' + (' AND origin=?' if origin else '')
-        params = (parent, origin) if origin else (parent,)
-        with self.db:
-            self.db.execute(f"UPDATE parks SET state='cancelled' WHERE {scope} AND state='armed'", params)
-            self.db.execute(f"UPDATE jobs SET status='cancelled' WHERE status='armed' AND park IN (SELECT id FROM parks WHERE {scope})", params)
-            self.db.execute(f"UPDATE callbacks SET state=CASE WHEN state='ready' THEN 'cancelled' ELSE 'cancel_requested' END WHERE id IN (SELECT callback FROM jobs WHERE park IN (SELECT id FROM parks WHERE {scope})) AND state IN ('ready','in_flight','uncertain','pending','starting')", params)
+def register(store, client, parent, workers, processes, reason):
+    meta = client.call('thread/read', {'threadId': parent, 'includeTurns': False})['thread']
+    if meta.get('id') != parent or meta.get('parentThreadId') or isinstance(meta.get('source'), dict) and 'subAgent' in meta['source']:
+        raise RegistrationError('park requires a root parent thread')
+    origin = latest(client, parent)
+    if meta.get('status', {}).get('type') != 'active' or origin.get('status') != 'inProgress':
+        raise RegistrationError('register park during the parent active turn, then end that turn')
+    resolved = []
+    labels = {}
+    children = list(pages(client, 'thread/list', {'parentThreadId': parent,
+                    'sourceKinds': SOURCES, 'useStateDbOnly': True})) if workers else []
+    for selector in dict.fromkeys(workers):
+        matches = []
+        for child in children:
+            source = child.get('source')
+            agent = source.get('subAgent') if isinstance(source, dict) else None
+            spawn = agent.get('thread_spawn') if isinstance(agent, dict) else None
+            path = spawn.get('agent_path') if isinstance(spawn, dict) else None
+            if child.get('parentThreadId') == parent and (child.get('id') == selector or path == selector):
+                matches.append(child)
+        if len(matches) != 1:
+            raise RegistrationError(f'worker {selector!r} must uniquely match a direct child')
+        child = matches[0]
+        source = child.get('source')
+        agent = source.get('subAgent') if isinstance(source, dict) else None
+        spawn = agent.get('thread_spawn') if isinstance(agent, dict) else None
+        labels[child['id']] = spawn.get('agent_path') if isinstance(spawn, dict) else None
+        current = latest(client, child['id'])
+        resolved.append((f"{parent}:worker:{child['id']}:{current['id']}", 'worker',
+                         child['id'], current['id'], None, None,
+                         current['status'] if current.get('status') in TERMINAL else 'armed', None))
+    if processes:
+        running = {p['processId']: p['itemId'] for p in pages(client, 'thread/backgroundTerminals/list', {'threadId': parent})}
+        history = None
+        for process in dict.fromkeys(processes):
+            if process in running:
+                # A running unified-exec begin is transient; terminal history supplies its exact turn.
+                item_id = running[process]
+                resolved.append((f'{parent}:process:item:{item_id}', 'process', parent,
+                                 None, item_id, process, 'armed', None))
+                continue
+            if history is None:
+                history = list(items(client, parent))
+            candidates = [entry for entry in history if entry.get('item', {}).get('type') == 'commandExecution'
+                          and entry['item'].get('processId') == process]
+            if len(candidates) != 1:
+                raise RegistrationError(f'process {process!r} must uniquely match a parent command item')
+            entry = candidates[0]
+            item = entry['item']
+            resolved.append((f"{parent}:process:item:{item['id']}", 'process', parent,
+                             entry['turnId'], item['id'], process, command_status(item), item.get('exitCode')))
+    return store.register_resolved(parent, origin['id'], reason, resolved, labels, getattr(client, 'generation', None))
 
 
 def command_status(item):
@@ -220,38 +129,36 @@ def command_status(item):
 
 class Observer:
     def __init__(self, store, parent, client_factory=None, fault=None):
-        self.store, self.db, self.parent = store, store.db, parent
+        self.store, self.parent = store, parent
         self.client_factory = client_factory or (lambda: Client(state_home() / 'app-server-control' / 'app-server-control.sock'))
         self.client = None
         self.recovery_loaded = True
+        self.run_id = str(uuid.uuid4())
+        self.last_heartbeat = 0
         self.fault = fault or (lambda point: None)
 
     def call(self, method, params):
+        if time.monotonic() - self.last_heartbeat >= HEARTBEAT_SECONDS:
+            self.store.publish(self.parent)
+            self.last_heartbeat = time.monotonic()
         if self.client is None:
             self.client = self.client_factory()
         return self.client.call(method, params)
 
     def recover(self):
-        with self.db:
-            self.db.execute("UPDATE callbacks SET state='uncertain' WHERE parent=? AND state IN ('in_flight','starting')", (self.parent,))
+        self.store.claim_observation(self.parent, self.run_id, recovering=True)
+
+    def claim_jobs(self):
+        self.store.claim_observation(self.parent, self.run_id)
 
     def recover_generation(self):
         if self.client is None:
             self.client = self.client_factory()
-        generation = getattr(self.client, 'generation', None)
-        if generation is None:
-            return
-        with self.db:
-            # Old stores have no generation evidence; establish a baseline without assuming loss.
-            self.db.execute("UPDATE parks SET generation=? WHERE parent=? AND state='armed' AND generation IS NULL",
-                            (generation, self.parent))
-            self.db.execute("UPDATE parks SET recovery_generation=? WHERE parent=? AND state='armed' AND generation<>?",
-                            (generation, self.parent, generation))
-        replaced = self.db.execute("SELECT 1 FROM parks WHERE parent=? AND state='armed' AND recovery_generation IS NOT NULL LIMIT 1", (self.parent,)).fetchone()
+        replaced = self.store.observe_generation(self.parent, getattr(self.client, 'generation', None))
         if replaced:
             # Interrupted origins lack abort provenance; preserve cancellation conservatively.
             self.cancel_interrupted()
-            if not self.db.execute("SELECT 1 FROM parks WHERE parent=? AND state='armed' LIMIT 1", (self.parent,)).fetchone():
+            if not self.store.active_parks(self.parent):
                 return
             parent = self.call('thread/read', {'threadId': self.parent, 'includeTurns': False})['thread']
             if parent.get('id') != self.parent or parent.get('parentThreadId') or isinstance(parent.get('source'), dict) and 'subAgent' in parent['source']:
@@ -259,67 +166,50 @@ class Observer:
             self.recovery_loaded = parent.get('status', {}).get('type') != 'notLoaded'
             if not self.recovery_loaded:
                 queue = list(pages(self, 'thread/queue/list', {'threadId': self.parent}))
-                callbacks = {row['client']: row for row in self.db.execute('SELECT client,state,idempotent FROM callbacks WHERE parent=?', (self.parent,))}
-                if any(q.get('clientUserMessageId') not in callbacks or callbacks[q['clientUserMessageId']]['state'] not in ('pending', 'uncertain', 'starting', 'in_flight') or callbacks[q['clientUserMessageId']]['idempotent'] and not self.native_queue() for q in queue):
+                if not self.store.can_resume(self.parent, queue, self.native_queue()):
                     return
                 self.call('thread/resume', {'threadId': self.parent, 'excludeTurns': True})
                 self.recovery_loaded = True
 
     def cancel_interrupted(self):
-        for park in self.db.execute("SELECT * FROM parks WHERE parent=? AND state='armed'", (self.parent,)).fetchall():
+        for park in self.store.active_parks(self.parent):
             anchor = turn(self, self.parent, park['origin'])
             if anchor and anchor.get('status') == 'interrupted':
                 self.store.request_cancel(self.parent, park['origin'])
                 continue
             if park['deadline'] < time.time():
-                with self.db:
-                    self.db.execute("UPDATE parks SET state='expired' WHERE id=?", (park['id'],))
-                    self.db.execute("UPDATE jobs SET status='expired' WHERE park=? AND status='armed'", (park['id'],))
-                    self.db.execute("UPDATE callbacks SET state=CASE WHEN state='ready' THEN 'expired' ELSE 'cancel_requested' END WHERE id IN (SELECT callback FROM jobs WHERE park=?) AND state IN ('ready','pending','starting','in_flight')", (park['id'],))
+                self.store.expire_registration(park['id'])
 
     def poll_jobs(self):
-        jobs = self.db.execute("SELECT jobs.*,parks.recovery_generation FROM jobs JOIN parks ON parks.id=jobs.park WHERE parks.parent=? AND parks.state='armed' AND jobs.status='armed'", (self.parent,)).fetchall()
-        running = {(p['itemId'], p['processId']) for p in pages(self, 'thread/backgroundTerminals/list', {'threadId': self.parent})} if any(j['kind'] == 'process' and not j['recovery_generation'] for j in jobs) else set()
+        jobs = self.store.jobs_to_observe(self.parent)
+        running = {(p['itemId'], p['processId']) for p in pages(self, 'thread/backgroundTerminals/list', {'threadId': self.parent})} if any(j['kind'] == 'process' for j in jobs) else set()
         for job in jobs:
             if job['kind'] == 'worker':
                 current = turn(self, job['thread'], job['turn'])
                 status = current.get('status') if current else None
                 exit_code = None
+                observed_running = status == 'inProgress'
+                if observed_running and job['verify_running']:
+                    child = self.call('thread/read', {'threadId': job['thread'], 'includeTurns': False})['thread']
+                    current = latest(self, job['thread']) if child.get('id') == job['thread'] and child.get('status', {}).get('type') == 'active' else None
+                    observed_running = bool(current and current.get('id') == job['turn'] and current.get('status') == 'inProgress')
             else:
-                if (job['item'], job['process']) in running and not job['recovery_generation']:
+                if (job['item'], job['process']) in running:
+                    self.store.observe_job(job, running=True)
                     continue
                 entry = next((e for e in items(self, job['thread'], job['turn']) if e.get('item', {}).get('id') == job['item']
                               and e['item'].get('processId') == job['process']), None)
                 status = command_status(entry['item']) if entry else None
                 exit_code = entry['item'].get('exitCode') if entry else None
-            if status not in TERMINAL and job['recovery_generation']:
-                status, exit_code = 'lost', None
-            if status in TERMINAL:
-                with self.db:
-                    self.db.execute('UPDATE jobs SET status=?,exit_code=?,turn=COALESCE(turn,?) WHERE id=? AND status=\'armed\'', (status, exit_code, entry['turnId'] if job['kind'] == 'process' and entry else None, job['id']))
+                observed_running = entry is not None and status == 'armed' and not job['verify_running']
+            self.store.observe_job(job, status, exit_code,
+                                   entry['turnId'] if job['kind'] == 'process' and entry else None,
+                                   running=observed_running)
         if self.recovery_loaded:
-            with self.db:
-                self.db.execute("UPDATE parks SET generation=recovery_generation,recovery_generation=NULL WHERE parent=? AND state='armed' AND recovery_generation IS NOT NULL", (self.parent,))
+            self.store.finish_recovery(self.parent)
 
     def batch(self):
-        rows = self.db.execute("SELECT jobs.id,parks.origin FROM jobs JOIN parks ON parks.id=jobs.park WHERE parks.parent=? AND parks.state='armed' AND jobs.status IN ('completed','failed','interrupted','lost') AND jobs.callback IS NULL", (self.parent,)).fetchall()
-        if not rows:
-            return
-        rows = [row for row in rows if row['origin'] == rows[0]['origin']]
-        ident, client = str(uuid.uuid4()), str(uuid.uuid4())
-        with self.db:
-            self.db.execute('INSERT INTO callbacks (id,parent,client,state,queue,error) VALUES (?,?,?,\'ready\',NULL,NULL)', (ident, self.parent, client))
-            self.db.executemany('UPDATE jobs SET callback=? WHERE id=? AND callback IS NULL', [(ident, r['id']) for r in rows])
-
-    def message(self, callback):
-        rows = self.db.execute('SELECT jobs.*,parks.reason FROM jobs JOIN parks ON parks.id=jobs.park WHERE callback=?', (callback['id'],)).fetchall()
-        remaining = self.db.execute("SELECT COUNT(*) FROM jobs JOIN parks ON parks.id=jobs.park WHERE parks.parent=? AND jobs.status='armed' AND parks.state='armed'", (self.parent,)).fetchone()[0]
-        details = '; '.join(f"{r['kind']} {r['thread'] if r['kind']=='worker' else r['process']} turn={r['turn']} status={r['status']}" + (' outcome=UNKNOWN' if r['status'] == 'lost' else '') + (f" exit={r['exit_code']}" if r['exit_code'] is not None else '') for r in rows)
-        reasons = '; '.join(dict.fromkeys(r['reason'] for r in rows))
-        warning = 'Daemon generation changed; execution may have survived and its outcome is unknown. Do not rerun lost jobs automatically. ' if any(r['status'] == 'lost' for r in rows) else ''
-        return (f'Background completion for your registered work: {reasons}. {details}. Remaining registered jobs: {remaining}. '
-                + warning +
-                'Review the results and continue the user task if still relevant. If only background work remains, park again and end your turn.')
+        self.store.batch(self.parent)
 
     def native_queue(self):
         return getattr(self.client, 'initialize_result', {}).get('queueIdempotency') is True
@@ -333,13 +223,10 @@ class Observer:
                 raise ValueError('callback receipt lacks submission identity')
         elif not isinstance(queued, dict) or queued.get('clientUserMessageId') != callback['client'] or not queued.get('id') or callback['queue'] and queued['id'] != callback['queue']:
             raise ValueError('callback receipt identity does not match')
-        state = {'pending': 'pending', 'consumed': 'delivered', 'cancelled': 'cancelled'}[receipt['receiptState']]
-        with self.db:
-            self.db.execute("UPDATE callbacks SET state=CASE WHEN ?='pending' AND state IN ('cancel_requested','cancel_uncertain') THEN state ELSE ? END,queue=COALESCE(?,queue),error=NULL,reconcile_attempts=0 WHERE id=?",
-                            (state, state, queued['id'] if queued else None, callback['id']))
+        self.store.record_receipt(callback, receipt['receiptState'], queued['id'] if queued else None)
 
     def reconcile(self, callback, queue):
-        cancelling = callback['state'] in ('cancel_requested', 'cancel_uncertain') or bool(self.db.execute("SELECT 1 FROM jobs JOIN parks ON parks.id=jobs.park WHERE callback=? AND parks.state IN ('expired','cancelled') LIMIT 1", (callback['id'],)).fetchone())
+        cancelling = self.store.callback_cancelling(callback)
         if callback['idempotent'] and self.native_queue():
             result = self.call('thread/queue/receipt/cancel' if cancelling else 'thread/queue/receipt',
                                {'threadId': self.parent, 'idempotencyKey': callback['client']})
@@ -348,18 +235,12 @@ class Observer:
             if result['receipt'] is not None:
                 self.apply_receipt(callback, result['receipt'])
             else:
-                # This key was durably armed before sending; absence proves enqueue never committed.
-                with self.db:
-                    self.db.execute("UPDATE callbacks SET state='ready',error=NULL,reconcile_attempts=0 WHERE id=? AND state IN ('uncertain','pending','starting')", (callback['id'],))
+                self.store.reconcile_evidence(callback, receipt_absent=True)
             return
         if callback['idempotent']:
             consumed = any(e.get('item', {}).get('type') == 'userMessage' and e['item'].get('clientId') == callback['client']
                            for e in items(self, self.parent))
-            with self.db:
-                if consumed:
-                    self.db.execute("UPDATE callbacks SET state='delivered',error=NULL WHERE id=?", (callback['id'],))
-                else:
-                    self.db.execute("UPDATE callbacks SET state=CASE WHEN state='cancel_requested' THEN 'cancel_uncertain' ELSE state END,error='Keyed callback waits for native queue idempotency support.' WHERE id=?", (callback['id'],))
+            self.store.reconcile_evidence(callback, consumed=consumed, native_unavailable=True)
             return
         matches = [q for q in queue if q.get('clientUserMessageId') == callback['client']]
         if len(matches) > 1:
@@ -368,46 +249,33 @@ class Observer:
         if not matches:
             consumed = any(e.get('item', {}).get('type') == 'userMessage' and e['item'].get('clientId') == callback['client']
                            for e in items(self, self.parent))
-        with self.db:
-            if consumed:
-                self.db.execute("UPDATE callbacks SET state='delivered',error=NULL,reconcile_attempts=0 WHERE id=?", (callback['id'],))
-            elif matches:
-                if cancelling:
-                    result = self.call('thread/queue/delete', {'threadId': self.parent, 'queuedSubmissionId': matches[0]['id']})
-                    if result.get('deleted') is not True:
-                        self.db.execute("UPDATE callbacks SET state='cancel_uncertain' WHERE id=?", (callback['id'],))
-                        return
-                    self.db.execute("UPDATE callbacks SET state='cancelled',queue=?,error=NULL WHERE id=?", (matches[0]['id'], callback['id']))
-                else:
-                    self.db.execute("UPDATE callbacks SET state='pending',queue=?,error=NULL,reconcile_attempts=0 WHERE id=?", (matches[0]['id'], callback['id']))
-            else:
-                self.db.execute('UPDATE callbacks SET state=?,error=?,reconcile_attempts=reconcile_attempts+1 WHERE id=?',
-                                ('cancel_uncertain' if cancelling else 'uncertain', 'No positive queue or consumed-message evidence; enqueue will not be retried.', callback['id']))
+        deleted = None
+        if matches and cancelling:
+            result = self.call('thread/queue/delete', {'threadId': self.parent, 'queuedSubmissionId': matches[0]['id']})
+            deleted = result.get('deleted')
+        self.store.reconcile_evidence(callback, consumed=consumed,
+                                      queued=matches[0] if matches else None, deleted=deleted)
 
     def deliver(self):
         queue = list(pages(self, 'thread/queue/list', {'threadId': self.parent}))
-        callbacks = self.db.execute("SELECT * FROM callbacks WHERE parent=? AND state IN ('uncertain','pending','starting','cancel_requested','cancel_uncertain')", (self.parent,)).fetchall()
+        callbacks = self.store.callbacks_to_reconcile(self.parent)
         for callback in callbacks:
             self.reconcile(callback, queue)
         parent = self.call('thread/read', {'threadId': self.parent, 'includeTurns': False})['thread']
         if parent.get('status', {}).get('type') != 'idle':
             return
         # Explicit selection can skip user entries; wait while any other queue item exists.
-        own = {r['client'] for r in self.db.execute('SELECT client FROM callbacks WHERE parent=?', (self.parent,))}
-        if any(q.get('clientUserMessageId') not in own for q in queue):
+        if not self.store.queue_owned(self.parent, queue):
             return
-        ready = self.db.execute("SELECT * FROM callbacks WHERE parent=? AND state='ready' LIMIT 1", (self.parent,)).fetchone()
+        ready, blocked = self.store.next_callback(self.parent, native=self.native_queue())
+        if blocked:
+            return
         if ready:
-            if ready['idempotent'] and not self.native_queue():
-                with self.db:
-                    self.db.execute("UPDATE callbacks SET error='Keyed callback waits for native queue idempotency support.' WHERE id=?", (ready['id'],))
-                return
             self.cancel_interrupted()
-            message = ready['message'] if ready['message'] is not None else self.message(ready)
-            with self.db:
-                claimed = self.db.execute("UPDATE callbacks SET state='in_flight',idempotent=MAX(idempotent,?),message=COALESCE(message,?) WHERE id=? AND state='ready'", (int(self.native_queue()), message, ready['id'])).rowcount
-            if not claimed:
+            ready = self.store.claim_callback(ready, native=self.native_queue())
+            if ready is None:
                 return
+            message = ready['message']
             self.fault('before_enqueue')
             try:
                 params = {'threadId': self.parent, 'clientUserMessageId': ready['client'],
@@ -422,25 +290,22 @@ class Observer:
                 if self.native_queue():
                     self.apply_receipt(ready, result)
                 else:
-                    with self.db:
-                        self.db.execute("UPDATE callbacks SET state='pending',queue=? WHERE id=? AND state='in_flight'", (queued['id'], ready['id']))
+                    self.store.dispatch_result(ready, queued=queued['id'])
             except Exception:
-                with self.db:
-                    self.db.execute("UPDATE callbacks SET state='uncertain' WHERE id=? AND state='in_flight'", (ready['id'],))
+                self.store.dispatch_result(ready)
                 raise
         # Re-read queue and parent after enqueue; cancellation/active state may have raced.
-        pending = self.db.execute("SELECT * FROM callbacks WHERE parent=? AND state='pending' LIMIT 1", (self.parent,)).fetchone()
-        if not pending or pending['idempotent'] and not self.native_queue():
+        pending, _ = self.store.next_callback(self.parent, starting=True, native=self.native_queue())
+        if not pending:
             return
         queue = list(pages(self, 'thread/queue/list', {'threadId': self.parent}))
-        if any(q.get('clientUserMessageId') not in own for q in queue) or not any(q.get('id') == pending['queue'] and q.get('clientUserMessageId') == pending['client'] for q in queue):
+        if not self.store.queue_owned(self.parent, queue) or not any(q.get('id') == pending['queue'] and q.get('clientUserMessageId') == pending['client'] for q in queue):
             return
         if self.call('thread/read', {'threadId': self.parent, 'includeTurns': False})['thread'].get('status', {}).get('type') != 'idle':
             return
         self.cancel_interrupted()
-        with self.db:
-            changed = self.db.execute("UPDATE callbacks SET state='starting' WHERE id=? AND state='pending'", (pending['id'],)).rowcount
-        if not changed:
+        claimed = self.store.claim_callback(pending, starting=True, native=self.native_queue())
+        if claimed is None:
             return
         try:
             self.call('thread/queue/start', {'threadId': self.parent, 'queuedSubmissionId': pending['queue']})
@@ -449,28 +314,27 @@ class Observer:
                 # Started acknowledges dispatch; only the receipt proves durable input acceptance.
                 self.reconcile(pending, [])
             else:
-                with self.db:
-                    self.db.execute("UPDATE callbacks SET state='delivered',error=NULL WHERE id=? AND state='starting'", (pending['id'],))
+                self.store.dispatch_result(pending, starting=True, acknowledged=True)
         except Exception:
-            with self.db:
-                self.db.execute("UPDATE callbacks SET state='uncertain' WHERE id=? AND state='starting'", (pending['id'],))
+            self.store.dispatch_result(pending, starting=True)
             raise
 
     def step(self):
-        registered = self.db.execute("SELECT 1 FROM parks WHERE parent=? AND state='armed' LIMIT 1", (self.parent,)).fetchone()
-        callbacks = self.db.execute("SELECT 1 FROM callbacks WHERE parent=? AND state IN ('ready','pending','starting','in_flight','uncertain','cancel_requested','cancel_uncertain') LIMIT 1", (self.parent,)).fetchone()
-        if not registered and not callbacks:
+        self.claim_jobs()
+        try:
+            return self._step()
+        finally:
+            self.store.publish(self.parent)
+
+    def _step(self):
+        if not self.store.has_work(self.parent):
             return False
         self.recover_generation()
         self.cancel_interrupted()
         self.poll_jobs()
         self.batch()
         self.deliver()
-        with self.db:
-            self.db.execute("UPDATE parks SET state='complete' WHERE parent=? AND state='armed' AND NOT EXISTS (SELECT 1 FROM jobs WHERE jobs.park=parks.id AND (jobs.status='armed' OR (jobs.status IN ('completed','failed','interrupted','lost') AND (jobs.callback IS NULL OR jobs.callback IN (SELECT id FROM callbacks WHERE state NOT IN ('delivered','cancelled'))))))", (self.parent,))
-        active = self.db.execute("SELECT 1 FROM jobs JOIN parks ON parks.id=jobs.park WHERE parks.parent=? AND parks.state='armed' AND jobs.status='armed' LIMIT 1", (self.parent,)).fetchone()
-        deliverable = self.db.execute("SELECT 1 FROM callbacks WHERE parent=? AND (state IN ('ready','pending','starting','in_flight','cancel_requested') OR (idempotent=1 AND state IN ('uncertain','cancel_uncertain')) OR (state='uncertain' AND queue IS NOT NULL AND reconcile_attempts<8)) LIMIT 1", (self.parent,)).fetchone()
-        return bool(active or deliverable)
+        return self.store.finish_cycle(self.parent)
 
     def run(self):
         lock_path = self.store.directory / f'{self.parent}.lock'
@@ -479,14 +343,15 @@ class Observer:
             # Every registration launches a contender; a waiting contender rechecks durable work.
             fcntl.flock(lock, fcntl.LOCK_EX)
             self.recover()
+            self.store.publish(self.parent)
             backoff = 1
             deadline = time.monotonic() + MAX_SECONDS
             try:
                 while time.monotonic() < deadline:
                     try:
                         active = self.step()
-                        with self.db:
-                            self.db.execute('UPDATE parks SET error=NULL WHERE parent=?', (self.parent,))
+                        self.store.monitoring_succeeded(self.parent)
+                        self.store.publish(self.parent)
                         if not active:
                             return
                         backoff = 1
@@ -495,18 +360,20 @@ class Observer:
                             self.client.close()
                         self.client = None
                         # Do not persist exception text: server errors can contain user content.
-                        with self.db:
-                            self.db.execute("UPDATE parks SET error=? WHERE parent=? AND state='armed'", (f'Monitoring unavailable ({type(exc).__name__}); completion remains unknown.', self.parent))
-                            self.db.execute("UPDATE callbacks SET error=? WHERE parent=? AND state NOT IN ('delivered','cancelled')", (f'RPC unavailable ({type(exc).__name__}); no blind enqueue retry.', self.parent))
+                        self.store.monitoring_failed(self.parent, type(exc).__name__)
+                        self.store.publish(self.parent)
                         backoff = min(30, backoff * 2)
-                    time.sleep(backoff)
+                    remaining = backoff
+                    while remaining > 0:
+                        delay = min(HEARTBEAT_SECONDS, remaining)
+                        time.sleep(delay)
+                        remaining -= delay
+                        self.store.publish(self.parent)
             finally:
                 if self.client:
                     self.client.close()
-            with self.db:
-                self.db.execute("UPDATE parks SET state='expired' WHERE parent=? AND state='armed'", (self.parent,))
-                self.db.execute("UPDATE jobs SET status='expired' WHERE status='armed' AND park IN (SELECT id FROM parks WHERE parent=? AND state='expired')", (self.parent,))
-                self.db.execute("UPDATE callbacks SET state=CASE WHEN state='ready' THEN 'expired' ELSE 'uncertain' END,error='Observer duration expired; delivery needs positive reconciliation.' WHERE parent=? AND state IN ('ready','pending','starting','in_flight')", (self.parent,))
+                self.store.publish(self.parent)
+            self.store.expire_observation(self.parent)
 
 
 def supervise(store, parent, home):
@@ -525,8 +392,7 @@ def supervise(store, parent, home):
                 pass
             if attempt < 5:
                 time.sleep(min(30, 2 ** attempt))
-        with store.db:
-            store.db.execute("UPDATE parks SET error='Supervisor restart limit reached; observer recovery needs attention.' WHERE parent=? AND state='armed'", (parent,))
+        store.supervisor_failed(parent)
 
 
 def launch(parent, home):
@@ -569,11 +435,15 @@ def main(argv=None):
         else:
             client = Client(home / 'app-server-control' / 'app-server-control.sock')
             try:
-                result = store.register(client, parent, args.worker, args.process, args.reason)
+                result = register(store, client, parent, args.worker, args.process, args.reason)
             finally:
                 client.close()
             if result['state'] in ('armed', 'already_registered'):
-                launch(parent, home)
+                try:
+                    launch(parent, home)
+                except OSError:
+                    store.launch_failed(parent)
+                    raise
                 result['next'] = 'End the parent turn now. The local observer will wake it only after registered completion and actual Idle.'
             print(json.dumps(result))
         return 0

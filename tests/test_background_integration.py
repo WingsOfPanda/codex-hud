@@ -64,6 +64,35 @@ def coordinator_state(home):
                 for table in ('parks', 'jobs', 'callbacks')}
 
 
+def health_state(home, parent):
+    path = home / 'codex-plus' / f'{parent}.status.json'
+    if not path.exists():
+        return None
+    state = json.loads(path.read_text())
+    assert state['version'] == 1 and state['parent'] == parent, state
+    assert isinstance(state['updated_at'], (int, float)), state
+    assert state['state'] in ('waiting', 'uncertain', 'error', 'report', 'idle'), state
+    assert all(isinstance(state[key], int) and state[key] >= 0
+               for key in ('jobs', 'uncertain', 'reports')), state
+    return state
+
+
+def assert_short_callback(callback, receipt, parent, process, report_only):
+    message = callback['message']
+    assert message == '\n'.join(part['text'] for part in receipt['content'] if part['type'] == 'text'), receipt
+    assert ('REPORT ONLY' if report_only else 'LIVE COMPLETION') in message, message
+    assert ('LIVE COMPLETION' if report_only else 'REPORT ONLY') not in message, message
+    assert f'callback={callback["id"]}' in message, message
+    assert f'codex-plus park --status --parent {parent}' in message, message
+    assert process in message and 'status=' in message, message
+    assert 'Remaining registered jobs: 0' in message, message
+    assert 'isolated acceptance' not in message and 'isolated recovery' not in message, message
+    assert 'Review the results and continue' not in message and 'park again and end your turn' not in message, message
+    assert len(message) < 650, message
+    if report_only:
+        assert 'Do not resume earlier actions' in message and 'Do not rerun lost jobs' in message, message
+
+
 def stop_observers(home):
     # Stop fixture supervisors first so they cannot respawn observers during cleanup.
     for action in (b'supervise', b'observe'):
@@ -125,6 +154,7 @@ stream_max_retries=0
             socket_path = home / 'app-server-control' / 'app-server-control.sock'
             wait(lambda: socket_path.exists(), 'isolated Unix app-server did not start')
             rpc = RecordingClient(socket_path)
+            report['native_queue_idempotency'] = rpc.initialize_result.get('queueIdempotency') is True
             parent = rpc.call('thread/start', {'model': 'gpt-6.1-sol', 'cwd': str(workspace),
                 'approvalPolicy': 'never', 'sandbox': 'danger-full-access'})['thread']['id']
             turn = rpc.call('turn/start', {'threadId': parent,
@@ -174,6 +204,9 @@ stream_max_retries=0
                 assert provider.count == 2, 'minimal attach called model'
             if not probe_only:
                 time.sleep(1)
+                report['waiting_health'] = wait(lambda: (health := health_state(home, parent)) and
+                    health['state'] == 'waiting' and health, 'parked observer did not publish waiting health')
+                assert report['waiting_health']['jobs'] == 1, report['waiting_health']
                 assert provider.count == 2, 'model called while parent was parked'
                 assert rpc.call('thread/read', {'threadId': parent})['thread']['status']['type'] == 'idle'
                 assert rpc.call('thread/backgroundTerminals/list', {'threadId': parent})['data']
@@ -213,6 +246,9 @@ stream_max_retries=0
                 consumed = [item for recorded_turn in thread['turns'] for item in recorded_turn['items']
                             if item.get('type') == 'userMessage' and item.get('clientId') == callbacks[0]['client']]
                 assert len(consumed) == 1, consumed
+                assert_short_callback(callbacks[0], consumed[0], parent, process, report_only=False)
+                report['final_health'] = wait(lambda: (health := health_state(home, parent)) and
+                    health['state'] == 'idle' and health, 'delivered fresh callback did not clear health')
                 report['queue_after_resume'] = rpc.call('thread/queue/list', {'threadId': parent})
                 assert not report['queue_after_resume']['data'], 'owned wake remained queued after resume'
                 jobs = report['coordinator_state']['jobs']
