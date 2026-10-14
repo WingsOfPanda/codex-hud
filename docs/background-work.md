@@ -6,8 +6,8 @@ HUD and native background-terminal UI can continue updating locally. A verified
 completion queues one notification and starts it only when the parent is idle.
 A supervisor restarts a crashed observer. Watcher health, short notifications,
 and report-only restart handling run locally and work with the stock daemon.
-The separately staged daemon extension supplies stronger delivery receipts;
-these client features do not require activating it.
+The release build keeps upstream daemon code unchanged; the historical receipt
+extension is excluded from releases.
 
 The observer uses local app-server RPCs, not model turns. A completion wake starts
 a normal model turn so the main agent can review the result and continue. Other
@@ -16,8 +16,9 @@ workers may still use their models while the main session is idle.
 ## Agent workflow
 
 1. Dispatch related workers with the [topic/batch naming rule](../README.md#worker-groups),
-   or start a finite shell command with a short initial yield so its process ID
-   returns while it runs. Continue any independent work first.
+   or launch finite noninteractive shell work using [the shell workflow](shell-workflow.md).
+   A short initial yield returns the native session ID while it runs. Continue
+   any independent work first.
 2. During the main agent's active turn, register exactly the remaining jobs:
 
    ```sh
@@ -42,8 +43,8 @@ workers may still use their models while the main session is idle.
 
 The helper cannot force a model that keeps responding to become idle. Ending the
 main turn is part of this agent workflow, recorded in this repository's AGENTS.md.
-There are no global instruction changes. Full crash recovery requires the patched
-shared daemon described below; an older daemon retains the conservative fallback.
+There are no global instruction changes. The stock daemon supports the workflow
+with the delivery limits described below.
 
 ## Shell display versus completion delivery
 
@@ -130,20 +131,15 @@ An already-started callback cannot be undone by cancelling its registration.
 - Observer state lives under `$CODEX_HOME/codex-plus/` (normally
   `~/.codex/codex-plus/`). It contains job IDs, daemon identities, delivery records,
   the supplied reason, and the immutable callback text, without command output
-  or copied conversations. The patched daemon adds its own receipt table to its
-  existing queue database through a native migration.
+  or copied conversations. The frontend release adds no native database migration.
 - A process lock and durable identities prevent normal duplicate observers from
   delivering the same event twice. Registration does not silently rearm a cancelled
   or expired job. Monitoring is bounded to 24 hours per registration.
-- With a daemon advertising `queueIdempotency`, each callback uses one durable
-  key and immutable payload. Queue insertion and its receipt commit together.
-  The daemon records durable input acceptance before allowing the callback to
-  sample its model; retained queued input is reconciled against persisted history
-  after a crash. Retries return the existing pending, consumed, or cancelled
-  receipt. A start acknowledgement alone is not proof of durable delivery.
-- Cancellation creates a receipt even if enqueue has not arrived, preventing a
-  delayed request from reviving it. A consumed receipt remains consumed.
-  Cancellation cannot undo hooks, prior model work, or every user-message artifact.
+- On the stock daemon, positive queue or consumed-message evidence can reconcile
+  delivery after interruption. A missing acknowledgement with no such evidence
+  stays uncertain; absence alone does not authorize another enqueue. Cancellation
+  removes a positively identified pending entry, but cannot retract an already
+  accepted turn or prove that an ambiguous submission never arrived.
 - An observer crash is restarted locally with bounded backoff (five retries).
   A daemon restart is detected using peer PID, process start time, and boot ID.
   Recovery loads only the explicitly registered root, checks cancellation and
@@ -155,57 +151,21 @@ An already-started callback cannot be undone by cancelling its registration.
 - Recovery requires the root turn to have finished parking. An interrupted origin
   is conservatively cancelled because Codex does not distinguish every user
   interruption from daemon loss. This avoids reviving possibly cancelled work.
-- These guarantees cover durable notification delivery, not exactly-once model or
-  tool execution. A crash after input acceptance can leave that model turn
-  interrupted. Host reboot, killed supervisors, corrupted/lost storage, and
-  modifying keyed queue entries with older standalone writers are outside this
-  qualification. Monitoring still expires after 24 hours.
+- These guarantees preserve known and uncertain notification outcomes; they do not
+  provide exactly-once delivery, model execution, or tool execution. A crash after
+  input acceptance can leave that model turn interrupted. Host reboot, killed
+  supervisors, and corrupted/lost storage are
+  outside this qualification. Monitoring still expires after 24 hours.
 
-## Patched daemon and compatibility
+## Stock daemon and delivery limits
 
-Both the client and daemon must use this repository's patched build for full
-recovery. Merely relaunching the TUI does not replace an already-running shared
-daemon. `initialize.queueIdempotency` is the explicit capability check; unknown
-fields sent to an old server do not enable this behavior. Existing ambiguous
-callbacks created through an old daemon are never retroactively assumed safe to
-retry. A keyed callback waits if the daemon is downgraded.
-
-### Activation on this machine
-
-The complete candidate and preserved stock rollback package are local build
-artifacts under `.build/wake-recovery/daemon-package/`. They include the verified
-binary and the matching 0.162.1 runtime resources; a flat Rust binary alone is
-not accepted by Codex's package installer. The candidate's GNU target and voice
-manifest CLI hash match the compiled binary.
-
-Activation changes the shared daemon for every Codex pane using this Codex home,
-restarts it, and pins the selected local package. Running commands or workers may
-be interrupted. Once that shared change is authorized:
-
-```sh
-CODEX_HOME=/home/liupan/.codex \
-  /home/liupan/Aerius/codex-plus/.build/wake-recovery/daemon-package/candidate/bin/codex \
-  app-server daemon update --from-cli --yes
-```
-
-The stock rollback package is preserved independently of the daemon installation:
-
-```sh
-CODEX_HOME=/home/liupan/.codex \
-  /home/liupan/Aerius/codex-plus/.build/wake-recovery/daemon-package/rollback/bin/codex \
-  app-server daemon update --from-cli --yes
-```
-
-Rollback also restarts the daemon and pins the stock package. Fleet policy keeps
-automatic updates disabled and requires an approved version for manual updates;
-plain `codex app-server daemon update` fetches latest and is not that procedure.
-The separate ordinary CLI installation and model configuration are not modified
-by this package selection.
-
-After activation, verify the running executable hash and the daemon's
-`initialize.queueIdempotency` response, then exercise one registered completion.
-Package hashes, isolated upgrade/rollback validation, and activation status are
-recorded in [wake-recovery.json](evidence/wake-recovery.json).
+The release uses the official stock daemon API and does not advertise the
+experimental `queueIdempotency` capability. The historical daemon extension is
+preserved as a [separate experimental patch](experimental-daemon-receipts.md);
+the build script never applies it. The Python coordinator retains its optional
+receipt support so existing keyed ledger entries keep their provenance. Such
+entries wait for receipt support if they cannot be reconciled from positive
+consumed-message evidence; switching to stock does not make them safe to resend.
 
 The ordinary HUD works with the stock daemon. On a stock daemon, the observer can
 reconcile positive queue/history evidence and recover lost jobs after restart,
@@ -218,7 +178,7 @@ cd /home/liupan/Aerius/codex-plus
 python3 -m codex_plus.background observe --parent SESSION_UUID
 ```
 
-Do not delete either receipt ledger to retry delivery: doing so removes duplicate
+Do not delete the coordinator ledger to retry delivery: doing so removes duplicate
 protection. The observer status records errors if its supervisor restart limit or
 monitoring deadline is reached.
 
@@ -246,7 +206,7 @@ python3 -m unittest discover -s tests -p test_background.py -v
 python3 tests/test_background_integration.py .build/codex \
   --evidence .build/auto-resume-root-gate
 python3 tests/test_background_recovery_integration.py .build/codex \
-  --evidence .build/wake-recovery/main-gate
+  --evidence .build/frontend-recovery
 ```
 
 The initial acceptance run passed 37 coordinator tests and the normal integration
@@ -263,7 +223,8 @@ see the recovery evidence linked from [verification.md](verification.md).
 The recovery acceptance passed 64 coordinator tests, 51 native tests, seven
 real-daemon crash/restart scenarios, the normal integration test, and the HUD
 terminal smoke test. See [recovery evidence](evidence/wake-recovery.json).
-Production daemon activation is a separate step from these isolated checks.
+That historical recovery acceptance used the experimental daemon extension;
+it is not the release build or a deployment instruction.
 
 The newer watcher acceptance passed 92 coordinator checks, 29 native HUD tests,
 eight stock-daemon integration cases, and 14 native terminal stages. See

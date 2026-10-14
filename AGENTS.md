@@ -1,9 +1,9 @@
 # Codex Plus
 
 Native Codex client patches and a detached Python park/wake coordinator. Keep
-client features compatible with the official stock daemon. The combined patch
-also contains a staged daemon receipt extension; testing that extension is not
-evidence of stock-daemon compatibility.
+client features compatible with the official stock daemon. Release builds apply
+only the frontend patch. The daemon receipt extension is preserved separately in
+`patches/experimental/`; its tests do not establish stock-daemon compatibility.
 
 This repo owns source, builds, and acceptance evidence. Fleet installation,
 version pins, update policy, and global configuration belong to `fleet-config`.
@@ -30,6 +30,11 @@ version pins, update policy, and global configuration belong to `fleet-config`.
 
 Use `./bin/codex-plus` from the repository root, or its absolute path from another
 working directory; do not assume the command is installed on PATH.
+
+Before launching shell work, follow [the shell workflow](docs/shell-workflow.md):
+classify noninteractive work explicitly, capture logs with the managed runner,
+and request a two-second foreground yield. Keep interactive and unclassified
+commands visible. Use the background mode immediately for known long jobs.
 
 When dispatching related workers, use the explicit topic/batch naming rule in
 [Worker groups](README.md#worker-groups).

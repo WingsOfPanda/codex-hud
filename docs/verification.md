@@ -4,6 +4,42 @@ Target: Codex 0.162.1, commit
 `092d3acd6bec3e3a14bdc7e7a2810ab628ab759d`, Linux x86_64,
 Rust 1.99.0. The ordinary installed Codex and global configuration remain intact.
 
+## Frontend release boundary
+
+The default patch contains the HUD and workspace lock reconciliation. The
+app-server, protocol, transport, core, queue, state, and thread-store source trees
+remain identical to pinned upstream. The receipt extension, including migration
+0003 and its TUI request-field adjustment, is preserved in a separate
+[experimental patch](experimental-daemon-receipts.md). Applying it after the
+frontend patch reconstructs the historical combined source.
+
+`scripts/build-native.sh` compares the source against the exact pinned tree plus
+the frontend patch before compilation. It rejects old combined checkouts,
+unrelated source edits, and unexpected nonignored files. Move a rejected checkout
+aside to preserve it; the build script does not erase local changes.
+
+Run its focused guard checks with:
+
+```sh
+python3 -m unittest discover -s tests -p test_build_native.py -v
+```
+
+The default recovery integration suite now selects seven stock-daemon scenarios.
+Use `--scenario all` only with the historical experimental binary; that group
+requires receipt support. Release acceptance must also check that the native
+server omits `queueIdempotency`, rejects receipt RPCs, and creates only the two
+upstream queue migrations. These checks run in private Codex homes.
+
+The frontend-only release passed 33 HUD tests, seven build-guard checks, 13
+recovery CLI selection checks, all 16 terminal smoke stages, and eight integration
+cases against its unchanged upstream backend. Its private server omitted the
+receipt capability, rejected both receipt methods, and created queue migrations
+1 and 2 only. HUD refresh added no model calls; all fixture model requests stayed
+on loopback. The primary agent ran these acceptance gates before replacing the
+local `.build/codex`; the prior combined binary is preserved at
+`.build/codex.before-frontend-release`. The shared official daemon was unchanged.
+See [frontend-release.json](evidence/frontend-release.json) for hashes and logs.
+
 ## Checks
 
 From the patched upstream `codex-rs` directory:
@@ -70,7 +106,9 @@ identical to upstream. The launcher and build script pass `bash -n`.
 These startup measurements describe the earlier HUD-only release. The recovery
 build is recorded in [wake-recovery.json](evidence/wake-recovery.json); the newer
 watcher build is recorded in [watcher-lessons.json](evidence/watcher-lessons.json).
-The newest shell display build is recorded in [shell-hud.json](evidence/shell-hud.json).
+The shell display build is recorded in [shell-hud.json](evidence/shell-hud.json).
+The current frontend-only artifact is recorded in
+[frontend-release.json](evidence/frontend-release.json).
 
 The optimized release executable passed the native terminal suite independently
 before replacing `.build/codex`. A copy of the prior development executable is
@@ -85,7 +123,7 @@ cold starts, or token savings. See [release-build.json](evidence/release-build.j
 [release-benchmark.json](evidence/release-benchmark.json), and
 [release-acceptance.json](evidence/release-acceptance.json).
 
-## Background recovery
+## Historical experimental recovery
 
 The recovery release passed 64 coordinator tests, 51 native queue/protocol tests,
 seven real-daemon crash/restart scenarios, the normal background integration, and
@@ -100,10 +138,10 @@ receipt replay, and cancellation tombstones across restart. Mock providers stay
 on loopback and make no real model requests. A separate real-process regression
 kills an observer and verifies that its supervisor replaces it.
 
-The stripped recovery binary is 282,616,888 bytes. The prior optimized HUD binary
-is retained as `.build/codex.release-before-recovery`. Full recovery additionally
-requires activating the patched shared daemon; the running old daemon does not
-gain capabilities from a TUI relaunch.
+The stripped experimental recovery binary was 282,616,888 bytes. That receipt
+extension is now [excluded from release builds](experimental-daemon-receipts.md).
+These historical results do not establish the stock daemon's delivery guarantees
+and are not instructions to replace the shared daemon.
 
 ## Watcher health and notification modes
 
@@ -151,6 +189,54 @@ the TUI; the shared stock daemon was not replaced. See
 The installed client is `.build/codex`, with its predecessor preserved as
 `.build/codex.before-shell-hud`. Relaunch the client to display shell rows.
 
+## Managed shell policy
+
+The [shell workflow](shell-workflow.md) is implemented by a private logging runner
+and frontend-only rendering. Explicit command markers choose `auto`, `background`,
+or `foreground`; unmarked commands keep existing behavior. Automatic mode uses a
+local two-second timer, with recorded command duration used for completed replay.
+The native protocol is unchanged.
+
+Focused checks:
+
+```sh
+python3 -m unittest discover -s tests -p test_runner.py -v
+# From the patched upstream codex-rs directory:
+RUST_MIN_STACK=33554432 cargo +1.99.0 test --locked -p codex-tui --lib shell_policy --profile dev-small -j 12
+```
+
+The real terminal policy fixture uses the same pyte environment as the original
+smoke suite. Supply an official binary to include helper/park integration against
+the stock daemon, with private homes and loopback providers:
+
+```sh
+.venv/bin/python tests/test_shell_policy_integration.py .build/codex \
+  --stock-daemon /path/to/official/codex \
+  --evidence .build/shell-policy/acceptance
+```
+
+Interactive commands must be foreground or unmarked from launch. Stock replay
+does not preserve stdin notifications, so a live fallback after input cannot
+reliably override an original background marker on a later replay. Unknown
+recorded duration keeps an `auto` command visible. Forced process-group kills
+can leave partial logs without a final wrapper line; native terminal status is
+the result evidence in that case.
+
+Completed rows can remain until the next background-terminal snapshot, normally
+about one second. Acceptance waits for canonical command completion before
+checking the compact result, then bounds the row-removal wait separately. Stock
+Ctrl-C preserves tracked background executions; the termination test uses `/stop`
+and verifies the known child/grandchild processes exit and the partial log remains.
+
+The primary agent's final acceptance passed 15 helper tests, 14 native policy
+tests, 33 HUD tests, 53 command-lifecycle tests, six historical-transcript tests,
+the original 16 terminal stages, and eight new policy cases. The new suite also
+verified compact resume, two independent roots, process-group termination, and
+one completion wake through an official stock daemon. All provider requests used
+loopback fixtures. The installed local binary is `.build/codex`, with its previous
+frontend release preserved at `.build/codex.before-shell-policy`. Relaunch the
+client to use the policy display. See [shell-policy.json](evidence/shell-policy.json).
+
 ## Limits
 
 - Live workers and the strip's placement were confirmed in the user's pane.
@@ -178,9 +264,9 @@ The installed client is `.build/codex`, with its predecessor preserved as
   A failure reading any worker's latest turn also invalidates the whole snapshot;
   partial completion counts are never presented as complete.
 - The full upstream test suite was not run. Recovery acceptance covers isolated
-  real daemons and durable callback delivery, not exactly-once model/tool execution
-  or recovery of shell/worker side effects. Production activation is recorded
-  separately. Subscription savings were not measured.
+  real daemons and notification outcomes, not exactly-once model/tool execution
+  or recovery of shell/worker side effects. Experimental receipt results are
+  identified separately. Subscription savings were not measured.
 
 The handoff's original panel suite passes its 11 metadata/display tests here. Its
 twelfth test concerns the rejected tmux updater and fails because the transferred

@@ -1,6 +1,9 @@
 """Real daemon restart/crash checks in a private CODEX_HOME and loopback provider.
 
 Run: python3 tests/test_background_recovery_integration.py .build/codex
+
+The default stock group runs seven cases without queue receipts. Use --scenario all
+for the historical nine-case suite requiring the experimental receipt daemon.
 """
 
 import argparse
@@ -25,6 +28,8 @@ from fixtures.recovery_provider import RecoveryProvider, WorkerProvider
 
 SCENARIOS = ('shell-restart', 'worker-restart', 'observer-completed', 'observer-running',
              'before-enqueue', 'after-enqueue', 'after-start', 'queue-restart', 'native-replay')
+STOCK_SCENARIOS = ('shell-restart', 'worker-restart', 'observer-completed', 'observer-running',
+                   'after-enqueue', 'after-start', 'uncertain-enqueue')
 
 
 def run(binary, evidence, scenario='shell-restart'):
@@ -402,8 +407,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('binary', type=Path)
     parser.add_argument('--evidence', type=Path, default=REPO / '.build' / 'wake-recovery')
-    parser.add_argument('--scenario', choices=SCENARIOS + ('uncertain-enqueue', 'all'), default='all',
-                        help='uncertain-enqueue requires the stock daemon without queue idempotency')
+    parser.add_argument('--scenario', choices=SCENARIOS + ('uncertain-enqueue', 'stock', 'all'), default='stock',
+                        help='stock (default): seven cases without receipts; all: historical nine cases '
+                             'requiring experimental receipts; uncertain-enqueue requires the stock daemon')
     args = parser.parse_args()
-    for scenario in SCENARIOS if args.scenario == 'all' else (args.scenario,):
+    for scenario in {'stock': STOCK_SCENARIOS, 'all': SCENARIOS}.get(args.scenario, (args.scenario,)):
         run(args.binary.resolve(), args.evidence.resolve() / scenario, scenario)

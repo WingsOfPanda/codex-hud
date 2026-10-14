@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+export PATH="$root/bin:$PATH"
+if [[ "${1:-}" == "run" ]]; then
+    export PYTHONPATH="$root${PYTHONPATH:+:$PYTHONPATH}"
+    exec python3 -m codex_plus.runner "$@"
+fi
 if [[ "${1:-}" == "park" ]]; then
     export PYTHONPATH="$root${PYTHONPATH:+:$PYTHONPATH}"
     exec python3 -m codex_plus.background "$@"
