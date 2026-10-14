@@ -50,6 +50,12 @@ directory. The tested executable shrank from 404.8 MB to 282.4 MB. Paired warm
 startup medians improved from 26.9 to 11.5 ms for `--version` and 29.2 to 12.1 ms
 for `--help` (21 samples each). This does not measure UI or model-response speed.
 
+For complete distributable packages, follow [release building](docs/releasing.md).
+The packager stages native x86_64 and ARM64 outputs with upstream runtime resources,
+the Python helper, workflow docs, license notices, and integrity manifests. This
+is separate from the developer binary above. Codex voice is intentionally omitted;
+see the [release notes](docs/release-notes.md).
+
 ## Display behavior
 
 The strip shows active and waiting direct workers, up to three display rows:

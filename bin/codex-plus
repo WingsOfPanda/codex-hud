@@ -1,17 +1,27 @@
 #!/usr/bin/env bash
 set -euo pipefail
-root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+launcher=$(readlink -f -- "${BASH_SOURCE[0]}")
+root=$(cd -- "$(dirname -- "$launcher")/.." && pwd)
 export PATH="$root/bin:$PATH"
+if [[ "$#" == 1 && "$1" == "--version" && -f "$root/codex-plus.json" ]]; then
+    exec python3 -c 'import json,sys; p=json.load(open(sys.argv[1])); print("codex-plus " + p["release"] + " (Plus " + p["plus_commit"][:12] + "; upstream " + p["upstream"]["version"] + ")")' "$root/codex-plus.json"
+fi
 if [[ "${1:-}" == "run" ]]; then
+    export PYTHONDONTWRITEBYTECODE=1
     export PYTHONPATH="$root${PYTHONPATH:+:$PYTHONPATH}"
     exec python3 -m codex_plus.runner "$@"
 fi
 if [[ "${1:-}" == "park" ]]; then
+    export PYTHONDONTWRITEBYTECODE=1
     export PYTHONPATH="$root${PYTHONPATH:+:$PYTHONPATH}"
     exec python3 -m codex_plus.background "$@"
 fi
-if [[ ! -x "$root/.build/codex" ]]; then
+native="$root/bin/codex"
+if [[ ! -x "$native" ]]; then
+    native="$root/.build/codex"
+fi
+if [[ ! -x "$native" ]]; then
     echo "Build the native client first: $root/scripts/build-native.sh" >&2
     exit 1
 fi
-exec "$root/.build/codex" "$@"
+exec "$native" "$@"

@@ -24,16 +24,36 @@ import termios
 import time
 
 import pyte
+from wcwidth import wcwidth
 
 from fixtures.native_server import AppServer
 from fixtures.background_provider import ResponsesProvider
 from test_background_integration import REPO, RecordingClient, stop, wait as wait_server
 
 
+class FixtureScreen(pyte.Screen):
+    @property
+    def display(self):
+        # pyte 0.8.2 leaves empty wide-character stubs after a partial overwrite.
+        rows = []
+        for y in range(self.lines):
+            line, skip = [], False
+            for x in range(self.columns):
+                if skip:
+                    skip = False
+                    continue
+                text = self.buffer[y][x].data or ' '
+                assert sum(map(wcwidth, text[1:])) == 0
+                skip = wcwidth(text[0]) == 2
+                line.append(text)
+            rows.append(''.join(line))
+        return rows
+
+
 class Terminal:
     def __init__(self, binary, home, cwd, endpoint=None, parent=None):
         self.master, slave = pty.openpty()
-        self.screen = pyte.Screen(120, 32)
+        self.screen = FixtureScreen(120, 32)
         self.cursor_replies, self.cursor_reply_offset = 0, 0
         self.screen.write_process_input = self.reply
         self.stream = pyte.ByteStream(self.screen)
@@ -484,7 +504,8 @@ def run(binary, evidence):
     evidence.mkdir(parents=True, exist_ok=True)
     terminals, servers, stages = [], [], []
     (evidence / 'report.json').unlink(missing_ok=True)
-    temporary = tempfile.TemporaryDirectory(prefix='codex-plus-smoke-')
+    # Leave room for native Unix sockets under long private TMPDIR paths.
+    temporary = tempfile.TemporaryDirectory(prefix='h-')
     try:
         root = Path(temporary.name)
         for index, count in enumerate((2, 6)):

@@ -1,0 +1,100 @@
+{
+  "verified_at": "2026-10-14T07:13:28.043566+00:00",
+  "release": "0.162.1-plus.1",
+  "package_source_commit": "5b55e507f70f8d750db0b2761af80a0ae3b147e0",
+  "upstream_commit": "092d3acd6bec3e3a14bdc7e7a2810ab628ab759d",
+  "artifacts": {
+    "x86_64": {
+      "archive": ".build/dual-release/packages/codex-plus-0.162.1-plus.1-x86_64-unknown-linux-gnu.tar.gz",
+      "archive_bytes": 132109231,
+      "archive_sha256": "f9e3f8a51b6c799826f575d444ea10fc53b074dc48a7a4451463b39d06b2c727",
+      "manifest_sha256": "488a8cb1b90d5b30009e0255746919125a4bea76fb2a94eb49e82c9e16665446",
+      "tree_sha256": "abdb4ff0162548e55d40f70fbb7846b87a5855ac812e60e398629434888b7f94",
+      "build": {
+        "cargo_profile": "release",
+        "glibc": "2.39",
+        "rust": "1.99.0"
+      },
+      "voice": false,
+      "native_sha256": {
+        "bin/codex": "fb062e3e8d29b12072cc8117104b674f77830f79cc411791ab21ef824ff62d43",
+        "bin/codex-code-mode-host": "2f7cd4d1f94dd3bc7d669e6a533051469219b3f7ca5b51b77cbc1e94ad3004ea",
+        "codex-resources/bwrap": "49734635f3a7fa413f02dadf70afaa9a8a33ece4f56e3580fd46ca35cdf72e6c"
+      }
+    },
+    "aarch64": {
+      "archive": ".build/dual-release/packages/codex-plus-0.162.1-plus.1-aarch64-unknown-linux-gnu.tar.gz",
+      "archive_bytes": 124678128,
+      "archive_sha256": "9e62bf980c08762912201e8cf5c9409bdf657b450a342aafbe1e937ee385a84f",
+      "manifest_sha256": "62da1fdbfd9fb8862c31a379f52c362f792cfc304f4f3655f60f62247aff0f87",
+      "tree_sha256": "73c87ed02deaec8ed3277540e84e0154c1cb6e9f59b94a8efede4e75a900db66",
+      "build": {
+        "cargo_profile": "release",
+        "glibc": "2.39",
+        "rust": "1.99.0"
+      },
+      "voice": false,
+      "native_sha256": {
+        "bin/codex": "8dc49d70b56e0bbecebeaceb040c3c0fea0899f29a88ba3df5f055f39a155a51",
+        "bin/codex-code-mode-host": "0d771f781d580593c538f4ee9d7f92dcacebe8493bbcf2c53cdd1764f913e307",
+        "codex-resources/bwrap": "3d01037a40c61d2eb729a0712e75e1cbc205d0bd6e8ce0b465251383fdd9b580"
+      }
+    }
+  },
+  "qualification": {
+    "status": "Qualified for the configured fleet mode with documented raw-helper host restriction",
+    "native_builds": [
+      "x86_64 on xjp_l20_2",
+      "aarch64 on ascend910b"
+    ],
+    "package_tooling_tests": 12,
+    "launcher_tests": 5,
+    "runner_tests": 15,
+    "terminal_fixture_regressions": {
+      "x86_64": 4,
+      "aarch64": 4
+    },
+    "terminal_stages_each_arch": 16,
+    "shell_policy_cases_each_arch": 8,
+    "exec_and_stdio_code_mode_each_arch": true,
+    "official_daemon_park_wake_each_arch": true,
+    "parallel_panes_and_process_cleanup_each_arch": true,
+    "cli_read_only_sandbox_each_arch_stock_and_plus": true,
+    "package_trees_unchanged_after_runtime": true,
+    "official_binaries_unchanged": true,
+    "external_model_requests": 0,
+    "raw_bwrap": "Host policy, same as stock, unused by configured fleet; original failed checks retained",
+    "reports": {
+      "x86": ".build/dual-release/root-x86/report.json",
+      "x86_cli_sandbox": ".build/dual-release/root-cli-sandbox.json",
+      "arm_original": ".build/dual-release/acceptance/arm/report.json",
+      "arm_core": ".build/dual-release/root-arm-core/report.json",
+      "arm_terminal": ".build/dual-release/root-arm-terminal-final/report.json",
+      "arm_cli_sandbox": ".build/dual-release/root-arm-core/arm-cli-root.json"
+    }
+  },
+  "test_harness_corrections": [
+    "Short private fixture names fit Linux Unix socket paths under the required data workspace.",
+    "pyte 0.8.2 orphan wide-character cells reproduced independently; display adapter preserves blank cells.",
+    "No kernel or security settings changed; no release-package bytes changed."
+  ],
+  "fixture_source_sha256": {
+    "tests/native_smoke.py": "e9146e7b0fa42bc3dc7052a0f180ec2b3f5dd2c86f0cd7909ce950be2d332fda",
+    "tests/test_shell_policy_integration.py": "383681a51d60c995c90064dc71116b56413edfbd319442468cffc15714f10b0b",
+    "tests/test_terminal_fixture.py": "d5c02f54fa2847e6e51aec8fa26bf55a8c8485dede955422259ed32ec648192c"
+  },
+  "fleet_configuration_changed": false,
+  "shared_daemon_changed": false,
+  "installed_commands_replaced": false,
+  "published": false,
+  "build_isolation": {
+    "arm": "Rust, Cargo, caches, target, source, TMPDIR and outputs under /data/liupan/codex-plus-build",
+    "x86": "Existing Rust1.99 toolchain and Cargo cache used; cache bookkeeping changed, toolchain settings not changed"
+  },
+  "limits": [
+    "Full upstream test suite not run.",
+    "Real fleet PATH/AP installation acceptance remains with fleet-config.",
+    "glibc2.39 is the tested build/runtime baseline, not a measured minimum version.",
+    "Voice intentionally excluded; curated license notices are not comprehensive legal certification."
+  ]
+}
