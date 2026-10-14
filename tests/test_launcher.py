@@ -51,7 +51,7 @@ class InstalledLauncherTests(unittest.TestCase):
         self.assertEqual(actual['argv'], ['resume', 'a b', '--config', 'value="literal $HOME"'])
         self.assertEqual(actual['stdin'], 'input')
         self.assertEqual(actual['env'], 'retained')
-        self.assertEqual(actual['path'].split(os.pathsep)[0], str(self.bin))
+        self.assertEqual(actual['path'], self.env['PATH'])
 
     def test_packaged_plus_version_and_native_stock_version(self):
         (self.root / 'codex-plus.json').write_text(json.dumps({
@@ -71,6 +71,25 @@ class InstalledLauncherTests(unittest.TestCase):
 
     def test_native_signal_exit_is_preserved(self):
         self.assertEqual(self.launch('signal').returncode, -signal.SIGTERM)
+
+    def test_runner_preserves_fleet_codex_wrapper(self):
+        shutil.copytree(ROOT / 'codex_plus', self.root / 'codex_plus',
+                        ignore=shutil.ignore_patterns('__pycache__'))
+        self.env['HOME'] = str(Path(self.temp.name) / 'user')
+        wrapper = Path(self.env['HOME']) / '.local/bin/codex'
+        wrapper.parent.mkdir(parents=True)
+        wrapper.write_text('#!/bin/sh\nprintf "fleet wrapper\\n"\nexit 19\n')
+        wrapper.chmod(0o755)
+        self.env['PATH'] = str(wrapper.parent) + os.pathsep + self.env['PATH']
+        resolved = self.launch('run', '--', sys.executable, '-c',
+                               'import shutil; print(shutil.which("codex"))')
+        self.assertEqual(resolved.returncode, 0, resolved.stderr)
+        self.assertIn(str(wrapper) + '\n', resolved.stdout)
+        result = self.launch('run', '--', 'codex', 'app-server', 'daemon',
+                             'update', '--from-cli', '--yes')
+        self.assertEqual(result.returncode, 19, result.stderr)
+        self.assertIn('fleet wrapper\n', result.stdout)
+        self.assertNotIn('codex-cli', result.stdout)
 
     def test_installed_helpers_through_symlink(self):
         shutil.copytree(ROOT / 'codex_plus', self.root / 'codex_plus',

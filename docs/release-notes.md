@@ -1,8 +1,14 @@
-# Codex Plus 0.162.1-plus.1
+# Codex Plus 0.162.1-plus.2
 
-First complete GNU Linux package release, based on OpenAI Codex `rust-v0.162.1`
+Daemon-boundary fix release, based on OpenAI Codex `rust-v0.162.1`
 (`092d3acd6bec3e3a14bdc7e7a2810ab628ab759d`). The package manifest records the
 exact Plus source revision, frontend patch hash, target, and artifact hashes.
+
+This release supersedes `0.162.1-plus.1` for fleet rollout. The launcher preserves
+the caller's PATH, so commands inside `codex-plus run` use the fleet's `codex`
+wrapper. The `/daemon` menu is read-only; both update choices are removed, and
+the CLI rejects any daemon-update action handed off by the TUI before spawning
+a process. Upstream remains at 0.162.1; no daemon replacement is required.
 
 The release adds the per-session worker/shell HUD, local watcher health, explicit
 park/wake coordination, and managed shell logging with a two-second foreground

@@ -6,7 +6,8 @@ Rust 1.99.0. The ordinary installed Codex and global configuration remain intact
 
 ## Frontend release boundary
 
-The default patch contains the HUD and workspace lock reconciliation. The
+The default patch contains the HUD, workspace lock reconciliation, and frontend
+guards that disable daemon updates from the TUI. The
 app-server, protocol, transport, core, queue, state, and thread-store source trees
 remain identical to pinned upstream. The receipt extension, including migration
 0003 and its TUI request-field adjustment, is preserved in a separate

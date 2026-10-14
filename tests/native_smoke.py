@@ -541,6 +541,19 @@ def run(binary, evidence):
             assert 'Wake delivery uncertain' not in terminal.text and '987654' not in terminal.text, terminal.text
         (evidence / 'compact-six-active-screen.txt').write_text(terminals[1].text + '\n')
         stages.append('six active workers show three task-first rows plus +3 more, with elapsed, unknown remote tokens and actual Sol high/Astra medium below shortcuts')
+        os.write(terminals[0].master, b'/daemon')
+        wait(terminals, lambda: '/daemon' in terminals[0].text, '/daemon did not finish rendering')
+        os.write(terminals[0].master, b'\r')
+        wait(terminals, lambda: 'Daemon updates are disabled in Codex Plus' in terminals[0].text,
+             '/daemon did not show read-only status')
+        assert 'Close' in terminals[0].text and 'Manage this server on its host.' in terminals[0].text
+        assert all(choice not in terminals[0].text for choice in
+                   ('Install latest public stable', 'Use this CLI build', 'Update and exit')), terminals[0].text
+        (evidence / 'daemon-status-screen.txt').write_text(terminals[0].text + '\n')
+        os.write(terminals[0].master, b'\r')
+        wait(terminals, lambda: 'Daemon updates are disabled' not in terminals[0].text
+             and 'Workers 2' in terminals[0].text, 'closing /daemon did not return to the composer')
+        stages.append('read-only /daemon shows status guidance and Close; no daemon update choices or exit')
         for index, terminal in enumerate(terminals):
             assert f'Workers {len(servers[1 - index].workers)}' not in terminal.text, terminal.text
             os.write(terminal.master, f'draft-{index}'.encode())
