@@ -18,7 +18,7 @@ import tempfile
 import time
 
 from fixtures.shell_policy_provider import ShellPolicyProvider
-from native_smoke import Terminal, wait
+from native_smoke import Terminal, assert_compact_hud, wait
 from test_background_integration import (REPO, RecordingClient, coordinator_state, health_state,
                                          stop, stop_observers, wait as wait_server)
 
@@ -117,16 +117,16 @@ def run_tui_case(binary, root, evidence, case):
                  'helper did not start', 30)
             log = next((home / 'codex-plus/logs').glob('*'))
             if marker == 'auto':
-                assert 'Shells 1' not in terminal.text, 'auto command quieted before its cutoff\n' + terminal.text
-                wait([terminal], lambda: 'Shells 1' in terminal.text, 'auto command did not become quiet after two seconds', 7)
+                assert 'Background ·' not in terminal.text, 'auto command quieted before its cutoff\n' + terminal.text
+                wait([terminal], lambda: 'Background ·' in terminal.text, 'auto command did not become quiet after two seconds', 7)
                 assert time.monotonic() - started >= 1.8, terminal.text
             elif marker == 'background':
-                wait([terminal], lambda: 'Shells 1' in terminal.text, 'explicit background command did not enter HUD', 2)
+                wait([terminal], lambda: 'Background ·' in terminal.text, 'explicit background command did not enter HUD', 2)
             else:
                 observed = time.monotonic()
                 wait([terminal], lambda: time.monotonic() - observed > 2.2, 'foreground observation did not finish', 4)
                 if marker == 'foreground':
-                    assert 'Shells 1' not in terminal.text, terminal.text
+                    assert 'Background ·' not in terminal.text, terminal.text
                 (evidence / f'{case}-running-screen.txt').write_text(terminal.text + '\n')
             if marker in ('auto', 'background'):
                 if polls:
@@ -135,8 +135,9 @@ def run_tui_case(binary, root, evidence, case):
                     assert 'Wall time:' not in terminal.text and 'Process running with session ID' not in terminal.text, terminal.text
                 assert 'POLICY_STARTED' not in terminal.text, terminal.text
                 os.write(terminal.master, b'policy-editable-draft')
-                wait([terminal], lambda: 'policy-editable-draft' in terminal.text and 'Shells 1' in terminal.text,
+                wait([terminal], lambda: 'policy-editable-draft' in terminal.text and 'Background ·' in terminal.text,
                      'quiet shell prevented composer edits')
+                assert_compact_hud(terminal.text, rows=1, idle=False)
                 (evidence / f'{case}-running-screen.txt').write_text(terminal.text + '\n')
             (workspace / 'release').touch()
         provider.final_gate.set()
@@ -162,10 +163,10 @@ def run_tui_case(binary, root, evidence, case):
             assert 'Ran ' in terminal.text and 'POLICY_COMPLETE' in terminal.text, terminal.text
             assert 'Shell completed' not in terminal.text, terminal.text
         completed_at = time.monotonic()
-        if 'Shells 1' in terminal.text:
+        if 'Background ·' in terminal.text:
             (evidence / f'{case}-pending-refresh-screen.txt').write_text(terminal.text + '\n')
         # The daemon snapshot refreshes once per second after canonical completion.
-        wait([terminal], lambda: 'Shells 1' not in terminal.text and ' · job ' not in terminal.text,
+        wait([terminal], lambda: 'Background ·' not in terminal.text and ' · job ' not in terminal.text,
              'completed shell persisted beyond the HUD refresh interval', 3)
         hud_clear_ms = round((time.monotonic() - completed_at) * 1000)
         assert 'POLICY_STARTED' in log.read_text(), log
@@ -279,20 +280,21 @@ def run_parallel_roots(binary, root, evidence):
             fixtures.append((home, workspace, provider))
             terminals.append(start_terminal(binary, home, workspace, provider, f'parallel-{marker}'))
         background, foreground = terminals
-        wait(terminals, lambda: 'Shells 1' in background.text and
+        wait(terminals, lambda: 'Background ·' in background.text and
              all(list((home / 'codex-plus/logs').glob('*')) for home, _, _ in fixtures),
              'concurrent helper commands did not start')
         observed = time.monotonic()
         wait(terminals, lambda: time.monotonic() - observed > 2.2, 'concurrent observation did not finish', 4)
-        assert 'Shells 1' not in foreground.text and 'parallel-foreground' not in background.text, background.text
+        assert 'Background ·' not in foreground.text and 'parallel-foreground' not in background.text, background.text
         assert 'parallel-background' not in foreground.text, foreground.text
         for index, terminal in enumerate(terminals):
             os.write(terminal.master, f'parallel-draft-{index}'.encode())
         wait(terminals, lambda: all(f'parallel-draft-{index}' in terminal.text
              for index, terminal in enumerate(terminals)), 'parallel policy roots blocked composers')
+        assert_compact_hud(background.text, rows=1, idle=False)
         (fixtures[0][1] / 'release').touch()
         fixtures[0][2].final_gate.set()
-        wait(terminals, lambda: 'Shell completed (exit 0)' in background.text and 'Shells 1' not in background.text,
+        wait(terminals, lambda: 'Shell completed (exit 0)' in background.text and 'Background ·' not in background.text,
              'background completion did not compact independently')
         assert not (fixtures[1][1] / 'release').exists() and turns(fixtures[1][0]) == 0
         assert 'Shell completed' not in foreground.text and 'parallel-draft-1' in foreground.text, foreground.text
@@ -336,12 +338,12 @@ def run_native_cancellation(binary, root, evidence):
     terminal, pids = None, []
     try:
         terminal = start_terminal(binary, home, workspace, provider, 'cancel-policy')
-        wait([terminal], lambda: len(list(workspace.glob('pid-*'))) == 3 and 'Shells 1' in terminal.text,
+        wait([terminal], lambda: len(list(workspace.glob('pid-*'))) == 3 and 'Background ·' in terminal.text,
              'native cancellation process family did not start')
         pids = [int(path.read_text()) for path in workspace.glob('pid-*')]
         assert all(process_running(pid) for pid in pids), pids
         os.write(terminal.master, b'\x03')
-        wait([terminal], lambda: 'Conversation interrupted' in terminal.text and 'Shells 1' in terminal.text,
+        wait([terminal], lambda: 'Conversation interrupted' in terminal.text and 'Background ·' in terminal.text,
              'turn interruption lost its tracked background shell')
         # Stock turn interruption preserves processes; /stop owns group termination.
         assert all(process_running(pid) for pid in pids), pids

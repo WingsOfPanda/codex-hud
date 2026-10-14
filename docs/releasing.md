@@ -34,7 +34,9 @@ System protoc is not required by the pinned build, which uses vendored protoc.
 ## Package assembly
 
 Use a clean Plus source snapshot and preserve its full commit in the manifest.
-Assembly can run centrally after the two native builds; it copies each target's
+Assemble and qualify each archive on its native build host using the same clean
+Plus commit. This avoids transferring ARM binaries away and then returning the
+archive for testing. Central assembly remains supported; it copies each target's
 binaries and fetches pinned runtime resources without running foreign binaries.
 The native directory must contain `codex`, `codex-code-mode-host`, and `bwrap`.
 

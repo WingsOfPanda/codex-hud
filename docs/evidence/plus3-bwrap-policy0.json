@@ -1,0 +1,21 @@
+{
+  "host": "ascend910b",
+  "apparmor_restrict_unprivileged_userns": "0",
+  "helpers": {
+    "stock": {
+      "exit": 0,
+      "stdout": "PACKAGE_BWRAP",
+      "stderr": "",
+      "sha256": "c547cbdc762a70ed216789ffaa4c6c0e7d2beabe32245a498f8e365a9fc8dab4",
+      "binary_unchanged": true
+    },
+    "plus3": {
+      "exit": 0,
+      "stdout": "PACKAGE_BWRAP",
+      "stderr": "",
+      "sha256": "cb1d4fddb17d6d623a5ceb235fa76f58278c86e17fdd90257458c5846f7bdfdc",
+      "binary_unchanged": true
+    }
+  },
+  "passed": true
+}

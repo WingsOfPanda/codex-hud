@@ -84,10 +84,11 @@ ambiguous-delivery window or add exactly-once model/tool execution.
 
 ## Watcher health in the HUD
 
-A compact line below the worker list shows waiting, pending delivery, an uncertain
-wake, an unavailable observer, or a restart report ready for delivery. It remains
-visible when no worker rows are active. Clean idle state hides the line. Waiting
-uses dim text; delivery problems and restart reports use normal brightness.
+Healthy waiting and clean idle state add no watcher row: existing worker and
+background rows already represent the work. Pending delivery, uncertain wakes,
+an unavailable observer, and restart reports remain visible even without active
+workers. These notices share the HUD's three-row total limit with activity and
+overflow; delivery problems and restart reports use normal brightness.
 
 The coordinator atomically writes a small private status file beside its ledger:
 `$CODEX_HOME/codex-plus/SESSION_UUID.status.json`. The TUI reads it locally without

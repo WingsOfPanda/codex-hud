@@ -238,6 +238,25 @@ loopback fixtures. The installed local binary is `.build/codex`, with its previo
 frontend release preserved at `.build/codex.before-shell-policy`. Relaunch the
 client to use the policy display. See [shell-policy.json](evidence/shell-policy.json).
 
+## Compact activity rows
+
+The compact layout removes the count header, puts model/role/effort before the
+worker task, labels root shell jobs `Background`, and hides healthy watcher
+waiting. Approval/input waits, stale metadata, and wake-delivery problems remain
+visible. Activity, a combined warning, and overflow share three total footer rows.
+
+Primary acceptance passed 35 focused Rust HUD tests, nine fixture checks, all
+18 terminal stages, and eight shell-policy cases including independent panes,
+process-group cancellation, and one completion callback through the official
+0.162.1 daemon. The terminal suite verifies the idle composer remains within the
+last six nonempty lines, including overflow and warnings, with no added model
+calls from HUD refresh. The old six-worker layout failed this check with five
+HUD rows. Clean/reverse patch application and exact source checks passed.
+
+See [compact-rows.json](evidence/compact-rows.json) for the candidate hash and
+reports. This acceptance covers a Linux x86_64 `dev-small` candidate; optimized
+release builds, ARM qualification, and fleet installation are separate work.
+
 ## Limits
 
 - Live workers and the strip's placement were confirmed in the user's pane.
@@ -246,8 +265,9 @@ client to use the policy display. See [shell-policy.json](evidence/shell-policy.
 - This is a version-specific native build. Existing CLI processes must be
   relaunched to use it, and future Codex releases require rebasing/retesting.
 - Counts include only active or waiting direct, non-archived spawned workers.
-  At most three combined worker-group, standalone-worker, or shell rows appear,
-  followed by `+N more` when needed.
+  At most three total rows appear below the shortcuts footer, including worker
+  groups, standalone workers, background commands, warnings, and `+N more`.
+  The composer must remain within AP's last six nonempty lines at this limit.
   Finished workers reduce their group's active count; empty groups disappear.
   A healthy empty strip collapses. Stale/unavailable metadata
   remains visibly uncertain. Long names shorten before metrics; terminal height
