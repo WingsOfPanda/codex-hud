@@ -160,7 +160,8 @@ def shell_hud_smoke(binary, root, evidence):
             assert not (home / 'codex-plus').exists(), 'shell test accidentally registered park state'
         first, second = terminals
         wait(terminals, lambda: 'Shells 1' in first.text and 'remote-root-0-held' in first.text and
-             'remote-root-1-held' in second.text, 'unregistered shell-only row did not render', 30)
+             'remote-root-1-held' in second.text and 'Workers 2' in second.text,
+             'unregistered shell-only and mixed worker rows did not render', 30)
         assert 'Workers' not in first.text and 'Workers 2' in second.text, '\n'.join(t.text for t in terminals)
         assert 'remote-root-1-held' not in first.text and 'remote-root-0-held' not in second.text
         assert first.text.index('for shortcuts') < first.text.index('Shells 1'), first.text
