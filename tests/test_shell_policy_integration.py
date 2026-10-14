@@ -98,7 +98,8 @@ def start_terminal(binary, home, workspace, provider, name):
 
 
 def run_tui_case(binary, root, evidence, case):
-    home, workspace = root / f'{case}-home', root / case
+    # Keep CODEX_HOME short enough for the native Unix socket address.
+    home, workspace = root / f'h-{CASES.index(case)}', root / case
     marker = case.split('_')[0] if not case.startswith('unmarked') else None
     held, failed = case.endswith('long') or case == 'auto_polling', case.endswith('failure')
     command = command_for(workspace, marker, held, failed)
@@ -272,7 +273,7 @@ def run_parallel_roots(binary, root, evidence):
     fixtures, terminals = [], []
     try:
         for marker in ('background', 'foreground'):
-            home, workspace = root / f'parallel-{marker}-home', root / f'parallel-{marker}'
+            home, workspace = root / f'p-{marker}', root / f'parallel-{marker}'
             provider = ShellPolicyProvider(command_for(workspace, marker, held=True))
             configure(home, workspace, provider)
             fixtures.append((home, workspace, provider))
@@ -373,7 +374,7 @@ def run(binary, evidence, cases=CASES, stock_daemon=None):
     evidence.mkdir(parents=True, exist_ok=True)
     (evidence / 'report.json').unlink(missing_ok=True)
     report = {'binary': str(binary), 'remote_model_requests': 0, 'cases': []}
-    with tempfile.TemporaryDirectory(prefix='codex-plus-shell-policy-') as temporary:
+    with tempfile.TemporaryDirectory(prefix='s-') as temporary:
         root = Path(temporary)
         for case in cases:
             report['cases'].append(run_tui_case(binary, root, evidence, case))
