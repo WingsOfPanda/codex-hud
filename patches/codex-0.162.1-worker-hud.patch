@@ -3235,15 +3235,23 @@ index 5dfc3ad..00510cc 100644
                      if tui.is_owned_screen()
                          && self.transcript_view.history
 diff --git a/codex-rs/tui/src/app/event_dispatch.rs b/codex-rs/tui/src/app/event_dispatch.rs
-index 2979e0a..6209e42 100644
+index 2979e0a..c7eed27 100644
 --- a/codex-rs/tui/src/app/event_dispatch.rs
 +++ b/codex-rs/tui/src/app/event_dispatch.rs
-@@ -2960,6 +2960,10 @@ impl App {
+@@ -2960,6 +2960,18 @@ impl App {
                      result,
                  );
              }
 +            AppEvent::WorkerHudLoaded { primary_thread_id, request_id, result } => {
 +                self.finish_worker_hud(primary_thread_id, request_id, result);
++                tui.frame_requester().schedule_frame();
++            }
++            AppEvent::ShellHudLoaded { primary_thread_id, request_id, result } => {
++                self.finish_shell_hud(primary_thread_id, request_id, result);
++                tui.frame_requester().schedule_frame();
++            }
++            AppEvent::WatcherHealthLoaded { primary_thread_id, request_id, health } => {
++                self.finish_watcher_health(primary_thread_id, request_id, health);
 +                tui.frame_requester().schedule_frame();
 +            }
              AppEvent::SelectAgentThread(thread_id) => {
@@ -3262,15 +3270,17 @@ index b7d6e26..7e230fc 100644
              // Cached blank sessions are usable only while this connection owns a subscription.
              self.agents_overview.blank_sessions.clear();
 diff --git a/codex-rs/tui/src/app/session_lifecycle.rs b/codex-rs/tui/src/app/session_lifecycle.rs
-index 61550ab..2ea29a0 100644
+index 61550ab..4ff5450 100644
 --- a/codex-rs/tui/src/app/session_lifecycle.rs
 +++ b/codex-rs/tui/src/app/session_lifecycle.rs
-@@ -833,6 +833,8 @@ impl App {
+@@ -833,6 +833,10 @@ impl App {
          self.pending_server_profiles.clear();
          self.agents_overview.activity.clear();
          self.agent_navigation.clear();
 +        self.worker_hud = Default::default();
 +        self.chat_widget.set_worker_hud(Vec::new(), false, false);
++        self.chat_widget.set_shell_hud(Vec::new(), false, false);
++        self.chat_widget.set_watcher_health(None);
          self.side_threads.clear();
          self.active_thread_id = None;
          self.active_thread_rx = None;
@@ -3320,14 +3330,16 @@ index 73bc892..5cd9303 100644
              side_threads: HashMap::new(),
 diff --git a/codex-rs/tui/src/app/worker_hud.rs b/codex-rs/tui/src/app/worker_hud.rs
 new file mode 100644
-index 0000000..661953d
+index 0000000..109777c
 --- /dev/null
 +++ b/codex-rs/tui/src/app/worker_hud.rs
-@@ -0,0 +1,705 @@
+@@ -0,0 +1,1394 @@
 +//! Per-client worker metadata refresh. These requests never start or steer a turn.
 +
 +use super::*;
 +use crate::app_server_session::source_agent_path;
++use crate::bottom_pane::worker_hud::ShellRow;
++use crate::bottom_pane::worker_hud::WatcherHealth;
 +use crate::bottom_pane::worker_hud::WorkerGroup;
 +use crate::bottom_pane::worker_hud::WorkerRow;
 +use crate::bottom_pane::worker_hud::WorkerState;
@@ -3335,6 +3347,9 @@ index 0000000..661953d
 +use codex_app_server_protocol::SortDirection;
 +use codex_app_server_protocol::Thread;
 +use codex_app_server_protocol::ThreadActiveFlag;
++use codex_app_server_protocol::ThreadBackgroundTerminal;
++use codex_app_server_protocol::ThreadBackgroundTerminalsListParams;
++use codex_app_server_protocol::ThreadBackgroundTerminalsListResponse;
 +use codex_app_server_protocol::ThreadListParams;
 +use codex_app_server_protocol::ThreadListResponse;
 +use codex_app_server_protocol::ThreadSourceKind;
@@ -3350,6 +3365,9 @@ index 0000000..661953d
 +
 +const REFRESH_INTERVAL: Duration = Duration::from_secs(1);
 +const FETCH_TIMEOUT: Duration = Duration::from_secs(4);
++const WATCHER_TIMEOUT: Duration = Duration::from_millis(250);
++const WATCHER_MAX_BYTES: u64 = 16 * 1024;
++const WATCHER_STALE_SECS: f64 = 15.0;
 +
 +#[derive(Default)]
 +pub(super) struct WorkerHudState {
@@ -3359,6 +3377,101 @@ index 0000000..661953d
 +    attempted_at: Option<Instant>,
 +    rows: Vec<WorkerRow>,
 +    stale: bool,
++    shells: ShellHudState,
++    watcher_pending: Option<Uuid>,
++    watcher_attempted_at: Option<Instant>,
++    watcher: Option<WatcherHealth>,
++}
++
++#[derive(Default)]
++struct ShellHudState {
++    pending: Option<Uuid>,
++    fetched_at: Option<Instant>,
++    attempted_at: Option<Instant>,
++    terminals: Vec<ThreadBackgroundTerminal>,
++    first_seen: HashMap<(String, String), Instant>,
++    stale: bool,
++}
++
++impl ShellHudState {
++    fn rows(&self) -> Vec<ShellRow> {
++        self.terminals
++            .iter()
++            .map(|terminal| ShellRow {
++                command: terminal.command.clone(),
++                job_id: terminal.process_id.clone(),
++                seen_secs: self
++                    .first_seen
++                    .get(&(terminal.item_id.clone(), terminal.process_id.clone()))
++                    .map(|at| at.elapsed().as_secs()),
++            })
++            .collect()
++    }
++
++    fn finish(
++        &mut self,
++        request_id: Uuid,
++        result: Result<Vec<ThreadBackgroundTerminal>, String>,
++        now: Instant,
++    ) -> bool {
++        if self.pending != Some(request_id) {
++            return false;
++        }
++        self.pending = None;
++        match result {
++            Ok(terminals) => {
++                let mut first_seen = HashMap::new();
++                for terminal in &terminals {
++                    let key = (terminal.item_id.clone(), terminal.process_id.clone());
++                    first_seen.insert(
++                        key.clone(),
++                        self.first_seen.get(&key).copied().unwrap_or(now),
++                    );
++                }
++                self.first_seen = first_seen;
++                self.terminals = terminals;
++                self.fetched_at = Some(now);
++                self.stale = false;
++            }
++            Err(err) => {
++                tracing::debug!(%err, "shell HUD metadata unavailable");
++                self.stale = true;
++            }
++        }
++        true
++    }
++}
++
++async fn fetch_shells<F, Fut>(
++    root: ThreadId,
++    mut request: F,
++) -> Result<Vec<ThreadBackgroundTerminal>, String>
++where
++    F: FnMut(ThreadBackgroundTerminalsListParams) -> Fut,
++    Fut: std::future::Future<Output = Result<ThreadBackgroundTerminalsListResponse, String>>,
++{
++    let mut terminals = Vec::new();
++    let mut cursor = None;
++    let mut seen_cursors = HashSet::new();
++    loop {
++        if !seen_cursors.insert(cursor.clone()) || terminals.len() >= 1_000 {
++            return Err("shell list incomplete".to_string());
++        }
++        let page = request(ThreadBackgroundTerminalsListParams {
++            thread_id: root.to_string(),
++            cursor,
++            limit: Some(100),
++        })
++        .await?;
++        if terminals.len() + page.data.len() > 1_000 {
++            return Err("shell list incomplete".to_string());
++        }
++        terminals.extend(page.data);
++        match page.next_cursor {
++            Some(next) => cursor = Some(next),
++            None => return Ok(terminals),
++        }
++    }
 +}
 +
 +impl WorkerHudState {
@@ -3394,12 +3507,43 @@ index 0000000..661953d
 +        }
 +        true
 +    }
++
++    fn finish_shells(
++        &mut self,
++        root: ThreadId,
++        request_id: Uuid,
++        result: Result<Vec<ThreadBackgroundTerminal>, String>,
++        now: Instant,
++    ) -> bool {
++        self.root == Some(root) && self.shells.finish(request_id, result, now)
++    }
++
++    fn finish_watcher(
++        &mut self,
++        root: ThreadId,
++        request_id: Uuid,
++        health: Option<WatcherHealth>,
++    ) -> bool {
++        if self.root != Some(root) || self.watcher_pending != Some(request_id) {
++            return false;
++        }
++        self.watcher_pending = None;
++        self.watcher = health;
++        true
++    }
 +}
 +
 +impl App {
 +    pub(super) fn invalidate_worker_hud(&mut self) {
 +        self.worker_hud.pending = None;
 +        self.worker_hud.stale = true;
++        self.worker_hud.shells.pending = None;
++        self.worker_hud.shells.stale = true;
++        self.chat_widget.set_shell_hud(
++            self.worker_hud.shells.rows(),
++            true,
++            self.primary_thread_id.is_some(),
++        );
 +        self.chat_widget.set_worker_hud(
 +            self.worker_hud.rows.clone(),
 +            true,
@@ -3413,6 +3557,8 @@ index 0000000..661953d
 +        frame_requester: &tui::FrameRequester,
 +    ) {
 +        self.worker_hud.bind(self.primary_thread_id);
++        self.refresh_watcher_health(app_server.uses_remote_workspace());
++        self.refresh_shell_hud(app_server);
 +        let Some(root) = self.primary_thread_id else {
 +            self.chat_widget.set_worker_hud(Vec::new(), false, false);
 +            return;
@@ -3545,6 +3691,146 @@ index 0000000..661953d
 +        });
 +    }
 +
++    fn refresh_shell_hud(&mut self, app_server: &AppServerSession) {
++        let Some(root) = self.primary_thread_id else {
++            self.chat_widget.set_shell_hud(Vec::new(), false, false);
++            return;
++        };
++        let shells = &mut self.worker_hud.shells;
++        if self.reconnect.offline {
++            shells.pending = None;
++        }
++        let stale = self.reconnect.offline
++            || shells.stale
++            || shells.fetched_at.is_none()
++            || shells
++                .fetched_at
++                .is_some_and(|at| at.elapsed() > FETCH_TIMEOUT);
++        self.chat_widget.set_shell_hud(shells.rows(), stale, true);
++        if self.reconnect.offline
++            || shells.pending.is_some()
++            || shells
++                .attempted_at
++                .is_some_and(|at| at.elapsed() < REFRESH_INTERVAL)
++        {
++            return;
++        }
++        let request_id = Uuid::new_v4();
++        shells.pending = Some(request_id);
++        shells.attempted_at = Some(Instant::now());
++        let request_handle = app_server.request_handle();
++        let app_event_tx = self.app_event_tx.clone();
++        tokio::spawn(async move {
++            let result = tokio::time::timeout(
++                FETCH_TIMEOUT,
++                fetch_shells(root, |params| {
++                    let request_handle = request_handle.clone();
++                    async move {
++                        request_handle
++                            .request_typed::<ThreadBackgroundTerminalsListResponse>(
++                                ClientRequest::ThreadBackgroundTerminalsList {
++                                    request_id: RequestId::String(Uuid::new_v4().to_string()),
++                                    params,
++                                },
++                            )
++                            .await
++                            .map_err(|err| err.to_string())
++                    }
++                }),
++            )
++            .await
++            .map_err(|_| "shell metadata timed out".to_string())
++            .and_then(|result| result);
++            app_event_tx.send(AppEvent::ShellHudLoaded {
++                primary_thread_id: root,
++                request_id,
++                result,
++            });
++        });
++    }
++
++    pub(super) fn finish_shell_hud(
++        &mut self,
++        root: ThreadId,
++        request_id: Uuid,
++        result: Result<Vec<ThreadBackgroundTerminal>, String>,
++    ) {
++        if !self.reconnect.offline
++            && self.primary_thread_id == Some(root)
++            && self
++                .worker_hud
++                .finish_shells(root, request_id, result, Instant::now())
++        {
++            self.chat_widget.set_shell_hud(
++                self.worker_hud.shells.rows(),
++                self.worker_hud.shells.stale,
++                true,
++            );
++        }
++    }
++
++    fn refresh_watcher_health(&mut self, remote: bool) {
++        if remote || self.primary_thread_id.is_none() {
++            self.worker_hud.watcher_pending = None;
++            self.worker_hud.watcher = None;
++            self.chat_widget.set_watcher_health(None);
++            return;
++        }
++        self.chat_widget
++            .set_watcher_health(self.worker_hud.watcher.clone());
++        if self.worker_hud.watcher_pending.is_some()
++            || self
++                .worker_hud
++                .watcher_attempted_at
++                .is_some_and(|at| at.elapsed() < REFRESH_INTERVAL)
++        {
++            return;
++        }
++        let root = self.primary_thread_id.expect("checked above");
++        let request_id = Uuid::new_v4();
++        self.worker_hud.watcher_pending = Some(request_id);
++        self.worker_hud.watcher_attempted_at = Some(Instant::now());
++        let path = self
++            .config
++            .codex_home
++            .join("codex-plus")
++            .join(format!("{root}.status.json"));
++        let app_event_tx = self.app_event_tx.clone();
++        tokio::spawn(async move {
++            let read = tokio::task::spawn_blocking(move || {
++                let now = SystemTime::now()
++                    .duration_since(UNIX_EPOCH)
++                    .unwrap_or_default()
++                    .as_secs_f64();
++                read_watcher_health(path.as_path(), root, now)
++            });
++            let health = tokio::time::timeout(WATCHER_TIMEOUT, read)
++                .await
++                .ok()
++                .and_then(Result::ok)
++                .unwrap_or(Some(WatcherHealth::Unavailable));
++            app_event_tx.send(AppEvent::WatcherHealthLoaded {
++                primary_thread_id: root,
++                request_id,
++                health,
++            });
++        });
++    }
++
++    pub(super) fn finish_watcher_health(
++        &mut self,
++        root: ThreadId,
++        request_id: Uuid,
++        health: Option<WatcherHealth>,
++    ) {
++        if self.primary_thread_id == Some(root)
++            && self.worker_hud.finish_watcher(root, request_id, health)
++        {
++            self.chat_widget
++                .set_watcher_health(self.worker_hud.watcher.clone());
++        }
++    }
++
 +    pub(super) fn finish_worker_hud(
 +        &mut self,
 +        root: ThreadId,
@@ -3561,6 +3847,81 @@ index 0000000..661953d
 +                true,
 +            );
 +        }
++    }
++}
++
++#[derive(serde::Deserialize)]
++#[serde(rename_all = "snake_case")]
++enum WatcherState {
++    Waiting,
++    Uncertain,
++    Error,
++    Report,
++    Idle,
++}
++
++#[derive(serde::Deserialize)]
++#[serde(deny_unknown_fields)]
++struct WatcherStatus {
++    version: u32,
++    parent: ThreadId,
++    updated_at: f64,
++    state: WatcherState,
++    jobs: u64,
++    uncertain: u64,
++    reports: u64,
++}
++
++fn read_watcher_health(path: &std::path::Path, root: ThreadId, now: f64) -> Option<WatcherHealth> {
++    use std::io::Read;
++    let read = || -> std::io::Result<Option<Vec<u8>>> {
++        let mut options = std::fs::OpenOptions::new();
++        options.read(true);
++        #[cfg(unix)]
++        {
++            use std::os::unix::fs::OpenOptionsExt;
++            // Opening a replaced path must not wait on a pipe instead of a status file.
++            options.custom_flags(libc::O_NONBLOCK | libc::O_NOFOLLOW);
++        }
++        let file = match options.open(path) {
++            Ok(file) => file,
++            Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(None),
++            Err(err) => return Err(err),
++        };
++        let metadata = file.metadata()?;
++        if !metadata.is_file() || metadata.len() > WATCHER_MAX_BYTES {
++            return Err(std::io::Error::other("invalid watcher status file"));
++        }
++        let mut bytes = Vec::new();
++        file.take(WATCHER_MAX_BYTES + 1).read_to_end(&mut bytes)?;
++        if bytes.len() as u64 > WATCHER_MAX_BYTES {
++            return Err(std::io::Error::other("oversized watcher status file"));
++        }
++        Ok(Some(bytes))
++    };
++    let bytes = match read() {
++        Ok(bytes) => bytes?,
++        Err(_) => return Some(WatcherHealth::Unavailable),
++    };
++    let Ok(status) = serde_json::from_slice::<WatcherStatus>(&bytes) else {
++        return Some(WatcherHealth::Unavailable);
++    };
++    if status.version != 1
++        || status.parent != root
++        || !status.updated_at.is_finite()
++        || status.updated_at < 0.0
++    {
++        return Some(WatcherHealth::Unavailable);
++    }
++    match status.state {
++        WatcherState::Waiting if now - status.updated_at > WATCHER_STALE_SECS => {
++            Some(WatcherHealth::Unavailable)
++        }
++        WatcherState::Waiting => Some(WatcherHealth::Waiting(status.jobs)),
++        WatcherState::Uncertain => Some(WatcherHealth::Uncertain(status.uncertain)),
++        WatcherState::Error => Some(WatcherHealth::Unavailable),
++        WatcherState::Report => Some(WatcherHealth::Report(status.reports)),
++        WatcherState::Idle => None,
 +    }
 +}
 +
@@ -3694,6 +4055,344 @@ index 0000000..661953d
 +#[cfg(test)]
 +mod tests {
 +    use super::*;
++
++    fn shell(item: &str, process: &str) -> ThreadBackgroundTerminal {
++        serde_json::from_value(serde_json::json!({
++            "itemId": item, "processId": process, "command": "cargo test", "cwd": "/tmp",
++            "osPid": null, "cpuPercent": null, "rssKb": null
++        }))
++        .unwrap()
++    }
++
++    #[test]
++    fn worker_hud_shell_identity_removal_stale_and_root_isolation() {
++        let root = ThreadId::new();
++        let other = ThreadId::new();
++        let mut state = WorkerHudState::default();
++        state.bind(Some(root));
++        let now = Instant::now();
++        let request = Uuid::new_v4();
++        state.shells.pending = Some(request);
++        assert!(!state.finish_shells(other, request, Ok(vec![shell("a", "1")]), now));
++        assert!(state.finish_shells(root, request, Ok(vec![shell("a", "1")]), now));
++        assert_eq!(state.shells.first_seen[&("a".into(), "1".into())], now);
++        let later = now + Duration::from_secs(5);
++        state.shells.pending = Some(request);
++        assert!(state.finish_shells(root, request, Err("timeout".into()), later));
++        assert!(state.shells.stale);
++        assert_eq!(state.shells.terminals.len(), 1);
++        assert!(!state.stale);
++        state.pending = Some(request);
++        assert!(state.finish(root, request, Err("worker API".into())));
++        state.shells.pending = Some(request);
++        assert!(state.finish_shells(root, request, Ok(vec![shell("a", "1")]), later));
++        assert!(!state.shells.stale);
++        assert!(state.stale);
++        assert_eq!(state.shells.first_seen[&("a".into(), "1".into())], now);
++        for terminal in [shell("b", "1"), shell("b", "2")] {
++            state.shells.pending = Some(request);
++            assert!(state.finish_shells(root, request, Ok(vec![terminal.clone()]), later));
++            assert_eq!(state.shells.first_seen.len(), 1);
++            assert_eq!(
++                state.shells.first_seen[&(terminal.item_id, terminal.process_id)],
++                later
++            );
++        }
++        state.shells.pending = Some(request);
++        assert!(state.finish_shells(root, request, Ok(vec![]), later));
++        assert!(state.shells.terminals.is_empty() && state.shells.first_seen.is_empty());
++        state.shells.pending = Some(request);
++        state.finish_shells(root, request, Ok(vec![shell("a", "1")]), later);
++        assert_eq!(state.shells.first_seen[&("a".into(), "1".into())], later);
++        state.bind(Some(other));
++        state.shells.pending = Some(request);
++        assert!(!state.finish_shells(root, request, Ok(vec![shell("a", "1")]), now));
++        assert!(state.shells.terminals.is_empty() && state.shells.first_seen.is_empty());
++        state.bind(None);
++        assert!(state.shells.pending.is_none());
++    }
++
++    #[tokio::test]
++    async fn worker_hud_shell_pagination_is_complete_bounded_and_fails_atomically() {
++        let root = ThreadId::new();
++        let mut calls = 0;
++        let rows = fetch_shells(root, |params| {
++            assert_eq!(params.thread_id, root.to_string());
++            assert_eq!(params.limit, Some(100));
++            assert_eq!(
++                params.cursor.as_deref(),
++                if calls == 0 { None } else { Some("next") }
++            );
++            calls += 1;
++            std::future::ready(Ok(ThreadBackgroundTerminalsListResponse {
++                data: vec![shell(&calls.to_string(), "1")],
++                next_cursor: if calls == 1 {
++                    Some("next".into())
++                } else {
++                    None
++                },
++            }))
++        })
++        .await
++        .unwrap();
++        assert_eq!(rows.len(), 2);
++        for mode in ["cycle", "oversize", "limit", "rpc"] {
++            let mut calls = 0;
++            let result = fetch_shells(root, |_| {
++                calls += 1;
++                std::future::ready(if mode == "rpc" && calls == 2 {
++                    Err("unavailable".into())
++                } else {
++                    Ok(ThreadBackgroundTerminalsListResponse {
++                        data: if mode == "oversize" {
++                            vec![shell("a", "1"); 1001]
++                        } else if mode == "limit" {
++                            vec![shell("a", "1"); 100]
++                        } else {
++                            vec![shell("a", "1")]
++                        },
++                        next_cursor: Some(if mode == "limit" {
++                            calls.to_string()
++                        } else {
++                            "same".into()
++                        }),
++                    })
++                })
++            })
++            .await;
++            assert!(result.is_err(), "{mode}");
++            assert!(calls <= 10);
++        }
++        let rows = fetch_shells(root, |_| {
++            std::future::ready(Ok(ThreadBackgroundTerminalsListResponse {
++                data: vec![shell("a", "1"); 1000],
++                next_cursor: None,
++            }))
++        })
++        .await
++        .unwrap();
++        assert_eq!(rows.len(), 1000);
++        let result = tokio::time::timeout(
++            Duration::from_millis(5),
++            fetch_shells(root, |_| {
++                std::future::pending::<Result<ThreadBackgroundTerminalsListResponse, String>>()
++            }),
++        )
++        .await;
++        assert!(result.is_err());
++    }
++
++    fn watcher_status(root: ThreadId, state: &str) -> serde_json::Value {
++        serde_json::json!({
++            "version": 1,
++            "parent": root.to_string(),
++            "updated_at": 100.5,
++            "state": state,
++            "jobs": 2,
++            "uncertain": 1,
++            "reports": 3,
++        })
++    }
++
++    #[test]
++    fn worker_hud_watcher_missing_and_idle_are_hidden_without_creating_files() {
++        let home = tempfile::tempdir().unwrap();
++        let path = home.path().join("status.json");
++        let root = ThreadId::new();
++        assert_eq!(read_watcher_health(&path, root, 110.0), None);
++        assert!(!path.exists());
++        let bytes = serde_json::to_vec(&watcher_status(root, "idle")).unwrap();
++        std::fs::write(&path, &bytes).unwrap();
++        assert_eq!(read_watcher_health(&path, root, 999.0), None);
++        assert_eq!(std::fs::read(path).unwrap(), bytes);
++    }
++
++    #[test]
++    fn worker_hud_watcher_only_waiting_requires_fresh_heartbeat() {
++        let home = tempfile::tempdir().unwrap();
++        let path = home.path().join("status.json");
++        let root = ThreadId::new();
++        std::fs::write(&path, watcher_status(root, "waiting").to_string()).unwrap();
++        assert_eq!(
++            read_watcher_health(&path, root, 115.5),
++            Some(WatcherHealth::Waiting(2))
++        );
++        assert_eq!(
++            read_watcher_health(&path, root, 115.6),
++            Some(WatcherHealth::Unavailable)
++        );
++        for (state, health) in [
++            ("uncertain", WatcherHealth::Uncertain(1)),
++            ("error", WatcherHealth::Unavailable),
++            ("report", WatcherHealth::Report(3)),
++        ] {
++            std::fs::write(&path, watcher_status(root, state).to_string()).unwrap();
++            assert_eq!(read_watcher_health(&path, root, 999.0), Some(health));
++        }
++    }
++
++    #[test]
++    fn worker_hud_watcher_rejects_malformed_oversized_and_non_file_status() {
++        let home = tempfile::tempdir().unwrap();
++        let path = home.path().join("status.json");
++        let root = ThreadId::new();
++        for bytes in [
++            b"{broken".to_vec(),
++            vec![b' '; WATCHER_MAX_BYTES as usize + 1],
++        ] {
++            std::fs::write(&path, bytes).unwrap();
++            assert_eq!(
++                read_watcher_health(&path, root, 110.0),
++                Some(WatcherHealth::Unavailable)
++            );
++        }
++        std::fs::remove_file(&path).unwrap();
++        std::fs::create_dir(&path).unwrap();
++        assert_eq!(
++            read_watcher_health(&path, root, 110.0),
++            Some(WatcherHealth::Unavailable)
++        );
++    }
++
++    #[test]
++    fn worker_hud_watcher_validates_schema_and_parent_without_showing_raw_text() {
++        let home = tempfile::tempdir().unwrap();
++        let path = home.path().join("status.json");
++        let root = ThreadId::new();
++        for (field, value) in [
++            ("version", serde_json::json!(2)),
++            ("parent", serde_json::json!(ThreadId::new().to_string())),
++            ("parent", serde_json::json!("invalid\u{1b}[2J")),
++            ("state", serde_json::json!("waiting\nsecret")),
++            ("updated_at", serde_json::json!(-1)),
++            ("updated_at", serde_json::json!(null)),
++            ("jobs", serde_json::json!(-1)),
++            ("uncertain", serde_json::json!(1.5)),
++            ("reports", serde_json::json!("3")),
++            ("raw_error", serde_json::json!("secret")),
++        ] {
++            let mut status = watcher_status(root, "waiting");
++            status[field] = value;
++            std::fs::write(&path, status.to_string()).unwrap();
++            assert_eq!(
++                read_watcher_health(&path, root, 110.0),
++                Some(WatcherHealth::Unavailable),
++                "{field}"
++            );
++        }
++        let mut status = watcher_status(root, "idle");
++        status.as_object_mut().unwrap().remove("jobs");
++        std::fs::write(&path, status.to_string()).unwrap();
++        assert_eq!(
++            read_watcher_health(&path, root, 110.0),
++            Some(WatcherHealth::Unavailable)
++        );
++    }
++
++    #[cfg(unix)]
++    #[test]
++    fn worker_hud_watcher_rejects_unreadable_symlinks_and_pipes_without_waiting() {
++        use std::os::unix::fs::PermissionsExt;
++        let home = tempfile::tempdir().unwrap();
++        let path = home.path().join("status.json");
++        let root = ThreadId::new();
++        std::fs::write(&path, watcher_status(root, "waiting").to_string()).unwrap();
++        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0)).unwrap();
++        assert_eq!(
++            read_watcher_health(&path, root, 110.0),
++            Some(WatcherHealth::Unavailable)
++        );
++        std::fs::remove_file(&path).unwrap();
++        std::os::unix::fs::symlink(home.path().join("missing"), &path).unwrap();
++        assert_eq!(
++            read_watcher_health(&path, root, 110.0),
++            Some(WatcherHealth::Unavailable)
++        );
++        std::fs::remove_file(&path).unwrap();
++        let fifo = std::ffi::CString::new(path.as_os_str().as_encoded_bytes()).unwrap();
++        assert_eq!(unsafe { libc::mkfifo(fifo.as_ptr(), 0o600) }, 0);
++        assert_eq!(
++            read_watcher_health(&path, root, 110.0),
++            Some(WatcherHealth::Unavailable)
++        );
++    }
++
++    #[tokio::test]
++    async fn worker_hud_watcher_refresh_is_independent_of_offline_worker_request() {
++        let mut app = crate::app::test_support::make_test_app().await;
++        let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
++        app.app_event_tx = AppEventSender::new(tx);
++        let root = ThreadId::new();
++        app.primary_thread_id = Some(root);
++        app.worker_hud.bind(Some(root));
++        app.reconnect.offline = true;
++        let worker_request = Uuid::new_v4();
++        app.worker_hud.pending = Some(worker_request);
++        let directory = app.config.codex_home.join("codex-plus");
++        std::fs::create_dir_all(&directory).unwrap();
++        std::fs::write(
++            directory.join(format!("{root}.status.json")),
++            watcher_status(root, "uncertain").to_string(),
++        )
++        .unwrap();
++        app.refresh_watcher_health(false);
++        let event = tokio::time::timeout(Duration::from_secs(2), rx.recv())
++            .await
++            .unwrap()
++            .unwrap();
++        let AppEvent::WatcherHealthLoaded {
++            primary_thread_id,
++            request_id,
++            health,
++        } = event
++        else {
++            panic!("expected independent watcher refresh");
++        };
++        assert_eq!(health, Some(WatcherHealth::Uncertain(1)));
++        app.finish_watcher_health(primary_thread_id, request_id, health);
++        assert_eq!(app.worker_hud.watcher, Some(WatcherHealth::Uncertain(1)));
++        assert_eq!(app.worker_hud.pending, Some(worker_request));
++        assert!(app.worker_hud.rows.is_empty());
++    }
++
++    #[tokio::test]
++    async fn worker_hud_watcher_remote_and_no_root_suppress_local_status() {
++        let mut app = crate::app::test_support::make_test_app().await;
++        let root = ThreadId::new();
++        let request_id = Uuid::new_v4();
++        app.primary_thread_id = Some(root);
++        app.worker_hud.bind(Some(root));
++        app.worker_hud.watcher = Some(WatcherHealth::Uncertain(1));
++        app.worker_hud.watcher_pending = Some(request_id);
++        app.refresh_watcher_health(true);
++        assert_eq!(app.worker_hud.watcher, None);
++        assert_eq!(app.worker_hud.watcher_pending, None);
++        assert_eq!(app.worker_hud.watcher_attempted_at, None);
++        app.finish_watcher_health(root, request_id, Some(WatcherHealth::Uncertain(1)));
++        assert_eq!(app.worker_hud.watcher, None);
++        app.primary_thread_id = None;
++        app.worker_hud.watcher = Some(WatcherHealth::Unavailable);
++        app.refresh_watcher_health(false);
++        assert_eq!(app.worker_hud.watcher, None);
++        assert_eq!(app.worker_hud.watcher_attempted_at, None);
++    }
++
++    #[test]
++    fn worker_hud_watcher_rejects_previous_session_and_request_replies() {
++        let root = ThreadId::new();
++        let other_root = ThreadId::new();
++        let request_id = Uuid::new_v4();
++        let mut state = WorkerHudState::default();
++        state.bind(Some(root));
++        state.watcher_pending = Some(request_id);
++        assert!(!state.finish_watcher(other_root, request_id, Some(WatcherHealth::Unavailable)));
++        assert!(!state.finish_watcher(root, Uuid::new_v4(), Some(WatcherHealth::Unavailable)));
++        assert!(state.finish_watcher(root, request_id, Some(WatcherHealth::Unavailable)));
++        assert_eq!(state.watcher, Some(WatcherHealth::Unavailable));
++        state.bind(Some(other_root));
++        assert_eq!(state.watcher, None);
++        assert!(!state.finish_watcher(root, request_id, Some(WatcherHealth::Unavailable)));
++    }
 +
 +    fn thread(id: &str) -> Thread {
 +        serde_json::from_value(serde_json::json!({
@@ -4030,10 +4729,10 @@ index 0000000..661953d
 +    }
 +}
 diff --git a/codex-rs/tui/src/app_event.rs b/codex-rs/tui/src/app_event.rs
-index 4c6ede3..3cb7212 100644
+index 4c6ede3..8f06bf2 100644
 --- a/codex-rs/tui/src/app_event.rs
 +++ b/codex-rs/tui/src/app_event.rs
-@@ -404,6 +404,11 @@ pub(crate) enum AppEvent {
+@@ -404,6 +404,21 @@ pub(crate) enum AppEvent {
          request_id: Uuid,
          result: Result<AgentPickerThreadRefresh, String>,
      },
@@ -4042,11 +4741,21 @@ index 4c6ede3..3cb7212 100644
 +        request_id: Uuid,
 +        result: Result<Vec<crate::bottom_pane::worker_hud::WorkerRow>, String>,
 +    },
++    ShellHudLoaded {
++        primary_thread_id: ThreadId,
++        request_id: Uuid,
++        result: Result<Vec<codex_app_server_protocol::ThreadBackgroundTerminal>, String>,
++    },
++    WatcherHealthLoaded {
++        primary_thread_id: ThreadId,
++        request_id: Uuid,
++        health: Option<crate::bottom_pane::worker_hud::WatcherHealth>,
++    },
      /// Switch the active thread to the selected agent.
      SelectAgentThread(ThreadId),
  
 diff --git a/codex-rs/tui/src/bottom_pane/mod.rs b/codex-rs/tui/src/bottom_pane/mod.rs
-index c0e3902..ac23c79 100644
+index c0e3902..307ce15 100644
 --- a/codex-rs/tui/src/bottom_pane/mod.rs
 +++ b/codex-rs/tui/src/bottom_pane/mod.rs
 @@ -202,6 +202,7 @@ mod paste_burst;
@@ -4073,7 +4782,7 @@ index c0e3902..ac23c79 100644
              esc_backtrack_hint: false,
              animations_enabled,
              effects,
-@@ -1644,6 +1647,17 @@ impl BottomPane {
+@@ -1644,6 +1647,34 @@ impl BottomPane {
          self.request_redraw();
      }
  
@@ -4088,10 +4797,27 @@ index c0e3902..ac23c79 100644
 +        }
 +    }
 +
++    pub(crate) fn set_shell_hud(
++        &mut self,
++        rows: Vec<worker_hud::ShellRow>,
++        stale: bool,
++        visible: bool,
++    ) {
++        if self.worker_hud.set_shells(rows, stale, visible) {
++            self.request_redraw();
++        }
++    }
++
++    pub(crate) fn set_watcher_health(&mut self, health: Option<worker_hud::WatcherHealth>) {
++        if self.worker_hud.set_watcher(health) {
++            self.request_redraw();
++        }
++    }
++
      /// Update the inactive-thread approval list shown above the composer.
      pub(crate) fn set_pending_thread_approvals(&mut self, threads: Vec<String>) {
          if self.pending_thread_approvals.set_threads(threads) {
-@@ -2357,6 +2371,7 @@ impl BottomPane {
+@@ -2357,6 +2388,7 @@ impl BottomPane {
                  }))
              };
              flex2.push(/*flex*/ 0, composer);
@@ -4099,7 +4825,7 @@ index c0e3902..ac23c79 100644
              RenderableItem::Owned(Box::new(flex2))
          }
      }
-@@ -2591,6 +2606,43 @@ mod tests {
+@@ -2591,6 +2623,85 @@ mod tests {
          assert_eq!(pane.composer_text(), "main draft");
      }
  
@@ -4118,6 +4844,17 @@ index c0e3902..ac23c79 100644
 +                model: Some("gpt-6-sol".to_string()),
 +                reasoning_effort: None,
 +            }],
++            false,
++            true,
++        );
++        pane.set_shell_hud(
++            (0..5)
++                .map(|n| worker_hud::ShellRow {
++                    command: format!("cargo test {n}"),
++                    job_id: n.to_string(),
++                    seen_secs: Some(60),
++                })
++                .collect(),
 +            false,
 +            true,
 +        );
@@ -4140,15 +4877,46 @@ index c0e3902..ac23c79 100644
 +        assert_eq!(pane.composer_text(), "xx");
 +    }
 +
++    #[test]
++    fn worker_hud_watcher_warning_keeps_draft_and_cursor_on_resize() {
++        let (tx, _rx) = unbounded_channel();
++        let mut pane = test_pane_with_disable_paste_burst(AppEventSender::new(tx), true);
++        for running in [false, true] {
++            pane.set_task_running(running);
++            pane.handle_key_event(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE));
++            for health in [
++                worker_hud::WatcherHealth::Uncertain(1),
++                worker_hud::WatcherHealth::Unavailable,
++                worker_hud::WatcherHealth::Report(1),
++            ] {
++                pane.set_watcher_health(Some(health));
++                for width in [12, 40, 120] {
++                    let full = Rect::new(0, 0, width, pane.desired_height(width));
++                    assert!(render_snapshot(&pane, full).contains('x'));
++                    for height in [3, full.height] {
++                        let area = Rect::new(0, 0, width, height);
++                        assert!(
++                            pane.cursor_pos(area)
++                                .is_some_and(|(_, y)| y < area.bottom())
++                        );
++                        assert!(render_snapshot(&pane, area).contains('x'));
++                    }
++                }
++            }
++        }
++        pane.set_watcher_health(None);
++        assert_eq!(pane.composer_text(), "xx");
++    }
++
      #[test]
      fn inline_banner_snapshot() {
          let (tx, _rx) = unbounded_channel();
 diff --git a/codex-rs/tui/src/bottom_pane/worker_hud.rs b/codex-rs/tui/src/bottom_pane/worker_hud.rs
 new file mode 100644
-index 0000000..5844581
+index 0000000..5cedcb4
 --- /dev/null
 +++ b/codex-rs/tui/src/bottom_pane/worker_hud.rs
-@@ -0,0 +1,684 @@
+@@ -0,0 +1,972 @@
 +//! Read-only worker summary; clipping never takes space from the composer.
 +
 +use crate::line_truncation::truncate_line_with_ellipsis_if_overflow;
@@ -4214,14 +4982,60 @@ index 0000000..5844581
 +    pub(crate) reasoning_effort: Option<ReasoningEffort>,
 +}
 +
++#[derive(Clone, Debug, PartialEq, Eq)]
++pub(crate) struct ShellRow {
++    pub(crate) command: String,
++    pub(crate) job_id: String,
++    // The stock API has no start time; this is time observed by this TUI only.
++    pub(crate) seen_secs: Option<u64>,
++}
++
 +#[derive(Default)]
 +pub(crate) struct WorkerHud {
 +    rows: Vec<WorkerRow>,
 +    stale: bool,
 +    visible: bool,
++    shells: Vec<ShellRow>,
++    shells_stale: bool,
++    shells_visible: bool,
++    watcher: Option<WatcherHealth>,
++}
++
++#[derive(Clone, Debug, PartialEq, Eq)]
++pub(crate) enum WatcherHealth {
++    Waiting(u64),
++    Uncertain(u64),
++    Unavailable,
++    Report(u64),
++}
++
++impl WatcherHealth {
++    fn line(&self) -> Line<'static> {
++        let label = match self {
++            Self::Waiting(0) => "Wake pending".to_string(),
++            Self::Waiting(jobs) => format!("Watcher waiting · {jobs} jobs"),
++            Self::Uncertain(count) => format!("Wake delivery uncertain · {count}"),
++            Self::Unavailable => "Watcher unavailable".to_string(),
++            Self::Report(count) => format!("Restart report ready · {count}"),
++        };
++        let line = Line::from(format!("  {label}"));
++        if matches!(self, Self::Waiting(_)) {
++            line.dim()
++        } else {
++            line.not_dim()
++        }
++    }
 +}
 +
 +impl WorkerHud {
++    pub(crate) fn set_watcher(&mut self, watcher: Option<WatcherHealth>) -> bool {
++        if self.watcher == watcher {
++            return false;
++        }
++        self.watcher = watcher;
++        true
++    }
++
 +    pub(crate) fn set(&mut self, rows: Vec<WorkerRow>, stale: bool, visible: bool) -> bool {
 +        if self.rows == rows && self.stale == stale && self.visible == visible {
 +            return false;
@@ -4229,6 +5043,16 @@ index 0000000..5844581
 +        self.rows = rows;
 +        self.stale = stale;
 +        self.visible = visible;
++        true
++    }
++
++    pub(crate) fn set_shells(&mut self, rows: Vec<ShellRow>, stale: bool, visible: bool) -> bool {
++        if self.shells == rows && self.shells_stale == stale && self.shells_visible == visible {
++            return false;
++        }
++        self.shells = rows;
++        self.shells_stale = stale;
++        self.shells_visible = visible;
 +        true
 +    }
 +
@@ -4251,33 +5075,61 @@ index 0000000..5844581
 +    }
 +
 +    fn lines(&self, width: u16) -> Vec<Line<'static>> {
-+        if !self.visible {
-+            return Vec::new();
++        let display_rows = if self.visible {
++            self.display_rows()
++        } else {
++            Vec::new()
++        };
++        let shells = if self.shells_visible {
++            self.shells.as_slice()
++        } else {
++            &[]
++        };
++        let workers_visible = self.visible && (!display_rows.is_empty() || self.stale);
++        let shells_visible = self.shells_visible && (!shells.is_empty() || self.shells_stale);
++        if !workers_visible && !shells_visible {
++            return self.watcher.iter().map(WatcherHealth::line).collect();
 +        }
 +        let rows: Vec<_> = self
 +            .rows
 +            .iter()
 +            .filter(|row| row.state.is_active())
 +            .collect();
-+        if rows.is_empty() && !self.stale {
-+            return Vec::new();
-+        }
 +        let active = rows
 +            .iter()
 +            .filter(|r| r.state == WorkerState::Active)
 +            .count();
 +        let waiting = rows.len() - active;
-+        let header = if self.stale {
-+            "  Workers stale · counts unavailable".to_string()
++        let mut header = if workers_visible {
++            if self.stale {
++                "  Workers stale · counts unavailable".to_string()
++            } else {
++                format!(
++                    "  Workers {} · active {active} · waiting {waiting}",
++                    rows.len()
++                )
++            }
 +        } else {
-+            format!(
-+                "  Workers {} · active {active} · waiting {waiting}",
-+                rows.len()
-+            )
++            String::new()
 +        };
++        if shells_visible {
++            let label = if self.shells_stale {
++                "stale · counts unavailable".to_string()
++            } else {
++                shells.len().to_string()
++            };
++            if workers_visible {
++                header.push_str(&format!(" · shells {label}"));
++            } else {
++                header = format!("  Shells {label}");
++            }
++        }
 +        let mut lines = vec![Line::from(header).not_dim()];
-+        let display_rows = self.display_rows();
-+        for members in display_rows.iter().take(3) {
++        let worker_limit = display_rows
++            .len()
++            .min(if shells.is_empty() { 3 } else { 2 });
++        let shell_limit = shells.len().min(3 - worker_limit);
++        for members in display_rows.iter().take(worker_limit) {
 +            let row = members[0];
 +            let current: Vec<_> = members.iter().filter(|row| row.state.is_active()).collect();
 +            let grouped = row.group.is_some();
@@ -4355,10 +5207,51 @@ index 0000000..5844581
 +                truncate_line_with_ellipsis_if_overflow(Line::from(label.clone()), task_width);
 +            lines.push(Line::from(format!("  {task}{count}{metrics}")).dim());
 +        }
-+        if display_rows.len() > 3 {
-+            lines.push(Line::from(format!("  +{} more", display_rows.len() - 3)).dim());
++        for shell in shells.iter().take(shell_limit) {
++            let state = if self.shells_stale {
++                "stale"
++            } else {
++                "running"
++            };
++            let seen = if self.shells_stale {
++                None
++            } else {
++                shell.seen_secs
++            };
++            let seen = seen
++                .map(|secs| format!("{}:{:02}", secs / 60, secs % 60))
++                .unwrap_or_else(|| "?".into());
++            let job = sanitize_label(&shell.job_id, 32);
++            let metrics = format!(" · {state} · seen {seen} · job {job}");
++            let command_width = usize::from(width)
++                .saturating_sub(2 + display_width(&metrics))
++                .max(12.min(usize::from(width).saturating_sub(2)));
++            let command = truncate_line_with_ellipsis_if_overflow(
++                Line::from(sanitize_label(&shell.command, 160)),
++                command_width,
++            );
++            lines.push(Line::from(format!("  {command}{metrics}")).dim());
 +        }
++        let more = display_rows.len() + shells.len() - worker_limit - shell_limit;
++        if more > 0 {
++            lines.push(Line::from(format!("  +{more} more")).dim());
++        }
++        lines.extend(self.watcher.iter().map(WatcherHealth::line));
 +        lines
++    }
++}
++
++fn sanitize_label(label: &str, limit: usize) -> String {
++    let label: String = label
++        .chars()
++        .take(limit)
++        .map(|ch| if ch.is_control() { ' ' } else { ch })
++        .collect();
++    let label = label.trim();
++    if label.is_empty() {
++        "shell".to_string()
++    } else {
++        label.to_string()
 +    }
 +}
 +
@@ -4403,15 +5296,10 @@ index 0000000..5844581
 +    }
 +
 +    fn desired_height(&self, width: u16) -> u16 {
-+        if width == 0 || !self.visible {
++        if width == 0 {
 +            0
 +        } else {
-+            let count = self.display_rows().len();
-+            if count == 0 && !self.stale {
-+                0
-+            } else {
-+                1 + count.min(3) as u16 + u16::from(count > 3)
-+            }
++            self.lines(width).len() as u16
 +        }
 +    }
 +}
@@ -4420,6 +5308,174 @@ index 0000000..5844581
 +mod tests {
 +    use super::*;
 +    use ratatui::style::Modifier;
++
++    fn shell_row(n: usize) -> ShellRow {
++        ShellRow {
++            command: format!("cargo test {n}"),
++            job_id: n.to_string(),
++            seen_secs: Some(62),
++        }
++    }
++
++    #[test]
++    fn worker_hud_shell_only_mixed_caps_and_independent_stale_counts() {
++        let mut hud = WorkerHud::default();
++        assert!(hud.set_shells((0..5).map(shell_row).collect(), false, true));
++        assert!(!hud.set_shells((0..5).map(shell_row).collect(), false, true));
++        let lines = hud.lines(100);
++        assert_eq!(lines[0].to_string(), "  Shells 5");
++        assert_eq!(
++            lines[1].to_string(),
++            "  cargo test 0 · running · seen 1:02 · job 0"
++        );
++        assert_eq!(lines[4].to_string(), "  +2 more");
++        assert_eq!(hud.desired_height(100), 5);
++        assert_eq!(hud.desired_height(0), 0);
++        assert!(!lines[0].style.add_modifier.contains(Modifier::DIM));
++        assert!(lines[1].style.add_modifier.contains(Modifier::DIM));
++        let worker = grouped_member("unused", WorkerState::Active, 62, 1000);
++        for workers in [1, 2, 4] {
++            let rows = (0..workers)
++                .map(|n| {
++                    let mut row = worker.clone();
++                    row.group = None;
++                    row.task = format!("worker {n}");
++                    row
++                })
++                .collect();
++            hud.set(rows, false, true);
++            let lines = hud.lines(120);
++            assert!(lines[0].to_string().ends_with(" · shells 5"));
++            let details = &lines[1..4];
++            assert_eq!(
++                details
++                    .iter()
++                    .filter(|line| line.to_string().contains("worker"))
++                    .count(),
++                workers.min(2)
++            );
++            assert_eq!(
++                details
++                    .iter()
++                    .filter(|line| line.to_string().contains("cargo test"))
++                    .count(),
++                3 - workers.min(2)
++            );
++            assert_eq!(lines[4].to_string(), format!("  +{} more", workers + 5 - 3));
++        }
++        hud.set_shells(vec![shell_row(0)], true, true);
++        let lines = hud.lines(120);
++        assert!(lines[0].to_string().starts_with("  Workers 4 · active 4"));
++        assert!(
++            lines[0]
++                .to_string()
++                .ends_with("shells stale · counts unavailable")
++        );
++        assert!(lines[3].to_string().contains("stale · seen ? · job 0"));
++        assert!(!lines[3].to_string().contains("1:02"));
++        hud.set(hud.rows.clone(), true, true);
++        hud.set_shells(vec![shell_row(0)], false, true);
++        assert_eq!(
++            hud.lines(120)[0].to_string(),
++            "  Workers stale · counts unavailable · shells 1"
++        );
++        assert!(
++            hud.lines(120)[3]
++                .to_string()
++                .contains("running · seen 1:02")
++        );
++        hud.set_shells(vec![], true, true);
++        assert!(
++            hud.lines(120)[0]
++                .to_string()
++                .contains("shells stale · counts unavailable")
++        );
++        hud.set(vec![], false, true);
++        assert_eq!(
++            hud.lines(120)[0].to_string(),
++            "  Shells stale · counts unavailable"
++        );
++        hud.set_shells(vec![], false, true);
++        assert!(hud.lines(120).is_empty());
++        hud.set_shells(vec![shell_row(0)], false, false);
++        assert!(hud.lines(120).is_empty());
++    }
++
++    #[test]
++    fn worker_hud_shell_labels_are_bounded_control_safe_and_command_first() {
++        let mut hud = WorkerHud::default();
++        hud.set_shells(
++            vec![ShellRow {
++                command: format!("测试👩‍💻 e\u{301}\n\t\u{1b} {}", "long command ".repeat(200)),
++                job_id: "123\n\u{1b}45".into(),
++                seen_secs: Some(0),
++            }],
++            false,
++            true,
++        );
++        let line = hud.lines(100)[1].to_string();
++        assert!(line.starts_with("  测试"));
++        assert!(line.contains('…'));
++        assert!(!line.chars().any(char::is_control));
++        assert!(line.ends_with(" · running · seen 0:00 · job 123  45"));
++        assert!(display_width(&line) <= 100);
++        assert!(!line.contains("tok") && !line.contains("cpu") && !line.contains("runtime"));
++        hud.set_watcher(Some(WatcherHealth::Unavailable));
++        assert_eq!(
++            hud.lines(100).last().unwrap().to_string(),
++            "  Watcher unavailable"
++        );
++        for width in [0, 1, 2, 8, 12, 40, 80] {
++            for height in [0, 1, 3, 6] {
++                let area = Rect::new(0, 0, width, height);
++                hud.render(area, &mut Buffer::empty(area));
++            }
++            if width >= 8 {
++                let area = Rect::new(0, 0, width, 3);
++                let mut buf = Buffer::empty(area);
++                hud.render(area, &mut buf);
++                assert_eq!(buf[(2, 1)].symbol(), "测");
++                assert_eq!(buf[(4, 1)].symbol(), "试");
++            }
++        }
++    }
++
++    #[test]
++    fn worker_hud_watcher_health_without_workers_is_compact_and_independent() {
++        let mut hud = WorkerHud::default();
++        for (health, label, dim) in [
++            (WatcherHealth::Waiting(2), "Watcher waiting · 2 jobs", true),
++            (WatcherHealth::Waiting(0), "Wake pending", true),
++            (
++                WatcherHealth::Uncertain(1),
++                "Wake delivery uncertain · 1",
++                false,
++            ),
++            (WatcherHealth::Unavailable, "Watcher unavailable", false),
++            (WatcherHealth::Report(3), "Restart report ready · 3", false),
++        ] {
++            assert!(hud.set_watcher(Some(health.clone())));
++            assert!(!hud.set_watcher(Some(health)));
++            assert_eq!(hud.desired_height(80), 1);
++            assert_eq!(hud.desired_height(0), 0);
++            let line = hud.lines(80).remove(0);
++            assert_eq!(line.to_string(), format!("  {label}"));
++            assert_eq!(line.style.add_modifier.contains(Modifier::DIM), dim);
++            for width in [1, 12, 80] {
++                for height in [0, 1, 3] {
++                    let area = Rect::new(0, 0, width, height);
++                    hud.render(area, &mut Buffer::empty(area));
++                }
++            }
++        }
++        hud.set(vec![], true, true);
++        assert_eq!(hud.desired_height(80), 2);
++        assert_eq!(hud.lines(80)[1].to_string(), "  Restart report ready · 3");
++        hud.set(vec![], false, true);
++        assert_eq!(hud.desired_height(80), 1);
++        hud.set_watcher(None);
++        assert_eq!(hud.desired_height(80), 0);
++    }
 +
 +    #[test]
 +    fn healthy_empty_hud_is_hidden_but_stale_hud_warns() {
@@ -4834,10 +5890,10 @@ index 0000000..5844581
 +    }
 +}
 diff --git a/codex-rs/tui/src/chatwidget.rs b/codex-rs/tui/src/chatwidget.rs
-index 7dbb54b..5b6c71c 100644
+index 7dbb54b..facd3b1 100644
 --- a/codex-rs/tui/src/chatwidget.rs
 +++ b/codex-rs/tui/src/chatwidget.rs
-@@ -1435,6 +1435,15 @@ impl ChatWidget {
+@@ -1435,6 +1435,31 @@ impl ChatWidget {
          }
      }
  
@@ -4848,6 +5904,22 @@ index 7dbb54b..5b6c71c 100644
 +        visible: bool,
 +    ) {
 +        self.bottom_pane.set_worker_hud(rows, stale, visible);
++    }
++
++    pub(crate) fn set_shell_hud(
++        &mut self,
++        rows: Vec<crate::bottom_pane::worker_hud::ShellRow>,
++        stale: bool,
++        visible: bool,
++    ) {
++        self.bottom_pane.set_shell_hud(rows, stale, visible);
++    }
++
++    pub(crate) fn set_watcher_health(
++        &mut self,
++        health: Option<crate::bottom_pane::worker_hud::WatcherHealth>,
++    ) {
++        self.bottom_pane.set_watcher_health(health);
 +    }
 +
      pub(crate) fn set_pending_thread_approvals(&mut self, threads: Vec<String>) {

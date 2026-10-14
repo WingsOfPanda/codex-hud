@@ -23,7 +23,7 @@ class ResponsesProvider:
                 with fixture.lock:
                     fixture.requests.append({'time': time.time(), 'path': self.path, 'body': body})
                     number = len(fixture.requests)
-                if number == 1:
+                if number == 1 and fixture.command is not None:
                     item = {'type': 'function_call', 'call_id': 'held-command', 'name': 'exec_command',
                             'arguments': json.dumps({'cmd': fixture.command, 'yield_time_ms': 1000,
                                                      'max_output_tokens': 100, 'login': False})}

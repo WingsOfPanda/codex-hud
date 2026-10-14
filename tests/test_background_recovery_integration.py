@@ -17,13 +17,14 @@ import time
 import uuid
 
 from test_background_integration import (
-    REPO, RecordingClient, coordinator_state, stop,
+    REPO, RecordingClient, assert_short_callback, coordinator_state, health_state, stop,
     stop_observers, wait,
 )
-from codex_plus.background import Store
+from codex_plus.background import Store, register
 from fixtures.recovery_provider import RecoveryProvider, WorkerProvider
 
-SCENARIOS = ('shell-restart', 'worker-restart', 'before-enqueue', 'after-enqueue', 'after-start', 'queue-restart', 'native-replay')
+SCENARIOS = ('shell-restart', 'worker-restart', 'observer-completed', 'observer-running',
+             'before-enqueue', 'after-enqueue', 'after-start', 'queue-restart', 'native-replay')
 
 
 def run(binary, evidence, scenario='shell-restart'):
@@ -88,7 +89,12 @@ stream_max_retries=0
         def start_observer(fault=None):
             source = '''import os, time
 from codex_plus.background import Store, Observer
-s = Store(os.environ["CODEX_HOME"])
+class FixtureStore(Store):
+    def observe_job(self, job, status=None, exit_code=None, turn=None, running=False):
+        super().observe_job(job, status, exit_code, turn, running)
+        if running:
+            (self.directory / 'observed-running').write_text(str(os.getpid()))
+s = FixtureStore(os.environ["CODEX_HOME"])
 def fault(point):
     if point == 'before_enqueue' and os.environ.get('RECOVERY_QUEUE_BLOCK') == '1':
         o.call('turn/start', {'threadId': o.parent,
@@ -96,7 +102,7 @@ def fault(point):
     if point == os.environ.get('RECOVERY_FAULT'):
         if os.environ.get('RECOVERY_AFTER_CONSUMED') == '1':
             deadline = time.monotonic() + 10
-            client = s.db.execute('SELECT client FROM callbacks').fetchone()[0]
+            client = s.status(o.parent)['callbacks'][0]['client']
             while time.monotonic() < deadline:
                 entries = o.call('thread/items/list', {'threadId': o.parent})['data']
                 if any(e.get('item', {}).get('clientId') == client for e in entries):
@@ -118,6 +124,7 @@ s.close()
 
         try:
             native, rpc = start_native()
+            report['native_queue_idempotency'] = rpc.initialize_result.get('queueIdempotency') is True
             parent = rpc.call('thread/start', {'model': 'gpt-6.1-sol', 'cwd': str(workspace),
                 'approvalPolicy': 'never', 'sandbox': 'danger-full-access'})['thread']['id']
             origin = rpc.call('turn/start', {'threadId': parent,
@@ -204,12 +211,12 @@ s.close()
                 return
             store = Store(home)
             try:
-                report['registration'] = store.register(rpc, parent,
+                report['registration'] = register(store, rpc, parent,
                     [process_id] if scenario == 'worker-restart' else [],
                     [] if scenario == 'worker-restart' else [process_id], 'isolated recovery')
             finally:
                 store.close()
-            if scenario in ('shell-restart', 'worker-restart'):
+            if scenario in ('shell-restart', 'worker-restart', 'observer-completed', 'observer-running'):
                 observer = start_observer()
             provider.final_gate.set()
             wait(lambda: rpc.call('thread/read', {'threadId': parent, 'includeTurns': True})['thread']['status']['type']
@@ -219,18 +226,46 @@ s.close()
             assert provider.count == initial_requests, 'parked parent made a polling model request'
             report['before_restart'] = coordinator_state(home)
             report['before_restart_thread'] = rpc.call('thread/read', {'threadId': parent, 'includeTurns': True})['thread']
-            if scenario not in ('shell-restart', 'worker-restart'):
+            if scenario in ('observer-completed', 'observer-running'):
+                observed = home / 'codex-plus' / 'observed-running'
+                wait(lambda: observed.exists() and observed.read_text() == str(observer.pid),
+                     'initial observer never confirmed running command')
+                report['armed_health'] = wait(lambda: (health := health_state(home, parent)) and
+                    health['state'] == 'waiting' and health, 'initial observer never armed health')
+                assert observer.poll() is None, 'observer exited before fixture restart'
+                stop(observer)
+                if scenario == 'observer-completed':
+                    release.touch()
+                    wait(lambda: not rpc.call('thread/backgroundTerminals/list', {'threadId': parent})['data'],
+                         'command did not complete while observer was stopped')
+                observer = start_observer()
+                if scenario == 'observer-running':
+                    prior_update = report['armed_health']['updated_at']
+                    wait(lambda: observed.read_text() == str(observer.pid),
+                         'restarted observer did not positively observe running command')
+                    report['running_restart_health'] = wait(lambda: (health := health_state(home, parent)) and
+                        health['state'] == 'waiting' and health['updated_at'] > prior_update and health,
+                        'restarted observer did not observe running command')
+                    assert provider.count == 2, 'observer restart while running called model'
+                    assert rpc.call('thread/backgroundTerminals/list', {'threadId': parent})['data']
+                    release.touch()
+            if scenario not in ('shell-restart', 'worker-restart', 'observer-completed', 'observer-running'):
                 release.touch()
                 wait(lambda: not rpc.call('thread/backgroundTerminals/list', {'threadId': parent})['data'],
                      'held command did not complete')
                 fault = {'before-enqueue': 'before_enqueue', 'after-enqueue': 'after_enqueue',
-                         'after-start': 'after_enqueue', 'queue-restart': 'after_enqueue'}[scenario]
+                         'after-start': 'after_enqueue', 'queue-restart': 'after_enqueue',
+                         'uncertain-enqueue': 'before_enqueue'}[scenario]
+                if scenario == 'uncertain-enqueue':
+                    assert not rpc.initialize_result.get('queueIdempotency'), 'uncertain stock boundary fixture requires unpatched daemon'
                 if scenario == 'queue-restart':
                     provider.hold_next = True
                 observer = start_observer(fault)
                 assert observer.wait(timeout=15) == 79, 'observer did not crash at requested delivery boundary'
                 report['after_crash_state'] = coordinator_state(home)
                 report['after_crash_queue'] = rpc.call('thread/queue/list', {'threadId': parent})
+                if scenario == 'uncertain-enqueue':
+                    assert not report['after_crash_queue']['data'], 'callback reached queue before injected crash'
                 if scenario == 'queue-restart':
                     assert provider.hold_started.wait(5), 'explicit extra turn did not reach held provider'
                     assert len(report['after_crash_queue']['data']) == 1, 'callback was not left pending'
@@ -269,12 +304,28 @@ s.close()
                     report['restart_pending_replay'] = rpc.call('thread/queue/add', replay_params)
                     assert report['restart_pending_replay'] == report['pending_replay']
                     assert provider.count == 3, 'pending replay after restart invoked the model'
-            if scenario not in ('shell-restart', 'worker-restart'):
+            if scenario not in ('shell-restart', 'worker-restart', 'observer-completed', 'observer-running'):
                 observer = start_observer()
             time.sleep(5)
             report['reconnected_state'] = coordinator_state(home)
             report['model_requests_during_recovery'] = provider.count
             report['shell_runs'] = runs.read_text().splitlines() if runs.exists() else []
+            if scenario == 'uncertain-enqueue':
+                callback = report['reconnected_state']['callbacks'][0]
+                assert callback['state'] == 'uncertain' and callback['message'] == report['after_crash_state']['callbacks'][0]['message'], callback
+                report['uncertain_health'] = wait(lambda: (health := health_state(home, parent)) and
+                    health['state'] == 'uncertain' and health, 'ambiguous stock enqueue did not publish health')
+                assert report['uncertain_health']['uncertain'] == 1, report['uncertain_health']
+                assert provider.count == initial_requests, 'ambiguous stock enqueue blindly retried callback'
+                assert not rpc.call('thread/queue/list', {'threadId': parent})['data']
+                assert len(rpc.call('thread/read', {'threadId': parent, 'includeTurns': True})['thread']['turns']) == 1
+                assert observer.wait(timeout=6) == 0
+                observer = start_observer()
+                assert observer.wait(timeout=6) == 0
+                assert coordinator_state(home)['callbacks'][0]['message'] == callback['message']
+                assert provider.count == initial_requests, 'second restart retried ambiguous enqueue'
+                report['passed'] = True
+                return
             expected_requests = initial_requests + 1 + (1 if scenario == 'queue-restart' else 0)
             assert provider.count <= expected_requests, 'restart produced duplicate completion turns'
             assert report['shell_runs'] == ([] if scenario == 'worker-restart' else ['run']), 'recovery reran the shell command'
@@ -290,9 +341,18 @@ s.close()
             assert len(report['final_thread']['turns']) == (3 if scenario == 'queue-restart' else 2), report['final_thread']
             callbacks = report['final_state']['callbacks']
             assert len(callbacks) == 1, callbacks
+            if 'after_crash_state' in report:
+                frozen = report['after_crash_state']['callbacks'][0]['message']
+                if frozen is not None:
+                    assert callbacks[0]['message'] == frozen, 'recovery rewrote frozen notification'
             receipts = [i for t in report['final_thread']['turns'] for i in t['items']
                         if i.get('type') == 'userMessage' and i.get('clientId') == callbacks[0]['client']]
             assert len(receipts) == 1, receipts
+            label = report['final_state']['jobs'][0].get('label') or process_id
+            assert_short_callback(callbacks[0], receipts[0], parent, label,
+                                  report_only=scenario in ('shell-restart', 'worker-restart', 'observer-completed'))
+            report['final_health'] = health_state(home, parent)
+            assert report['final_health']['state'] == 'idle', report['final_health']
             if scenario in ('shell-restart', 'worker-restart'):
                 assert 'status=completed' not in json.dumps(receipts), 'lost work was reported as completed'
             assert not rpc.call('thread/queue/list', {'threadId': parent})['data']
@@ -342,7 +402,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('binary', type=Path)
     parser.add_argument('--evidence', type=Path, default=REPO / '.build' / 'wake-recovery')
-    parser.add_argument('--scenario', choices=SCENARIOS + ('all',), default='all')
+    parser.add_argument('--scenario', choices=SCENARIOS + ('uncertain-enqueue', 'all'), default='all',
+                        help='uncertain-enqueue requires the stock daemon without queue idempotency')
     args = parser.parse_args()
     for scenario in SCENARIOS if args.scenario == 'all' else (args.scenario,):
         run(args.binary.resolve(), args.evidence.resolve() / scenario, scenario)

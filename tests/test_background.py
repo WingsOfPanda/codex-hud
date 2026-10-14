@@ -5,6 +5,7 @@ import multiprocessing
 import os
 import socket
 import signal
+import sqlite3
 import subprocess
 import sys
 from pathlib import Path
@@ -28,6 +29,7 @@ class Fake:
         self.parent_status = 'active'
         self.parent_turns = [{'id': 'origin', 'status': 'inProgress'}]
         self.child_turns = [{'id': 'work', 'status': 'inProgress'}]
+        self.child_runtime_status = 'notLoaded'
         self.children = [{'id': CHILD, 'parentThreadId': PARENT,
                           'source': {'subAgent': {'thread_spawn': {'agent_path': '/root/work'}}}}]
         self.entries = []
@@ -49,6 +51,8 @@ class Fake:
         if self.fail_read and method not in ('thread/queue/add', 'thread/queue/start'):
             raise ConnectionError('disconnected')
         if method == 'thread/read':
+            if params['threadId'] == CHILD:
+                return {'thread': {'id': CHILD, 'status': {'type': self.child_runtime_status}}}
             return {'thread': {'id': PARENT, 'source': 'cli', 'status': {'type': self.parent_status}}}
         if method == 'thread/resume':
             self.parent_status = 'idle'
@@ -225,13 +229,478 @@ class Lifecycle(unittest.TestCase):
         self.temp.cleanup()
 
     def register(self):
-        return self.store.register(self.fake, PARENT, ['/root/work'], [], 'finish selected task')
+        return background.register(self.store, self.fake, PARENT, ['/root/work'], [], 'finish selected task')
 
     def callbacks(self):
         return self.store.status(PARENT)['callbacks']
 
+    def payload(self):
+        return next(params['input'][0]['text'] for method, params in self.fake.calls
+                    if method == 'thread/queue/add')
+
+    def health_file(self, parent=PARENT):
+        return self.store.directory / f'{parent}.status.json'
+
+    def test_ledger_claim_rechecks_cancellation_before_freezing(self):
+        self.register()
+        self.fake.complete()
+        self.observer.step()
+        callback = self.callbacks()[0]
+        self.store.request_cancel(PARENT)
+        self.assertIsNone(self.store.claim_callback(callback, native=True))
+        current = self.callbacks()[0]
+        self.assertEqual(current['state'], 'cancelled')
+        self.assertIsNone(current['message'])
+        self.assertEqual(current['idempotent'], 0)
+
+    def test_ledger_claim_rechecks_cancellation_before_start(self):
+        self.register()
+        self.fake.complete()
+        self.observer.step()
+        callback = self.store.claim_callback(self.callbacks()[0])
+        self.store.dispatch_result(callback, queued='owned-queue')
+        pending = self.callbacks()[0]
+        self.store.request_cancel(PARENT)
+        self.assertIsNone(self.store.claim_callback(pending, starting=True))
+        self.assertEqual(self.callbacks()[0]['state'], 'cancel_requested')
+
+    def test_ledger_native_recovery_reuses_frozen_callback_identity_and_payload(self):
+        self.register()
+        self.fake.complete()
+        self.observer.step()
+        original = dict(self.store.claim_callback(self.callbacks()[0], native=True))
+        self.assertIn('LIVE COMPLETION', original['message'])
+        self.assertIsNone(self.store.claim_callback(original, native=True))
+        self.store.claim_observation(PARENT, 'replacement-observer', recovering=True)
+        uncertain = self.callbacks()[0]
+        self.store.reconcile_evidence(uncertain, receipt_absent=True)
+        recovered = self.store.claim_callback(self.callbacks()[0], native=True)
+        self.assertEqual((recovered['id'], recovered['client'], recovered['message']),
+                         (original['id'], original['client'], original['message']))
+
+    def test_ledger_stock_absence_cannot_authorize_enqueue_retry(self):
+        self.register()
+        self.fake.complete()
+        self.observer.step()
+        original = dict(self.store.claim_callback(self.callbacks()[0]))
+        self.store.claim_observation(PARENT, 'replacement-observer', recovering=True)
+        self.store.reconcile_evidence(self.callbacks()[0], receipt_absent=True)
+        current = self.callbacks()[0]
+        self.assertEqual(current['state'], 'uncertain')
+        self.assertEqual(current['message'], original['message'])
+        self.assertEqual(self.store.next_callback(PARENT), (None, False))
+        self.assertFalse(self.store.finish_cycle(PARENT))
+        self.assertEqual(self.store.health(PARENT)['state'], 'uncertain')
+
+    def test_ledger_keyed_start_ack_requires_receipt_to_deliver(self):
+        self.register()
+        self.fake.complete()
+        self.observer.step()
+        callback = self.store.claim_callback(self.callbacks()[0], native=True)
+        self.store.dispatch_result(callback, queued='owned-queue')
+        pending = self.callbacks()[0]
+        self.store.claim_callback(pending, starting=True, native=True)
+        self.store.dispatch_result(pending, starting=True, acknowledged=True)
+        self.assertEqual(self.callbacks()[0]['state'], 'starting')
+        self.store.record_receipt(pending, 'consumed', 'owned-queue')
+        self.assertEqual(self.callbacks()[0]['state'], 'delivered')
+
+    def test_unsupported_ready_keyed_callback_blocks_pending_stock_start(self):
+        self.register()
+        self.fake.complete()
+        self.observer.poll_jobs()
+        self.observer.batch()
+        stock = self.store.claim_callback(self.callbacks()[0])
+        self.store.dispatch_result(stock, queued='stock-queue')
+        self.fake.queue = [{'id': 'stock-queue', 'clientUserMessageId': stock['client']}]
+        self.fake.child_turns = [{'id': 'second-work', 'status': 'inProgress'}]
+        self.register()
+        self.fake.complete()
+        self.observer.poll_jobs()
+        self.observer.batch()
+        ready, _ = self.store.next_callback(PARENT, native=True)
+        keyed = self.store.claim_callback(ready, native=True)
+        self.store.claim_observation(PARENT, 'replacement-observer', recovering=True)
+        self.store.reconcile_evidence(keyed, receipt_absent=True)
+        self.fake.idle()
+        self.observer.deliver()
+        callbacks = {row['id']: row for row in self.callbacks()}
+        self.assertEqual(callbacks[stock['id']]['state'], 'pending')
+        self.assertEqual(callbacks[keyed['id']]['state'], 'ready')
+        self.assertEqual(callbacks[keyed['id']]['error'],
+                         'Keyed callback waits for native queue idempotency support.')
+        self.assertEqual(self.fake.starts, [])
+        self.assertEqual(self.fake.enqueues, 0)
+
+    def test_new_completion_is_short_live_with_result_lookup(self):
+        self.register()
+        self.fake.complete()
+        self.fake.idle()
+        self.observer.step()
+        text = self.payload()
+        self.assertIn('LIVE COMPLETION', text)
+        self.assertIn('worker /root/work status=completed', text)
+        self.assertIn(f'codex-plus park --status --parent {PARENT}', text)
+        self.assertIn(self.callbacks()[0]['id'], text)
+        self.assertNotIn('finish selected task', text)
+        self.assertLess(len(text), 1000)
+
+    def test_observer_restart_terminal_is_report_without_old_authorization(self):
+        self.register()
+        self.observer.step()
+        self.fake.complete()
+        self.fake.idle()
+        self.observer = Observer(self.store, PARENT, lambda: self.fake)
+        self.observer.recover()
+        self.observer.step()
+        self.assertIn('REPORT ONLY', self.payload())
+        self.assertIn('Do not resume earlier actions', self.payload())
+        self.assertNotIn('finish selected task', self.payload())
+
+    def test_restart_running_observation_then_future_completion_is_live(self):
+        self.register()
+        self.observer.step()
+        self.observer = Observer(self.store, PARENT, lambda: self.fake)
+        self.observer.recover()
+        self.observer.step()
+        self.fake.complete()
+        self.fake.idle()
+        self.observer.step()
+        self.assertIn('LIVE COMPLETION', self.payload())
+
+    def test_report_recovery_survives_failed_observation_and_another_restart(self):
+        self.register()
+        self.observer.step()
+        self.observer = Observer(self.store, PARENT, lambda: self.fake)
+        self.observer.recover()
+        self.fake.fail_read = True
+        with self.assertRaises(ConnectionError):
+            self.observer.step()
+        self.fake.fail_read = False
+        self.fake.complete()
+        self.fake.idle()
+        self.observer = Observer(self.store, PARENT, lambda: self.fake)
+        self.observer.recover()
+        self.observer.step()
+        self.assertIn('REPORT ONLY', self.payload())
+
+    def test_new_registration_during_owner_run_stays_live(self):
+        self.register()
+        self.observer.step()
+        self.fake.child_turns = [{'id': 'fresh', 'status': 'inProgress'}]
+        self.register()
+        self.fake.complete()
+        self.fake.idle()
+        self.observer.step()
+        self.assertIn('LIVE COMPLETION', self.payload())
+
+    def test_mixed_recovered_and_fresh_completions_keep_separate_deliveries(self):
+        self.register()
+        self.observer.step()
+        self.fake.running = [{'itemId': 'new-command', 'processId': '9'}]
+        background.register(self.store, self.fake, PARENT, [], ['9'], 'new work')
+        self.fake.complete()
+        self.fake.running = []
+        self.fake.entries = [{'turnId': 'origin', 'item': {'type': 'commandExecution',
+                             'id': 'new-command', 'processId': '9', 'status': 'completed', 'exitCode': 0}}]
+        self.fake.idle()
+        self.observer = Observer(self.store, PARENT, lambda: self.fake)
+        self.observer.recover()
+        self.assertTrue(self.observer.step())
+        self.assertFalse(self.observer.step())
+        payloads = [params['input'][0]['text'] for method, params in self.fake.calls
+                    if method == 'thread/queue/add']
+        self.assertEqual(len(payloads), 2)
+        self.assertIn('REPORT ONLY', payloads[0])
+        self.assertIn('LIVE COMPLETION', payloads[1])
+
+    def test_generation_running_process_can_later_complete_live(self):
+        self.fake.running = [{'itemId': 'held', 'processId': '9'}]
+        background.register(self.store, self.fake, PARENT, [], ['9'], 'process')
+        self.fake.generation = 'boot:200:2'
+        self.observer.step()
+        self.fake.running = []
+        self.fake.entries = [{'turnId': 'origin', 'item': {'type': 'commandExecution',
+                             'id': 'held', 'processId': '9', 'status': 'completed', 'exitCode': 2}}]
+        self.fake.idle()
+        self.observer.step()
+        self.assertIn('LIVE COMPLETION', self.payload())
+        self.assertIn('exit=2', self.payload())
+
+    def test_generation_stale_process_history_does_not_prove_running(self):
+        self.fake.running = [{'itemId': 'held', 'processId': '9'}]
+        background.register(self.store, self.fake, PARENT, [], ['9'], 'process')
+        self.fake.generation = 'boot:200:2'
+        self.fake.running = []
+        self.fake.entries = [{'turnId': 'origin', 'item': {'type': 'commandExecution',
+                             'id': 'held', 'processId': '9', 'status': 'inProgress', 'exitCode': None}}]
+        self.fake.idle()
+        self.observer.step()
+        self.assertEqual(self.store.status(PARENT)['jobs'][0]['status'], 'lost')
+        self.assertIn('REPORT ONLY', self.payload())
+        self.assertIn('outcome=UNKNOWN', self.payload())
+
+    def test_generation_active_new_worker_turn_does_not_revive_old_turn(self):
+        self.register()
+        self.fake.child_runtime_status = 'active'
+        self.fake.child_turns.insert(0, {'id': 'new-turn', 'status': 'inProgress'})
+        self.fake.generation = 'boot:200:2'
+        self.fake.idle()
+        self.observer.step()
+        self.assertEqual(self.store.status(PARENT)['jobs'][0]['status'], 'lost')
+        self.assertIn('REPORT ONLY', self.payload())
+
+    def test_restart_ready_unfrozen_backlog_is_report(self):
+        self.register()
+        self.fake.complete()
+        self.observer.step()
+        self.assertIsNone(self.callbacks()[0]['message'])
+        self.observer = Observer(self.store, PARENT, lambda: self.fake)
+        self.observer.recover()
+        self.fake.idle()
+        self.observer.step()
+        self.assertIn('REPORT ONLY', self.payload())
+
+    def test_generation_restart_running_worker_can_later_complete_live(self):
+        self.register()
+        self.fake.child_runtime_status = 'active'
+        self.fake.generation = 'boot:200:2'
+        self.observer.step()
+        self.assertEqual(self.store.status(PARENT)['jobs'][0]['status'], 'armed')
+        self.fake.complete()
+        self.fake.idle()
+        self.observer.step()
+        self.assertIn('LIVE COMPLETION', self.payload())
+
+    def test_registration_publishes_private_parent_scoped_health(self):
+        self.register()
+        view = json.loads(self.health_file().read_text())
+        self.assertEqual(set(view), {'version', 'parent', 'updated_at', 'state', 'jobs', 'uncertain', 'reports'})
+        self.assertEqual((view['version'], view['parent'], view['state'], view['jobs']), (1, PARENT, 'waiting', 1))
+        self.assertEqual(os.stat(self.health_file()).st_mode & 0o777, 0o600)
+        self.assertLess(self.health_file().stat().st_size, 1024)
+        self.assertNotIn('finish selected task', self.health_file().read_text())
+        other = '33333333-3333-4333-8333-333333333333'
+        self.assertEqual(self.store.status(other)['health']['state'], 'idle')
+        self.assertFalse(self.health_file(other).exists())
+
+    def test_status_read_does_not_refresh_dead_observer_heartbeat(self):
+        with patch('codex_plus.background.time.time', return_value=100):
+            self.register()
+        before = self.health_file().read_bytes()
+        with patch('codex_plus.background.time.time', return_value=200):
+            view = self.store.status(PARENT)['health']
+        self.assertEqual(view['updated_at'], 100)
+        self.assertEqual(self.health_file().read_bytes(), before)
+
+    def test_health_completed_live_job_waiting_for_parent_has_zero_running_jobs(self):
+        self.register()
+        self.fake.complete()
+        self.observer.step()
+        view = json.loads(self.health_file().read_text())
+        self.assertEqual((view['state'], view['jobs'], view['reports']), ('waiting', 0, 0))
+        self.fake.idle()
+        self.observer.step()
+        self.assertEqual(json.loads(self.health_file().read_text())['state'], 'idle')
+
+    def test_health_read_rejects_symlink_and_fifo_without_refreshing(self):
+        self.health_file().symlink_to(self.store.directory / 'background.sqlite')
+        self.assertEqual(self.store.health(PARENT)['updated_at'], 0)
+        self.health_file().unlink()
+        os.mkfifo(self.health_file())
+        self.assertEqual(self.store.health(PARENT)['updated_at'], 0)
+
+    def test_atomic_publish_failure_preserves_previous_snapshot(self):
+        self.register()
+        before = self.health_file().read_bytes()
+        with patch('codex_plus.background.os.replace', side_effect=OSError('write failed')):
+            with self.assertRaises(OSError):
+                self.store.publish(PARENT)
+        self.assertEqual(self.health_file().read_bytes(), before)
+        self.assertEqual(list(self.store.directory.glob('*.tmp')), [])
+
+    def test_legacy_job_columns_migrate_old_work_to_report(self):
+        self.register()
+        with sqlite3.connect(self.store.directory / 'background.sqlite') as db:
+            for column in ('observer_run', 'recovery_pending', 'report', 'label'):
+                db.execute(f'ALTER TABLE jobs DROP COLUMN {column}')
+        self.store.close()
+        self.store = Store(self.temp.name)
+        self.observer = Observer(self.store, PARENT, lambda: self.fake)
+        self.fake.complete()
+        self.fake.idle()
+        self.observer.step()
+        self.assertIn('REPORT ONLY', self.payload())
+
+    def test_legacy_frozen_callback_identity_and_text_are_preserved(self):
+        self.register()
+        self.fake.complete()
+        self.observer.step()
+        callback = self.callbacks()[0]
+        with sqlite3.connect(self.store.directory / 'background.sqlite') as db:
+            db.execute('UPDATE callbacks SET message=? WHERE id=?', ('legacy frozen payload', callback['id']))
+            for column in ('observer_run', 'recovery_pending', 'report', 'label'):
+                db.execute(f'ALTER TABLE jobs DROP COLUMN {column}')
+        self.store.close()
+        self.store = Store(self.temp.name)
+        self.observer = Observer(self.store, PARENT, lambda: self.fake)
+        self.observer.recover()
+        self.fake.generation = 'boot:200:2'
+        self.fake.idle()
+        self.observer.step()
+        self.assertEqual(self.payload(), 'legacy frozen payload')
+        self.assertEqual(self.callbacks()[0]['id'], callback['id'])
+        self.assertEqual(self.callbacks()[0]['client'], callback['client'])
+
+    def test_long_rpc_poll_refreshes_observer_heartbeat(self):
+        self.register()
+        with patch('codex_plus.background.time.monotonic', return_value=100):
+            self.observer.call('thread/read', {'threadId': PARENT})
+        with patch('codex_plus.background.time.monotonic', return_value=106), patch.object(self.store, 'publish', wraps=self.store.publish) as publish:
+            self.observer.call('thread/read', {'threadId': PARENT})
+        publish.assert_called_once_with(PARENT)
+
+    def test_health_uncertain_stays_visible_after_observer_stops(self):
+        self.register()
+        self.fake.complete()
+        self.fake.idle()
+        self.observer.fault = lambda point: (_ for _ in ()).throw(SystemExit(79)) if point == 'before_enqueue' else None
+        with self.assertRaises(SystemExit):
+            self.observer.step()
+        self.observer = Observer(self.store, PARENT, lambda: self.fake)
+        self.observer.recover()
+        self.assertFalse(self.observer.step())
+        view = json.loads(self.health_file().read_text())
+        self.assertEqual((view['state'], view['uncertain']), ('uncertain', 1))
+
+    def test_report_health_until_delivered_then_idle(self):
+        self.register()
+        self.observer.step()
+        self.observer = Observer(self.store, PARENT, lambda: self.fake)
+        self.observer.recover()
+        self.fake.complete()
+        self.observer.step()
+        view = json.loads(self.health_file().read_text())
+        self.assertEqual((view['state'], view['reports']), ('report', 1))
+        self.fake.idle()
+        self.observer.step()
+        self.assertEqual(json.loads(self.health_file().read_text())['state'], 'idle')
+
+    def test_supervisor_health_error_and_explicit_cancel_clear_warning(self):
+        self.register()
+        with patch('codex_plus.background.subprocess.Popen') as popen, patch('codex_plus.background.time.sleep'):
+            popen.return_value.wait.return_value = 79
+            background.supervise(self.store, PARENT, self.temp.name)
+        self.assertEqual(json.loads(self.health_file().read_text())['state'], 'error')
+        self.store.request_cancel(PARENT)
+        self.assertEqual(json.loads(self.health_file().read_text())['state'], 'idle')
+
+    def test_expired_error_can_be_dismissed_without_deleting_ledger(self):
+        self.register()
+        self.store.expire_registration(self.store.status(PARENT)['parks'][0]['id'])
+        self.store.request_cancel(PARENT)
+        self.assertEqual(self.store.status(PARENT)['health']['state'], 'idle')
+        self.assertEqual(len(self.store.status(PARENT)['jobs']), 1)
+        with self.assertRaisesRegex(ValueError, 'cannot be rearmed'):
+            self.register()
+
+    def test_run_expiration_warning_remains_visible_after_clean_exit(self):
+        with patch('codex_plus.ledger.time.time', return_value=0):
+            self.register()
+        self.fake.idle()
+        self.observer.run()
+        self.assertEqual(json.loads(self.health_file().read_text())['state'], 'error')
+        self.assertEqual(self.fake.enqueues, 0)
+        self.store.request_cancel(PARENT)
+        self.assertEqual(json.loads(self.health_file().read_text())['state'], 'idle')
+
+    def test_observer_backoff_heartbeats_are_bounded_and_errors_sanitized(self):
+        self.register()
+        sleeps, states = [], []
+        def sleep(delay):
+            sleeps.append(delay)
+            states.append(json.loads(self.health_file().read_text())['state'])
+            if len(sleeps) == 8:
+                self.store.request_cancel(PARENT)
+        self.fake.fail_read = True
+        with patch('codex_plus.background.time.sleep', sleep):
+            self.observer.run()
+        self.assertLessEqual(max(sleeps), 5)
+        self.assertIn('error', states)
+        self.assertEqual(json.loads(self.health_file().read_text())['state'], 'idle')
+
+    def test_run_ready_callback_recovers_transient_rpc_health_while_parent_active(self):
+        self.register()
+        self.fake.complete()
+        original = self.fake.call
+        failed = []
+        def call(method, params):
+            if method == 'thread/read' and params['threadId'] == PARENT and not failed:
+                failed.append(True)
+                raise ConnectionError('private server detail')
+            return original(method, params)
+        self.fake.call = call
+        states = []
+        def sleep(delay):
+            view = json.loads(self.health_file().read_text())
+            states.append(view['state'])
+            callback = self.callbacks()[0]
+            self.assertEqual(callback['state'], 'ready')
+            self.assertEqual(view['jobs'], 0)
+            if len(states) == 1:
+                self.assertIn('RPC unavailable (ConnectionError)', callback['error'])
+                self.assertNotIn('private server detail', callback['error'])
+            else:
+                self.assertIsNone(callback['error'])
+                self.store.request_cancel(PARENT)
+        with patch('codex_plus.background.time.sleep', sleep):
+            self.observer.run()
+        self.assertEqual(states, ['error', 'waiting'])
+        self.assertEqual(self.fake.enqueues, 0)
+        self.assertEqual(json.loads(self.health_file().read_text())['state'], 'idle')
+
+    def test_run_preserves_ready_native_and_supervisor_warnings(self):
+        warnings = ('Keyed callback waits for native queue idempotency support.',
+                    'Supervisor restart limit reached; observer recovery needs attention.')
+        for index, warning in enumerate(warnings):
+            with self.subTest(warning=warning):
+                self.fake.child_turns = [{'id': f'warning-{index}', 'status': 'inProgress'}]
+                self.register()
+                self.fake.complete()
+                self.observer.step()
+                callback = next(row for row in self.callbacks() if row['state'] == 'ready')
+                if index == 0:
+                    self.store.claim_callback(callback, native=True)
+                    self.observer.recover()
+                    self.store.reconcile_evidence(next(row for row in self.callbacks() if row['id'] == callback['id']),
+                                                  receipt_absent=True)
+                    self.store.next_callback(PARENT, native=False)
+                else:
+                    self.store.supervisor_failed(PARENT)
+                def sleep(delay):
+                    self.assertEqual(json.loads(self.health_file().read_text())['state'], 'error')
+                    current = next(row for row in self.callbacks() if row['id'] == callback['id'])
+                    self.assertEqual(current['error'], warning)
+                    self.store.request_cancel(PARENT)
+                with patch('codex_plus.background.time.sleep', sleep):
+                    self.observer.run()
+
+    def test_long_batch_summarizes_three_jobs_and_more(self):
+        processes = [str(n) for n in range(6)]
+        self.fake.running = [{'itemId': f'command-{n}', 'processId': n} for n in processes]
+        background.register(self.store, self.fake, PARENT, [], processes, 'batch')
+        self.fake.running = []
+        self.fake.entries = [{'turnId': 'origin', 'item': {'type': 'commandExecution',
+                             'id': f'command-{n}', 'processId': n, 'status': 'completed', 'exitCode': 0}}
+                             for n in processes]
+        self.fake.idle()
+        self.observer.step()
+        self.assertEqual(self.payload().count('process '), 3)
+        self.assertIn('+3 more', self.payload())
+        self.assertLess(len(self.payload()), 1000)
+
     def test_worker_path_and_uuid_aliases_register_one_job(self):
-        result = self.store.register(self.fake, PARENT, ['/root/work', CHILD], [], 'one worker')
+        result = background.register(self.store, self.fake, PARENT, ['/root/work', CHILD], [], 'one worker')
         self.assertEqual(len(result['armed']), 1)
         self.assertEqual(len(self.store.status(PARENT)['jobs']), 1)
         self.fake.complete()
@@ -283,7 +752,7 @@ class Lifecycle(unittest.TestCase):
 
     def test_generation_loss_reports_unknown_process_without_rerun(self):
         self.fake.running = [{'itemId': 'held', 'processId': '9'}]
-        self.store.register(self.fake, PARENT, [], ['9'], 'held shell')
+        background.register(self.store, self.fake, PARENT, [], ['9'], 'held shell')
         self.fake.idle()
         self.fake.generation = 'boot:200:2'
         self.fake.running = []
@@ -404,7 +873,7 @@ class Lifecycle(unittest.TestCase):
 
     def test_same_generation_missing_process_remains_unknown(self):
         self.fake.running = [{'itemId': 'held', 'processId': '9'}]
-        self.store.register(self.fake, PARENT, [], ['9'], 'same generation shell')
+        background.register(self.store, self.fake, PARENT, [], ['9'], 'same generation shell')
         self.fake.running = []
         self.fake.idle()
         self.assertTrue(self.observer.step())
@@ -413,10 +882,10 @@ class Lifecycle(unittest.TestCase):
 
     def test_old_store_migration_preserves_jobs_without_assuming_generation_loss(self):
         self.register()
-        with self.store.db:
-            self.store.db.execute('ALTER TABLE parks DROP COLUMN generation')
-            self.store.db.execute('ALTER TABLE parks DROP COLUMN recovery_generation')
-            self.store.db.execute('ALTER TABLE callbacks DROP COLUMN reconcile_attempts')
+        with sqlite3.connect(self.store.directory / 'background.sqlite') as db:
+            db.execute('ALTER TABLE parks DROP COLUMN generation')
+            db.execute('ALTER TABLE parks DROP COLUMN recovery_generation')
+            db.execute('ALTER TABLE callbacks DROP COLUMN reconcile_attempts')
         self.store.close()
         self.store = Store(self.temp.name)
         self.observer = Observer(self.store, PARENT, lambda: self.fake)
@@ -500,7 +969,7 @@ class Lifecycle(unittest.TestCase):
     def test_native_callback_payload_stays_fixed_when_other_jobs_finish(self):
         self.native()
         self.fake.running = [{'itemId': 'held', 'processId': '9'}]
-        self.store.register(self.fake, PARENT, ['/root/work'], ['9'], 'two jobs')
+        background.register(self.store, self.fake, PARENT, ['/root/work'], ['9'], 'two jobs')
         self.fake.complete()
         self.fake.idle()
         self.observer.fault = lambda point: (_ for _ in ()).throw(SystemExit(79)) if point == 'before_enqueue' else None
@@ -695,7 +1164,7 @@ class Lifecycle(unittest.TestCase):
         command = {'type': 'commandExecution', 'id': 'command', 'processId': '42', 'status': 'inProgress', 'exitCode': None}
         self.fake.running = [{'itemId': 'command', 'processId': '42'}]
         self.fake.entries = [{'turnId': 'origin', 'item': command}]
-        self.store.register(self.fake, PARENT, [], ['42'], 'command result')
+        background.register(self.store, self.fake, PARENT, [], ['42'], 'command result')
         self.fake.idle()
         self.fake.running = []
         self.fake.entries = []
@@ -828,7 +1297,7 @@ class Lifecycle(unittest.TestCase):
 
     def test_registry_only_origin_resolves_after_restart(self):
         self.fake.running = [{'itemId': 'transient', 'processId': '73'}]
-        self.store.register(self.fake, PARENT, [], ['73'], 'held command')
+        background.register(self.store, self.fake, PARENT, [], ['73'], 'held command')
         original = self.store.status(PARENT)['jobs'][0]
         self.assertIsNone(original['turn'])
         self.fake.idle()
@@ -846,14 +1315,14 @@ class Lifecycle(unittest.TestCase):
         self.assertEqual(self.fake.enqueues, 1)
         self.fake.parent_status = 'active'
         self.fake.parent_turns[0]['status'] = 'inProgress'
-        self.store.register(self.fake, PARENT, [], ['73'], 'same completed command')
+        background.register(self.store, self.fake, PARENT, [], ['73'], 'same completed command')
         self.fake.idle()
         self.observer.step()
         self.assertEqual(self.fake.enqueues, 1)
 
     def test_coalesce_worker_and_command_terminal_same_poll(self):
         self.fake.running = [{'itemId': 'command', 'processId': '42'}]
-        self.store.register(self.fake, PARENT, [CHILD], ['42'], 'finite batch')
+        background.register(self.store, self.fake, PARENT, [CHILD], ['42'], 'finite batch')
         self.fake.complete('failed')
         self.fake.running = []
         self.fake.entries = [{'turnId': 'origin', 'item': {'type': 'commandExecution', 'id': 'command',
@@ -923,17 +1392,15 @@ class Lifecycle(unittest.TestCase):
         self.fake.idle()
         self.observer.poll_jobs()
         self.observer.batch()
-        with self.store.db:
-            self.store.db.execute("UPDATE callbacks SET state='in_flight'")
+        self.store.claim_callback(self.callbacks()[0])
         self.store.request_cancel(PARENT)
         self.assertFalse(self.observer.step())
         self.assertEqual(self.callbacks()[0]['state'], 'cancel_uncertain')
         self.assertEqual(self.fake.enqueues, 0)
 
     def test_expired_work_never_fakes_completion(self):
-        self.register()
-        with self.store.db:
-            self.store.db.execute('UPDATE parks SET deadline=0')
+        with patch('codex_plus.ledger.time.time', return_value=0):
+            self.register()
         self.fake.idle()
         self.fake.complete()
         self.assertFalse(self.observer.step())
@@ -952,7 +1419,7 @@ class Lifecycle(unittest.TestCase):
 
     def test_positive_running_registry_avoids_item_history(self):
         self.fake.running = [{'itemId': 'held', 'processId': '19'}]
-        result = self.store.register(self.fake, PARENT, [], ['19'], 'held process')
+        result = background.register(self.store, self.fake, PARENT, [], ['19'], 'held process')
         self.assertEqual(result['state'], 'armed')
         self.assertIsNone(self.store.status(PARENT)['jobs'][0]['turn'])
         self.observer.step()
@@ -987,17 +1454,17 @@ class Lifecycle(unittest.TestCase):
         self.store.request_cancel(PARENT)
         with self.assertRaisesRegex(ValueError, 'cannot be rearmed'):
             self.register()
-        with self.store.db:
-            self.store.db.execute("UPDATE parks SET state='expired'")
-            self.store.db.execute("UPDATE jobs SET status='expired'")
+        self.fake.child_turns[0]['id'] = 'expired-work'
+        result = self.register()
+        self.store.expire_registration(result['park'])
         with self.assertRaisesRegex(ValueError, 'cannot be rearmed'):
             self.register()
-        self.assertEqual(len(self.store.status(PARENT)['parks']), 1)
+        self.assertEqual(len(self.store.status(PARENT)['parks']), 2)
 
     def test_mixed_running_and_finished_registration_reports_both(self):
         self.fake.complete()
         self.fake.running = [{'itemId': 'held', 'processId': '9'}]
-        result = self.store.register(self.fake, PARENT, [CHILD], ['9'], 'mixed selections')
+        result = background.register(self.store, self.fake, PARENT, [CHILD], ['9'], 'mixed selections')
         self.assertEqual(result['state'], 'armed')
         self.assertEqual(len(result['armed']), 1)
         self.assertEqual(len(result['already_finished']), 1)
@@ -1006,7 +1473,7 @@ class Lifecycle(unittest.TestCase):
     def test_finished_process_needs_no_future_wake(self):
         self.fake.entries = [{'turnId': 'past', 'item': {'type': 'commandExecution',
                              'id': 'done', 'processId': '9', 'status': 'completed', 'exitCode': 0}}]
-        result = self.store.register(self.fake, PARENT, [], ['9'], 'already finished')
+        result = background.register(self.store, self.fake, PARENT, [], ['9'], 'already finished')
         self.assertEqual(result['state'], 'already_finished')
         self.assertEqual(self.store.status(PARENT)['parks'], [])
 
@@ -1025,14 +1492,14 @@ class Lifecycle(unittest.TestCase):
         for source in ({'subAgent': 'review'}, {'subAgent': 'compact'}, 'cli'):
             with self.subTest(source=source):
                 self.fake.children[0]['source'] = source
-                self.assertIn(self.store.register(self.fake, PARENT, [CHILD], [], 'ID selector')['state'],
+                self.assertIn(background.register(self.store, self.fake, PARENT, [CHILD], [], 'ID selector')['state'],
                               ('armed', 'already_registered'))
                 with self.assertRaisesRegex(ValueError, 'direct child'):
                     self.register()
 
     def test_pagination_bound_and_durable_sanitized_error_recovery(self):
         self.fake.running = [{'itemId': 'held', 'processId': '9'}]
-        self.store.register(self.fake, PARENT, [], ['9'], 'history bound')
+        background.register(self.store, self.fake, PARENT, [], ['9'], 'history bound')
         self.fake.running = []
         original = self.fake.call
         bounded_calls = []
