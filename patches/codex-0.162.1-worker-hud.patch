@@ -1615,7 +1615,7 @@ index 4c6ede3..8f06bf2 100644
      SelectAgentThread(ThreadId),
  
 diff --git a/codex-rs/tui/src/bottom_pane/mod.rs b/codex-rs/tui/src/bottom_pane/mod.rs
-index c0e3902..307ce15 100644
+index c0e3902..235b274 100644
 --- a/codex-rs/tui/src/bottom_pane/mod.rs
 +++ b/codex-rs/tui/src/bottom_pane/mod.rs
 @@ -202,6 +202,7 @@ mod paste_burst;
@@ -1723,7 +1723,7 @@ index c0e3902..307ce15 100644
 +            pane.handle_key_event(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE));
 +            for width in [12, 40, 120] {
 +                let full = Rect::new(0, 0, width, pane.desired_height(width));
-+                assert!(render_snapshot(&pane, full).contains("Workers 1"));
++                assert!(render_snapshot(&pane, full).contains("Sol worker"));
 +                for height in [3, full.height] {
 +                    let area = Rect::new(0, 0, width, height);
 +                    assert!(
@@ -3730,10 +3730,10 @@ index 0000000..109777c
 +}
 diff --git a/codex-rs/tui/src/bottom_pane/worker_hud.rs b/codex-rs/tui/src/bottom_pane/worker_hud.rs
 new file mode 100644
-index 0000000..5cedcb4
+index 0000000..2b344c2
 --- /dev/null
 +++ b/codex-rs/tui/src/bottom_pane/worker_hud.rs
-@@ -0,0 +1,972 @@
+@@ -0,0 +1,1030 @@
 +//! Read-only worker summary; clipping never takes space from the composer.
 +
 +use crate::line_truncation::truncate_line_with_ellipsis_if_overflow;
@@ -3827,19 +3827,13 @@ index 0000000..5cedcb4
 +}
 +
 +impl WatcherHealth {
-+    fn line(&self) -> Line<'static> {
-+        let label = match self {
-+            Self::Waiting(0) => "Wake pending".to_string(),
-+            Self::Waiting(jobs) => format!("Watcher waiting · {jobs} jobs"),
-+            Self::Uncertain(count) => format!("Wake delivery uncertain · {count}"),
-+            Self::Unavailable => "Watcher unavailable".to_string(),
-+            Self::Report(count) => format!("Restart report ready · {count}"),
-+        };
-+        let line = Line::from(format!("  {label}"));
-+        if matches!(self, Self::Waiting(_)) {
-+            line.dim()
-+        } else {
-+            line.not_dim()
++    fn label(&self) -> Option<String> {
++        match self {
++            Self::Waiting(0) => Some("Wake pending".to_string()),
++            Self::Waiting(_) => None,
++            Self::Uncertain(count) => Some(format!("Wake delivery uncertain · {count}")),
++            Self::Unavailable => Some("Watcher unavailable".to_string()),
++            Self::Report(count) => Some(format!("Restart report ready · {count}")),
 +        }
 +    }
 +}
@@ -3892,7 +3886,7 @@ index 0000000..5cedcb4
 +    }
 +
 +    fn lines(&self, width: u16) -> Vec<Line<'static>> {
-+        let display_rows = if self.visible {
++        let mut display_rows = if self.visible {
 +            self.display_rows()
 +        } else {
 +            Vec::new()
@@ -3902,50 +3896,31 @@ index 0000000..5cedcb4
 +        } else {
 +            &[]
 +        };
-+        let workers_visible = self.visible && (!display_rows.is_empty() || self.stale);
-+        let shells_visible = self.shells_visible && (!shells.is_empty() || self.shells_stale);
-+        if !workers_visible && !shells_visible {
-+            return self.watcher.iter().map(WatcherHealth::line).collect();
++        let mut alerts = Vec::new();
++        alerts.extend(self.watcher.as_ref().and_then(WatcherHealth::label));
++        if self.visible && self.stale {
++            alerts.push("Workers stale · counts unavailable".to_string());
 +        }
-+        let rows: Vec<_> = self
-+            .rows
-+            .iter()
-+            .filter(|row| row.state.is_active())
-+            .collect();
-+        let active = rows
-+            .iter()
-+            .filter(|r| r.state == WorkerState::Active)
-+            .count();
-+        let waiting = rows.len() - active;
-+        let mut header = if workers_visible {
-+            if self.stale {
-+                "  Workers stale · counts unavailable".to_string()
-+            } else {
-+                format!(
-+                    "  Workers {} · active {active} · waiting {waiting}",
-+                    rows.len()
-+                )
-+            }
-+        } else {
-+            String::new()
-+        };
-+        if shells_visible {
-+            let label = if self.shells_stale {
-+                "stale · counts unavailable".to_string()
-+            } else {
-+                shells.len().to_string()
-+            };
-+            if workers_visible {
-+                header.push_str(&format!(" · shells {label}"));
-+            } else {
-+                header = format!("  Shells {label}");
-+            }
++        if self.shells_visible && self.shells_stale {
++            alerts.push("Shells stale · counts unavailable".to_string());
 +        }
-+        let mut lines = vec![Line::from(header).not_dim()];
++        let mut lines = Vec::new();
++        if !alerts.is_empty() {
++            lines.push(Line::from(format!("  {}", alerts.join(" · "))).not_dim());
++        }
++        // Alerts and overflow share the three-line budget with activity.
++        let available = 3 - lines.len();
++        let total = display_rows.len() + shells.len();
++        let activity_limit = available - usize::from(total > available);
++        display_rows.sort_by_key(|members| {
++            !members
++                .iter()
++                .any(|row| matches!(row.state, WorkerState::Approval | WorkerState::Input))
++        });
 +        let worker_limit = display_rows
 +            .len()
-+            .min(if shells.is_empty() { 3 } else { 2 });
-+        let shell_limit = shells.len().min(3 - worker_limit);
++            .min(activity_limit - usize::from(!shells.is_empty() && activity_limit > 1));
++        let shell_limit = shells.len().min(activity_limit - worker_limit);
 +        for members in display_rows.iter().take(worker_limit) {
 +            let row = members[0];
 +            let current: Vec<_> = members.iter().filter(|row| row.state.is_active()).collect();
@@ -3974,12 +3949,12 @@ index 0000000..5cedcb4
 +                .unwrap_or_else(|| "?".to_string());
 +            let state = if self.stale {
 +                "stale"
-+            } else if current.iter().any(|row| row.state == WorkerState::Active) {
-+                WorkerState::Active.label()
 +            } else if current.iter().any(|row| row.state == WorkerState::Approval) {
 +                WorkerState::Approval.label()
-+            } else {
++            } else if current.iter().any(|row| row.state == WorkerState::Input) {
 +                WorkerState::Input.label()
++            } else {
++                ""
 +            };
 +            let first = current[0];
 +            let model = if current.iter().any(|row| row.model.is_none()) {
@@ -3999,12 +3974,14 @@ index 0000000..5cedcb4
 +            } else {
 +                "mixed".to_string()
 +            };
-+            let model_effort = if model == "mixed" && effort == "mixed" {
-+                "mixed".to_string()
++            let kind = if grouped { "workers" } else { "worker" };
++            let prefix = format!("  {model} {kind} ({effort}) · ");
++            let state = if state.is_empty() {
++                String::new()
 +            } else {
-+                format!("{model} {effort}")
++                format!(" · {state}")
 +            };
-+            let metrics = format!(" · {state} · {time} · {tokens} tok · {model_effort}");
++            let metrics = format!("{state} · {time} · {tokens} tok");
 +            let count = if grouped {
 +                if self.stale {
 +                    " (? agents)".to_string()
@@ -4016,20 +3993,16 @@ index 0000000..5cedcb4
 +                String::new()
 +            };
 +            let task_width = usize::from(width)
-+                .saturating_sub(2 + display_width(&metrics))
-+                .max(12.min(usize::from(width).saturating_sub(2)))
++                .saturating_sub(display_width(&prefix) + display_width(&metrics))
++                .max(12.min(usize::from(width).saturating_sub(display_width(&prefix))))
 +                .saturating_sub(display_width(&count));
 +            let label = row.group.as_ref().map_or(&row.task, |group| &group.topic);
 +            let task =
 +                truncate_line_with_ellipsis_if_overflow(Line::from(label.clone()), task_width);
-+            lines.push(Line::from(format!("  {task}{count}{metrics}")).dim());
++            lines.push(Line::from(format!("{prefix}{task}{count}{metrics}")).dim());
 +        }
 +        for shell in shells.iter().take(shell_limit) {
-+            let state = if self.shells_stale {
-+                "stale"
-+            } else {
-+                "running"
-+            };
++            let state = if self.shells_stale { " · stale" } else { "" };
 +            let seen = if self.shells_stale {
 +                None
 +            } else {
@@ -4038,22 +4011,21 @@ index 0000000..5cedcb4
 +            let seen = seen
 +                .map(|secs| format!("{}:{:02}", secs / 60, secs % 60))
 +                .unwrap_or_else(|| "?".into());
-+            let job = sanitize_label(&shell.job_id, 32);
-+            let metrics = format!(" · {state} · seen {seen} · job {job}");
++            let prefix = "  Background · ";
++            let metrics = format!("{state} · seen {seen}");
 +            let command_width = usize::from(width)
-+                .saturating_sub(2 + display_width(&metrics))
-+                .max(12.min(usize::from(width).saturating_sub(2)));
++                .saturating_sub(display_width(prefix) + display_width(&metrics))
++                .max(12.min(usize::from(width).saturating_sub(display_width(prefix))));
 +            let command = truncate_line_with_ellipsis_if_overflow(
 +                Line::from(sanitize_label(&shell.command, 160)),
 +                command_width,
 +            );
-+            lines.push(Line::from(format!("  {command}{metrics}")).dim());
++            lines.push(Line::from(format!("{prefix}{command}{metrics}")).dim());
 +        }
 +        let more = display_rows.len() + shells.len() - worker_limit - shell_limit;
 +        if more > 0 {
 +            lines.push(Line::from(format!("  +{more} more")).dim());
 +        }
-+        lines.extend(self.watcher.iter().map(WatcherHealth::line));
 +        lines
 +    }
 +}
@@ -4135,83 +4107,113 @@ index 0000000..5cedcb4
 +    }
 +
 +    #[test]
-+    fn worker_hud_shell_only_mixed_caps_and_independent_stale_counts() {
-+        let mut hud = WorkerHud::default();
-+        assert!(hud.set_shells((0..5).map(shell_row).collect(), false, true));
-+        assert!(!hud.set_shells((0..5).map(shell_row).collect(), false, true));
-+        let lines = hud.lines(100);
-+        assert_eq!(lines[0].to_string(), "  Shells 5");
-+        assert_eq!(
-+            lines[1].to_string(),
-+            "  cargo test 0 · running · seen 1:02 · job 0"
-+        );
-+        assert_eq!(lines[4].to_string(), "  +2 more");
-+        assert_eq!(hud.desired_height(100), 5);
-+        assert_eq!(hud.desired_height(0), 0);
-+        assert!(!lines[0].style.add_modifier.contains(Modifier::DIM));
-+        assert!(lines[1].style.add_modifier.contains(Modifier::DIM));
-+        let worker = grouped_member("unused", WorkerState::Active, 62, 1000);
-+        for workers in [1, 2, 4] {
-+            let rows = (0..workers)
-+                .map(|n| {
-+                    let mut row = worker.clone();
-+                    row.group = None;
-+                    row.task = format!("worker {n}");
-+                    row
-+                })
-+                .collect();
-+            hud.set(rows, false, true);
-+            let lines = hud.lines(120);
-+            assert!(lines[0].to_string().ends_with(" · shells 5"));
-+            let details = &lines[1..4];
-+            assert_eq!(
-+                details
-+                    .iter()
-+                    .filter(|line| line.to_string().contains("worker"))
-+                    .count(),
-+                workers.min(2)
-+            );
-+            assert_eq!(
-+                details
-+                    .iter()
-+                    .filter(|line| line.to_string().contains("cargo test"))
-+                    .count(),
-+                3 - workers.min(2)
-+            );
-+            assert_eq!(lines[4].to_string(), format!("  +{} more", workers + 5 - 3));
++    fn worker_hud_total_budget_includes_alerts_overflow_and_both_activity_kinds() {
++        for workers in 0..6 {
++            for shells in 0..6 {
++                for grouped in [false, true] {
++                    for stale in [false, true] {
++                        for watcher in [
++                            None,
++                            Some(WatcherHealth::Waiting(3)),
++                            Some(WatcherHealth::Waiting(0)),
++                            Some(WatcherHealth::Unavailable),
++                        ] {
++                            let mut hud = WorkerHud::default();
++                            let rows = (0..workers)
++                                .map(|n| {
++                                    let mut row = grouped_member(
++                                        &format!("batch{n}"),
++                                        WorkerState::Active,
++                                        120,
++                                        1000,
++                                    );
++                                    if !grouped {
++                                        row.group = None;
++                                    }
++                                    row
++                                })
++                                .collect();
++                            hud.set(rows, stale, true);
++                            hud.set_shells((0..shells).map(shell_row).collect(), stale, true);
++                            hud.set_watcher(watcher);
++                            let lines = hud.lines(120);
++                            let alert = stale
++                                || hud
++                                    .watcher
++                                    .as_ref()
++                                    .and_then(WatcherHealth::label)
++                                    .is_some();
++                            let available = 3 - usize::from(alert);
++                            let total = workers + shells;
++                            let shown = total.min(available - usize::from(total > available));
++                            assert_eq!(
++                                lines.len(),
++                                usize::from(alert) + shown + usize::from(total > shown)
++                            );
++                            assert!(lines.len() <= 3);
++                            if total > shown {
++                                assert_eq!(
++                                    lines.last().unwrap().to_string(),
++                                    format!("  +{} more", total - shown)
++                                );
++                            }
++                            if shown >= 2 && workers > 0 && shells > 0 {
++                                assert!(
++                                    lines.iter().any(|line| line.to_string().contains("worker"))
++                                );
++                                assert!(
++                                    lines
++                                        .iter()
++                                        .any(|line| line.to_string().contains("Background ·"))
++                                );
++                            }
++                            for width in [0, 1, 8, 40, 120] {
++                                assert_eq!(
++                                    hud.desired_height(width),
++                                    if width == 0 { 0 } else { lines.len() as u16 }
++                                );
++                                for height in [0, 1, 3] {
++                                    let area = Rect::new(0, 0, width, height);
++                                    hud.render(area, &mut Buffer::empty(area));
++                                }
++                            }
++                        }
++                    }
++                }
++            }
 +        }
-+        hud.set_shells(vec![shell_row(0)], true, true);
-+        let lines = hud.lines(120);
-+        assert!(lines[0].to_string().starts_with("  Workers 4 · active 4"));
-+        assert!(
-+            lines[0]
-+                .to_string()
-+                .ends_with("shells stale · counts unavailable")
-+        );
-+        assert!(lines[3].to_string().contains("stale · seen ? · job 0"));
-+        assert!(!lines[3].to_string().contains("1:02"));
-+        hud.set(hud.rows.clone(), true, true);
-+        hud.set_shells(vec![shell_row(0)], false, true);
++    }
++
++    #[test]
++    fn worker_hud_shell_staleness_is_independent() {
++        let mut hud = WorkerHud::default();
++        assert!(hud.set_shells(vec![shell_row(0)], false, true));
++        assert!(!hud.set_shells(vec![shell_row(0)], false, true));
 +        assert_eq!(
-+            hud.lines(120)[0].to_string(),
-+            "  Workers stale · counts unavailable · shells 1"
++            hud.lines(100)[0].to_string(),
++            "  Background · cargo test 0 · seen 1:02"
 +        );
-+        assert!(
-+            hud.lines(120)[3]
-+                .to_string()
-+                .contains("running · seen 1:02")
++        hud.set(
++            vec![grouped_member("b1", WorkerState::Active, 62, 1000)],
++            true,
++            true,
 +        );
-+        hud.set_shells(vec![], true, true);
-+        assert!(
-+            hud.lines(120)[0]
-+                .to_string()
-+                .contains("shells stale · counts unavailable")
++        let lines = hud.lines(120);
++        assert_eq!(lines[0].to_string(), "  Workers stale · counts unavailable");
++        assert!(lines[1].to_string().contains("stale · ? · ? tok"));
++        assert_eq!(
++            lines[2].to_string(),
++            "  Background · cargo test 0 · seen 1:02"
 +        );
 +        hud.set(vec![], false, true);
++        hud.set_shells(vec![shell_row(0)], true, true);
 +        assert_eq!(
 +            hud.lines(120)[0].to_string(),
 +            "  Shells stale · counts unavailable"
 +        );
++        assert!(hud.lines(120)[1].to_string().ends_with(" · stale · seen ?"));
++        hud.set_shells(vec![], true, true);
++        assert_eq!(hud.desired_height(80), 1);
 +        hud.set_shells(vec![], false, true);
 +        assert!(hud.lines(120).is_empty());
 +        hud.set_shells(vec![shell_row(0)], false, false);
@@ -4230,16 +4232,16 @@ index 0000000..5cedcb4
 +            false,
 +            true,
 +        );
-+        let line = hud.lines(100)[1].to_string();
-+        assert!(line.starts_with("  测试"));
++        let line = hud.lines(100)[0].to_string();
++        assert!(line.starts_with("  Background · 测试"));
 +        assert!(line.contains('…'));
 +        assert!(!line.chars().any(char::is_control));
-+        assert!(line.ends_with(" · running · seen 0:00 · job 123  45"));
++        assert!(line.ends_with(" · seen 0:00"));
 +        assert!(display_width(&line) <= 100);
 +        assert!(!line.contains("tok") && !line.contains("cpu") && !line.contains("runtime"));
 +        hud.set_watcher(Some(WatcherHealth::Unavailable));
 +        assert_eq!(
-+            hud.lines(100).last().unwrap().to_string(),
++            hud.lines(100).first().unwrap().to_string(),
 +            "  Watcher unavailable"
 +        );
 +        for width in [0, 1, 2, 8, 12, 40, 80] {
@@ -4247,12 +4249,12 @@ index 0000000..5cedcb4
 +                let area = Rect::new(0, 0, width, height);
 +                hud.render(area, &mut Buffer::empty(area));
 +            }
-+            if width >= 8 {
++            if width >= 19 {
 +                let area = Rect::new(0, 0, width, 3);
 +                let mut buf = Buffer::empty(area);
 +                hud.render(area, &mut buf);
-+                assert_eq!(buf[(2, 1)].symbol(), "测");
-+                assert_eq!(buf[(4, 1)].symbol(), "试");
++                assert_eq!(buf[(15, 1)].symbol(), "测");
++                assert_eq!(buf[(17, 1)].symbol(), "试");
 +            }
 +        }
 +    }
@@ -4260,9 +4262,10 @@ index 0000000..5cedcb4
 +    #[test]
 +    fn worker_hud_watcher_health_without_workers_is_compact_and_independent() {
 +        let mut hud = WorkerHud::default();
++        assert!(hud.set_watcher(Some(WatcherHealth::Waiting(2))));
++        assert!(hud.lines(80).is_empty());
 +        for (health, label, dim) in [
-+            (WatcherHealth::Waiting(2), "Watcher waiting · 2 jobs", true),
-+            (WatcherHealth::Waiting(0), "Wake pending", true),
++            (WatcherHealth::Waiting(0), "Wake pending", false),
 +            (
 +                WatcherHealth::Uncertain(1),
 +                "Wake delivery uncertain · 1",
@@ -4286,8 +4289,11 @@ index 0000000..5cedcb4
 +            }
 +        }
 +        hud.set(vec![], true, true);
-+        assert_eq!(hud.desired_height(80), 2);
-+        assert_eq!(hud.lines(80)[1].to_string(), "  Restart report ready · 3");
++        assert_eq!(hud.desired_height(80), 1);
++        assert_eq!(
++            hud.lines(80)[0].to_string(),
++            "  Restart report ready · 3 · Workers stale · counts unavailable"
++        );
 +        hud.set(vec![], false, true);
 +        assert_eq!(hud.desired_height(80), 1);
 +        hud.set_watcher(None);
@@ -4307,6 +4313,57 @@ index 0000000..5cedcb4
 +    }
 +
 +    #[test]
++    fn worker_hud_compact_rows_match_the_agreed_examples() {
++        let mut hud = WorkerHud::default();
++        hud.set(
++            vec![WorkerRow {
++                group: None,
++                dispatch_elapsed_secs: None,
++                task: "glm w8 graph trial".into(),
++                state: WorkerState::Active,
++                elapsed_secs: Some(24 * 60 + 31),
++                total_tokens: Some(9_040_000),
++                model: Some("gpt-6.1-sol".into()),
++                reasoning_effort: Some(ReasoningEffort::High),
++            }],
++            false,
++            true,
++        );
++        hud.set_shells(
++            vec![ShellRow {
++                command: "python train.py".into(),
++                job_id: "hidden-id".into(),
++                seen_secs: Some(12 * 60 + 34),
++            }],
++            false,
++            true,
++        );
++        hud.set_watcher(Some(WatcherHealth::Waiting(2)));
++        let lines = hud.lines(100);
++        assert_eq!(lines.len(), 2);
++        assert_eq!(
++            lines[0].to_string(),
++            "  Sol worker (high) · glm w8 graph trial · 24:31 · 9.04M tok"
++        );
++        assert_eq!(
++            lines[1].to_string(),
++            "  Background · python train.py · seen 12:34"
++        );
++        hud.stale = true;
++        hud.shells_stale = true;
++        hud.set_watcher(Some(WatcherHealth::Uncertain(1)));
++        let lines = hud.lines(120);
++        assert_eq!(lines.len(), 3);
++        assert_eq!(
++            lines[0].to_string(),
++            "  Wake delivery uncertain · 1 · Workers stale · counts unavailable · Shells stale · counts unavailable"
++        );
++        assert!(!lines[0].style.add_modifier.contains(Modifier::DIM));
++        assert!(lines[1].style.add_modifier.contains(Modifier::DIM));
++        assert!(lines[2].style.add_modifier.contains(Modifier::DIM));
++    }
++
++    #[test]
 +    fn worker_hud_caps_current_rows_and_is_safe_when_resized() {
 +        let mut hud = WorkerHud::default();
 +        hud.set(
@@ -4318,60 +4375,35 @@ index 0000000..5cedcb4
 +                    state: WorkerState::Active,
 +                    elapsed_secs: Some(62),
 +                    total_tokens: Some(12_300),
-+                    model: Some("gpt-6-sol".to_string()),
++                    model: Some("gpt-6-sol".into()),
 +                    reasoning_effort: Some(ReasoningEffort::High),
 +                })
 +                .collect(),
 +            false,
 +            true,
 +        );
-+        for width in [0, 1, 2, 8, 40, 80, 120] {
-+            assert_eq!(hud.desired_height(width), if width == 0 { 0 } else { 5 });
-+            for height in [0, 1, 3, 5] {
-+                let area = Rect::new(0, 0, width, height);
-+                hud.render(area, &mut Buffer::empty(area));
-+            }
-+        }
-+        assert_eq!(
-+            hud.lines(80)[0].to_string(),
-+            "  Workers 6 · active 6 · waiting 0"
-+        );
-+        assert_eq!(hud.lines(80).len(), 5);
-+        assert_eq!(hud.lines(80)[4].to_string(), "  +3 more");
-+        let area = Rect::new(0, 0, 80, 5);
++        assert_eq!(hud.lines(80).len(), 3);
++        assert_eq!(hud.lines(80)[2].to_string(), "  +4 more");
++        let area = Rect::new(0, 0, 80, 3);
 +        let mut buf = Buffer::empty(area);
 +        hud.render(area, &mut buf);
++        for n in 0..2 {
++            let rendered: String = (0..80).map(|x| buf[(x, n)].symbol()).collect();
++            assert_eq!(buf[(28, n)].symbol(), "测");
++            assert_eq!(buf[(30, n)].symbol(), "试");
++            assert_eq!(buf[(32, n)].symbol(), n.to_string());
++            assert!(rendered.contains("1:02 · 12.3K tok"));
++            assert!(buf[(2, n)].modifier.contains(Modifier::DIM));
++        }
++        hud.rows[0].state = WorkerState::Done;
++        assert!(hud.lines(80)[0].to_string().contains("测试1"));
++        assert_eq!(hud.lines(80)[2].to_string(), "  +3 more");
++        hud.stale = true;
++        let line = hud.lines(80)[1].to_string();
++        assert!(line.contains("stale · ? · ? tok"));
++        assert!(!line.contains("1:02") && !line.contains("12.3K"));
++        hud.render(area, &mut buf);
 +        assert!(!buf[(2, 0)].modifier.contains(Modifier::DIM));
-+        assert!(buf[(2, 4)].modifier.contains(Modifier::DIM));
-+        for n in 0..3 {
-+            let rendered: String = (0..80).map(|x| buf[(x, n + 1)].symbol()).collect();
-+            assert_eq!(buf[(8, n + 1)].symbol(), "测");
-+            assert_eq!(buf[(10, n + 1)].symbol(), "试");
-+            assert_eq!(buf[(12, n + 1)].symbol(), n.to_string());
-+            assert!(rendered.contains("1:02 · 12.3K tok · Sol high"));
-+            assert!(buf[(2, n + 1)].modifier.contains(Modifier::DIM));
-+        }
-+        let mut rows = hud.rows.clone();
-+        rows[0].state = WorkerState::Done;
-+        hud.set(rows, false, true);
-+        for n in 0..3 {
-+            assert!(
-+                hud.lines(80)[n + 1]
-+                    .to_string()
-+                    .contains(&format!("测试{}", n + 1))
-+            );
-+        }
-+        assert_eq!(hud.lines(80)[4].to_string(), "  +2 more");
-+        hud.set(hud.rows.clone(), true, true);
-+        assert!(hud.lines(80)[0].to_string().contains("counts unavailable"));
-+        assert!(hud.lines(80)[1].to_string().contains("stale"));
-+        assert!(!hud.lines(80)[1].to_string().contains("1:02"));
-+        assert!(!hud.lines(80)[1].to_string().contains("12.3K"));
-+        assert!(
-+            hud.lines(80)[1]
-+                .to_string()
-+                .contains("stale · ? · ? tok · Sol high")
-+        );
 +    }
 +
 +    #[test]
@@ -4406,12 +4438,26 @@ index 0000000..5cedcb4
 +            true,
 +        );
 +        let lines = hud.lines(80);
-+        assert_eq!(lines.len(), 4);
-+        assert_eq!(hud.desired_height(80), 4);
-+        assert_eq!(lines[0].to_string(), "  Workers 3 · active 1 · waiting 2");
-+        assert!(lines[1].to_string().starts_with("  active task"));
-+        assert!(lines[2].to_string().starts_with("  wait approval task"));
-+        assert!(lines[3].to_string().starts_with("  wait input task"));
++        assert_eq!(lines.len(), 3);
++        assert_eq!(hud.desired_height(80), 3);
++        assert!(
++            lines[0]
++                .to_string()
++                .contains("wait approval task · wait approval")
++        );
++        assert!(
++            lines[1]
++                .to_string()
++                .contains("wait input task · wait input")
++        );
++        assert!(lines[2].to_string().contains("active task"));
++        assert!(!lines[2].to_string().contains(" · active ·"));
++        hud.set_shells(vec![shell_row(0)], false, true);
++        hud.set_watcher(Some(WatcherHealth::Unavailable));
++        assert!(hud.lines(80)[1].to_string().contains("wait approval"));
++        assert_eq!(hud.lines(80)[2].to_string(), "  +3 more");
++        hud.set_shells(vec![], false, true);
++        hud.set_watcher(None);
 +        let mut rows = hud.rows.clone();
 +        for row in &mut rows {
 +            row.state = WorkerState::Done;
@@ -4442,16 +4488,16 @@ index 0000000..5cedcb4
 +            false,
 +            true,
 +        );
-+        let line = hud.lines(80)[1].to_string();
-+        assert!(line.starts_with("  测试"));
++        let line = hud.lines(80)[0].to_string();
++        assert!(line.starts_with("  Astra worker (medium) · 测试"));
 +        assert!(line.contains('…'));
-+        assert!(line.ends_with(" · active · 3:42 · 12.3K tok · Astra medium"));
++        assert!(line.ends_with(" · 3:42 · 12.3K tok"));
 +        assert!(display_width(&line) <= 80);
 +        let area = Rect::new(0, 0, 80, 2);
 +        let mut buf = Buffer::empty(area);
 +        hud.render(area, &mut buf);
-+        let rendered: String = (0..80).map(|x| buf[(x, 1)].symbol()).collect();
-+        assert!(rendered.contains("3:42 · 12.3K tok · Astra medium"));
++        let rendered: String = (0..80).map(|x| buf[(x, 0)].symbol()).collect();
++        assert!(rendered.contains("3:42 · 12.3K tok"));
 +    }
 +
 +    #[test]
@@ -4475,8 +4521,8 @@ index 0000000..5cedcb4
 +            let area = Rect::new(0, 0, width, 2);
 +            let mut buf = Buffer::empty(area);
 +            hud.render(area, &mut buf);
-+            let rendered: String = (0..width).map(|x| buf[(x, 1)].symbol()).collect();
-+            assert!(rendered.starts_with("  integ"));
++            let rendered: String = (0..width).map(|x| buf[(x, 0)].symbol()).collect();
++            assert!(rendered.starts_with("  Astra"));
 +        }
 +    }
 +
@@ -4498,16 +4544,16 @@ index 0000000..5cedcb4
 +            true,
 +        );
 +        assert_eq!(
-+            hud.lines(80)[1].to_string(),
-+            "  probe · active · ? · 0 tok · ? ?"
++            hud.lines(80)[0].to_string(),
++            "  ? worker (?) · probe · ? · 0 tok"
 +        );
 +        hud.rows[0].total_tokens = None;
 +        assert_eq!(
-+            hud.lines(80)[1].to_string(),
-+            "  probe · active · ? · ? tok · ? ?"
++            hud.lines(80)[0].to_string(),
++            "  ? worker (?) · probe · ? · ? tok"
 +        );
 +        hud.rows[0].total_tokens = Some(-1);
-+        assert!(hud.lines(80)[1].to_string().contains("? tok"));
++        assert!(hud.lines(80)[0].to_string().contains("? tok"));
 +    }
 +
 +    #[test]
@@ -4538,9 +4584,9 @@ index 0000000..5cedcb4
 +                true,
 +            );
 +            assert!(
-+                hud.lines(80)[1]
++                hud.lines(80)[0]
 +                    .to_string()
-+                    .ends_with(&format!("Sol {expected}"))
++                    .starts_with(&format!("  Sol worker ({expected}) ·"))
 +            );
 +            let area = Rect::new(0, 0, 80, 2);
 +            let mut buf = Buffer::empty(area);
@@ -4549,8 +4595,7 @@ index 0000000..5cedcb4
 +                ratatui::style::Style::default().add_modifier(Modifier::DIM),
 +            );
 +            hud.render(area, &mut buf);
-+            assert!(!buf[(2, 0)].modifier.contains(Modifier::DIM));
-+            assert!(buf[(2, 1)].modifier.contains(Modifier::DIM));
++            assert!(buf[(2, 0)].modifier.contains(Modifier::DIM));
 +        }
 +    }
 +
@@ -4584,20 +4629,19 @@ index 0000000..5cedcb4
 +                assert!(hud.lines(80).is_empty());
 +                assert_eq!(hud.desired_height(80), 0);
 +            } else {
-+                assert_eq!(hud.desired_height(80), 2);
++                assert_eq!(hud.desired_height(80), 1);
 +                let lines = hud.lines(80);
-+                assert_eq!(lines.len(), 2);
-+                assert!(
-+                    lines[0]
-+                        .to_string()
-+                        .starts_with(&format!("  Workers {remaining} ·"))
-+                );
-+                let state = ["", "wait input", "wait approval", "active"][remaining];
++                assert_eq!(lines.len(), 1);
++                let state = if remaining == 1 {
++                    "wait input"
++                } else {
++                    "wait approval"
++                };
 +                let suffix = if remaining == 1 { "" } else { "s" };
 +                assert_eq!(
-+                    lines[1].to_string(),
++                    lines[0].to_string(),
 +                    format!(
-+                        "  hud styling ({remaining} agent{suffix}) · {state} · 2:00 · 6K tok · Sol high"
++                        "  Sol workers (high) · hud styling ({remaining} agent{suffix}) · {state} · 2:00 · 6K tok"
 +                    )
 +                );
 +                rows[3 - remaining].state = WorkerState::Done;
@@ -4620,26 +4664,42 @@ index 0000000..5cedcb4
 +        // Terminal members do not choose the active cohort's model or effort.
 +        hud.rows[0].model = Some("gpt-6-astra".into());
 +        hud.rows[0].reasoning_effort = Some(ReasoningEffort::Medium);
-+        assert!(hud.lines(100)[1].to_string().ends_with("Sol high"));
++        assert!(
++            hud.lines(100)[0]
++                .to_string()
++                .starts_with("  Sol workers (high)")
++        );
 +        hud.rows[2].model = Some("gpt-6-sol".into());
-+        assert!(hud.lines(100)[1].to_string().ends_with("mixed high"));
++        assert!(
++            hud.lines(100)[0]
++                .to_string()
++                .starts_with("  mixed workers (high)")
++        );
 +        hud.rows[2].model = Some("gpt-6.1-sol".into());
 +        hud.rows[2].reasoning_effort = Some(ReasoningEffort::Medium);
-+        assert!(hud.lines(100)[1].to_string().ends_with("Sol mixed"));
++        assert!(
++            hud.lines(100)[0]
++                .to_string()
++                .starts_with("  Sol workers (mixed)")
++        );
 +        hud.rows[2].model = Some("gpt-6-sol".into());
-+        assert!(hud.lines(100)[1].to_string().ends_with("tok · mixed"));
++        assert!(
++            hud.lines(100)[0]
++                .to_string()
++                .starts_with("  mixed workers (mixed)")
++        );
 +        hud.rows[2].model = None;
 +        hud.rows[2].reasoning_effort = None;
-+        assert!(hud.lines(100)[1].to_string().ends_with("? ?"));
++        assert!(hud.lines(100)[0].to_string().starts_with("  ? workers (?)"));
 +        for tokens in [None, Some(-1), Some(i64::MAX)] {
 +            hud.rows[0].total_tokens = tokens;
-+            assert!(hud.lines(100)[1].to_string().contains("? tok"));
++            assert!(hud.lines(100)[0].to_string().contains("? tok"));
 +        }
 +        hud.rows[0].dispatch_elapsed_secs = None;
 +        assert!(
-+            hud.lines(100)[1]
++            hud.lines(100)[0]
 +                .to_string()
-+                .contains(" · active · ? · ? tok")
++                .contains(" · wait input · ? · ? tok")
 +        );
 +        hud.rows[0].dispatch_elapsed_secs = Some(120);
 +        hud.rows[0].total_tokens = Some(1000);
@@ -4669,20 +4729,18 @@ index 0000000..5cedcb4
 +        rows[0].group.as_mut().unwrap().topic = "very_long_topic ".repeat(20);
 +        hud.set(rows, false, true);
 +        let lines = hud.lines(80);
-+        assert_eq!(lines.len(), 5);
-+        assert_eq!(hud.desired_height(80), 5);
-+        assert_eq!(lines[0].to_string(), "  Workers 14 · active 14 · waiting 0");
-+        assert_eq!(lines[4].to_string(), "  +3 more");
-+        let line = lines[1].to_string();
-+        assert!(line.contains("… (3 agents) · active · 2:00 · 3K tok · Sol high"));
++        assert_eq!(lines.len(), 3);
++        assert_eq!(hud.desired_height(80), 3);
++        assert_eq!(lines[2].to_string(), "  +4 more");
++        let line = lines[0].to_string();
++        assert!(line.contains("… (3 agents) · 2:00 · 3K tok"));
 +        assert!(display_width(&line) <= 80);
 +        let area = Rect::new(0, 0, 80, 5);
 +        let mut buf = Buffer::empty(area);
 +        hud.render(area, &mut buf);
-+        let rendered: String = (0..80).map(|x| buf[(x, 1)].symbol()).collect();
++        let rendered: String = (0..80).map(|x| buf[(x, 0)].symbol()).collect();
 +        assert!(rendered.contains("(3 agents)"));
-+        assert!(!buf[(2, 0)].modifier.contains(Modifier::DIM));
-+        assert!(buf[(2, 1)].modifier.contains(Modifier::DIM));
++        assert!(buf[(2, 0)].modifier.contains(Modifier::DIM));
 +        for width in [0, 1, 2, 8, 20, 40, 80] {
 +            let area = Rect::new(0, 0, width, 5);
 +            hud.render(area, &mut Buffer::empty(area));

@@ -58,30 +58,38 @@ see the [release notes](docs/release-notes.md).
 
 ## Display behavior
 
-The strip shows active and waiting direct workers, up to three display rows:
+The strip shows active and waiting direct workers without a count header:
 
 ```text
-integration probe · active · 3:42 · 123.4K tok · Sol high
+Sol worker (high) · integration probe · 3:42 · 123.4K tok
 ```
 
-Rows start with a short task name, followed by state, elapsed time, cumulative
-reported tokens, model, and actual reasoning effort. Long names shorten to leave
-room for metrics. The summary uses normal brightness; worker rows are dim. Sol
-and Astra are shown by family; other model identifiers remain visible. Unknown
-values, including missing effort, show `?`. Additional groups or standalone rows
-appear as `+N more`. Finished,
-interrupted, failed, and idle workers disappear; the strip hides when no workers
-are active or waiting. Small terminals clip rows to preserve the prompt.
+Rows start with model, role, and actual reasoning effort, followed by a short task
+name, elapsed time, and cumulative reported tokens. Routine active state is
+implicit; approval/input waits and stale data remain explicit. Long names shorten
+to leave room for metrics. Activity rows are dim; warnings use normal brightness.
+Sol and Astra are shown by family; other model identifiers remain visible.
+Unknown values, including missing effort, show `?`. Finished,
+interrupted, failed, and idle workers disappear. The strip hides once no activity
+or warnings remain. Small terminals clip rows to preserve the prompt.
 
 Native background shell commands belonging to this root session also appear in
-the HUD, without a `park` registration. A shell row shows a compact command label,
-`running`, a `seen M:SS` timer, and its native job ID. Shell rows have no model or
-token fields. The stock terminal API has no start timestamp: **seen measures time
-observed by this client**, not the command's total runtime, and resets when the
+the HUD, without a `park` registration:
+
+```text
+Background · python train.py · seen 12:34
+```
+
+Background rows show a compact command label and a `seen M:SS` timer, with no
+model or token fields. The stock terminal API has no start timestamp: **seen
+measures time observed by this client**, not the command's total runtime, and resets when the
 client restarts or sees a new command identity.
 
-Worker groups and shell jobs share the three-detail-row limit. When both exist,
-at least one row from each is shown; remaining rows use the overflow count.
+Workers, background commands, warnings, and any `+N more` line share a strict
+three-row total limit below the shortcuts footer. This keeps the composer within
+AP's last-six-nonempty-lines readiness window. When space permits, mixed activity
+shows both a worker and a background command. Warnings take priority within the
+same limit; overflow represents activity that does not fit.
 Worker and shell queries fail independently, so unavailable shell metadata does
 not hide valid workers. A successful terminal-list refresh removes commands no
 longer present; disappearance does not claim successful completion.
@@ -94,7 +102,7 @@ metadata.
 Read-only `thread/list` and `thread/turns/list` requests run locally in the
 background. Turn item bodies are not requested. A local timer refreshes the UI;
 it never starts, steers, or queues a model turn. A stalled or disconnected
-metadata source shows unavailable counts and stale cached rows. Refresh does not
+metadata source shows stale cached rows or an unavailable warning. Refresh does not
 capture keyboard input.
 
 Token totals use the local backend's existing SQLite metadata through a read-only
@@ -125,7 +133,7 @@ belong to the existing batch. Each member name remains unique.
 These names produce one row:
 
 ```text
-hud styling (3 agents) · active · 1:20 · 250K tok · Sol high
+Sol workers (high) · hud styling (3 agents) · 1:20 · 250K tok
 ```
 
 The count includes only active/waiting members: 3 becomes 2, then 1, and the group
@@ -137,7 +145,7 @@ from the remaining active/waiting members; differing known settings show `mixed`
 
 Different batches and parent threads stay separate. Untagged or malformed names
 remain standalone rows. Grouping never guesses purpose from timing or similar
-names and makes no model calls. The worker summary still counts individual agents; shell counts are separate.
+names and makes no model calls.
 The three-row limit and `+N more` count groups, standalone workers, and shell jobs.
 
 ## Background completion

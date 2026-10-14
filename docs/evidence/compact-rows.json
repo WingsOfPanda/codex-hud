@@ -1,0 +1,89 @@
+{
+  "verified_at": "2026-10-14T10:43:11.908719+00:00",
+  "upstream_commit": "092d3acd6bec3e3a14bdc7e7a2810ab628ab759d",
+  "candidate": ".build/compact-rows/native/codex",
+  "candidate_sha256": "4765808c405ac6a4a46f3be2e0cf2b2ceeb4dc9c27f483d60cabacf010edf87a",
+  "frontend_patch_sha256": "1f9b93b34a9328874b59b52e29328ecf7b79a0b5580af825a45c804a36723405",
+  "primary_acceptance": {
+    "rust_hud_tests": 35,
+    "terminal_fixture_tests": 9,
+    "terminal_stages": 18,
+    "shell_policy_cases": 8,
+    "official_daemon_park_wake": {
+      "official_daemon": "/home/liupan/.codex/packages/app-server-daemon/releases/0.162.1-x86_64-unknown-linux-musl/bin/codex",
+      "queueIdempotency": false,
+      "loopback_requests": 3,
+      "callbacks": 1,
+      "turns": 2,
+      "passed": true
+    },
+    "parallel": {
+      "parallel_roots": 2,
+      "isolated_policies": true,
+      "editable_composers": true
+    },
+    "cancellation": {
+      "ctrl_c_preserves_tracked_processes": true,
+      "native_stop_kills_process_group": true,
+      "terminated_known_child_pids": [
+        867926,
+        867928,
+        867927
+      ],
+      "partial_log_preserved": true
+    },
+    "hud_added_model_calls": 0,
+    "external_model_requests": 0,
+    "patch_checks": {
+      "source_commit": "092d3acd6bec3e3a14bdc7e7a2810ab628ab759d",
+      "patch_sha256": "1f9b93b34a9328874b59b52e29328ecf7b79a0b5580af825a45c804a36723405",
+      "full_regeneration": true,
+      "original_block_order_preserved": true,
+      "new_files_included": true,
+      "clean_index_apply": true,
+      "working_tree_reverse_apply": true,
+      "index_reverse_apply": true,
+      "exact_source_match": true,
+      "changed_patch_blocks": [
+        "a/codex-rs/tui/src/bottom_pane/mod.rs b/codex-rs/tui/src/bottom_pane/mod.rs",
+        "a/codex-rs/tui/src/bottom_pane/worker_hud.rs b/codex-rs/tui/src/bottom_pane/worker_hud.rs"
+      ]
+    }
+  },
+  "terminal_checks": [
+    "six active workers show two model-first rows plus +4 more in three total rows, with elapsed, unknown remote tokens, actual Sol high/Astra medium, and idle composer within last six nonempty lines",
+    "read-only /daemon shows status guidance and Close; no daemon update choices or exit",
+    "two simultaneous independent roots and editable composers",
+    "input remains editable during delayed metadata RPC",
+    "completion removes its row and promotes a hidden active worker",
+    "last completion hides the entire strip while both composers remain editable",
+    "later activity restores the compact strip without losing the draft",
+    "explicit three-member cohort reduces 3\u21922\u21921\u2192hidden without duplicate rows or shrinking dispatch elapsed; independent cohort stays separate, group resize/input preserve draft, final strip collapses",
+    "explicit approval wait survives alert plus overflow in three total rows, with idle composer within last six nonempty lines",
+    "small and normal PTY resize with preserved draft",
+    "partial metadata RPC failure marks counts stale and recovers",
+    "stale disconnect and automatic reconnect without cross-pane effect",
+    "zero turn/start or turn/steer requests and zero model calls",
+    "remote websocket roots ignore an unrelated local watcher health file",
+    "isolated tmux server: two split panes, draft editing, small/normal resize, stale/reconnect, zero turn/start or turn/steer",
+    "private local app-server: two loopback seed turns, then idle roots, healthy waiting hidden, zero jobs pending visible, stale/uncertain/report/idle health, last-six composer detection, narrow draft editing, parent isolation, zero additional model calls or turns",
+    "unregistered remote shell-only and mixed worker/shell strips; three total rows including overflow and alerts; compact background labels and observed elapsed; item identity reset; parent isolation; shell-only stale failures and recovery; Unicode/control-safe narrow drafts; successful disappearance without success claim; zero UI turn or execution requests",
+    "real private local embedded app-server: one loopback tool turn, yielded finite shell survives completed turn, row and editable idle draft without park registration, actual command completion removes row, zero extra model calls or turns"
+  ],
+  "reports": {
+    "native": ".build/compact-rows/root-native-smoke/report.json",
+    "shell_policy": ".build/compact-rows/root-shell-policy/report.json",
+    "rust": ".build/compact-rows/root-hud-tests.log",
+    "worker_summary": ".build/compact-rows/acceptance/summary.json",
+    "old_layout_failure": ".build/compact-rows/acceptance/baseline/failure.txt"
+  },
+  "logs": {
+    "root_terminal": "/home/liupan/.codex/codex-plus/logs/64ee6c71-24e6-454b-85ed-6de45ac5b984.log",
+    "root_shell_policy": "/home/liupan/.codex/codex-plus/logs/78e164dc-1f8b-457c-a949-768da293a211.log"
+  },
+  "limits": [
+    "Linux x86_64 dev-small candidate only; optimized and ARM builds not run.",
+    "Full upstream test suite not run.",
+    "No installed package, shared daemon, fleet configuration, or published release changed."
+  ]
+}
