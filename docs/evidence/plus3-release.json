@@ -1,0 +1,87 @@
+{
+  "verified_at": "2026-10-14T11:27:08.388762+00:00",
+  "release": "0.162.1-plus.3",
+  "package_source_commit": "4ed4c9345fc03aaee1279599897167ad69b8c729",
+  "upstream_commit": "092d3acd6bec3e3a14bdc7e7a2810ab628ab759d",
+  "frontend_patch_sha256": "1f9b93b34a9328874b59b52e29328ecf7b79a0b5580af825a45c804a36723405",
+  "build": {
+    "rust": "1.99.0",
+    "glibc": "2.39",
+    "profile": "release",
+    "voice": false
+  },
+  "targets": {
+    "x86_64": {
+      "target": "x86_64-unknown-linux-gnu",
+      "archive": "/home/liupan/Aerius/codex-plus/.build/plus3-release/packages/codex-plus-0.162.1-plus.3-x86_64-unknown-linux-gnu.tar.gz",
+      "archive_bytes": 132131549,
+      "archive_sha256": "8e1140cc4d491f081d94789a06bfc11654d65754f991339b7f48a060f845ce91",
+      "manifest_sha256": "1adc128218e843a659d6f090a8d696b448cea9bce818232b1b956a4be77438c4",
+      "tree_sha256": "ddbe6db3ca8eee24c405e3b5c79023872eb972153d7086417b225b88e4b607e8",
+      "primary_acceptance": {
+        "archive_sha256": "8e1140cc4d491f081d94789a06bfc11654d65754f991339b7f48a060f845ce91",
+        "manifest_before_after_equal": true,
+        "wrapper": {
+          "native_path_args_stdout_exit_preserved": true,
+          "runner_uses_home_local_bin_codex_wrapper": true,
+          "daemon_update_test_used_only_stubs": true
+        },
+        "terminal_stages": 18,
+        "terminal_report": "/home/liupan/Aerius/codex-plus/.build/plus3-release/root-x86/native-smoke/report.json",
+        "passed": true
+      },
+      "worker_report": ".build/plus3-release/x86_64-unknown-linux-gnu/qualification-summary.json"
+    },
+    "aarch64": {
+      "target": "aarch64-unknown-linux-gnu",
+      "archive": "/data/liupan/codex-plus-build/plus3/packages/codex-plus-0.162.1-plus.3-aarch64-unknown-linux-gnu.tar.gz",
+      "archive_bytes": 124640376,
+      "archive_sha256": "d7d31722317446a1ae7988fe03b645003a4886a045456832c198bbc210622539",
+      "manifest_sha256": "fc7cc53c7725c1917b83a5567a8d4e6bcaac4e74f55adbbed4850bf44f2c6b8c",
+      "tree_sha256": "ee01d9ac81b018afc95185e663547ba50f46fec44dc1b46756c15bf8e60f30dc",
+      "primary_acceptance": {
+        "archive_sha256": "d7d31722317446a1ae7988fe03b645003a4886a045456832c198bbc210622539",
+        "manifest_before_after_equal": true,
+        "wrapper": {
+          "native_path_args_stdout_exit_preserved": true,
+          "runner_uses_home_local_bin_codex_wrapper": true,
+          "daemon_update_test_used_only_stubs": true
+        },
+        "terminal_stages": 18,
+        "terminal_report": "/data/liupan/codex-plus-build/plus3/r/native-smoke/report.json",
+        "passed": true
+      },
+      "worker_report": ".build/plus3-release/aarch64-unknown-linux-gnu/evidence/qualification-summary.json"
+    }
+  },
+  "shared_helper_doc_files_equal": 13,
+  "qualification": {
+    "source_hud_tests": 35,
+    "terminal_fixture_tests": 9,
+    "packaging_tests": 12,
+    "terminal_stages_each_arch": 18,
+    "shell_cases_each_arch": 8,
+    "stock_park_callbacks_each_arch": 1,
+    "package_and_stock_binaries_unchanged": true,
+    "external_model_requests": 0,
+    "raw_gate": "8 of9 checks pass; exit1 retained for same-stock raw bwrap host restriction",
+    "supported_cli_sandbox_read_only_each_arch": true
+  },
+  "build_isolation": {
+    "arm": "Build/package/native tests stayed under/data; no binary or archive round trip",
+    "x86": "Existing Cargo cache used, including bookkeeping writes; rustup settings/default unchanged"
+  },
+  "preserved_harness_failures": [
+    "X86 initial system Python lacked pyte; existing venv full rerun passed.",
+    "ARM summary guard expected different text for raw bwrap host denial; comparison corrected, package bytes unchanged."
+  ],
+  "published": false,
+  "fleet_installed": false,
+  "shared_daemon_changed": false,
+  "limits": [
+    "Full upstream suite not run.",
+    "Raw bwrap host restriction remains; supported CLI sandbox passes.",
+    "Real fleet PATH/AP acceptance belongs to separately approved rollout.",
+    "glibc2.39 is tested baseline, not measured minimum."
+  ]
+}
