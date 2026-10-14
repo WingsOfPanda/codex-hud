@@ -41,10 +41,11 @@ The marker is a frontend convention, not a shell option or a daemon feature.
 Only explicitly marked agent commands are eligible for quiet display. Unmarked
 commands and manual user shell commands keep their ordinary display.
 
-The launcher adds its own `bin` directory to the environment of newly launched
-Plus sessions, so `codex-plus run` works from other repositories and inherited
-worker environments. In an older session or an environment without that PATH,
-use the absolute launcher path. Installing a global command belongs to fleet-config.
+The launcher preserves the caller's PATH so child commands use fleet-config's
+`codex` wrapper and its daemon checks. Fleet-config installs the `codex-plus`
+command on PATH for sessions and workers. In a development checkout or an
+environment without that command, use the absolute launcher path. Installing a
+global command belongs to fleet-config.
 
 The runner prints its log path before command output and its result afterward.
 Logs capture combined stdout/stderr from launch in private files under

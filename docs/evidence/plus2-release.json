@@ -1,0 +1,145 @@
+{
+  "release": "0.162.1-plus.2",
+  "package_source_commit": "f0b0ae2fe4ac7f24c62c677a8e6586b1d59197b6",
+  "targets": {
+    "x86_64": {
+      "release": "0.162.1-plus.2",
+      "target": "x86_64-unknown-linux-gnu",
+      "plus_commit": "f0b0ae2fe4ac7f24c62c677a8e6586b1d59197b6",
+      "tree_sha256": "13fe5841cb32abcc882983c043d3399fb9743e392e07066305c5754ba1705691",
+      "frontend_patch_sha256": "8ae7388f60c52e668c98730e661f597c505e94d9e02e3d35b9f9e8b711c325b5",
+      "archive": "/home/liupan/Aerius/codex-plus/.build/plus2-release/packages/codex-plus-0.162.1-plus.2-x86_64-unknown-linux-gnu.tar.gz",
+      "archive_sha256": "e7368bcb359eb37abe6faef52fcdb5d096ae5e0e931fd23413587465d9b781b1",
+      "archive_bytes": 132013196,
+      "manifest": "/home/liupan/Aerius/codex-plus/.build/plus2-release/packages/codex-plus-0.162.1-plus.2-x86_64-unknown-linux-gnu/codex-plus.json",
+      "manifest_sha256": "fdba7c86c4ead61690726deb67bd43e8b2bc4d571f4d6ade700ef53230adb5cf",
+      "native_result": "/home/liupan/Aerius/codex-plus/.build/plus2-release/x86_64-unknown-linux-gnu/result.json",
+      "qa_report": "/home/liupan/Aerius/codex-plus/.build/plus2-release/x86_64-unknown-linux-gnu/qualification/report.json",
+      "sandbox_comparison": "/home/liupan/Aerius/codex-plus/.build/plus2-release/x86_64-unknown-linux-gnu/sandbox-comparison.json",
+      "qa_exit": 1,
+      "qa_passed": false,
+      "passed_gates": [
+        "manifest",
+        "public_commands",
+        "wrapper",
+        "exec",
+        "stdio_code_mode",
+        "native_terminal",
+        "shell_terminal",
+        "manifest_after_runtime"
+      ],
+      "failed_gates": [
+        "resources"
+      ],
+      "skipped": [],
+      "remote_model_requests": 0,
+      "official_cli_unchanged": true,
+      "official_cli_sha256": "628e35487d888a28f0427fc37501da529dd3d81fcbad7a2c3421c1e8670d92e1",
+      "host_limit": "Raw helper uid-map setup is denied identically for official and Plus; CLI sandbox read-only enforcement passes for both.",
+      "supported_cli_sandbox_passed": true,
+      "native_smoke_stages": 17,
+      "stock_park": {
+        "official_daemon": "/home/liupan/.codex/packages/app-server-daemon/releases/0.162.1-x86_64-unknown-linux-musl/bin/codex",
+        "queueIdempotency": false,
+        "loopback_requests": 3,
+        "callbacks": 1,
+        "turns": 2,
+        "passed": true
+      },
+      "build_log": "/home/liupan/Aerius/codex-plus/.build/plus2-release/x86_64-unknown-linux-gnu/build.log",
+      "build_commands": "/home/liupan/Aerius/codex-plus/.build/plus2-release/x86_64-unknown-linux-gnu/commands.jsonl",
+      "runner_logs": {
+        "build": "/home/liupan/.codex/codex-plus/logs/2cc6584a-706d-44d6-8adf-3ac4160cb7d4.log",
+        "packaging": "/home/liupan/.codex/codex-plus/logs/3141cdd8-ae45-4420-867a-aaf1879cfc87.log",
+        "qualification": "/home/liupan/.codex/codex-plus/logs/810c2ad0-5be7-4ecf-a768-4b62ffbe6171.log"
+      },
+      "publication": "not published or installed"
+    },
+    "aarch64": {
+      "target": "aarch64-unknown-linux-gnu",
+      "release": "0.162.1-plus.2",
+      "plus_commit": "f0b0ae2fe4ac7f24c62c677a8e6586b1d59197b6",
+      "upstream_commit": "092d3acd6bec3e3a14bdc7e7a2810ab628ab759d",
+      "frontend_patch_sha256": "8ae7388f60c52e668c98730e661f597c505e94d9e02e3d35b9f9e8b711c325b5",
+      "archive_sha256": "6db82434eb538756dc1356ecfbebcde805bfa27a831f78d981c54ed8d7fd6c5b",
+      "manifest_sha256": "0c54fcd2dd34bd51a3544dc069fc51cd02ab1de837f86eed372880f0934e9a2e",
+      "tree_sha256": "1e0b77907bc502156b98ac1d47fa6d52e5e6cae7cfed75534c534dc198988675",
+      "native_sha256": {
+        "codex": "12d2917fda6f97a962e07fa0280ab42fc2df47f73a8d2f3a6e60d3438589b998",
+        "codex-code-mode-host": "0d771f781d580593c538f4ee9d7f92dcacebe8493bbcf2c53cdd1764f913e307",
+        "bwrap": "3d01037a40c61d2eb729a0712e75e1cbc205d0bd6e8ce0b465251383fdd9b580"
+      },
+      "native_build_exit": 0,
+      "native_build_duration": "21m41s",
+      "native_full_gate_exit": 1,
+      "qualification": "passed with existing host raw-bwrap limitation",
+      "passing_checks": [
+        "manifest",
+        "public_commands",
+        "wrapper",
+        "exec",
+        "stdio_code_mode",
+        "native_terminal",
+        "shell_terminal",
+        "manifest_after_runtime"
+      ],
+      "native_terminal_stages": 17,
+      "daemon_status_read_only": true,
+      "fleet_wrapper_stub_update_check": true,
+      "shell_policy_cases": 8,
+      "stock_daemon_park_callback_count": 1,
+      "stock_daemon_unchanged": true,
+      "official_cli_sha256": "071cbe8d821cf1b02b6d8ba6c8b7991b228fcb8519dcb68a37d31222bb8cabe5",
+      "raw_bwrap_limit": "Both Plus and official raw bwrap exit1: setting up uid map: Permission denied. Both CLI sandbox commands pass. Host apparmor_restrict_unprivileged_userns=1 preserved.",
+      "fixtures_unchanged": true,
+      "remote_model_requests": 0,
+      "skipped": [],
+      "report": "acceptance/report.json",
+      "sandbox_comparison": "acceptance/sandbox-comparison.json",
+      "build_log": "build.log",
+      "acceptance_log": "acceptance.log",
+      "transfer_note": "Initial plain SCP intentionally stopped to use bounded compressed delta rsync. Native build unaffected; all copied hashes verified."
+    }
+  },
+  "primary_x86": {
+    "archive_sha256": "e7368bcb359eb37abe6faef52fcdb5d096ae5e0e931fd23413587465d9b781b1",
+    "manifest_before_after_equal": true,
+    "wrapper": {
+      "native_path_args_stdout_exit_preserved": true,
+      "runner_uses_home_local_bin_codex_wrapper": true,
+      "daemon_update_test_used_only_stubs": true
+    },
+    "terminal_stages": 17,
+    "terminal_report": "/home/liupan/Aerius/codex-plus/.build/plus2-release/root-x86-final/native-smoke/report.json",
+    "passed": true
+  },
+  "verified_at": "2026-10-14T09:16:49.869377+00:00",
+  "primary_arm": {
+    "archive_sha256": "6db82434eb538756dc1356ecfbebcde805bfa27a831f78d981c54ed8d7fd6c5b",
+    "manifest_before_after_equal": true,
+    "wrapper": {
+      "native_path_args_stdout_exit_preserved": true,
+      "runner_uses_home_local_bin_codex_wrapper": true,
+      "daemon_update_test_used_only_stubs": true
+    },
+    "terminal_stages": 17,
+    "terminal_report": "/data/liupan/codex-plus-build/plus2/r2/native-smoke/report.json",
+    "passed": true
+  },
+  "test_fixture_correction": {
+    "cause": "Shell and worker HUD metadata refresh independently; old fixture waited only for shell rows before asserting worker count.",
+    "change": "Wait for both shell rows and Workers 2 within the existing 30-second bound.",
+    "original_failure_log": "/home/liupan/.codex/codex-plus/logs/a9d882fc-055b-43f9-9535-03cf8b025ed1.log",
+    "passing_rerun_log": "/home/liupan/.codex/codex-plus/logs/e2d22783-884d-471d-9cc3-b71e5de5b6c1.log",
+    "package_bytes_changed": false
+  },
+  "release_note": "docs/releases/0.162.1-plus.2.md",
+  "tag": "0.162.1-plus.2",
+  "fleet_installed": false,
+  "shared_daemon_changed": false,
+  "limits": [
+    "Full upstream suite not run.",
+    "Raw bundled bwrap host-policy failure retained; stock has identical failure, supported CLI sandbox passes.",
+    "Real fleet PATH/AP installation acceptance belongs to fleet-config."
+  ]
+}

@@ -1479,10 +1479,26 @@ index 5dfc3ad..00510cc 100644
                      if tui.is_owned_screen()
                          && self.transcript_view.history
 diff --git a/codex-rs/tui/src/app/event_dispatch.rs b/codex-rs/tui/src/app/event_dispatch.rs
-index 2979e0a..c7eed27 100644
+index 2979e0a..cb527ab 100644
 --- a/codex-rs/tui/src/app/event_dispatch.rs
 +++ b/codex-rs/tui/src/app/event_dispatch.rs
-@@ -2960,6 +2960,18 @@ impl App {
+@@ -137,12 +137,9 @@ impl App {
+             event => (event, None),
+         };
+         match event {
+-            AppEvent::OpenDaemonMenu => self.open_daemon_menu(),
+-            AppEvent::ConfirmDaemonUpdate(source) => self.confirm_daemon_update(source),
+-            AppEvent::RunDaemonUpdate(source) => {
+-                self.pending_update_action = Some(UpdateAction::Daemon(source));
+-                return Ok(self.handle_exit_mode(app_server, ExitMode::Immediate).await);
+-            }
++            AppEvent::OpenDaemonMenu
++            | AppEvent::ConfirmDaemonUpdate(_)
++            | AppEvent::RunDaemonUpdate(_) => self.open_daemon_menu(),
+             AppEvent::UserVerificationApproved { thread_id, server_name, request_id } => {
+                 Box::pin(self.start_user_verification(app_server, thread_id, server_name, request_id)).await?;
+             }
+@@ -2960,6 +2957,18 @@ impl App {
                      result,
                  );
              }
@@ -5362,3 +5378,615 @@ index 0000000..9997462
 +    assert!(text.contains("terminated"));
 +    assert!(text.contains("Log: /tmp/run.log"));
 +}
+diff --git a/codex-rs/cli/src/daemon_update_tests.rs b/codex-rs/cli/src/daemon_update_tests.rs
+index be62c96..fa3e7e7 100644
+--- a/codex-rs/cli/src/daemon_update_tests.rs
++++ b/codex-rs/cli/src/daemon_update_tests.rs
+@@ -1,10 +1,8 @@
+ use super::*;
+ use codex_tui::DaemonUpdateSource;
+-use pretty_assertions::assert_eq;
+-use std::os::unix::fs::PermissionsExt;
+ 
+ #[test]
+-fn daemon_handoff_uses_selected_executable_and_propagates_failure() -> anyhow::Result<()> {
++fn daemon_handoff_is_blocked_without_spawning_selected_executable() -> anyhow::Result<()> {
+     let dir = tempfile::tempdir()?;
+     let executable = dir.path().join("launching CLI");
+     let receipt = dir.path().join("launching CLI.args");
+@@ -12,26 +10,20 @@ fn daemon_handoff_uses_selected_executable_and_propagates_failure() -> anyhow::R
+         &executable,
+         "#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$0.args\"\n",
+     )?;
+-    std::fs::set_permissions(&executable, std::fs::Permissions::from_mode(/*mode*/ 0o700))?;
+-    for (source, expected) in [
+-        (
+-            DaemonUpdateSource::PublicStable,
+-            "app-server\ndaemon\nupdate\n",
+-        ),
+-        (
+-            DaemonUpdateSource::ThisCli,
+-            "app-server\ndaemon\nupdate\n--from-cli\n--yes\n",
+-        ),
++    for source in [
++        DaemonUpdateSource::PublicStable,
++        DaemonUpdateSource::ThisCli,
+     ] {
+-        run_update_action(UpdateAction::Daemon(source), Some(&executable))?;
+-        assert_eq!(std::fs::read_to_string(&receipt)?, expected);
++        for selected_executable in [Some(executable.as_path()), None] {
++            let error =
++                run_update_action(UpdateAction::Daemon(source), selected_executable).unwrap_err();
++            assert!(
++                error
++                    .to_string()
++                    .contains("Daemon updates are disabled in Codex Plus")
++            );
++            assert!(!receipt.exists(), "daemon handoff must not spawn the CLI");
++        }
+     }
+-    codex_utils_cargo_bin::write_executable(&executable, "#!/bin/sh\nexit 7\n")?;
+-    let error = run_update_action(
+-        UpdateAction::Daemon(DaemonUpdateSource::ThisCli),
+-        Some(&executable),
+-    )
+-    .unwrap_err();
+-    assert!(error.to_string().contains("Daemon update failed"));
+     Ok(())
+ }
+diff --git a/codex-rs/cli/src/main.rs b/codex-rs/cli/src/main.rs
+index 8d062a2..803e31a 100644
+--- a/codex-rs/cli/src/main.rs
++++ b/codex-rs/cli/src/main.rs
+@@ -789,22 +789,12 @@ fn handle_app_exit(
+ /// Run the update action and print the result.
+ fn run_update_action(
+     action: UpdateAction,
+-    cli_executable: Option<&std::path::Path>,
++    _cli_executable: Option<&std::path::Path>,
+ ) -> anyhow::Result<()> {
+-    if let UpdateAction::Daemon(source) = action {
+-        let executable = cli_executable
+-            .ok_or_else(|| anyhow::anyhow!("Cannot locate the launching Codex CLI"))?;
+-        println!("Updating the local background server...");
+-        let status = std::process::Command::new(executable)
+-            .args(source.command_args())
+-            .env(codex_app_server_daemon::telemetry::HANDOFF_ENV, "1")
+-            .status()?;
+-        anyhow::ensure!(
+-            status.success(),
+-            "Daemon update failed with status {status}"
++    if matches!(action, UpdateAction::Daemon(_)) {
++        anyhow::bail!(
++            "Daemon updates are disabled in Codex Plus; manage the stock daemon through fleet-config."
+         );
+-        println!("Relaunch Codex to reconnect.");
+-        return Ok(());
+     }
+     println!();
+     let cmd_str = action.command_str();
+diff --git a/codex-rs/tui/src/app/daemon_menu.rs b/codex-rs/tui/src/app/daemon_menu.rs
+index d5a354a..49d4a35 100644
+--- a/codex-rs/tui/src/app/daemon_menu.rs
++++ b/codex-rs/tui/src/app/daemon_menu.rs
+@@ -1,10 +1,8 @@
+-//! Local daemon maintenance only records an update action after explicit confirmation.
+-//! The CLI executes it in the foreground after the TUI restores the terminal.
++//! Plus exposes daemon status; fleet-config owns daemon installation and updates.
+ 
+ use super::*;
+ use crate::bottom_pane::SelectionItem;
+ use crate::bottom_pane::SelectionViewParams;
+-use crate::update_action::DaemonUpdateSource;
+ use crate::wrapping::word_wrap_lines;
+ use ratatui::buffer::Buffer;
+ use ratatui::widgets::Paragraph;
+@@ -34,97 +32,26 @@ impl App {
+             .filter(|_| matches!(self.app_server_target, AppServerTarget::LocalDaemon { .. }))
+             .map(|connection| format!("Running daemon: {}", connection.version))
+             .unwrap_or_else(|| "Not connected to the local background server.".to_string());
+-        let mut header = vec![Line::from("Daemon".bold()), Line::from(status.dim())];
+-        let unavailable = if matches!(self.app_server_target, AppServerTarget::Remote { .. }) {
+-            Some(
+-                "Manage this server on its host. Local daemon updates are unavailable for remote connections.",
+-            )
+-        } else if self.daemon_cli_executable.is_none() {
+-            Some("Run the Codex CLI to manage the daemon from this menu.")
++        let guidance = if matches!(self.app_server_target, AppServerTarget::Remote { .. }) {
++            "Manage this server on its host. Daemon updates are disabled in Codex Plus."
+         } else {
+-            None
++            "Daemon updates are disabled in Codex Plus. Manage the stock daemon through fleet-config."
+         };
+-        if let Some(guidance) = unavailable {
+-            header.push(Line::from(guidance.dim()));
+-        }
+-        let has_package = self.daemon_cli_executable.as_ref().is_some_and(|path| {
+-            codex_install_context::InstallContext::from_exe(
+-                cfg!(target_os = "macos"),
+-                Some(path.as_path()),
+-                /*method_override*/ None,
+-            )
+-            .package_layout
+-            .is_some()
+-        });
+-        let items = [
+-            (
+-                DaemonUpdateSource::PublicStable,
+-                "Install latest public stable",
+-            ),
+-            (DaemonUpdateSource::ThisCli, "Use this CLI build"),
+-        ]
+-        .into_iter()
+-        .map(|(source, name)| SelectionItem {
+-            name: name.to_string(),
+-            is_disabled: unavailable.is_some(),
+-            disabled_reason: (unavailable.is_none()
+-                && source == DaemonUpdateSource::ThisCli
+-                && !has_package)
+-                .then(|| "This CLI has no local package to copy".to_string()),
+-            actions: vec![Box::new(move |tx| {
+-                tx.send(AppEvent::ConfirmDaemonUpdate(source));
+-            })],
+-            dismiss_on_select: true,
+-            ..Default::default()
+-        })
+-        .collect();
++        let header = vec![
++            Line::from("Daemon".bold()),
++            Line::from(status.dim()),
++            Line::from(guidance.dim()),
++        ];
+         self.chat_widget.show_selection_view(SelectionViewParams {
+             header: Box::new(DaemonMenuHeader(header)),
+-            items,
++            items: vec![SelectionItem {
++                name: "Close".to_string(),
++                dismiss_on_select: true,
++                ..Default::default()
++            }],
+             ..SelectionViewParams::picker()
+         });
+     }
+-
+-    pub(super) fn confirm_daemon_update(&mut self, source: DaemonUpdateSource) {
+-        let Some(executable) = &self.daemon_cli_executable else {
+-            return;
+-        };
+-        if matches!(self.app_server_target, AppServerTarget::Remote { .. }) {
+-            return;
+-        }
+-        let mut explanation = match source {
+-            DaemonUpdateSource::PublicStable => "Install the latest public stable release. Restore production updates; keep your automatic-update setting.".to_string(),
+-            DaemonUpdateSource::ThisCli => {
+-                let version = codex_install_context::InstallContext::current()
+-                    .package_manifest()
+-                    .map_or_else(|| CODEX_CLI_VERSION.to_string(), |manifest| manifest.version.to_string());
+-                format!("Use this CLI package v{version} from {}. Copy the complete package and pin it against automatic updates.", executable.display())
+-            }
+-        };
+-        explanation.push_str("\nThis may restart the daemon and interrupt active or queued work.\nCodex exits to update in this terminal. Relaunch it afterward.");
+-        let mut header = vec![Line::from("Update daemon and exit Codex?".bold())];
+-        header.extend(explanation.lines().map(|line| Line::from(line.to_owned())));
+-        self.chat_widget.show_selection_view(SelectionViewParams {
+-            header: Box::new(DaemonMenuHeader(header)),
+-            items: vec![
+-                SelectionItem {
+-                    name: "Cancel".to_string(),
+-                    dismiss_on_select: true,
+-                    ..Default::default()
+-                },
+-                SelectionItem {
+-                    name: "Update and exit".to_string(),
+-                    actions: vec![Box::new(move |tx| {
+-                        tx.send(AppEvent::RunDaemonUpdate(source))
+-                    })],
+-                    require_explicit_confirmation: true,
+-                    dismiss_on_select: true,
+-                    ..Default::default()
+-                },
+-            ],
+-            ..SelectionViewParams::confirmation()
+-        });
+-    }
+ }
+ 
+ #[cfg(test)]
+diff --git a/codex-rs/tui/src/app/daemon_menu_tests.rs b/codex-rs/tui/src/app/daemon_menu_tests.rs
+index 0928bf3..d8e6fbe 100644
+--- a/codex-rs/tui/src/app/daemon_menu_tests.rs
++++ b/codex-rs/tui/src/app/daemon_menu_tests.rs
+@@ -3,6 +3,7 @@ use crate::app::test_support::make_test_app;
+ use crate::chatwidget::tests::helpers::render_bottom_popup;
+ use crate::chatwidget::tests::make_chatwidget_manual_with_sender;
+ use crate::status::remote_connection::RemoteConnectionStatus;
++use crate::update_action::DaemonUpdateSource;
+ use crossterm::event::KeyCode;
+ use pretty_assertions::assert_eq;
+ 
+@@ -63,7 +64,7 @@ async fn daemon_version_notice_preserves_manual_update_guidance() {
+ }
+ 
+ #[tokio::test]
+-async fn daemon_menu_is_read_only_and_confirmation_can_cancel_or_handoff() {
++async fn daemon_menu_is_read_only_for_local_embedded_and_remote_servers() {
+     let mut app = make_test_app().await;
+     let (chat, _, mut rx, _) = make_chatwidget_manual_with_sender().await;
+     app.chat_widget = chat;
+@@ -71,157 +72,73 @@ async fn daemon_menu_is_read_only_and_confirmation_can_cancel_or_handoff() {
+     std::fs::create_dir(package.path().join("bin")).unwrap();
+     std::fs::write(package.path().join("bin/codex"), "CLI").unwrap();
+     std::fs::write(package.path().join("codex-package.json"), "{}").unwrap();
+-    app.daemon_cli_executable =
+-        Some(AbsolutePathBuf::from_absolute_path(package.path().join("bin/codex")).unwrap());
+-    app.app_server_target = AppServerTarget::LocalDaemon {
+-        allow_embedded_fallback: true,
+-        endpoint: crate::RemoteAppServerEndpoint::UnixSocket {
+-            socket_path: AbsolutePathBuf::relative_to_current_dir("codex.sock").unwrap(),
++    let executable = AbsolutePathBuf::from_absolute_path(package.path().join("bin/codex")).unwrap();
++    for target in [
++        AppServerTarget::LocalDaemon {
++            allow_embedded_fallback: true,
++            endpoint: crate::RemoteAppServerEndpoint::UnixSocket {
++                socket_path: AbsolutePathBuf::relative_to_current_dir("codex.sock").unwrap(),
++            },
++        },
++        AppServerTarget::Embedded,
++        AppServerTarget::Remote {
++            endpoint: crate::RemoteAppServerEndpoint::WebSocket {
++                websocket_url: "ws://example.test:1234".into(),
++                auth_token: None,
++            },
+         },
+-    };
+-    app.chat_widget.remote_connection = Some(RemoteConnectionStatus {
+-        address: "local".into(),
+-        version: "v0.153.0".into(),
+-        is_local_daemon: true,
+-    });
+-    app.initialize_server_version_notice("0.154.0", Some("0.153.0"));
+-    let view = app.agents_overview_view(Vec::new(), /*selected_thread_id*/ None);
+-    app.chat_widget.show_bottom_pane_view(Box::new(view));
+-    let overview = render_bottom_popup(&app.chat_widget, /*width*/ 80);
+-    insta::assert_snapshot!(overview.lines().find(|line| line.contains("Service v")).unwrap().trim(), @"Service v0.153.0 < Codex CLI v0.154.0 · /daemon");
+-    let executable = app.daemon_cli_executable.clone();
+-    for (width, source, snapshot) in [
+-        (
+-            80,
+-            DaemonUpdateSource::PublicStable,
+-            "daemon_stable_confirmation",
+-        ),
+-        (100, DaemonUpdateSource::ThisCli, "daemon_cli_confirmation"),
+     ] {
+-        app.daemon_cli_executable = executable.clone();
+-        app.open_daemon_menu();
+-        if source == DaemonUpdateSource::PublicStable {
+-            insta::assert_snapshot!(
+-                "daemon_menu",
+-                render_bottom_popup(&app.chat_widget, /*width*/ 80)
+-            );
+-        } else {
+-            app.chat_widget.handle_key_event(KeyCode::Down.into());
+-        }
+-        assert!(rx.try_recv().is_err());
+-        app.chat_widget.handle_key_event(KeyCode::Enter.into());
+-        assert!(
+-            matches!(rx.try_recv().unwrap(), AppEvent::ConfirmDaemonUpdate(selected) if selected == source)
+-        );
+-        app.daemon_cli_executable = Some(
+-            AbsolutePathBuf::from_absolute_path(if cfg!(windows) {
+-                r"C:\cli-build\bin\codex"
++        app.app_server_target = target;
++        app.chat_widget.remote_connection = Some(RemoteConnectionStatus {
++            address: "fixture".into(),
++            version: "v0.153.0".into(),
++            is_local_daemon: matches!(app.app_server_target, AppServerTarget::LocalDaemon { .. }),
++        });
++        for cli in [Some(executable.clone()), None] {
++            app.daemon_cli_executable = cli;
++            app.open_daemon_menu();
++            let popup = render_bottom_popup(&app.chat_widget, /*width*/ 100);
++            assert!(popup.contains("Daemon updates are disabled in Codex Plus"));
++            assert!(popup.contains("Close"));
++            assert!(!popup.contains("Install latest public stable"));
++            assert!(!popup.contains("Use this CLI build"));
++            if matches!(app.app_server_target, AppServerTarget::LocalDaemon { .. }) {
++                assert!(popup.contains("Running daemon: v0.153.0"));
+             } else {
+-                "/x/cli-build/bin/codex"
+-            })
+-            .unwrap(),
+-        );
+-        app.confirm_daemon_update(source);
+-        insta::assert_snapshot!(
+-            snapshot,
+-            render_bottom_popup(&app.chat_widget, width)
+-                .replace(r"C:\cli-build\bin\codex", "/x/cli-build/bin/codex")
+-        );
+-        // The default choice cancels without emitting an update or exiting.
+-        app.chat_widget.handle_key_event(KeyCode::Enter.into());
+-        assert!(rx.try_recv().is_err());
+-        assert_eq!(app.pending_update_action, None);
+-        app.confirm_daemon_update(source);
+-        app.chat_widget.handle_key_event(KeyCode::Down.into());
+-        app.chat_widget.handle_key_event(KeyCode::Enter.into());
+-        assert!(
+-            matches!(rx.try_recv().unwrap(), AppEvent::RunDaemonUpdate(selected) if selected == source)
+-        );
++                assert!(popup.contains("Not connected to the local background server."));
++            }
++            app.chat_widget.handle_key_event(KeyCode::Enter.into());
++            assert!(rx.try_recv().is_err());
++            assert_eq!(app.pending_update_action, None);
++        }
+     }
++}
+ 
+-    // Maintenance remains available when startup selects the embedded server.
+-    app.app_server_target = AppServerTarget::Embedded;
+-    app.chat_widget.remote_connection = None;
+-    app.daemon_cli_executable = executable;
++#[tokio::test]
++async fn daemon_update_events_do_not_exit_or_request_an_update() -> Result<()> {
++    let mut app = make_test_app().await;
++    let mut app_server = Box::pin(crate::start_embedded_app_server_for_picker(
++        app.chat_widget.config_ref(),
++    ))
++    .await?;
++    let mut tui = crate::tui::test_support::make_test_tui()?;
+     for source in [
+         DaemonUpdateSource::PublicStable,
+         DaemonUpdateSource::ThisCli,
+     ] {
+-        app.open_daemon_menu();
+-        if source == DaemonUpdateSource::PublicStable {
+-            insta::assert_snapshot!(
+-                "daemon_disconnected",
+-                render_bottom_popup(&app.chat_widget, /*width*/ 80)
++        for event in [
++            AppEvent::ConfirmDaemonUpdate(source),
++            AppEvent::RunDaemonUpdate(source),
++        ] {
++            let control = Box::pin(app.handle_event(&mut tui, &mut app_server, event)).await?;
++            assert!(matches!(control, AppRunControl::Continue));
++            assert_eq!(app.pending_update_action, None);
++            assert!(
++                render_bottom_popup(&app.chat_widget, /*width*/ 100)
++                    .contains("Daemon updates are disabled in Codex Plus")
+             );
+-        } else {
+-            app.chat_widget.handle_key_event(KeyCode::Down.into());
++            app.chat_widget.handle_key_event(KeyCode::Enter.into());
+         }
+-        assert!(rx.try_recv().is_err());
+-        app.chat_widget.handle_key_event(KeyCode::Enter.into());
+-        assert!(
+-            matches!(rx.try_recv().unwrap(), AppEvent::ConfirmDaemonUpdate(selected) if selected == source)
+-        );
+-        app.confirm_daemon_update(source);
+-        app.chat_widget.handle_key_event(KeyCode::Enter.into());
+-        assert!(rx.try_recv().is_err());
+-        assert_eq!(app.pending_update_action, None);
+-        app.confirm_daemon_update(source);
+-        app.chat_widget.handle_key_event(KeyCode::Down.into());
+-        app.chat_widget.handle_key_event(KeyCode::Enter.into());
+-        assert!(
+-            matches!(rx.try_recv().unwrap(), AppEvent::RunDaemonUpdate(selected) if selected == source)
+-        );
+     }
+-
+-    std::fs::remove_file(package.path().join("codex-package.json")).unwrap();
+-    // The full CLI can have any filename; capability comes from its entry point.
+-    app.daemon_cli_executable =
+-        Some(AbsolutePathBuf::from_absolute_path(package.path().join("bin/codex-tui")).unwrap());
+-    app.open_daemon_menu();
+-    insta::assert_snapshot!(
+-        "daemon_unpackaged_cli",
+-        render_bottom_popup(&app.chat_widget, /*width*/ 80)
+-    );
+-    app.chat_widget.handle_key_event(KeyCode::Enter.into());
+-    assert!(matches!(
+-        rx.try_recv().unwrap(),
+-        AppEvent::ConfirmDaemonUpdate(DaemonUpdateSource::PublicStable)
+-    ));
+-
+-    app.daemon_cli_executable = None;
+-    app.open_daemon_menu();
+-    insta::assert_snapshot!(
+-        "daemon_no_cli_handoff",
+-        render_bottom_popup(&app.chat_widget, /*width*/ 80)
+-    );
+-    app.chat_widget.handle_key_event(KeyCode::Enter.into());
+-    assert!(rx.try_recv().is_err());
+-}
+-
+-#[tokio::test]
+-async fn unavailable_daemon_menu_offers_guidance_without_update_actions() {
+-    let mut app = make_test_app().await;
+-    app.daemon_cli_executable =
+-        Some(AbsolutePathBuf::from_absolute_path(std::env::current_exe().unwrap()).unwrap());
+-    let (chat, _, mut rx, _) = make_chatwidget_manual_with_sender().await;
+-    app.chat_widget = chat;
+-    app.app_server_target = AppServerTarget::Remote {
+-        endpoint: crate::RemoteAppServerEndpoint::WebSocket {
+-            websocket_url: "ws://example.test:1234".into(),
+-            auth_token: None,
+-        },
+-    };
+-    app.chat_widget.remote_connection = Some(RemoteConnectionStatus {
+-        address: "ws://example.test:1234".into(),
+-        version: "v0.153.0".into(),
+-        is_local_daemon: false,
+-    });
+-    app.open_daemon_menu();
+-    insta::assert_snapshot!(
+-        "daemon_remote_guidance",
+-        render_bottom_popup(&app.chat_widget, /*width*/ 80)
+-    );
+-    app.chat_widget.handle_key_event(KeyCode::Enter.into());
+-    assert!(rx.try_recv().is_err());
+-    assert_eq!(app.pending_update_action, None);
++    Ok(())
+ }
+diff --git a/codex-rs/tui/src/app/snapshots/codex_tui__app__daemon_menu__tests__daemon_cli_confirmation.snap b/codex-rs/tui/src/app/snapshots/codex_tui__app__daemon_menu__tests__daemon_cli_confirmation.snap
+deleted file mode 100644
+index 4a94611..0000000
+--- a/codex-rs/tui/src/app/snapshots/codex_tui__app__daemon_menu__tests__daemon_cli_confirmation.snap
++++ /dev/null
+@@ -1,29 +0,0 @@
+----
+-source: tui/src/app/daemon_menu_tests.rs
+-assertion_line: 125
+-expression: "render_bottom_popup(&app.chat_widget,\nwidth).replace(r\"C:\\cli-build\\bin\\codex\", \"/x/cli-build/bin/codex\")"
+----
+-  Agent command center  Group: Project  g
+-   All 0   Needs you 0   Working 0   Ready 0   Inactive 0                          tab/⇧tab filter
+-  ────────────────────────────────────────────────────────────────────────────────────────────────
+-  No tasks yet                                            │
+-                                                          │
+-                                                          │
+-
+-                Update daemon and exit Codex?
+-                Use this CLI package v0.0.0 from /x/cli-build/bin/codex. Copy the
+-                complete package and pin it against automatic updates.
+-                This may restart the daemon and interrupt active or queued work.
+-                Codex exits to update in this terminal. Relaunch it afterward.
+-
+-
+-              › 1. Cancel
+-                2. Update and exit
+-
+-                enter select · esc back
+-                                                          │
+-                                                          │
+-                                                          │
+-                                                          │
+-                                                          │
+-  Service v0.153.0 < Codex CLI v0.154.0 · /daemon
+diff --git a/codex-rs/tui/src/app/snapshots/codex_tui__app__daemon_menu__tests__daemon_disconnected.snap b/codex-rs/tui/src/app/snapshots/codex_tui__app__daemon_menu__tests__daemon_disconnected.snap
+deleted file mode 100644
+index 70a7611..0000000
+--- a/codex-rs/tui/src/app/snapshots/codex_tui__app__daemon_menu__tests__daemon_disconnected.snap
++++ /dev/null
+@@ -1,12 +0,0 @@
+----
+-source: tui/src/app/daemon_menu_tests.rs
+-expression: "render_bottom_popup(&app.chat_widget, 80)"
+----
+-  Daemon
+-  Not connected to the local background server.
+-
+-
+-› 1. Install latest public stable
+-  2. Use this CLI build
+-
+-  enter select · esc back
+diff --git a/codex-rs/tui/src/app/snapshots/codex_tui__app__daemon_menu__tests__daemon_menu.snap b/codex-rs/tui/src/app/snapshots/codex_tui__app__daemon_menu__tests__daemon_menu.snap
+deleted file mode 100644
+index bc8a91e..0000000
+--- a/codex-rs/tui/src/app/snapshots/codex_tui__app__daemon_menu__tests__daemon_menu.snap
++++ /dev/null
+@@ -1,12 +0,0 @@
+----
+-source: tui/src/app/daemon_menu_tests.rs
+-expression: "render_bottom_popup(&app.chat_widget, 80)"
+----
+-  Daemon
+-  Running daemon: v0.153.0
+-
+-
+-› 1. Install latest public stable
+-  2. Use this CLI build
+-
+-  enter select · esc back
+diff --git a/codex-rs/tui/src/app/snapshots/codex_tui__app__daemon_menu__tests__daemon_no_cli_handoff.snap b/codex-rs/tui/src/app/snapshots/codex_tui__app__daemon_menu__tests__daemon_no_cli_handoff.snap
+deleted file mode 100644
+index 8232050..0000000
+--- a/codex-rs/tui/src/app/snapshots/codex_tui__app__daemon_menu__tests__daemon_no_cli_handoff.snap
++++ /dev/null
+@@ -1,13 +0,0 @@
+----
+-source: tui/src/app/daemon_menu_tests.rs
+-expression: "render_bottom_popup(&app.chat_widget, 80)"
+----
+-  Daemon
+-  Not connected to the local background server.
+-  Run the Codex CLI to manage the daemon from this menu.
+-
+-
+-›    Install latest public stable
+-     Use this CLI build
+-
+-  enter select · esc back
+diff --git a/codex-rs/tui/src/app/snapshots/codex_tui__app__daemon_menu__tests__daemon_remote_guidance.snap b/codex-rs/tui/src/app/snapshots/codex_tui__app__daemon_menu__tests__daemon_remote_guidance.snap
+deleted file mode 100644
+index ea209ab..0000000
+--- a/codex-rs/tui/src/app/snapshots/codex_tui__app__daemon_menu__tests__daemon_remote_guidance.snap
++++ /dev/null
+@@ -1,14 +0,0 @@
+----
+-source: tui/src/app/daemon_menu_tests.rs
+-expression: "render_bottom_popup(&app.chat_widget, 80)"
+----
+-  Daemon
+-  Not connected to the local background server.
+-  Manage this server on its host. Local daemon updates are unavailable for
+-  remote connections.
+-
+-
+-›    Install latest public stable
+-     Use this CLI build
+-
+-  enter select · esc back
+diff --git a/codex-rs/tui/src/app/snapshots/codex_tui__app__daemon_menu__tests__daemon_stable_confirmation.snap b/codex-rs/tui/src/app/snapshots/codex_tui__app__daemon_menu__tests__daemon_stable_confirmation.snap
+deleted file mode 100644
+index b7f4e1a..0000000
+--- a/codex-rs/tui/src/app/snapshots/codex_tui__app__daemon_menu__tests__daemon_stable_confirmation.snap
++++ /dev/null
+@@ -1,28 +0,0 @@
+----
+-source: tui/src/app/daemon_menu_tests.rs
+-expression: "render_bottom_popup(&app.chat_widget,\nwidth).replace(r\"C:\\cli-build\\bin\\codex\", \"/x/cli-build/bin/codex\")"
+----
+-  Agent command center  Group: Project  g
+-   All 0   Needs you 0   Working 0   Ready 0   Inactive 0
+-  ────────────────────────────────────────────────────────────────────────────
+-  No tasks yet
+-
+-
+-
+-      Update daemon and exit Codex?
+-      Install the latest public stable release. Restore production
+-      updates; keep your automatic-update setting.
+-      This may restart the daemon and interrupt active or queued work.
+-      Codex exits to update in this terminal. Relaunch it afterward.
+-
+-
+-    › 1. Cancel
+-      2. Update and exit
+-
+-      enter select · esc back
+-
+-
+-
+-
+-
+-  Service v0.153.0 < Codex CLI v0.154.0 · /daemon
+diff --git a/codex-rs/tui/src/app/snapshots/codex_tui__app__daemon_menu__tests__daemon_unpackaged_cli.snap b/codex-rs/tui/src/app/snapshots/codex_tui__app__daemon_menu__tests__daemon_unpackaged_cli.snap
+deleted file mode 100644
+index dd6f597..0000000
+--- a/codex-rs/tui/src/app/snapshots/codex_tui__app__daemon_menu__tests__daemon_unpackaged_cli.snap
++++ /dev/null
+@@ -1,12 +0,0 @@
+----
+-source: tui/src/app/daemon_menu_tests.rs
+-expression: "render_bottom_popup(&app.chat_widget, 80)"
+----
+-  Daemon
+-  Not connected to the local background server.
+-
+-
+-› 1. Install latest public stable
+-     Use this CLI build (disabled)  This CLI has no local package to copy
+-
+-  enter select · esc back

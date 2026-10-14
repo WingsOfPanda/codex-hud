@@ -155,7 +155,22 @@ def wrapper_check(package, root):
     output = command([link, *args], cwd, env, expected=17)
     result = json.loads(output)
     assert result == {'argv': [str(native), *args], 'cwd': str(cwd)}, result
-    return {'native_path_args_stdout_exit_preserved': True}
+    env['HOME'] = str(root / 'user')
+    wrapper = Path(env['HOME']) / '.local/bin/codex'
+    wrapper.parent.mkdir(parents=True)
+    wrapper.write_text('#!/usr/bin/env python3\nimport json,sys\n'
+                       'print(json.dumps(sys.argv))\nsys.exit(19)\n')
+    wrapper.chmod(0o755)
+    env['PATH'] = str(wrapper.parent) + os.pathsep + env['PATH']
+    output = command([link, 'run', '--', sys.executable, '-c',
+                      'import shutil; print(shutil.which("codex"))'], cwd, env)
+    assert str(wrapper) + '\n' in output, output
+    args = ['app-server', 'daemon', 'update', '--from-cli', '--yes']
+    output = command([link, 'run', '--', 'codex', *args], cwd, env, expected=19)
+    assert json.dumps([str(wrapper), *args]) + '\n' in output, output
+    return {'native_path_args_stdout_exit_preserved': True,
+            'runner_uses_home_local_bin_codex_wrapper': True,
+            'daemon_update_test_used_only_stubs': True}
 
 
 def resources_check(package, root, evidence):

@@ -57,11 +57,11 @@ class RunnerTests(unittest.TestCase):
 
     def test_cwd_environment_stdin_and_path(self):
         self.env['RUNNER_CHECK'] = 'inherited'
-        source = "import os,sys,shutil; print(os.getcwd()); print(os.getenv('RUNNER_CHECK')); print(repr(sys.stdin.read())); print(shutil.which('codex-plus'))"
+        source = "import os,sys; print(os.getcwd()); print(os.getenv('RUNNER_CHECK')); print(repr(sys.stdin.read())); print(os.environ['PATH'])"
         result = self.run_python(source, cwd=self.temporary.name)
         self.assertEqual(result.returncode, 0)
         self.assertEqual(self.output_log(result).read_text().splitlines(),
-                         [self.temporary.name, 'inherited', "''", str(LAUNCHER)])
+                         [self.temporary.name, 'inherited', "''", self.env['PATH']])
 
     def test_shell_composition_is_explicit(self):
         result = subprocess.run([str(LAUNCHER), 'run', '--', 'bash', '-lc',

@@ -48,7 +48,7 @@ class PackageIntegrityTests(unittest.TestCase):
                     'pathDir': 'codex-path'}
         (self.package / 'codex-package.json').write_text(json.dumps(metadata))
         self.manifest = {
-            'schema_version': 1, 'release': '0.162.1-plus.1', 'plus_commit': 'a' * 40,
+            'schema_version': 1, 'release': package_release.RELEASE, 'plus_commit': 'a' * 40,
             'frontend_patch_sha256': 'b' * 64, 'target': 'x86_64-unknown-linux-gnu',
             'upstream': {'version': '0.162.1', 'tag': 'rust-v0.162.1',
                          'commit': package_release.UPSTREAM_COMMIT},

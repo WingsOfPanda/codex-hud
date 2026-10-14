@@ -1,0 +1,90 @@
+{
+  "verified_at": "2026-10-14T08:27:00.646133+00:00",
+  "scope": "Codex Plus daemon status menu and fail-closed daemon-update handoff. Fleet-config owns daemon installation and updates.",
+  "upstream_commit": "092d3acd6bec3e3a14bdc7e7a2810ab628ab759d",
+  "worker_acceptance": {
+    "daemon_menu_tests": 3,
+    "daemon_handoff_tests": 1,
+    "hud_tests": 33,
+    "shell_policy_tests": 14,
+    "dev_small_cli_build_exit": 0,
+    "terminal_stages": 17,
+    "terminal_exit": 0,
+    "clean_patch_application": true,
+    "reverse_patch_application": true,
+    "exact_source_comparison": true,
+    "frontend_only_source_paths": true
+  },
+  "regressions": [
+    "Read-only status menu for local, embedded and remote targets, with packaged or absent CLI executable.",
+    "Both daemon-update event sources retain the TUI and never set pending_update_action.",
+    "Both daemon-update handoff sources are rejected with or without a selected executable; executable fixture is never spawned.",
+    "Real remote PTY opens /daemon, shows guidance and Close, offers no update choice, and returns to the editable composer."
+  ],
+  "binary": ".build/frontend-release/source/codex-rs/target/dev-small/codex",
+  "binary_sha256": "162b7183e2a533e20629baf3129e1e2b0d836f05182482bc96007e7d73c91067",
+  "patch_sha256": "8ae7388f60c52e668c98730e661f597c505e94d9e02e3d35b9f9e8b711c325b5",
+  "terminal_report": ".build/daemon-boundary/native-smoke/report.json",
+  "screen": "docs/evidence/daemon-status-screen.txt",
+  "logs": {
+    "native_checks_and_build": "/home/liupan/.codex/codex-plus/logs/ed4dfd38-c683-4afb-948b-69c4909a4968.log",
+    "terminal_smoke": "/home/liupan/.codex/codex-plus/logs/d6185ba7-3c20-413e-9128-8856bd20b278.log",
+    "patch_acceptance": "/home/liupan/.codex/codex-plus/logs/a6b9e3cc-d280-4ed9-9475-63052fc3dff5.log",
+    "initial_smoke_input_timing_failure": "/home/liupan/.codex/codex-plus/logs/d0f1df11-4cef-4475-b881-0f409d5ca057.log"
+  },
+  "terminal": {
+    "binary": "/home/liupan/Aerius/codex-plus/.build/frontend-release/source/codex-rs/target/dev-small/codex",
+    "passed": [
+      "six active workers show three task-first rows plus +3 more, with elapsed, unknown remote tokens and actual Sol high/Astra medium below shortcuts",
+      "read-only /daemon shows status guidance and Close; no daemon update choices or exit",
+      "two simultaneous independent roots and editable composers",
+      "input remains editable during delayed metadata RPC",
+      "completion removes its row and promotes a hidden active worker",
+      "last completion hides the entire strip while both composers remain editable",
+      "later activity restores the compact strip without losing the draft",
+      "explicit three-member cohort reduces 3\u21922\u21921\u2192hidden without duplicate rows or shrinking dispatch elapsed; independent cohort stays separate, group resize/input preserve draft, final strip collapses",
+      "small and normal PTY resize with preserved draft",
+      "partial metadata RPC failure marks counts stale and recovers",
+      "stale disconnect and automatic reconnect without cross-pane effect",
+      "zero turn/start or turn/steer requests and zero model calls",
+      "remote websocket roots ignore an unrelated local watcher health file",
+      "isolated tmux server: two split panes, draft editing, small/normal resize, stale/reconnect, zero turn/start or turn/steer",
+      "private local app-server: two loopback seed turns, then idle roots, waiting/stale/uncertain/report/hidden health, narrow draft editing, parent isolation, zero additional model calls or turns",
+      "unregistered remote shell-only and mixed worker/shell strips; bounded pagination and overflow; running/job/observed elapsed; item identity reset; parent isolation; shell-only stale failures and recovery; Unicode/control-safe narrow drafts; successful disappearance without success claim; zero UI turn or execution requests",
+      "real private local embedded app-server: one loopback tool turn, yielded finite shell survives completed turn, row and editable idle draft without park registration, actual command completion removes row, zero extra model calls or turns"
+    ],
+    "ui_turn_start_requests": 0,
+    "ui_turn_steer_requests": 0,
+    "cursor_replies": [
+      3,
+      3
+    ],
+    "model_calls_after_fixture_setup": 0,
+    "fixture_seed_model_calls": 2,
+    "fixture_shell_model_calls": 2,
+    "terminal_parser": "pyte 0.8.2",
+    "tmux_required": false
+  },
+  "limits": [
+    "Worker evidence; primary-agent acceptance is recorded separately.",
+    "Verified Linux x86_64 dev-small binary; optimized release and ARM64 checks are separate release work.",
+    "Full upstream test suite was not run.",
+    "Existing upstream warnings remain; disabled upstream daemon handoff fields/events now produce dead-code warnings.",
+    "The first PTY run sent the slash command and Enter in one burst; fixture now waits for command rendering before Enter.",
+    "Only private homes and loopback fixtures were used; shared daemon, global configuration and published plus.1 assets were untouched."
+  ],
+  "primary_acceptance": {
+    "daemon_menu_tests": 3,
+    "daemon_handoff_tests": 1,
+    "terminal_stages": 17,
+    "launcher_tests": 6,
+    "runner_tests": 15,
+    "package_tooling_tests": 12,
+    "build_guard_tests": 7,
+    "clean_and_reverse_patch": true,
+    "terminal_report": ".build/daemon-boundary/root-native-smoke/report.json",
+    "menu_log": ".build/daemon-boundary/root-daemon-menu.log",
+    "handoff_log": ".build/daemon-boundary/root-daemon-handoff.log",
+    "runner_wrapper_regression": "Temporary HOME/.local/bin/codex stub receives app-server daemon update --from-cli --yes; no real update"
+  }
+}
