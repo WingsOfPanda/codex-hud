@@ -117,7 +117,7 @@ def run(binary, evidence, probe_only=False):
     evidence.mkdir(parents=True, exist_ok=True)
     report = {'binary': str(binary), 'remote_model_requests': 0}
     provider = rpc = attached = native = None
-    with tempfile.TemporaryDirectory(prefix='codex-plus-background-') as temporary:
+    with tempfile.TemporaryDirectory(prefix='b-') as temporary:
         root = Path(temporary)
         home, workspace = root / 'home', root / 'workspace'
         home.mkdir(mode=0o700)

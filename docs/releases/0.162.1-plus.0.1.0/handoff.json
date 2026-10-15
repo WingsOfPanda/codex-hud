@@ -1,0 +1,34 @@
+{
+  "release": "0.162.1-plus.0.1.0",
+  "plus_commit": "bb8af5ff64e13953e77969f62da16b9b2f3278a7",
+  "coordinator_protocol": 1,
+  "upstream": {
+    "commit": "092d3acd6bec3e3a14bdc7e7a2810ab628ab759d",
+    "tag": "rust-v0.162.1",
+    "version": "0.162.1"
+  },
+  "note": "docs/releases/0.162.1-plus.0.1.0.md",
+  "targets": {
+    "x86_64": {
+      "triple": "x86_64-unknown-linux-gnu",
+      "asset": "codex-plus-0.162.1-plus.0.1.0-x86_64-unknown-linux-gnu.tar.gz",
+      "sha256": "a2192e5f05e6343f359f1ec26c29de707cf9e74f72416602341069a3eb8f57ad",
+      "tree_sha256": "36a95fa6f13898680deeca95f6fce40af28b2325753613e1fb381f6a0c846b50",
+      "manifest_sha256": "2c72da58540b818962112f13d003c711e7a97b1cc3b0859de005114c93e2147f"
+    },
+    "aarch64": {
+      "triple": "aarch64-unknown-linux-gnu",
+      "asset": "codex-plus-0.162.1-plus.0.1.0-aarch64-unknown-linux-gnu.tar.gz",
+      "sha256": "3cd86a28e22f2df00210c591ca084a6786d878d4606a5e1fe0bd623e9fdd77ce",
+      "tree_sha256": "24cb2a885ce96fde32cb7579a77329f318e49287ae747439100e4e6547bb3bbf",
+      "manifest_sha256": "4103aa54ce8742efa449dd306d17c2e2d242b364c53cb6df04012c0d6a46ccc8"
+    }
+  },
+  "rollout": {
+    "daemon_restart": false,
+    "quiet_checkpoint": true,
+    "session_restart": "optional",
+    "agents_md": null,
+    "notes": "First protocol-1 installation from 0.0.4 requires a quiet checkpoint: hold new parks and let all helpers, armed parks and open callbacks drain. Do not use the historical force-stop handoff sidecar. Native CLI/HUD and stock daemon are unchanged. Later qualified transfers require a strictly higher Plus M.m.p version with matching coordinator protocol, upstream identity and target. Rollbacks always require a quiet checkpoint. Keep previous/in-use packages; helpers pin their package in cwd and --package-root argv."
+  }
+}
