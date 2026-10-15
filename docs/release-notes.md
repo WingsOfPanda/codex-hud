@@ -1,15 +1,33 @@
-# Codex Plus 0.162.1-plus.0.0.4
+# Codex Plus 0.162.1-plus.0.1.0
 
-Wake reliability release, based on OpenAI Codex `rust-v0.162.1`
+Cooperative observer upgrade release, based on OpenAI Codex `rust-v0.162.1`
 (`092d3acd6bec3e3a14bdc7e7a2810ab628ab759d`). The package manifest records the
 exact Plus source revision, frontend patch hash, target, and artifact hashes.
 
-Plus now has an independent version, `0.0.4`. The combined release name is
+Plus has an independent version, `0.1.0`. The combined release name is
 `<upstream>-plus.<Plus version>`; an upstream-only update retains the Plus
-version, for example `0.162.2-plus.0.0.4`. Earlier published `plus.N` names are
-unchanged. No `0.162.1-plus.4` package was published.
+version, for example `0.162.2-plus.0.1.0`. Earlier published names are unchanged.
 
-This release supersedes `0.162.1-plus.3`. The Python coordinator preserves parks
+This release supersedes `0.162.1-plus.0.0.4`. It introduces coordinator protocol
+1: observers finish their current cycle before transferring to a validated,
+strictly newer Plus package selected by the installer's `current` link. Watched
+jobs continue, frozen callback identities and messages survive, and the stock
+daemon remains unchanged. Protocol, upstream identity and target must match.
+Lower, equal or invalid targets are refused with a stable watcher warning;
+rollbacks require a quiet checkpoint. Failed exec keeps the old observer working.
+
+Helpers pin their source directory in an internal `--package-root` argument,
+preserving the installer's cleanup protection while cwd changes during exec.
+The normal `codex`, `codex-plus park` and `codex-plus run` interfaces remain the
+same. Transfer uses local checks and no model polling or release downloads.
+
+**First-install limitation:** existing 0.0.4 and older observers cannot transfer
+cooperatively. Installing this release still needs one quiet checkpoint with
+new parks held and no helpers, armed parks or open callbacks remaining. Later
+compatible updates can proceed while watched jobs run. Restarting the TUI does
+not replace a legacy observer; do not use the historical force-stop sidecar.
+
+The wake reliability fixes remain: the Python coordinator preserves parks
 and watched workers when the stock daemon briefly projects a normal completion
 as an interruption. Durable uncertainty gates prevent premature cancellation or
 delivery; bounded exact-turn evidence resolves the hold. Verified daemon loss
@@ -65,13 +83,15 @@ register finite remaining work and end their turn to become idle. Stock delivery
 ambiguity remains visible and is not blindly retried. Log retention is manual.
 Ctrl-C interrupts the turn; `/stop` terminates its background terminals.
 
-The coordinator ledger gains additive pending-state and cancellation-provenance
-columns. No native daemon migration or replacement is needed. Already running
-observers retain their old helper code; deployment and rollback must account for
-them because older helpers do not enforce the new gates. Unavailable or out-of-
-bounds terminal evidence remains visibly unresolved. The active GLM registration
-and previously cancelled callbacks are not repaired or rearmed by this update.
+The ledger schema and callback states are unchanged from 0.0.4. No native daemon
+migration or replacement is needed. A newly selected observer retains the
+existing recovery policy: reconfirmed running work can later produce LIVE
+COMPLETION; completion discovered during the transfer gap produces REPORT ONLY.
+Unavailable terminal evidence and ambiguous delivery remain unresolved rather
+than triggering a blind resend. Previously cancelled callbacks stay cancelled.
 
 The source and runtime acceptance evidence accompany the release handoff.
-Existing processes keep their old executable and helper source until restarted;
-keep previous installations while registered work still uses them.
+The native client and HUD are unchanged. A TUI restart is optional for this
+helper-only release; new parks use the installed wrapper's current package.
+Keep previous installations while any process still references them. Fleet-config
+owns the package switch, compatibility checks, and bootstrap/rollback coordination.
