@@ -110,10 +110,30 @@ bin/codex-plus park --cancel --parent SESSION_UUID
 ```
 
 Cancellation disarms callbacks; it does not kill the registered processes or
-workers. Stop those separately if requested. Interrupting the parent turn that
-registered a park also cancels that registration. A new user message does not
-automatically mean cancellation: the current user request remains authoritative.
+workers. Stop those separately if requested. A confirmed interruption of the
+parent turn that registered a park also cancels that registration. A new user
+message does not automatically mean cancellation: the current user request remains authoritative.
 An already-started callback cannot be undone by cancelling its registration.
+
+The stock daemon can briefly project a normally completing turn as `interrupted`
+without an end timestamp. This alone does not authorize cancellation or a worker
+completion callback. The coordinator retains that registration behind a durable
+uncertainty gate. An ambiguous origin blocks new callback enqueue/start and
+recovery resume until positive terminal evidence resolves it. Explicit
+`park --cancel` remains immediate; previously cancelled work is never rearmed.
+
+For an ambiguous interruption, the coordinator checks bounded local rollout
+evidence for the exact session and turn. A completed event resolves the hold; an
+aborted event confirms interruption. Missing, unreadable, mismatched, malformed,
+or incomplete evidence remains unknown. This fallback depends on the stock
+daemon's optional, unstable rollout path and must be rechecked on upstream bumps.
+It reads only when needed and never sends conversation content to the model or
+copies it into the ledger. `park --status` exposes unresolved evidence and
+cancellation time/cause; the existing warning channel remains visible while
+monitoring cannot safely decide. Reads are bounded to a 64 KiB session header
+and a 2 MiB tail. Older events outside that window, concurrent file changes, or
+later history rewrites can leave evidence unresolved; absence is not permission
+to cancel, resume, or declare completion.
 
 ## Completion and delivery guarantees
 
@@ -149,9 +169,13 @@ An already-started callback cannot be undone by cancelling its registration.
   Canonical completed/failed/interrupted results take precedence. Shell commands
   and workers are never automatically rerun: an orphaned process may have survived,
   and side effects cannot safely be inferred or replayed.
-- Recovery requires the root turn to have finished parking. An interrupted origin
-  is conservatively cancelled because Codex does not distinguish every user
-  interruption from daemon loss. This avoids reviving possibly cancelled work.
+  For an ambiguous worker interruption, a verified daemon replacement plus a
+  matching thread with no exact running task permits a `lost` report. An unreadable
+  or contradictory runtime remains pending and retains the recovery generation;
+  the same ambiguity on an unchanged daemon never proves loss.
+- Recovery requires the root turn to have finished parking. Confirmed origin
+  interruption cancels; ambiguous interruption remains gated across observer or
+  daemon restart. Recovery never converts uncertainty into permission to resume.
 - These guarantees preserve known and uncertain notification outcomes; they do not
   provide exactly-once delivery, model execution, or tool execution. A crash after
   input acceptance can leave that model turn interrupted. Host reboot, killed
@@ -192,23 +216,46 @@ durable state; callers supply observed facts rather than write table state.
 
 `codex_plus/background.py` validates RPC identities, gathers queue/history and
 job evidence, and schedules observation and delivery. Process locks, deadlines,
-backoff, and supervision stay there. `rpc.py` owns transport. Keep SQL inside the
+backoff, and supervision stay there. `rpc.py` owns transport; `evidence.py` owns
+the bounded, read-only exact-turn rollout fallback. Keep SQL inside the
 ledger and test lifecycle behavior through its operations and observer outcomes;
 old-schema migration fixtures may construct legacy tables directly.
 
-The [glossary](../GLOSSARY.md) defines parks, watched jobs, and callbacks. The
-ledger extraction retains the existing SQLite schema and status JSON, so it
-requires no data conversion or native rebuild.
+The [glossary](../GLOSSARY.md) defines parks, watched jobs, and callbacks. Pending
+interruption gates and cancellation provenance use additive coordinator SQLite
+columns; no native daemon migration or rebuild is required. Already running
+observers keep their old helper code. Deployment must account for them: older
+helpers do not enforce the new gates, even if they can open the expanded schema.
 
 ## Verification
 
 ```sh
 python3 -m unittest discover -s tests -p test_background.py -v
+python3 -m unittest discover -s tests -p test_terminal_evidence.py -v
 python3 tests/test_background_integration.py .build/codex \
   --evidence .build/auto-resume-root-gate
 python3 tests/test_background_recovery_integration.py .build/codex \
   --evidence .build/frontend-recovery
+python3 tests/test_interruption_integration.py /path/to/official/codex \
+  --evidence .build/interruption-acceptance --scenario all
 ```
+
+The interruption suite uses real native workers and a private official daemon.
+It injects a selected RPC projection and, when needed, unavailable evidence to
+make the race deterministic; it does not claim to control the daemon's actual
+thread scheduling. It verifies exact-turn completion, genuine abort/cancel,
+durable pending state after reopening SQLite, worker reuse, and one callback
+without provider requests during monitoring. The recovery suite separately
+exercises real daemon restarts. All provider fixtures stay on loopback.
+
+Primary acceptance for the interruption fix passed 118 lifecycle tests, 18
+evidence-reader tests, 11 interruption integration scenarios, all seven stock
+recovery scenarios, and the normal completion integration. Packaging and launcher
+checks passed too. The initial worker-restart failure exposed an overly broad
+hold; verified daemon loss now reports UNKNOWN while unresolved same-generation
+evidence stays pending. See [wake-interruption-fix.json](evidence/wake-interruption-fix.json)
+for reports, source hashes, and the preserved failing cases. No deployed helper
+or existing registration was changed by this acceptance.
 
 The initial acceptance run passed 37 coordinator tests and the normal integration
 scenario; see [the initial evidence](evidence/auto-resume.json). A live test in the main

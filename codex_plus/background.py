@@ -2,6 +2,7 @@
 import argparse
 import fcntl
 import json
+import math
 import os
 from pathlib import Path
 import sqlite3
@@ -12,6 +13,7 @@ import uuid
 
 from .rpc import Client
 from .ledger import MAX_SECONDS, TERMINAL, RegistrationError, Store
+from .evidence import terminal_event
 
 MAX_PAGES = 32
 HEARTBEAT_SECONDS = 5
@@ -66,6 +68,29 @@ def state_home():
     return Path(os.environ.get('CODEX_HOME', Path.home() / '.codex'))
 
 
+def classify_turn(client, home, thread, current):
+    status = current.get('status') if current else None
+    if status != 'interrupted':
+        return status, None
+    completed = current.get('completedAt')
+    if type(completed) in (int, float) and 0 < completed <= sys.float_info.max and math.isfinite(completed):
+        return status, {'status': status, 'completedAt': completed, 'source': 'api'}
+    # Stock reconstruction can project interruption before terminal history is visible.
+    try:
+        meta = client.call('thread/read', {'threadId': thread, 'includeTurns': False}).get('thread')
+        if not isinstance(meta, dict) or meta.get('id') != thread or not meta.get('path'):
+            return None, None
+        event = terminal_event(home, meta['path'], thread, current['id'])
+    except (OSError, ValueError, KeyError, TypeError):
+        return None, None
+    if event is None:
+        return None, None
+    evidence = {'status': event['status'], 'source': 'rollout', 'event': event['event']}
+    if isinstance(event.get('timestamp'), str):
+        evidence['timestamp'] = event['timestamp'][:64]
+    return event['status'], evidence
+
+
 def register(store, client, parent, workers, processes, reason):
     meta = client.call('thread/read', {'threadId': parent, 'includeTurns': False})['thread']
     if meta.get('id') != parent or meta.get('parentThreadId') or isinstance(meta.get('source'), dict) and 'subAgent' in meta['source']:
@@ -74,6 +99,7 @@ def register(store, client, parent, workers, processes, reason):
     if meta.get('status', {}).get('type') != 'active' or origin.get('status') != 'inProgress':
         raise RegistrationError('register park during the parent active turn, then end that turn')
     resolved = []
+    pending = []
     labels = {}
     children = list(pages(client, 'thread/list', {'parentThreadId': parent,
                     'sourceKinds': SOURCES, 'useStateDbOnly': True})) if workers else []
@@ -94,9 +120,12 @@ def register(store, client, parent, workers, processes, reason):
         spawn = agent.get('thread_spawn') if isinstance(agent, dict) else None
         labels[child['id']] = spawn.get('agent_path') if isinstance(spawn, dict) else None
         current = latest(client, child['id'])
+        status, _ = classify_turn(client, store.directory.parent, child['id'], current)
+        if current.get('status') == 'interrupted' and status is None:
+            pending.append(f"{parent}:worker:{child['id']}:{current['id']}")
         resolved.append((f"{parent}:worker:{child['id']}:{current['id']}", 'worker',
                          child['id'], current['id'], None, None,
-                         current['status'] if current.get('status') in TERMINAL else 'armed', None))
+                         status if status in TERMINAL else 'armed', None))
     if processes:
         running = {p['processId']: p['itemId'] for p in pages(client, 'thread/backgroundTerminals/list', {'threadId': parent})}
         history = None
@@ -117,7 +146,7 @@ def register(store, client, parent, workers, processes, reason):
             item = entry['item']
             resolved.append((f"{parent}:process:item:{item['id']}", 'process', parent,
                              entry['turnId'], item['id'], process, command_status(item), item.get('exitCode')))
-    return store.register_resolved(parent, origin['id'], reason, resolved, labels, getattr(client, 'generation', None))
+    return store.register_resolved(parent, origin['id'], reason, resolved, labels, getattr(client, 'generation', None), pending)
 
 
 def command_status(item):
@@ -156,7 +185,6 @@ class Observer:
             self.client = self.client_factory()
         replaced = self.store.observe_generation(self.parent, getattr(self.client, 'generation', None))
         if replaced:
-            # Interrupted origins lack abort provenance; preserve cancellation conservatively.
             self.cancel_interrupted()
             if not self.store.active_parks(self.parent):
                 return
@@ -166,6 +194,7 @@ class Observer:
             self.recovery_loaded = parent.get('status', {}).get('type') != 'notLoaded'
             if not self.recovery_loaded:
                 queue = list(pages(self, 'thread/queue/list', {'threadId': self.parent}))
+                self.cancel_interrupted()
                 if not self.store.can_resume(self.parent, queue, self.native_queue()):
                     return
                 self.call('thread/resume', {'threadId': self.parent, 'excludeTurns': True})
@@ -174,9 +203,15 @@ class Observer:
     def cancel_interrupted(self):
         for park in self.store.active_parks(self.parent):
             anchor = turn(self, self.parent, park['origin'])
-            if anchor and anchor.get('status') == 'interrupted':
-                self.store.request_cancel(self.parent, park['origin'])
+            status, evidence = classify_turn(self, self.store.directory.parent, self.parent, anchor)
+            if status == 'interrupted':
+                evidence.update(observer=self.run_id, generation=getattr(self.client, 'generation', None))
+                self.store.request_cancel(self.parent, park['origin'], evidence=evidence)
                 continue
+            if anchor and anchor.get('status') == 'interrupted' and status is None:
+                self.store.origin_pending(self.parent, park['origin'], True)
+            elif status in ('completed', 'failed'):
+                self.store.origin_pending(self.parent, park['origin'], False)
             if park['deadline'] < time.time():
                 self.store.expire_registration(park['id'])
 
@@ -186,7 +221,27 @@ class Observer:
         for job in jobs:
             if job['kind'] == 'worker':
                 current = turn(self, job['thread'], job['turn'])
-                status = current.get('status') if current else None
+                status, _ = classify_turn(self, self.store.directory.parent, job['thread'], current)
+                if (current and current.get('status') == 'interrupted' and status is None
+                        or job['interruption_pending'] and status not in TERMINAL and status != 'inProgress'):
+                    self.store.worker_pending(job['id'], True)
+                    if not job['verify_running']:
+                        continue
+                    child = self.call('thread/read', {'threadId': job['thread'], 'includeTurns': False})['thread']
+                    runtime = child.get('status', {}).get('type') if child.get('id') == job['thread'] else None
+                    if runtime == 'active':
+                        active = latest(self, job['thread'])
+                        if active.get('id') == job['turn']:
+                            if active.get('status') != 'inProgress':
+                                continue
+                            self.store.worker_pending(job['id'], False)
+                            self.store.observe_job(job, running=True)
+                            continue
+                    elif runtime not in ('idle', 'notLoaded'):
+                        continue
+                    # A replaced daemon with no exact running task proves loss, not its outcome.
+                    status = 'lost'
+                self.store.worker_pending(job['id'], False)
                 exit_code = None
                 observed_running = status == 'inProgress'
                 if observed_running and job['verify_running']:

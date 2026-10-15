@@ -1,0 +1,184 @@
+{
+  "release": "0.162.1-plus.0.0.4",
+  "plus_commit": "6b74025962c2526afcdec5411670393ebbf9deb3",
+  "upstream_commit": "092d3acd6bec3e3a14bdc7e7a2810ab628ab759d",
+  "frontend_patch_sha256": "1f9b93b34a9328874b59b52e29328ecf7b79a0b5580af825a45c804a36723405",
+  "native_recompiled": false,
+  "native_reused_from": "0.162.1-plus.3",
+  "voice": false,
+  "build_glibc": "2.39",
+  "targets": {
+    "x86_64-unknown-linux-gnu": {
+      "archive": "/home/liupan/Aerius/codex-plus/.build/plus004-release/packages/codex-plus-0.162.1-plus.0.0.4-x86_64-unknown-linux-gnu.tar.gz",
+      "archive_sha256": "98d4b36be0e3e6c68271400612261a4ad330dafe9cc01391559beb1e494cb7eb",
+      "manifest_sha256": "b6d886c11e170e3fc95f936f66b207c5840c4202c03b32bf5dd0037cbeab38bb",
+      "tree_sha256": "60131d0e300473428e5897093157c1dbe980249d4f95852a60fcb912902081f0",
+      "archive_bytes": 132136027,
+      "qualification_report": ".build/plus004-release/x86_64-unknown-linux-gnu/qualification-summary.json",
+      "unit_tests": 136,
+      "interruption_cases": 11,
+      "stock_recovery_cases": 7,
+      "native_terminal_stages": 18,
+      "shell_policy_cases": 8,
+      "official_park": true,
+      "package_gates_passed": 8,
+      "package_gate_exit": 1,
+      "root_acceptance": {
+        "passed": true,
+        "archive_sha256": "98d4b36be0e3e6c68271400612261a4ad330dafe9cc01391559beb1e494cb7eb",
+        "packaged_modules": {
+          "codex_plus.background": "/home/liupan/Aerius/codex-plus/.build/plus004-release/root-x86/extracted/codex-plus-0.162.1-plus.0.0.4-x86_64-unknown-linux-gnu/codex_plus/background.py",
+          "codex_plus.evidence": "/home/liupan/Aerius/codex-plus/.build/plus004-release/root-x86/extracted/codex-plus-0.162.1-plus.0.0.4-x86_64-unknown-linux-gnu/codex_plus/evidence.py",
+          "codex_plus.ledger": "/home/liupan/Aerius/codex-plus/.build/plus004-release/root-x86/extracted/codex-plus-0.162.1-plus.0.0.4-x86_64-unknown-linux-gnu/codex_plus/ledger.py",
+          "codex_plus.rpc": "/home/liupan/Aerius/codex-plus/.build/plus004-release/root-x86/extracted/codex-plus-0.162.1-plus.0.0.4-x86_64-unknown-linux-gnu/codex_plus/rpc.py",
+          "codex_plus.runner": "/home/liupan/Aerius/codex-plus/.build/plus004-release/root-x86/extracted/codex-plus-0.162.1-plus.0.0.4-x86_64-unknown-linux-gnu/codex_plus/runner.py"
+        },
+        "wrapper": {
+          "native_path_args_stdout_exit_preserved": true,
+          "runner_uses_home_local_bin_codex_wrapper": true,
+          "daemon_update_test_used_only_stubs": true
+        },
+        "interruption_scenarios": [
+          "origin-projection",
+          "worker-projection",
+          "durable-evidence",
+          "restart-pending",
+          "restart-completed",
+          "reuse",
+          "foreign-queue",
+          "active-parent",
+          "abort",
+          "durable-abort",
+          "cancel"
+        ],
+        "package_tree_unchanged": true,
+        "official_binary_unchanged": true,
+        "official_sha256": "628e35487d888a28f0427fc37501da529dd3d81fcbad7a2c3421c1e8670d92e1"
+      },
+      "handoff_tests": 19,
+      "handoff_cases": [
+        {
+          "mode": "old-to-new",
+          "passed": true,
+          "provider_requests_during_handoff": 0,
+          "callback_kind": "LIVE COMPLETION",
+          "completion_callbacks": 1
+        },
+        {
+          "mode": "missing-running",
+          "passed": true,
+          "provider_requests_during_handoff": 0,
+          "callback_kind": "LIVE COMPLETION",
+          "completion_callbacks": 1
+        },
+        {
+          "mode": "missing-completed",
+          "passed": true,
+          "provider_requests_during_handoff": 1,
+          "callback_kind": "REPORT ONLY",
+          "completion_callbacks": 1
+        }
+      ]
+    },
+    "aarch64-unknown-linux-gnu": {
+      "archive": "/data/liupan/codex-plus-build/plus004/packages/codex-plus-0.162.1-plus.0.0.4-aarch64-unknown-linux-gnu.tar.gz",
+      "archive_sha256": "18f3153949102cecd7bb8e947506c371f767b13e1464daec2b56a3e1dfeb915b",
+      "manifest_sha256": "bdee13a3b81f9a6e73935d2bc18f3cd60e06b627c51f0fe55a042dfd2a8a1fbb",
+      "tree_sha256": "ebb54449d4ed24ddcfaa55d0cf9d5e4dc4e8f5bf139df112ad11ef598198ec08",
+      "archive_bytes": 124645021,
+      "qualification_report": ".build/plus004-release/aarch64-unknown-linux-gnu/qa-evidence/evidence/qualification-summary.json",
+      "unit_tests": 136,
+      "interruption_cases": 11,
+      "stock_recovery_cases": 7,
+      "native_terminal_stages": 18,
+      "shell_policy_cases": 8,
+      "official_park": true,
+      "package_gates_passed": 9,
+      "package_gate_exit": 0,
+      "root_acceptance": {
+        "passed": true,
+        "archive_sha256": "18f3153949102cecd7bb8e947506c371f767b13e1464daec2b56a3e1dfeb915b",
+        "packaged_modules": {
+          "codex_plus.background": "/data/liupan/codex-plus-build/plus004/root-acceptance/extracted/codex-plus-0.162.1-plus.0.0.4-aarch64-unknown-linux-gnu/codex_plus/background.py",
+          "codex_plus.evidence": "/data/liupan/codex-plus-build/plus004/root-acceptance/extracted/codex-plus-0.162.1-plus.0.0.4-aarch64-unknown-linux-gnu/codex_plus/evidence.py",
+          "codex_plus.ledger": "/data/liupan/codex-plus-build/plus004/root-acceptance/extracted/codex-plus-0.162.1-plus.0.0.4-aarch64-unknown-linux-gnu/codex_plus/ledger.py",
+          "codex_plus.rpc": "/data/liupan/codex-plus-build/plus004/root-acceptance/extracted/codex-plus-0.162.1-plus.0.0.4-aarch64-unknown-linux-gnu/codex_plus/rpc.py",
+          "codex_plus.runner": "/data/liupan/codex-plus-build/plus004/root-acceptance/extracted/codex-plus-0.162.1-plus.0.0.4-aarch64-unknown-linux-gnu/codex_plus/runner.py"
+        },
+        "wrapper": {
+          "native_path_args_stdout_exit_preserved": true,
+          "runner_uses_home_local_bin_codex_wrapper": true,
+          "daemon_update_test_used_only_stubs": true
+        },
+        "interruption_scenarios": [
+          "origin-projection",
+          "worker-projection",
+          "durable-evidence",
+          "restart-pending",
+          "restart-completed",
+          "reuse",
+          "foreign-queue",
+          "active-parent",
+          "abort",
+          "durable-abort",
+          "cancel"
+        ],
+        "package_tree_unchanged": true,
+        "official_binary_unchanged": true,
+        "official_sha256": "071cbe8d821cf1b02b6d8ba6c8b7991b228fcb8519dcb68a37d31222bb8cabe5"
+      },
+      "handoff_tests": 19,
+      "handoff_cases": [
+        {
+          "mode": "old-to-new",
+          "passed": true,
+          "provider_requests_during_handoff": 0,
+          "callback_kind": "LIVE COMPLETION",
+          "completion_callbacks": 1
+        },
+        {
+          "mode": "missing-running",
+          "passed": true,
+          "provider_requests_during_handoff": 0,
+          "callback_kind": "LIVE COMPLETION",
+          "completion_callbacks": 1
+        },
+        {
+          "mode": "missing-completed",
+          "passed": true,
+          "provider_requests_during_handoff": 1,
+          "callback_kind": "REPORT ONLY",
+          "completion_callbacks": 1
+        }
+      ]
+    }
+  },
+  "observer_handoff": {
+    "source_commit": "0ddc0ef26c556a57209498514229dca2abfdf818",
+    "script_sha256": "bd6f890cbfd8bb0bc9b000c3ae1188f10b36dcf576f2e7c26588d315e962fca3",
+    "packaged": false,
+    "procedure": "docs/observer-handoff.md",
+    "production_handoff_performed": false,
+    "root_x86_log": "/home/liupan/.codex/codex-plus/logs/accc5e8f-ad0a-483f-9255-e5f00d14e053.log",
+    "root_arm_log": "/home/liupan/.codex/codex-plus/logs/cfcfb07d-19c6-41c4-9f11-e316353cdfa7.log",
+    "regressions": [
+      "stopped SQLite writer hot journal",
+      "observer spawned after process snapshot",
+      "exited versus foreign lock owner"
+    ]
+  },
+  "limits": [
+    "x86 raw bwrap UID map denied identically to stock; supported CLI readonly sandbox passed for both",
+    "ARM raw bwrap passes with user-set AppArmor userns sysctl 0; persistence unverified",
+    "No full upstream suite or older glibc qualification",
+    "Stock delivery ambiguity remains unknown; no blind resend",
+    "Old running helpers retain old code until coordinated replacement",
+    "No production installation, observer handoff, daemon restart or GLM trial mutation"
+  ],
+  "harness_corrections": [
+    "Fresh initial HUD metadata before strict assertions",
+    "Disappearing /proc stat treated as exited; permission errors preserved",
+    "Short fixture-owned Unix socket paths under ARM /data TMPDIR",
+    "Coherent system Python or per-job custom libpython selection; no global settings changed"
+  ]
+}

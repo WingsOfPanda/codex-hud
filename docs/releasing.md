@@ -4,6 +4,15 @@ Release packaging is separate from the developer-only CLI build. It uses the
 pinned upstream package builder and includes every core runtime executable;
 copying `.build/codex` alone is not a complete release.
 
+## Release identity
+
+`UPSTREAM_VERSION` and `PLUS_VERSION` in `scripts/package-release.py` are
+independent. The package name combines them as `<upstream>-plus.<Plus version>`,
+for example `0.162.1-plus.0.0.4`. Preserve the Plus version across upstream-only
+updates; increment its patch component for Plus fixes and its minor component
+for Plus features. Every new combination still needs qualified target packages.
+Existing published `plus.N` releases retain their original identities.
+
 ## Native binaries
 
 Build natively on each target with Rust 1.99.0, the pinned upstream source and only
@@ -25,6 +34,13 @@ The required build order is:
 5. Check the native ELF architecture, dependency resolution, and runtime behavior
    on the architecture that produced them. Do not execute ARM binaries on x86 to
    establish compatibility.
+
+For helper-only revisions with identical upstream source, frontend patch, build
+settings, and runtime resources, verified native binaries from the previous
+qualified release may be reused. Record their original build provenance and
+matching hashes, then repackage the new helper and qualify each complete archive
+on its native host. Reuse does not establish compatibility with a different
+upstream version or patch.
 
 The existing native build needs a C toolchain, pkg-config, OpenSSL development
 headers and libcap development headers for bwrap. The normal V8 path uses pinned

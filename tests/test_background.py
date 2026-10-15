@@ -42,6 +42,7 @@ class Fake:
         self.consume_add = False
         self.fail_start = False
         self.fail_read = False
+        self.paths = {}
 
     def close(self):
         pass
@@ -52,8 +53,8 @@ class Fake:
             raise ConnectionError('disconnected')
         if method == 'thread/read':
             if params['threadId'] == CHILD:
-                return {'thread': {'id': CHILD, 'status': {'type': self.child_runtime_status}}}
-            return {'thread': {'id': PARENT, 'source': 'cli', 'status': {'type': self.parent_status}}}
+                return {'thread': {'id': CHILD, 'path': self.paths.get(CHILD), 'status': {'type': self.child_runtime_status}}}
+            return {'thread': {'id': PARENT, 'path': self.paths.get(PARENT), 'source': 'cli', 'status': {'type': self.parent_status}}}
         if method == 'thread/resume':
             self.parent_status = 'idle'
             return {'thread': {'id': PARENT, 'source': 'cli', 'status': {'type': 'idle'}}}
@@ -101,6 +102,8 @@ class Fake:
 
     def complete(self, status='completed'):
         self.child_turns[0]['status'] = status
+        if status == 'interrupted':
+            self.child_turns[0]['completedAt'] = 123
 
 
 class NativeFake(Fake):
@@ -168,6 +171,12 @@ def exiting_owner(home, ready, release):
         fcntl.flock(lock, fcntl.LOCK_EX)
         ready.set()
         release.wait(5)
+
+
+def migrate_store(home, gate):
+    gate.wait(5)
+    store = Store(home)
+    store.close()
 
 
 class Transport(unittest.TestCase):
@@ -240,6 +249,16 @@ class Lifecycle(unittest.TestCase):
 
     def health_file(self, parent=PARENT):
         return self.store.directory / f'{parent}.status.json'
+
+    def terminal_rollout(self, thread, turn_id, event, **extra):
+        path = Path(self.temp.name) / 'sessions' / f'{thread}.jsonl'
+        path.parent.mkdir(exist_ok=True)
+        rows = [{'type': 'session_meta', 'payload': {'id': thread}},
+                {'type': 'event_msg', 'timestamp': '2026-10-15T01:02:03Z',
+                 'payload': {'type': event, 'turn_id': turn_id, **extra}}]
+        path.write_text(''.join(json.dumps(row) + '\n' for row in rows))
+        self.fake.paths[thread] = str(path)
+        return path
 
     def test_ledger_claim_rechecks_cancellation_before_freezing(self):
         self.register()
@@ -833,7 +852,7 @@ class Lifecycle(unittest.TestCase):
 
     def test_interrupted_origin_at_restart_is_conservatively_cancelled(self):
         self.register()
-        self.fake.parent_turns[0]['status'] = 'interrupted'
+        self.fake.parent_turns[0].update(status='interrupted', completedAt=123)
         self.fake.parent_status = 'notLoaded'
         self.fake.generation = 'boot:200:2'
         self.observer.step()
@@ -1201,12 +1220,402 @@ class Lifecycle(unittest.TestCase):
 
     def test_parent_origin_interrupted_cancels(self):
         self.register()
-        self.fake.parent_turns[0]['status'] = 'interrupted'
+        self.fake.parent_turns[0].update(status='interrupted', completedAt=123)
         self.fake.parent_status = 'idle'
         self.fake.complete()
         self.observer.step()
         self.assertEqual(self.fake.enqueues, 0)
         self.assertEqual(self.store.status(PARENT)['parks'][0]['state'], 'cancelled')
+
+    def test_transient_origin_interruption_preserves_exact_job_and_delivers_once(self):
+        self.register()
+        self.observer.step()
+        original = self.store.status(PARENT)['jobs'][0]['id']
+        self.fake.parent_status = 'idle'
+        self.fake.parent_turns[0].update(status='interrupted', completedAt=None)
+        self.assertTrue(self.observer.step())
+        state = self.store.status(PARENT)
+        self.assertEqual(state['parks'][0]['state'], 'armed')
+        self.assertEqual(state['jobs'][0]['status'], 'armed')
+        self.assertEqual(self.fake.enqueues, 0)
+        self.fake.parent_turns[0].update(status='completed', completedAt=123)
+        self.fake.complete()
+        self.assertFalse(self.observer.step())
+        self.assertFalse(self.observer.step())
+        self.assertEqual(self.store.status(PARENT)['jobs'][0]['id'], original)
+        self.assertEqual((self.fake.enqueues, len(self.fake.starts)), (1, 1))
+        self.assertIn('LIVE COMPLETION', self.payload())
+
+    def test_transient_worker_interruption_does_not_finish_exact_job(self):
+        self.register()
+        self.fake.idle()
+        self.fake.child_turns[0].update(status='interrupted', completedAt=None)
+        self.assertTrue(self.observer.step())
+        state = self.store.status(PARENT)
+        self.assertEqual(state['jobs'][0]['status'], 'armed')
+        self.assertIsNone(state['jobs'][0]['callback'])
+        self.assertEqual(self.fake.enqueues, 0)
+        self.fake.complete()
+        self.assertFalse(self.observer.step())
+        self.assertFalse(self.observer.step())
+        self.assertEqual((self.fake.enqueues, len(self.fake.starts)), (1, 1))
+
+    def test_pending_origin_survives_restart_then_reports_once(self):
+        self.register()
+        self.observer.step()
+        self.fake.idle()
+        self.fake.complete()
+        self.fake.parent_turns[0].update(status='interrupted', completedAt=None)
+        self.observer.step()
+        callback = self.callbacks()[0]
+        self.store.monitoring_failed(PARENT, 'ConnectionError')
+        self.store.monitoring_succeeded(PARENT)
+        state = self.store.status(PARENT)
+        self.assertEqual(state['health']['state'], 'error')
+        self.assertIn('positive terminal evidence', state['parks'][0]['error'])
+        self.assertIn('ConnectionError', state['parks'][0]['monitoring_error'])
+        self.assertEqual(state['parks'][0]['origin_pending'], 1)
+        self.store.close()
+        self.store = Store(self.temp.name)
+        self.observer = Observer(self.store, PARENT, lambda: self.fake)
+        self.observer.recover()
+        self.assertTrue(self.observer.step())
+        self.assertEqual(self.fake.enqueues, 0)
+        self.assertFalse(self.store.can_resume(PARENT, [], False))
+        self.fake.parent_turns[0].update(status='completed', completedAt=123)
+        self.assertFalse(self.observer.step())
+        delivered = self.callbacks()[0]
+        self.assertEqual((delivered['id'], delivered['client']), (callback['id'], callback['client']))
+        self.assertIn('REPORT ONLY', self.payload())
+        self.observer = Observer(self.store, PARENT, lambda: self.fake)
+        self.observer.recover()
+        self.assertFalse(self.observer.step())
+        self.assertEqual((self.fake.enqueues, len(self.fake.starts)), (1, 1))
+
+    def test_pending_worker_survives_generation_change_without_lost_outcome(self):
+        self.register()
+        self.observer.step()
+        self.fake.idle()
+        self.fake.generation = 'boot:200:2'
+        self.fake.child_runtime_status = 'systemError'
+        self.fake.child_turns[0].update(status='interrupted', completedAt=None)
+        self.assertTrue(self.observer.step())
+        state = self.store.status(PARENT)
+        self.assertEqual((state['jobs'][0]['status'], state['jobs'][0]['interruption_pending']), ('armed', 1))
+        self.assertEqual(state['parks'][0]['recovery_generation'], self.fake.generation)
+        self.observer = Observer(self.store, PARENT, lambda: self.fake)
+        self.observer.recover()
+        self.fake.child_turns = []
+        self.assertTrue(self.observer.step())
+        self.fake.child_turns = [{'id': 'work', 'status': 'completed'}]
+        self.assertFalse(self.observer.step())
+        self.assertIn('REPORT ONLY', self.payload())
+        self.assertEqual((self.fake.enqueues, len(self.fake.starts)), (1, 1))
+
+    def test_generation_loss_with_unloaded_ambiguous_worker_reports_unknown(self):
+        self.register()
+        self.observer.step()
+        self.fake.idle()
+        self.fake.generation = 'boot:200:2'
+        self.fake.child_turns[0].update(status='interrupted', completedAt=None)
+        self.fake.child_runtime_status = 'notLoaded'
+        self.assertFalse(self.observer.step())
+        state = self.store.status(PARENT)
+        self.assertEqual(state['jobs'][0]['status'], 'lost')
+        self.assertEqual(state['jobs'][0]['interruption_pending'], 0)
+        self.assertIn('REPORT ONLY', self.payload())
+        self.assertIn('outcome=UNKNOWN', self.payload())
+        self.assertFalse(any(method == 'thread/resume' and params['threadId'] == CHILD
+                             for method, params in self.fake.calls))
+        self.assertEqual((self.fake.enqueues, len(self.fake.starts)), (1, 1))
+
+    def test_generation_ambiguous_projection_with_exact_active_worker_stays_live(self):
+        self.register()
+        self.observer.step()
+        self.fake.generation = 'boot:200:2'
+        self.store.observe_generation(PARENT, self.fake.generation)
+        self.fake.child_runtime_status = 'active'
+        original = self.fake.call
+        projected = []
+        def call(method, params):
+            if method == 'thread/turns/list' and params['threadId'] == CHILD and not projected:
+                projected.append(True)
+                return {'data': [{'id': 'work', 'status': 'interrupted', 'completedAt': None}], 'nextCursor': None}
+            return original(method, params)
+        self.fake.call = call
+        self.observer.poll_jobs()
+        job = self.store.status(PARENT)['jobs'][0]
+        self.assertEqual((job['status'], job['interruption_pending'], job['recovery_pending']), ('armed', 0, 0))
+        self.fake.complete()
+        self.fake.idle()
+        self.assertFalse(self.observer.step())
+        self.assertIn('LIVE COMPLETION', self.payload())
+
+    def test_generation_unresolved_worker_keeps_proof_after_rpc_failure_and_restart(self):
+        self.register()
+        self.observer.step()
+        self.fake.idle()
+        self.fake.generation = 'boot:200:2'
+        self.fake.child_turns[0].update(status='interrupted', completedAt=None)
+        original = self.fake.call
+        def call(method, params):
+            if method == 'thread/read' and params['threadId'] == CHILD:
+                raise ConnectionError('unavailable child runtime')
+            return original(method, params)
+        self.fake.call = call
+        with self.assertRaises(ConnectionError):
+            self.observer.step()
+        park = self.store.status(PARENT)['parks'][0]
+        self.assertEqual(park['recovery_generation'], self.fake.generation)
+        self.store.close()
+        self.store = Store(self.temp.name)
+        self.observer = Observer(self.store, PARENT, lambda: self.fake)
+        self.observer.recover()
+        self.fake.call = original
+        self.assertFalse(self.observer.step())
+        self.assertEqual(self.store.status(PARENT)['jobs'][0]['status'], 'lost')
+        self.assertIn('REPORT ONLY', self.payload())
+        self.assertIn('outcome=UNKNOWN', self.payload())
+
+    def test_ambiguous_latest_worker_registration_is_armed(self):
+        self.fake.child_turns[0].update(status='interrupted', completedAt=None)
+        result = self.register()
+        self.assertEqual(result['state'], 'armed')
+        self.assertEqual(result['already_finished'], [])
+        self.assertEqual(self.store.status(PARENT)['jobs'][0]['interruption_pending'], 1)
+        self.fake.idle()
+        self.assertTrue(self.observer.step())
+        self.fake.complete()
+        self.assertFalse(self.observer.step())
+        self.assertEqual((self.fake.enqueues, len(self.fake.starts)), (1, 1))
+
+    def test_exact_rollout_completion_resolves_origin_and_worker_projection(self):
+        self.register()
+        self.fake.idle()
+        self.fake.parent_turns[0].update(status='interrupted', completedAt=None)
+        self.fake.child_turns[0].update(status='interrupted', completedAt=None)
+        self.terminal_rollout(PARENT, 'origin', 'task_complete')
+        self.terminal_rollout(CHILD, 'work', 'task_complete')
+        with patch('codex_plus.background.state_home', side_effect=AssertionError('use Store home')):
+            self.assertFalse(self.observer.step())
+        self.assertEqual(self.store.status(PARENT)['jobs'][0]['status'], 'completed')
+        self.assertEqual((self.fake.enqueues, len(self.fake.starts)), (1, 1))
+
+    def test_exact_rollout_abort_cancels_and_preserves_provenance(self):
+        self.register()
+        self.observer.step()
+        self.store.monitoring_failed(PARENT, 'ConnectionError')
+        self.fake.idle()
+        self.fake.complete()
+        self.fake.parent_turns[0].update(status='interrupted', completedAt=None)
+        self.terminal_rollout(PARENT, 'origin', 'turn_aborted', reason='interrupted')
+        self.assertFalse(self.observer.step())
+        park = self.store.status(PARENT)['parks'][0]
+        self.assertEqual(park['state'], 'cancelled')
+        self.assertEqual(park['cancel_kind'], 'confirmed_origin')
+        self.assertGreater(park['cancelled_at'], 0)
+        evidence = json.loads(park['cancel_evidence'])
+        self.assertEqual((evidence['source'], evidence['event'], evidence['status']), ('rollout', 'turn_aborted', 'interrupted'))
+        self.assertEqual(evidence['timestamp'], '2026-10-15T01:02:03Z')
+        self.assertEqual(evidence['observer'], self.observer.run_id)
+        self.assertIn('ConnectionError', evidence['previous_error'])
+        self.assertEqual(self.fake.enqueues, 0)
+        self.store.request_cancel(PARENT)
+        after = self.store.status(PARENT)['parks'][0]
+        self.assertEqual((after['cancelled_at'], after['cancel_kind'], after['cancel_evidence']),
+                         (park['cancelled_at'], park['cancel_kind'], park['cancel_evidence']))
+
+    def test_exact_rollout_abort_finishes_worker_without_cancelling_origin(self):
+        self.register()
+        self.fake.idle()
+        self.fake.child_turns[0].update(status='interrupted', completedAt=None)
+        self.terminal_rollout(CHILD, 'work', 'turn_aborted', reason='interrupted')
+        self.assertFalse(self.observer.step())
+        state = self.store.status(PARENT)
+        self.assertEqual(state['jobs'][0]['status'], 'interrupted')
+        self.assertEqual(state['parks'][0]['state'], 'complete')
+        self.assertEqual((self.fake.enqueues, len(self.fake.starts)), (1, 1))
+
+    def test_api_terminal_status_and_positive_metadata_need_no_rollout_read(self):
+        def classify(status, completed):
+            return background.classify_turn(self.fake, self.temp.name, CHILD,
+                                            {'id': 'work', 'status': status, 'completedAt': completed})[0]
+        for status, completed in (('completed', None), ('failed', None), ('interrupted', 123), ('interrupted', 0.5)):
+            self.assertEqual(classify(status, completed), status)
+        self.assertFalse(self.fake.calls)
+
+    def test_invalid_end_metadata_and_untrusted_rollout_remain_pending(self):
+        self.register()
+        self.fake.idle()
+        self.fake.complete()
+        path = self.terminal_rollout(PARENT, 'other-turn', 'turn_aborted', reason='interrupted')
+        for metadata in (None, 0, -1, True, '123', float('nan'), float('inf'), 10 ** 1000):
+            with self.subTest(completedAt=repr(metadata)[:20]):
+                self.fake.parent_turns[0].update(status='interrupted', completedAt=metadata)
+                self.assertTrue(self.observer.step())
+                self.assertEqual(self.store.status(PARENT)['parks'][0]['state'], 'armed')
+                self.assertEqual(self.fake.enqueues, 0)
+        for contents in ('malformed\n', json.dumps({'type': 'session_meta', 'payload': {'id': CHILD}}) + '\n'):
+            path.write_text(contents)
+            self.assertTrue(self.observer.step())
+            self.assertEqual(self.fake.enqueues, 0)
+        path.unlink()
+        self.assertTrue(self.observer.step())
+        self.store.request_cancel(PARENT)
+        park = self.store.status(PARENT)['parks'][0]
+        self.assertEqual((park['state'], park['cancel_kind']), ('cancelled', 'explicit'))
+        self.assertEqual(self.store.status(PARENT)['health']['state'], 'idle')
+        self.fake.parent_turns[0]['status'] = 'completed'
+        self.assertFalse(self.observer.step())
+        self.assertEqual(self.fake.enqueues, 0)
+
+    def test_ambiguous_origin_read_failure_or_wrong_identity_is_pending(self):
+        self.register()
+        self.fake.idle()
+        self.fake.parent_turns[0]['status'] = 'interrupted'
+        self.fake.complete()
+        self.terminal_rollout(PARENT, 'origin', 'turn_aborted', reason='interrupted')
+        original = self.fake.call
+        for mode in ('failure', 'identity'):
+            def call(method, params):
+                result = original(method, params)
+                if method == 'thread/read' and params['threadId'] == PARENT:
+                    if mode == 'failure':
+                        raise ConnectionError('private error must not be recorded')
+                    result['thread']['id'] = CHILD
+                return result
+            self.fake.call = call
+            self.observer.cancel_interrupted()
+            park = self.store.status(PARENT)['parks'][0]
+            self.assertEqual((park['state'], park['origin_pending']), ('armed', 1))
+            self.assertNotIn('private error', repr(park))
+        self.fake.call = original
+        self.assertFalse(self.observer.step())
+        self.assertEqual(self.store.status(PARENT)['parks'][0]['state'], 'cancelled')
+
+    def test_pending_worker_does_not_block_completed_command(self):
+        self.fake.running = [{'itemId': 'command', 'processId': '42'}]
+        background.register(self.store, self.fake, PARENT, [CHILD], ['42'], 'mixed work')
+        self.fake.idle()
+        self.fake.child_turns[0]['status'] = 'interrupted'
+        self.fake.running = []
+        self.fake.entries = [{'turnId': 'origin', 'item': {'id': 'command', 'type': 'commandExecution',
+                             'processId': '42', 'status': 'completed', 'exitCode': 0}}]
+        self.assertTrue(self.observer.step())
+        self.assertEqual((self.fake.enqueues, len(self.fake.starts)), (1, 1))
+        state = self.store.status(PARENT)
+        self.assertEqual({j['kind']: j['status'] for j in state['jobs']}, {'worker': 'armed', 'process': 'completed'})
+        self.assertEqual(state['health']['state'], 'error')
+        self.fake.complete()
+        self.assertFalse(self.observer.step())
+        self.assertEqual((self.fake.enqueues, len(self.fake.starts)), (2, 2))
+
+    def test_pending_origin_is_rechecked_transactionally_before_both_claims(self):
+        self.register()
+        self.fake.complete()
+        self.observer.step()
+        ready = self.callbacks()[0]
+        self.store.origin_pending(PARENT, 'origin', True)
+        self.assertIsNone(self.store.claim_callback(ready))
+        self.assertIsNone(self.callbacks()[0]['message'])
+        self.store.origin_pending(PARENT, 'origin', False)
+        claimed = self.store.claim_callback(ready)
+        self.store.dispatch_result(claimed, queued='owned')
+        pending = self.callbacks()[0]
+        self.store.origin_pending(PARENT, 'origin', True)
+        self.assertIsNone(self.store.claim_callback(pending, starting=True))
+        self.assertFalse(self.store.can_resume(PARENT, [], False))
+        self.assertEqual(self.callbacks()[0]['state'], 'pending')
+
+    def test_projection_between_enqueue_and_start_blocks_start_until_resolved(self):
+        self.register()
+        self.fake.complete()
+        self.fake.idle()
+        def fault(point):
+            if point == 'after_enqueue':
+                self.fake.parent_turns[0].update(status='interrupted', completedAt=None)
+        self.observer.fault = fault
+        self.assertTrue(self.observer.step())
+        self.assertEqual((self.fake.enqueues, len(self.fake.starts)), (1, 0))
+        self.assertEqual(self.callbacks()[0]['state'], 'pending')
+        self.fake.parent_turns[0]['status'] = 'completed'
+        self.assertFalse(self.observer.step())
+        self.assertEqual((self.fake.enqueues, len(self.fake.starts)), (1, 1))
+
+    def test_pending_origin_blocks_generation_recovery_resume(self):
+        self.register()
+        self.fake.parent_status = 'notLoaded'
+        self.fake.parent_turns[0]['status'] = 'interrupted'
+        self.fake.generation = 'boot:200:2'
+        self.fake.complete()
+        self.assertTrue(self.observer.step())
+        self.assertFalse(any(method == 'thread/resume' for method, _ in self.fake.calls))
+        self.assertEqual(self.fake.enqueues, 0)
+        self.fake.parent_turns[0]['status'] = 'completed'
+        self.assertFalse(self.observer.step())
+        self.assertEqual(sum(method == 'thread/resume' for method, _ in self.fake.calls), 1)
+        self.assertIn('REPORT ONLY', self.payload())
+
+    def test_recovery_rechecks_cancel_and_projection_after_queue_read(self):
+        self.register()
+        self.fake.idle()
+        self.fake.parent_status = 'notLoaded'
+        self.fake.generation = 'boot:200:2'
+        original = self.fake.call
+        def call(method, params):
+            result = original(method, params)
+            if method == 'thread/queue/list':
+                self.fake.parent_turns[0].update(status='interrupted', completedAt=None)
+            return result
+        self.fake.call = call
+        self.assertTrue(self.observer.step())
+        self.assertFalse(any(method == 'thread/resume' for method, _ in self.fake.calls))
+        self.fake.parent_turns[0]['status'] = 'completed'
+        def cancelling_call(method, params):
+            result = original(method, params)
+            if method == 'thread/queue/list':
+                self.store.request_cancel(PARENT)
+            return result
+        self.fake.call = cancelling_call
+        self.assertFalse(self.observer.step())
+        self.assertFalse(any(method == 'thread/resume' for method, _ in self.fake.calls))
+        self.assertEqual(self.fake.enqueues, 0)
+
+    def test_concurrent_legacy_migration_keeps_unknown_cancellation_provenance(self):
+        with tempfile.TemporaryDirectory() as home:
+            directory = Path(home) / 'codex-plus'
+            directory.mkdir()
+            with sqlite3.connect(directory / 'background.sqlite') as db:
+                db.executescript('''
+                    CREATE TABLE parks (id TEXT PRIMARY KEY,parent TEXT,origin TEXT,reason TEXT,state TEXT,deadline REAL,error TEXT);
+                    CREATE TABLE jobs (id TEXT PRIMARY KEY,park TEXT,kind TEXT,thread TEXT,turn TEXT,item TEXT,process TEXT,status TEXT,exit_code INTEGER,callback TEXT);
+                    CREATE TABLE callbacks (id TEXT PRIMARY KEY,parent TEXT,client TEXT,state TEXT,queue TEXT,error TEXT);
+                ''')
+                db.execute("INSERT INTO parks VALUES ('legacy',?,'origin','old cancellation','cancelled',123,NULL)", (PARENT,))
+            gate = multiprocessing.Event()
+            workers = [multiprocessing.Process(target=migrate_store, args=(home, gate)) for _ in range(4)]
+            try:
+                for worker in workers:
+                    worker.start()
+                gate.set()
+                for worker in workers:
+                    worker.join(10)
+                    self.assertEqual(worker.exitcode, 0)
+            finally:
+                for worker in workers:
+                    if worker.is_alive():
+                        worker.terminate()
+                        worker.join(5)
+            with_store = Store(home)
+            try:
+                with_store.request_cancel(PARENT)
+                park = with_store.status(PARENT)['parks'][0]
+                self.assertEqual(park['state'], 'cancelled')
+                self.assertIsNone(park['cancelled_at'])
+                self.assertIsNone(park['cancel_kind'])
+                self.assertIsNone(park['cancel_evidence'])
+            finally:
+                with_store.close()
 
     def test_lost_add_ack_positive_pending_reconcile(self):
         self.register()
@@ -1410,7 +1819,7 @@ class Lifecycle(unittest.TestCase):
     def test_interrupt_only_cancels_registration_from_that_origin(self):
         self.register()
         self.fake.parent_turns.insert(0, {'id': 'new-origin', 'status': 'inProgress'})
-        self.fake.parent_turns[1]['status'] = 'interrupted'
+        self.fake.parent_turns[1].update(status='interrupted', completedAt=123)
         self.fake.child_turns = [{'id': 'new-work', 'status': 'inProgress'}]
         self.register()
         self.observer.step()

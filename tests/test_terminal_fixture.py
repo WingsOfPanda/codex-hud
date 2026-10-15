@@ -1,9 +1,11 @@
 """Exercise terminal-emulator behavior used by the real native smoke fixtures."""
 import unittest
+from unittest.mock import patch
 
 import pyte
 
 from native_smoke import FixtureScreen, assert_compact_hud, shell_rows, worker_rows
+from test_shell_policy_integration import process_running
 
 
 class TerminalFixtureTests(unittest.TestCase):
@@ -24,6 +26,17 @@ class TerminalFixtureTests(unittest.TestCase):
 
     def test_erase_and_redraw_wide_character(self):
         self.assertEqual(self.render('界\r\x1b[2K好'), '好  ')
+
+
+class ProcessObservationTests(unittest.TestCase):
+    def test_process_disappearing_during_stat_read_is_not_running(self):
+        for error in (FileNotFoundError(), ProcessLookupError()):
+            with self.subTest(error=type(error).__name__), patch('pathlib.Path.read_text', side_effect=error):
+                self.assertFalse(process_running(123))
+
+    def test_stat_read_permission_failure_is_not_treated_as_completion(self):
+        with patch('pathlib.Path.read_text', side_effect=PermissionError()), self.assertRaises(PermissionError):
+            process_running(123)
 
 
 class CompactHudAssertionTests(unittest.TestCase):

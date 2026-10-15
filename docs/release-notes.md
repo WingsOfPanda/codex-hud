@@ -1,10 +1,22 @@
-# Codex Plus 0.162.1-plus.3
+# Codex Plus 0.162.1-plus.0.0.4
 
-Compact activity display release, based on OpenAI Codex `rust-v0.162.1`
+Wake reliability release, based on OpenAI Codex `rust-v0.162.1`
 (`092d3acd6bec3e3a14bdc7e7a2810ab628ab759d`). The package manifest records the
 exact Plus source revision, frontend patch hash, target, and artifact hashes.
 
-This release supersedes `0.162.1-plus.2`. Worker rows start with model, role, and
+Plus now has an independent version, `0.0.4`. The combined release name is
+`<upstream>-plus.<Plus version>`; an upstream-only update retains the Plus
+version, for example `0.162.2-plus.0.0.4`. Earlier published `plus.N` names are
+unchanged. No `0.162.1-plus.4` package was published.
+
+This release supersedes `0.162.1-plus.3`. The Python coordinator preserves parks
+and watched workers when the stock daemon briefly projects a normal completion
+as an interruption. Durable uncertainty gates prevent premature cancellation or
+delivery; bounded exact-turn evidence resolves the hold. Verified daemon loss
+still produces an UNKNOWN report without rerunning work. Cancellation records
+its time, cause, and evidence. Existing cancelled jobs remain cancelled.
+
+The compact footer from plus.3 remains intact. Worker rows start with model, role, and
 effort; root shell commands use the `Background` label. Redundant count headers
 and healthy watcher-waiting rows are hidden. Approval/input waits, stale data,
 and wake-delivery problems remain visible. All activity, alerts, and overflow
@@ -52,6 +64,13 @@ their Codex session/item IDs, not arbitrary operating-system PIDs. Agents must
 register finite remaining work and end their turn to become idle. Stock delivery
 ambiguity remains visible and is not blindly retried. Log retention is manual.
 Ctrl-C interrupts the turn; `/stop` terminates its background terminals.
+
+The coordinator ledger gains additive pending-state and cancellation-provenance
+columns. No native daemon migration or replacement is needed. Already running
+observers retain their old helper code; deployment and rollback must account for
+them because older helpers do not enforce the new gates. Unavailable or out-of-
+bounds terminal evidence remains visibly unresolved. The active GLM registration
+and previously cancelled callbacks are not repaired or rearmed by this update.
 
 The source and runtime acceptance evidence accompany the release handoff.
 Existing processes keep their old executable and helper source until restarted;
