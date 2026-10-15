@@ -32,10 +32,11 @@ UPSTREAM_COMMIT = '092d3acd6bec3e3a14bdc7e7a2810ab628ab759d'
 UPSTREAM_VERSION = '0.162.1'
 PLUS_VERSION = '0.0.4'
 RELEASE = f'{UPSTREAM_VERSION}-plus.{PLUS_VERSION}'
+COORDINATOR_PROTOCOL = 1
 PATCH = 'patches/codex-0.162.1-worker-hud.patch'
 TARGETS = {'x86_64-unknown-linux-gnu': 62, 'aarch64-unknown-linux-gnu': 183}
 HELPERS = tuple('codex_plus/' + name for name in
-                ('__init__.py', 'background.py', 'evidence.py', 'ledger.py', 'rpc.py', 'runner.py'))
+                ('__init__.py', 'background.py', 'evidence.py', 'ledger.py', 'rpc.py', 'runner.py', 'upgrade.py'))
 DOCS = ('README.md', 'GLOSSARY.md', 'docs/background-work.md',
         'docs/shell-workflow.md', 'docs/verification.md', 'docs/release-notes.md',
         'docs/releasing.md')
@@ -136,6 +137,9 @@ def verify_package(package):
     manifest = json.loads(manifest_path.read_text())
     if manifest.get('voice') is not False:
         raise ValueError('Manifest must explicitly declare voice=false')
+    if (type(manifest.get('coordinator_protocol')) is not int or
+            manifest['coordinator_protocol'] != COORDINATOR_PROTOCOL):
+        raise ValueError('Invalid coordinator compatibility protocol')
     if (manifest.get('schema_version') != 1 or manifest.get('release') != RELEASE or
             manifest.get('target') not in TARGETS or
             manifest.get('upstream') != {'version': UPSTREAM_VERSION, 'tag': 'rust-v0.162.1',
@@ -297,6 +301,7 @@ def build(args):
             (stage / name).chmod(0o755)
         manifest = {
             'schema_version': 1, 'release': RELEASE, 'plus_commit': args.plus_commit,
+            'coordinator_protocol': COORDINATOR_PROTOCOL,
             'upstream': {'version': UPSTREAM_VERSION, 'tag': 'rust-v0.162.1',
                          'commit': UPSTREAM_COMMIT},
             'frontend_patch_sha256': sha256(ROOT / PATCH), 'target': args.target,

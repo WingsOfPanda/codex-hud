@@ -1,0 +1,128 @@
+{
+  "feature": "cooperative observer package upgrades",
+  "status": "source implementation qualified; not released or deployed",
+  "coordinator_protocol": 1,
+  "bootstrap": "0.162.1-plus.0.0.4 and earlier require one quiet rollout; later same-protocol/upstream/target packages may transfer with jobs active",
+  "source_sha256": {
+    "codex_plus/background.py": "b1db2b0cd3d2f5d2decc5bb9056dd327e51fc61447f80f1217bbcb1a6a332453",
+    "codex_plus/ledger.py": "99004f4a765edac9d482e239920ef72a24eae529c5342ab2b1202f6e93c52c6c",
+    "codex_plus/upgrade.py": "231813e2b107ef1c104ac5015c4b3fe4e9605bc4196b7dd698ddd0fd4d648ddb",
+    "tests/test_upgrade.py": "c9fcaa4264f1f28e4301fd34b9232da03f66889a99954f6c91e5a44aeca0b1bc",
+    "tests/test_cooperative_upgrade_integration.py": "340a018603b44941479941c6ac846451e8e243e9ef41482506c9cd3188be2246",
+    "tests/fixtures/cooperative_upgrade.py": "4c4deaad6aa91c9c1cb63574f8c29ec15030bbf8cc5a32a521f59801e45071de",
+    "scripts/package-release.py": "93bb6c39b33ff4a9d029fba207264e062982ae64a35df02a0e4d17d5276358a4",
+    "tests/test_packaging.py": "a7d3aa0304803d1c5987f9431bba8dc76c60e08707678b2a666efcb9fc4c7daf"
+  },
+  "root_checks": {
+    "upgrade_unit_tests": 21,
+    "lifecycle_tests": 118,
+    "packaging_tests": 13,
+    "evidence_reader_tests": 18,
+    "launcher_tests": 6,
+    "real_stock_unittest_methods": 8,
+    "real_stock_scenarios": 9,
+    "units_log": "/home/liupan/.codex/codex-plus/logs/ee6cd085-e316-4627-a3c5-6fbbcfffe1ba.log",
+    "reader_launcher_log": "/home/liupan/.codex/codex-plus/logs/c9cd4a05-7f1d-4bb3-85bf-379a2bebe359.log",
+    "integration_log": "/home/liupan/.codex/codex-plus/logs/53edd25b-4f49-46bd-a0ea-2eb4e45e5607.log",
+    "integration_seconds": 54.811
+  },
+  "official_daemon": {
+    "binary": "/home/liupan/.codex/packages/app-server-daemon/releases/0.162.1-x86_64-unknown-linux-musl/bin/codex",
+    "sha256": "628e35487d888a28f0427fc37501da529dd3d81fcbad7a2c3421c1e8670d92e1"
+  },
+  "scenarios": [
+    {
+      "scenario": "after_enqueue",
+      "passed": true,
+      "remote_model_requests": 0,
+      "provider_requests": 4,
+      "report": ".build/cooperative-upgrade-root/after_enqueue/summary.json",
+      "sha256": "0a3f1b387c6b39210e13b87c1250e1a7209ce2a27c503505f4eb213c48b7ef84"
+    },
+    {
+      "scenario": "after_start",
+      "passed": true,
+      "remote_model_requests": 0,
+      "provider_requests": 4,
+      "start_checkpoint": "native-consumed",
+      "report": ".build/cooperative-upgrade-root/after_start/summary.json",
+      "sha256": "1ef6d8dbc74571dc6dc1d21d4b650e2c1e11c254a0665fe2686dd8bf597a2960"
+    },
+    {
+      "scenario": "before_enqueue",
+      "passed": true,
+      "remote_model_requests": 0,
+      "provider_requests": 4,
+      "report": ".build/cooperative-upgrade-root/before_enqueue/summary.json",
+      "sha256": "02b32cb6cda82396b68d8df043171e6b0daa377ea7777b418e4bea18ec4391ec"
+    },
+    {
+      "scenario": "clean-complete",
+      "passed": true,
+      "remote_model_requests": 0,
+      "provider_requests": 3,
+      "report": ".build/cooperative-upgrade-root/clean-complete/summary.json",
+      "sha256": "eecf8641bb91fb9231ba3cf1baccc41d26d87785fc2f7a8f44fb8689f357b04b"
+    },
+    {
+      "scenario": "completed-gap",
+      "passed": true,
+      "remote_model_requests": 0,
+      "provider_requests": 4,
+      "report": ".build/cooperative-upgrade-root/completed-gap/summary.json",
+      "sha256": "3aba3a1ab371fc515105f7aa9dddf6a1fb70d390b890eb8321eda899bd2a439e"
+    },
+    {
+      "scenario": "crash-after-enqueue",
+      "passed": true,
+      "remote_model_requests": 0,
+      "provider_requests": 4,
+      "report": ".build/cooperative-upgrade-root/crash-after-enqueue/summary.json",
+      "sha256": "650e2c8f1ba01b008375e4d623e0d530e56889e69f4d2ce6dc3ecd7a0e515d91"
+    },
+    {
+      "scenario": "crash-before-enqueue",
+      "passed": true,
+      "remote_model_requests": 0,
+      "provider_requests": 3,
+      "report": ".build/cooperative-upgrade-root/crash-before-enqueue/summary.json",
+      "sha256": "769efbf7d46d5d171eaac6686b6e261c21567dccff6e30d471a87b0ab5ce9ae7"
+    },
+    {
+      "scenario": "rapid-A-B-C",
+      "passed": true,
+      "remote_model_requests": 0,
+      "provider_requests": 4,
+      "report": ".build/cooperative-upgrade-root/rapid-A-B-C/summary.json",
+      "sha256": "92f8330ab064f0739b9853bb29cea85e408694e67a7fc62ffb540de143f1de5a"
+    },
+    {
+      "scenario": "running",
+      "passed": true,
+      "remote_model_requests": 0,
+      "provider_requests": 4,
+      "report": ".build/cooperative-upgrade-root/running/summary.json",
+      "sha256": "d9d4f74304b1bb1f332af0ebccbfca958b121a1522f54a4ddda95ddadf99f516"
+    }
+  ],
+  "installer_contract": {
+    "layout_unchanged": true,
+    "atomic_current_switch": true,
+    "readonly_modes_supported": true,
+    "process_argv": "python3 -m codex_plus.background supervise|observe --parent UUID --package-root /absolute/package/",
+    "cwd_and_pythonpath_follow_selected_package": true,
+    "old_package_cmdline_pin_until_successful_exec": true,
+    "fallback": "own package or validated current only",
+    "ledger_path_tables_callback_states_unchanged": true,
+    "installer_code_change_required": false
+  },
+  "limits": [
+    "Real-stock scenarios use sealed source fixtures on x86, not published native packages.",
+    "ARM and per-target packaged qualification remain release-build gates.",
+    "No native changes; Rust/HUD suite not rerun.",
+    "Stock automatically consumed queued callback; real native-consumed checkpoint recorded, explicit after_start covered by coordinator unit test.",
+    "Completed-during-transfer work remains REPORT ONLY; frozen ambiguous callbacks are not resent.",
+    "Existing 0.0.4 helpers cannot acquire cooperative behavior until quiet bootstrap installation.",
+    "No build, publish, merge, production helper replacement or daemon restart."
+  ]
+}

@@ -49,6 +49,7 @@ class PackageIntegrityTests(unittest.TestCase):
         (self.package / 'codex-package.json').write_text(json.dumps(metadata))
         self.manifest = {
             'schema_version': 1, 'release': package_release.RELEASE, 'plus_commit': 'a' * 40,
+            'coordinator_protocol': package_release.COORDINATOR_PROTOCOL,
             'frontend_patch_sha256': 'b' * 64, 'target': 'x86_64-unknown-linux-gnu',
             'upstream': {'version': '0.162.1', 'tag': 'rust-v0.162.1',
                          'commit': package_release.UPSTREAM_COMMIT},
@@ -71,7 +72,17 @@ class PackageIntegrityTests(unittest.TestCase):
         return package_release.verify_package(self.package)
 
     def test_valid_package_and_declared_hash_recipe(self):
+        from codex_plus.upgrade import COORDINATOR_PROTOCOL
+        self.assertEqual(package_release.COORDINATOR_PROTOCOL, COORDINATOR_PROTOCOL)
         self.assertEqual(self.verify()['tree_sha256'], self.manifest['tree_sha256'])
+
+    def test_coordinator_protocol_must_be_explicit_and_supported(self):
+        for value in (None, True, 0, 2, '1'):
+            with self.subTest(protocol=value):
+                self.manifest['coordinator_protocol'] = value
+                self.save_manifest()
+                with self.assertRaisesRegex(ValueError, 'coordinator compatibility'):
+                    self.verify()
 
     def test_corruption_missing_and_additional_files_rejected(self):
         for mutation in ('corrupt', 'missing', 'extra', 'mode'):

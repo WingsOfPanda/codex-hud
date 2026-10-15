@@ -1,5 +1,11 @@
 # Observer handoff for 0.162.1-plus.0.0.4
 
+This is historical recovery tooling, not the normal rollout procedure. Review
+found delivery-interruption and partial-stop risks; do not use it to upgrade
+active observers during fleet rollout. Use a quiet checkpoint for legacy
+helpers, or [cooperative package upgrades](background-work.md#cooperative-package-upgrades)
+when both installed and candidate helpers support the protocol.
+
 Installing a package does not replace helpers that already run Python code from
 an older package. The helper is a Python interpreter running
 `-m codex_plus.background supervise --parent UUID`, with an `observe` child.

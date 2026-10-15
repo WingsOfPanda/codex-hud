@@ -79,6 +79,9 @@ def manifest_check(package):
     manifest = json.loads((package / 'codex-plus.json').read_text())
     upstream = json.loads((package / 'codex-package.json').read_text())
     assert manifest['schema_version'] == 1 and manifest['voice'] is False, manifest
+    protocol = manifest.get('coordinator_protocol')
+    if protocol is not None:
+        assert type(protocol) is int and protocol == 1, 'unsupported coordinator protocol'
     assert manifest['upstream'] == {'version': '0.162.1', 'tag': 'rust-v0.162.1',
         'commit': '092d3acd6bec3e3a14bdc7e7a2810ab628ab759d'}, manifest['upstream']
     assert manifest['build']['rust'] == '1.99.0' and manifest['build']['cargo_profile'] == 'release'
@@ -97,6 +100,8 @@ def manifest_check(package):
         'licenses/codex-plus-LICENSE', 'licenses/provenance.json',
         'licenses/rusty-v8-release-manifests.sha256', 'README.md', 'GLOSSARY.md',
         'docs/verification.md', 'docs/release-notes.md']
+    if protocol == 1:
+        required.append('codex_plus/upgrade.py')
     assert all((package / path).is_file() for path in required), 'missing canonical package file'
     paths = list(package.rglob('*'))
     assert not any(path.is_symlink() for path in paths), 'package has unmanifested symlinks'
