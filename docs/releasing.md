@@ -102,11 +102,12 @@ fleet-config's `codex-plus/RELEASING.md`, section 2, step 3:
 {
   "release": "<tag>",
   "plus_commit": "<the manifest's plus_commit>",
+  "coordinator_protocol": 1,
   "upstream": {"version": "<X>", "tag": "rust-v<X>", "commit": "<sha>"},
   "note": "docs/releases/<release>.md",
   "targets": {
-    "x86_64": {"triple": "x86_64-unknown-linux-gnu", "asset": "<archive file name>", "sha256": "<hex>", "tree_sha256": "<hex>"},
-    "aarch64": {"triple": "aarch64-unknown-linux-gnu", "asset": "<archive file name>", "sha256": "<hex>", "tree_sha256": "<hex>"}
+    "x86_64": {"triple": "x86_64-unknown-linux-gnu", "asset": "<archive file name>", "sha256": "<hex>", "tree_sha256": "<hex>", "manifest_sha256": "<hex>"},
+    "aarch64": {"triple": "aarch64-unknown-linux-gnu", "asset": "<archive file name>", "sha256": "<hex>", "tree_sha256": "<hex>", "manifest_sha256": "<hex>"}
   },
   "rollout": {
     "daemon_restart": false,
@@ -121,6 +122,10 @@ fleet-config's `codex-plus/RELEASING.md`, section 2, step 3:
 Fill identity and hash fields from the qualified manifests and archives, and
 verify archive hashes against GitHub's asset digests before handing over. The
 release tag may point to a later companion-note commit than `plus_commit`.
+Copy `coordinator_protocol` exactly from both target manifests; the values must
+agree. `manifest_sha256` hashes the exact bytes of each package's
+`codex-plus.json`, including its identity fields. Fleet-config can pin that hash
+and verify the installed manifest as well as its payload tree.
 Choose exactly one `session_restart` value. Set `daemon_restart` for an upstream
 bump; assess it explicitly for other changes. With `quiet_checkpoint: true`, a
 box with live park helpers waits until no helper, armed park, or open callback
@@ -131,8 +136,12 @@ note referenced by `note`.
 
 For cooperative upgrades, manifests advertise `coordinator_protocol: 1`.
 Set `quiet_checkpoint: false` only when the installed observers and candidate
-support the same protocol, upstream identity and target, and cooperative
-upgrade/recovery acceptance has passed. The first rollout from `0.0.4` or older
+support the same protocol, upstream identity and target, the candidate's Plus
+`M.m.p` version is strictly higher, and cooperative upgrade/recovery acceptance
+has passed. Compare numeric version components, not release-name strings.
+Every rollback requires `quiet_checkpoint: true`; live observers refuse a lower
+or equal Plus version in another package directory and keep monitoring with a
+warning. The first rollout from `0.0.4` or older
 still requires `quiet_checkpoint: true`; incompatible protocol or upstream
 changes also require quiet coordination. Keep previous/in-use immutable package
 directories while any process still references them. The installer switches

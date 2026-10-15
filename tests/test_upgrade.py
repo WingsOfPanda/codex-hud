@@ -18,7 +18,7 @@ def seal(root, **changes):
         'sha256': hashlib.sha256(p.read_bytes()).hexdigest(),
         'size': p.stat().st_size, 'mode': f'{p.stat().st_mode & 0o7777:04o}'}
         for p in root.rglob('*') if p.is_file() and p.name != 'codex-plus.json'}
-    manifest = {'schema_version': 1, 'coordinator_protocol': 1,
+    manifest = {'schema_version': 1, 'coordinator_protocol': 1, 'release': 'fixture-plus.0.1.1',
                 'upstream': {'version': 'fixture', 'tag': 'fixture', 'commit': 'same'},
                 'target': 'fixture-linux', 'files': files,
                 'tree_sha256': hashlib.sha256(json.dumps(files, sort_keys=True,
@@ -37,7 +37,7 @@ class SelectionTests(unittest.TestCase):
             (root / 'codex_plus').mkdir(parents=True)
             for name in ('__init__', 'background', 'upgrade', 'ledger', 'rpc', 'evidence'):
                 (root / f'codex_plus/{name}.py').write_text(f'# {name}\n')
-            seal(root)
+            seal(root, release='fixture-plus.0.1.0' if root == self.old else 'fixture-plus.0.1.1')
         self.current = self.base / 'current'
         self.current.symlink_to('new')
 
@@ -56,6 +56,45 @@ class SelectionTests(unittest.TestCase):
         self.current.symlink_to('old')
         self.assertIsNone(upgrade.select_package(self.old))
         (self.old / 'codex-plus.json').unlink()
+        self.assertIsNone(upgrade.select_package(self.old))
+
+    def test_different_folder_equal_or_lower_versions_are_refused(self):
+        seal(self.old, release='fixture-plus.0.1.9')
+        for release in ('fixture-plus.0.1.9', 'fixture-plus.0.1.8', 'fixture-plus.0.0.99'):
+            with self.subTest(release=release):
+                seal(self.new, release=release)
+                with self.assertRaises(ValueError):
+                    upgrade.select_package(self.old)
+
+    def test_release_versions_compare_numerically_across_patch_minor_and_major(self):
+        for previous, following in (('0.1.9', '0.1.10'), ('0.9.99', '0.10.0'),
+                                    ('0.99.99', '1.0.0'), ('9.0.0', '10.0.0')):
+            with self.subTest(previous=previous, following=following):
+                seal(self.old, release=f'fixture-plus.{previous}')
+                seal(self.new, release=f'fixture-plus.{following}')
+                self.assertEqual(upgrade.select_package(self.old), self.new)
+
+    def test_missing_or_noncanonical_release_on_either_package_is_refused(self):
+        malformed = (None, '', 1, 'other-plus.0.1.2', 'fixture-plus.1.2',
+                     'fixture-plus.1.2.3.4', 'fixture-plus.01.2.3', 'fixture-plus.1.02.3',
+                     'fixture-plus.1.2.03', 'fixture-plus.-1.2.3', 'fixture-plus.1.2.3-rc.1',
+                     'fixture-plus.1.2.3+build', 'fixture-plus.1.2.3\n')
+        for root in (self.old, self.new):
+            for release in malformed:
+                with self.subTest(root=root.name, release=release):
+                    seal(self.old, release='fixture-plus.0.1.0')
+                    seal(self.new, release='fixture-plus.0.1.1')
+                    seal(root, release=release)
+                    if release is None:
+                        path = root / 'codex-plus.json'
+                        manifest = json.loads(path.read_text())
+                        del manifest['release']
+                        path.write_text(json.dumps(manifest))
+                    with self.assertRaises(ValueError):
+                        upgrade.select_package(self.old)
+        seal(self.old, release='malformed')
+        self.current.unlink()
+        self.current.symlink_to('old')
         self.assertIsNone(upgrade.select_package(self.old))
 
     def test_incompatible_identity_protocol_and_inventory_are_rejected(self):
@@ -263,6 +302,48 @@ class HandoffTests(unittest.TestCase):
                 patch('codex_plus.background.time.sleep', sleep):
             self.assertIsNone(self.observer.run())
         self.assertEqual(states, ['error'])
+
+    def test_lower_current_keeps_watching_and_preserves_frozen_callback_and_cancelled_history(self):
+        self.fake.idle()
+        self.fake.complete()
+        self.assertFalse(self.observer.step())
+        frozen = self.store.status(PARENT)['callbacks'][0]
+        self.store.request_cancel(PARENT, 'origin')
+        history = self.store.status(PARENT)
+        cancelled_park, cancelled_job = history['parks'][0], history['jobs'][0]
+        self.fake.parent_status = 'active'
+        self.fake.parent_turns = [{'id': 'next-origin', 'status': 'inProgress'}]
+        self.fake.child_turns = [{'id': 'next-work', 'status': 'inProgress'}]
+        background.register(self.store, self.fake, PARENT, [CHILD], [], 'keep watching lower current')
+        packages = Path(self.temp.name) / 'packages'
+        own, lower = packages / 'old', packages / 'new'
+        for root, version in ((own, '0.1.10'), (lower, '0.1.9')):
+            (root / 'codex_plus').mkdir(parents=True)
+            for name in ('__init__', 'background', 'upgrade', 'ledger', 'rpc', 'evidence'):
+                (root / f'codex_plus/{name}.py').write_text(f'# {name}\n')
+            seal(root, release=f'fixture-plus.{version}')
+        (packages / 'current').symlink_to('new')
+        warnings = []
+        def sleep(_):
+            with StoreContext(self.temp.name) as reader:
+                view = reader.status(PARENT)
+                warnings.append(view['health']['state'])
+                self.assertEqual(next(p for p in view['parks'] if p['state'] == 'armed')['error'], UPGRADE_WARNING)
+                self.assertEqual(view['callbacks'][0], frozen)
+            self.fake.complete()
+            self.fake.idle()
+        with patch('codex_plus.background.PACKAGE_ROOT', own), \
+                patch('codex_plus.background.time.sleep', sleep):
+            self.assertIsNone(self.observer.run())
+        final = self.store.status(PARENT)
+        self.assertEqual(warnings, ['error'])
+        self.assertEqual(next(p for p in final['parks'] if p['id'] == cancelled_park['id']), cancelled_park)
+        self.assertEqual(next(j for j in final['jobs'] if j['id'] == cancelled_job['id']), cancelled_job)
+        self.assertEqual(next(c for c in final['callbacks'] if c['id'] == frozen['id']), frozen)
+        delivered = next(c for c in final['callbacks'] if c['id'] != frozen['id'])
+        self.assertEqual(delivered['state'], 'delivered')
+        self.assertIn('LIVE COMPLETION', delivered['message'])
+        self.assertEqual(self.fake.enqueues, 2)
 
     def test_warning_preserves_existing_error_and_cancelled_history(self):
         self.store.monitoring_failed(PARENT, 'ConnectionError')

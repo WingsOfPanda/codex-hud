@@ -238,6 +238,11 @@ observer transfer and need not stay open for it.
 
 The package manifest declares `coordinator_protocol: 1`. Automatic transfer
 requires the same protocol, upstream identity, and CPU target on both sides.
+The target must also have a strictly higher Plus `M.m.p` version, compared as
+three numeric components. A lower or equal version in a different directory,
+or a malformed release name, is refused with the existing upgrade warning.
+Selecting the helper's own directory remains a no-op. Rollbacks always use a
+quiet checkpoint; protocol compatibility does not qualify a live downgrade.
 Protocol compatibility promises that either helper can safely use the shared
 ledger, including callback identities, frozen messages and cancellation states.
 An incompatible ledger or delivery change requires a new protocol and a quiet

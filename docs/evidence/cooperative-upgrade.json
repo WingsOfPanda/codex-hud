@@ -6,15 +6,15 @@
   "source_sha256": {
     "codex_plus/background.py": "b1db2b0cd3d2f5d2decc5bb9056dd327e51fc61447f80f1217bbcb1a6a332453",
     "codex_plus/ledger.py": "99004f4a765edac9d482e239920ef72a24eae529c5342ab2b1202f6e93c52c6c",
-    "codex_plus/upgrade.py": "231813e2b107ef1c104ac5015c4b3fe4e9605bc4196b7dd698ddd0fd4d648ddb",
-    "tests/test_upgrade.py": "c9fcaa4264f1f28e4301fd34b9232da03f66889a99954f6c91e5a44aeca0b1bc",
-    "tests/test_cooperative_upgrade_integration.py": "340a018603b44941479941c6ac846451e8e243e9ef41482506c9cd3188be2246",
+    "codex_plus/upgrade.py": "644793411bb1f224bb96c75c954bcaf0087406a5f492ee97ad72ac83fde2d4d5",
+    "tests/test_upgrade.py": "5c39430782dbf57748248ce4b073de2f208ea71caa6bf28489b73d79c9b46e54",
+    "tests/test_cooperative_upgrade_integration.py": "8d22e8fc9ab7a039e08b69d3d742922ce13c743fb231098f78a5086dcb586c60",
     "tests/fixtures/cooperative_upgrade.py": "4c4deaad6aa91c9c1cb63574f8c29ec15030bbf8cc5a32a521f59801e45071de",
     "scripts/package-release.py": "93bb6c39b33ff4a9d029fba207264e062982ae64a35df02a0e4d17d5276358a4",
     "tests/test_packaging.py": "a7d3aa0304803d1c5987f9431bba8dc76c60e08707678b2a666efcb9fc4c7daf"
   },
   "root_checks": {
-    "upgrade_unit_tests": 21,
+    "upgrade_unit_tests": 25,
     "lifecycle_tests": 118,
     "packaging_tests": 13,
     "evidence_reader_tests": 18,
@@ -23,8 +23,9 @@
     "real_stock_scenarios": 9,
     "units_log": "/home/liupan/.codex/codex-plus/logs/ee6cd085-e316-4627-a3c5-6fbbcfffe1ba.log",
     "reader_launcher_log": "/home/liupan/.codex/codex-plus/logs/c9cd4a05-7f1d-4bb3-85bf-379a2bebe359.log",
-    "integration_log": "/home/liupan/.codex/codex-plus/logs/53edd25b-4f49-46bd-a0ea-2eb4e45e5607.log",
-    "integration_seconds": 54.811
+    "integration_log": "/home/liupan/.codex/codex-plus/logs/f5edfb5d-92e4-442a-a6ed-ac876c5c5c3d.log",
+    "integration_seconds": 54.294,
+    "upgrade_unit_log": "/home/liupan/.codex/codex-plus/logs/5b3fc655-860c-421c-84ea-f4e0c6d4cfbc.log"
   },
   "official_daemon": {
     "binary": "/home/liupan/.codex/packages/app-server-daemon/releases/0.162.1-x86_64-unknown-linux-musl/bin/codex",
@@ -36,8 +37,8 @@
       "passed": true,
       "remote_model_requests": 0,
       "provider_requests": 4,
-      "report": ".build/cooperative-upgrade-root/after_enqueue/summary.json",
-      "sha256": "0a3f1b387c6b39210e13b87c1250e1a7209ce2a27c503505f4eb213c48b7ef84"
+      "report": ".build/cooperative-upgrade-ascending-root/after_enqueue/summary.json",
+      "sha256": "f52b9642030e55a3d3051e49c44428eb60676a061654850c7aa14ee203c59e80"
     },
     {
       "scenario": "after_start",
@@ -45,64 +46,64 @@
       "remote_model_requests": 0,
       "provider_requests": 4,
       "start_checkpoint": "native-consumed",
-      "report": ".build/cooperative-upgrade-root/after_start/summary.json",
-      "sha256": "1ef6d8dbc74571dc6dc1d21d4b650e2c1e11c254a0665fe2686dd8bf597a2960"
+      "report": ".build/cooperative-upgrade-ascending-root/after_start/summary.json",
+      "sha256": "82f3381b52fcfe39253cdc740130670f67fb264918089aade004aee43156826f"
     },
     {
       "scenario": "before_enqueue",
       "passed": true,
       "remote_model_requests": 0,
       "provider_requests": 4,
-      "report": ".build/cooperative-upgrade-root/before_enqueue/summary.json",
-      "sha256": "02b32cb6cda82396b68d8df043171e6b0daa377ea7777b418e4bea18ec4391ec"
+      "report": ".build/cooperative-upgrade-ascending-root/before_enqueue/summary.json",
+      "sha256": "45f5d3d1233a29f17a4f1ad023a4291cea15053d89771ab1c9034fcbc8b9d085"
     },
     {
       "scenario": "clean-complete",
       "passed": true,
       "remote_model_requests": 0,
       "provider_requests": 3,
-      "report": ".build/cooperative-upgrade-root/clean-complete/summary.json",
-      "sha256": "eecf8641bb91fb9231ba3cf1baccc41d26d87785fc2f7a8f44fb8689f357b04b"
+      "report": ".build/cooperative-upgrade-ascending-root/clean-complete/summary.json",
+      "sha256": "2493858955719c2f968a8996104b4a13240c09732c1b2ec6dc84b66ebe36dba6"
     },
     {
       "scenario": "completed-gap",
       "passed": true,
       "remote_model_requests": 0,
       "provider_requests": 4,
-      "report": ".build/cooperative-upgrade-root/completed-gap/summary.json",
-      "sha256": "3aba3a1ab371fc515105f7aa9dddf6a1fb70d390b890eb8321eda899bd2a439e"
+      "report": ".build/cooperative-upgrade-ascending-root/completed-gap/summary.json",
+      "sha256": "68323bd3b7b8fd5a8d7fc5f9ee5d5e58ac0aa2bd7d25a6818fdb41c0de1e71f2"
     },
     {
       "scenario": "crash-after-enqueue",
       "passed": true,
       "remote_model_requests": 0,
       "provider_requests": 4,
-      "report": ".build/cooperative-upgrade-root/crash-after-enqueue/summary.json",
-      "sha256": "650e2c8f1ba01b008375e4d623e0d530e56889e69f4d2ce6dc3ecd7a0e515d91"
+      "report": ".build/cooperative-upgrade-ascending-root/crash-after-enqueue/summary.json",
+      "sha256": "ff7d9bf965fbb5a804b311dfb965c7cddd6f2d82f0199f3b920dea59d1561ac2"
     },
     {
       "scenario": "crash-before-enqueue",
       "passed": true,
       "remote_model_requests": 0,
       "provider_requests": 3,
-      "report": ".build/cooperative-upgrade-root/crash-before-enqueue/summary.json",
-      "sha256": "769efbf7d46d5d171eaac6686b6e261c21567dccff6e30d471a87b0ab5ce9ae7"
+      "report": ".build/cooperative-upgrade-ascending-root/crash-before-enqueue/summary.json",
+      "sha256": "79d6016f33cd8e34969af264d420670a80fa104dc3a9b729fe8dcd178d217d44"
     },
     {
       "scenario": "rapid-A-B-C",
       "passed": true,
       "remote_model_requests": 0,
       "provider_requests": 4,
-      "report": ".build/cooperative-upgrade-root/rapid-A-B-C/summary.json",
-      "sha256": "92f8330ab064f0739b9853bb29cea85e408694e67a7fc62ffb540de143f1de5a"
+      "report": ".build/cooperative-upgrade-ascending-root/rapid-A-B-C/summary.json",
+      "sha256": "a018f43de00800f6a3fcf0ce52ec923c92cefdb21ea563c84e9120bc62783329"
     },
     {
       "scenario": "running",
       "passed": true,
       "remote_model_requests": 0,
       "provider_requests": 4,
-      "report": ".build/cooperative-upgrade-root/running/summary.json",
-      "sha256": "d9d4f74304b1bb1f332af0ebccbfca958b121a1522f54a4ddda95ddadf99f516"
+      "report": ".build/cooperative-upgrade-ascending-root/running/summary.json",
+      "sha256": "f825c16c6d99a8b4ffd876049bb82b0dc72504500a3d66ee58435a49950f9965"
     }
   ],
   "installer_contract": {
@@ -114,7 +115,8 @@
     "old_package_cmdline_pin_until_successful_exec": true,
     "fallback": "own package or validated current only",
     "ledger_path_tables_callback_states_unchanged": true,
-    "installer_code_change_required": false
+    "installer_code_change_required": false,
+    "version_direction": "Strictly greater canonical Plus M.m.p tuple; equal/lower different folder refused with warning; same folder no-op; rollback requires quiet checkpoint."
   },
   "limits": [
     "Real-stock scenarios use sealed source fixtures on x86, not published native packages.",
@@ -124,5 +126,12 @@
     "Completed-during-transfer work remains REPORT ONLY; frozen ambiguous callbacks are not resent.",
     "Existing 0.0.4 helpers cannot acquire cooperative behavior until quiet bootstrap installation.",
     "No build, publish, merge, production helper replacement or daemon restart."
+  ],
+  "handoff_fields": {
+    "coordinator_protocol": "top-level, matches both manifests",
+    "manifest_sha256": "per target, SHA-256 of exact codex-plus.json bytes"
+  },
+  "regression_red_logs": [
+    "/home/liupan/.codex/codex-plus/logs/c374ea32-8de4-4cfc-a7b9-76bbf30a9584.log"
   ]
 }

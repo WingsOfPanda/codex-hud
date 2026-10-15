@@ -3,6 +3,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import stat
 import sys
 
@@ -25,6 +26,18 @@ def _manifest(root):
     return value
 
 
+def _version(manifest):
+    upstream = manifest['upstream'].get('version')
+    release = manifest.get('release')
+    if not isinstance(upstream, str) or not upstream or not isinstance(release, str):
+        raise ValueError('missing coordinator release version')
+    component = r'(0|[1-9][0-9]*)'
+    match = re.fullmatch(re.escape(upstream) + r'-plus\.' + r'\.'.join([component] * 3), release)
+    if match is None:
+        raise ValueError('invalid coordinator release version')
+    return tuple(int(value) for value in match.groups())
+
+
 def select_package(root):
     root = Path(root).resolve()
     current = root.parent / 'current'
@@ -38,6 +51,8 @@ def select_package(root):
         candidate = link if link.is_absolute() else root.parent / link
         if candidate.parent != root.parent or candidate.is_symlink() or not candidate.is_dir():
             raise ValueError('current must point directly to a sibling package')
+        if candidate == root:
+            return None
         manifest = _manifest(candidate)
         if (manifest.get('schema_version') != 1 or
                 type(manifest.get('coordinator_protocol')) is not int or
@@ -49,6 +64,8 @@ def select_package(root):
                 not isinstance(installed.get('target'), str) or not installed['target'] or
                 manifest.get('target') != installed['target']):
             raise ValueError('incompatible coordinator package')
+        if _version(manifest) <= _version(installed):
+            raise ValueError('coordinator release must be newer than the running package')
         files = manifest.get('files')
         if not isinstance(files, dict) or not files or any(not isinstance(name, str) for name in files):
             raise ValueError('missing package inventory')
@@ -86,7 +103,7 @@ def select_package(root):
                     installed_mode not in (int(mode, 8), int(mode, 8) & ~0o222) or
                     entry.get('sha256') != hashlib.sha256(path.read_bytes()).hexdigest()):
                 raise ValueError('helper integrity mismatch')
-        return candidate if candidate != root else None
+        return candidate
     except (OSError, TypeError, KeyError, UnicodeError, RecursionError) as exc:
         raise ValueError('invalid advertised coordinator package') from exc
 
