@@ -1,0 +1,150 @@
+{
+  "verified_at": "2026-10-15T00:20:09.017063+00:00",
+  "scope": "Coordinator-only handling of ambiguous turn interruptions; stock daemon unchanged",
+  "baseline_commit": "5749459ca8729c1b7e2a321d2a2b6e64712ce771",
+  "source_sha256": {
+    "codex_plus/background.py": "7515d3d2d27f73e4915ccb4721d9ca670d84f9d3f571893389900166e8725473",
+    "codex_plus/ledger.py": "d7071609948eb417ea47f4646a85eea9ed10cfceefdeca1aba9318f23bcb1c73",
+    "codex_plus/evidence.py": "609c9794edd848b5686c17ae04991782040fd1d316c8046ec779aa8480febcab",
+    "scripts/package-release.py": "2ad71822f6c3175ecf00516dbf082b5ce7be4f63e0e2da3669339bbcb3c9deae",
+    "tests/test_background.py": "1c04b3aef7d741f9d2f55f4f0b3515192bd28afbd244d24db7c9fa95b6dbc697",
+    "tests/test_terminal_evidence.py": "e0842036749d2b1eac29306b184ae2351bfcae1001d9704efa0107d2bd1d372e",
+    "tests/test_interruption_integration.py": "11f492e8bbac3a14418b4d8ac397b9212d182e649869e2c10d360a71246bcd3b",
+    "tests/fixtures/interruption_provider.py": "9cf3c7c60edb739d36ca807ad11935905174dae9bd7e82ddce5772c658f49f42"
+  },
+  "primary_acceptance": {
+    "lifecycle_tests": 118,
+    "terminal_evidence_tests": 18,
+    "packaging_tests": 12,
+    "launcher_tests": 6,
+    "normal_integration": ".build/wake-fix/root-normal/report.json",
+    "suites": {
+      "root-recovery-final": {
+        "after-enqueue": {
+          "report": ".build/wake-fix/root-recovery-final/after-enqueue/report.json",
+          "passed": true,
+          "loopback_provider_requests": 3
+        },
+        "after-start": {
+          "report": ".build/wake-fix/root-recovery-final/after-start/report.json",
+          "passed": true,
+          "loopback_provider_requests": 3
+        },
+        "observer-completed": {
+          "report": ".build/wake-fix/root-recovery-final/observer-completed/report.json",
+          "passed": true,
+          "loopback_provider_requests": 3
+        },
+        "observer-running": {
+          "report": ".build/wake-fix/root-recovery-final/observer-running/report.json",
+          "passed": true,
+          "loopback_provider_requests": 3
+        },
+        "shell-restart": {
+          "report": ".build/wake-fix/root-recovery-final/shell-restart/report.json",
+          "passed": true,
+          "loopback_provider_requests": 3
+        },
+        "uncertain-enqueue": {
+          "report": ".build/wake-fix/root-recovery-final/uncertain-enqueue/report.json",
+          "passed": true,
+          "loopback_provider_requests": 2
+        },
+        "worker-restart": {
+          "report": ".build/wake-fix/root-recovery-final/worker-restart/report.json",
+          "passed": true,
+          "loopback_provider_requests": 4
+        }
+      },
+      "root-interruption-final": {
+        "abort": {
+          "report": ".build/wake-fix/root-interruption-final/abort/report.json",
+          "passed": true,
+          "loopback_provider_requests": 3
+        },
+        "active-parent": {
+          "report": ".build/wake-fix/root-interruption-final/active-parent/report.json",
+          "passed": true,
+          "loopback_provider_requests": 5
+        },
+        "cancel": {
+          "report": ".build/wake-fix/root-interruption-final/cancel/report.json",
+          "passed": true,
+          "loopback_provider_requests": 3
+        },
+        "durable-abort": {
+          "report": ".build/wake-fix/root-interruption-final/durable-abort/report.json",
+          "passed": true,
+          "loopback_provider_requests": 3
+        },
+        "durable-evidence": {
+          "report": ".build/wake-fix/root-interruption-final/durable-evidence/report.json",
+          "passed": true,
+          "loopback_provider_requests": 4
+        },
+        "foreign-queue": {
+          "report": ".build/wake-fix/root-interruption-final/foreign-queue/report.json",
+          "passed": true,
+          "loopback_provider_requests": 5
+        },
+        "origin-projection": {
+          "report": ".build/wake-fix/root-interruption-final/origin-projection/report.json",
+          "passed": true,
+          "loopback_provider_requests": 4
+        },
+        "restart-completed": {
+          "report": ".build/wake-fix/root-interruption-final/restart-completed/report.json",
+          "passed": true,
+          "loopback_provider_requests": 4
+        },
+        "restart-pending": {
+          "report": ".build/wake-fix/root-interruption-final/restart-pending/report.json",
+          "passed": true,
+          "loopback_provider_requests": 4
+        },
+        "reuse": {
+          "report": ".build/wake-fix/root-interruption-final/reuse/report.json",
+          "passed": true,
+          "loopback_provider_requests": 7
+        },
+        "worker-projection": {
+          "report": ".build/wake-fix/root-interruption-final/worker-projection/report.json",
+          "passed": true,
+          "loopback_provider_requests": 4
+        }
+      }
+    }
+  },
+  "official_binary": {
+    "path": "/home/liupan/.codex/packages/app-server-daemon/releases/0.162.1-x86_64-unknown-linux-musl/bin/codex",
+    "version": "0.162.1",
+    "sha256": "628e35487d888a28f0427fc37501da529dd3d81fcbad7a2c3421c1e8670d92e1"
+  },
+  "logs": {
+    "lifecycle": ".build/wake-fix/root-lifecycle-final.log",
+    "reader": "/home/liupan/.codex/codex-plus/logs/2db3c508-d267-42f8-89c0-89639ef37f87.log",
+    "packaging_launcher": "/home/liupan/.codex/codex-plus/logs/b5df7c88-59fd-4735-ace2-9ff42be6f304.log",
+    "recovery": "/home/liupan/.codex/codex-plus/logs/bd1e0fd6-cfc0-4cce-b9bc-c24724f406f6.log",
+    "interruption": "/home/liupan/.codex/codex-plus/logs/7ca3c78c-af77-4399-8019-5b4bc84d324b.log"
+  },
+  "preserved_failures": {
+    "original_race": ".build/missed-wake-20261015/logic/projection-race-report.md",
+    "integration_old_code": ".build/wake-fix/integration/red-fake.log",
+    "initial_worker_restart_hold": ".build/wake-fix/root-recovery/worker-restart/report.json"
+  },
+  "state_changes": {
+    "coordinator_schema": "Additive pending/provenance columns; concurrent migration serialized",
+    "native_schema": "None",
+    "cancelled_history": "Not rearmed; old missing provenance remains unknown",
+    "active_GLM_trial": "Not accessed or modified during implementation",
+    "installed_helpers": "Unchanged"
+  },
+  "limits": [
+    "Deterministic projection injection is not a capture of actual daemon scheduling.",
+    "Optional unstable Thread.path and raw rollout event schema need checking on upstream bumps.",
+    "Reader bounds and concurrent/history-rewrite checks may keep missing evidence pending.",
+    "Old running observers retain old code; deployment/rollback must account for mixed helper versions.",
+    "Stock enqueue acknowledgement ambiguity and full host reboot remain outside exactly-once guarantees.",
+    "No release build, fleet rollout, or deployment performed."
+  ]
+}

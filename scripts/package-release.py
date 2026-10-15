@@ -34,7 +34,7 @@ RELEASE = '0.162.1-plus.3'
 PATCH = 'patches/codex-0.162.1-worker-hud.patch'
 TARGETS = {'x86_64-unknown-linux-gnu': 62, 'aarch64-unknown-linux-gnu': 183}
 HELPERS = tuple('codex_plus/' + name for name in
-                ('__init__.py', 'background.py', 'ledger.py', 'rpc.py', 'runner.py'))
+                ('__init__.py', 'background.py', 'evidence.py', 'ledger.py', 'rpc.py', 'runner.py'))
 DOCS = ('README.md', 'GLOSSARY.md', 'docs/background-work.md',
         'docs/shell-workflow.md', 'docs/verification.md', 'docs/release-notes.md',
         'docs/releasing.md')

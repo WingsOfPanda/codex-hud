@@ -44,12 +44,17 @@ class Store:
                 id TEXT PRIMARY KEY, parent TEXT NOT NULL, client TEXT UNIQUE NOT NULL,
                 state TEXT NOT NULL, queue TEXT, error TEXT);
         ''')
+        self._db.execute('BEGIN IMMEDIATE')
         if 'error' not in {row[1] for row in self._db.execute('PRAGMA table_info(parks)')}:
             self._db.execute('ALTER TABLE parks ADD COLUMN error TEXT')
         columns = {row[1] for row in self._db.execute('PRAGMA table_info(parks)')}
         for column in ('generation', 'recovery_generation'):
             if column not in columns:
                 self._db.execute(f'ALTER TABLE parks ADD COLUMN {column} TEXT')
+        for column, definition in (('origin_pending', 'INTEGER NOT NULL DEFAULT 0'),
+                                   ('cancelled_at', 'REAL'), ('cancel_kind', 'TEXT'), ('cancel_evidence', 'TEXT')):
+            if column not in columns:
+                self._db.execute(f'ALTER TABLE parks ADD COLUMN {column} {definition}')
         callback_columns = {row[1] for row in self._db.execute('PRAGMA table_info(callbacks)')}
         if 'reconcile_attempts' not in callback_columns:
             self._db.execute('ALTER TABLE callbacks ADD COLUMN reconcile_attempts INTEGER NOT NULL DEFAULT 0')
@@ -59,9 +64,11 @@ class Store:
             self._db.execute('ALTER TABLE callbacks ADD COLUMN message TEXT')
         job_columns = {row[1] for row in self._db.execute('PRAGMA table_info(jobs)')}
         for column, definition in (('observer_run', 'TEXT'), ('recovery_pending', 'INTEGER NOT NULL DEFAULT 1'),
-                                   ('report', 'INTEGER NOT NULL DEFAULT 0'), ('label', 'TEXT')):
+                                   ('report', 'INTEGER NOT NULL DEFAULT 0'), ('label', 'TEXT'),
+                                   ('interruption_pending', 'INTEGER NOT NULL DEFAULT 0')):
             if column not in job_columns:
                 self._db.execute(f'ALTER TABLE jobs ADD COLUMN {column} {definition}')
+        self._db.commit()
 
     def close(self):
         self._db.close()
@@ -71,6 +78,14 @@ class Store:
         jobs = [dict(row) for row in self._db.execute(
             'SELECT jobs.* FROM jobs JOIN parks ON parks.id=jobs.park WHERE parks.parent=?', (parent,))]
         callbacks = [dict(row) for row in self._db.execute('SELECT * FROM callbacks WHERE parent=?', (parent,))]
+        for park in parks:
+            reason = ('Interrupted origin lacks positive terminal evidence; delivery and recovery resume are paused.'
+                      if park['origin_pending'] else
+                      'Interrupted worker lacks positive terminal evidence; its outcome remains pending.'
+                      if any(j['park'] == park['id'] and j['interruption_pending'] for j in jobs) else None)
+            park['pending_reason'] = reason if park['state'] == 'armed' else None
+            if park['pending_reason']:
+                park['monitoring_error'], park['error'] = park['error'], reason
         return {'parent': parent, 'parks': parks, 'jobs': jobs, 'callbacks': callbacks,
                 'health': self.health(parent)}
 
@@ -81,7 +96,7 @@ class Store:
             LEFT JOIN callbacks ON callbacks.id=jobs.callback WHERE parks.parent=? AND parks.state='armed'
             AND {pending}""", (parent,)).fetchall()
         uncertain = self._db.execute("SELECT COUNT(*) FROM callbacks WHERE parent=? AND state IN ('uncertain','cancel_uncertain')", (parent,)).fetchone()[0]
-        error = self._db.execute("SELECT 1 FROM parks WHERE parent=? AND state<>'cancelled' AND error IS NOT NULL UNION ALL SELECT 1 FROM callbacks WHERE parent=? AND state NOT IN ('delivered','cancelled','expired') AND error IS NOT NULL LIMIT 1", (parent, parent)).fetchone()
+        error = self._db.execute("SELECT 1 FROM parks WHERE parent=? AND state<>'cancelled' AND (error IS NOT NULL OR origin_pending=1 OR EXISTS (SELECT 1 FROM jobs WHERE jobs.park=parks.id AND interruption_pending=1)) UNION ALL SELECT 1 FROM callbacks WHERE parent=? AND state NOT IN ('delivered','cancelled','expired') AND error IS NOT NULL LIMIT 1", (parent, parent)).fetchone()
         reports = sum(row['report'] for row in jobs)
         running = sum(row['status'] == 'armed' for row in jobs)
         state = 'uncertain' if uncertain else 'error' if error else 'waiting' if running else 'report' if reports else 'waiting' if jobs else 'idle'
@@ -114,7 +129,7 @@ class Store:
             temporary.unlink(missing_ok=True)
         return view
 
-    def register_resolved(self, parent, origin, reason, resolved, labels, generation):
+    def register_resolved(self, parent, origin, reason, resolved, labels, generation, pending=()):
         resolved = list({job[0]: job for job in resolved}.values())
         armed, existing, finished = [], [], []
         park = None
@@ -147,19 +162,40 @@ class Store:
                     label = ' '.join(str(label).split())[:96]
                     self._db.execute('''INSERT INTO jobs (id,park,kind,thread,turn,item,process,status,exit_code,callback,recovery_pending,label)
                         VALUES (?,?,?,?,?,?,?,?,?,NULL,0,?)''', (job[0], park, *job[1:], label))
+                    if job[0] in pending:
+                        self._db.execute('UPDATE jobs SET interruption_pending=1 WHERE id=?', (job[0],))
         self.publish(parent)
         return {'parent': parent, 'park': park,
                 'state': 'armed' if armed else 'already_registered' if existing else 'already_finished',
                 'armed': [job[0] for job in armed], 'already_registered': existing, 'already_finished': finished}
 
-    def request_cancel(self, parent, origin=None):
+    def request_cancel(self, parent, origin=None, *, evidence=None):
         scope = 'parent=?' + (' AND origin=?' if origin else '')
         params = (parent, origin) if origin else (parent,)
         with self._db:
-            self._db.execute(f"UPDATE parks SET state='cancelled',error=NULL WHERE {scope}", params)
-            self._db.execute(f"UPDATE jobs SET status='cancelled' WHERE status='armed' AND park IN (SELECT id FROM parks WHERE {scope})", params)
+            self._db.execute('BEGIN IMMEDIATE')
+            for park in self._db.execute(f"SELECT * FROM parks WHERE {scope} AND state<>'cancelled'", params).fetchall():
+                provenance = {key: value[:160] if isinstance(value, str) else value
+                              for key, value in (evidence or {'source': 'explicit'}).items()
+                              if key in ('status', 'completedAt', 'source', 'event', 'timestamp', 'observer', 'generation')}
+                owner = self._db.execute('SELECT observer_run FROM jobs WHERE park=? AND observer_run IS NOT NULL LIMIT 1', (park['id'],)).fetchone()
+                provenance.setdefault('observer', owner['observer_run'] if owner else None)
+                provenance.setdefault('generation', park['generation'])
+                provenance['previous_error'] = park['error']
+                self._db.execute("UPDATE parks SET state='cancelled',error=NULL,origin_pending=0,cancelled_at=?,cancel_kind=?,cancel_evidence=? WHERE id=?",
+                                 (time.time(), 'confirmed_origin' if evidence else 'explicit',
+                                  json.dumps(provenance, separators=(',', ':')), park['id']))
+            self._db.execute(f"UPDATE jobs SET status='cancelled',interruption_pending=0 WHERE status='armed' AND park IN (SELECT id FROM parks WHERE {scope})", params)
             self._db.execute(f"UPDATE callbacks SET state=CASE WHEN state='ready' THEN 'cancelled' ELSE 'cancel_requested' END WHERE id IN (SELECT callback FROM jobs WHERE park IN (SELECT id FROM parks WHERE {scope})) AND state IN ('ready','in_flight','uncertain','pending','starting')", params)
         self.publish(parent)
+
+    def origin_pending(self, parent, origin, pending):
+        with self._db:
+            self._db.execute("UPDATE parks SET origin_pending=? WHERE parent=? AND origin=? AND state='armed'", (int(pending), parent, origin))
+
+    def worker_pending(self, job, pending):
+        with self._db:
+            self._db.execute("UPDATE jobs SET interruption_pending=? WHERE id=? AND status='armed'", (int(pending), job))
 
     # A frozen callback owns its payload; only unclaimed work can change recovery class.
     _claimable = "park IN (SELECT id FROM parks WHERE parent=? AND state='armed') AND (status='armed' OR callback IS NULL OR callback IN (SELECT id FROM callbacks WHERE state='ready' AND message IS NULL))"
@@ -190,6 +226,8 @@ class Store:
         return self._db.execute("SELECT * FROM parks WHERE parent=? AND state='armed'", (parent,)).fetchall()
 
     def can_resume(self, parent, queue, native):
+        if not self.active_parks(parent) or self._db.execute("SELECT 1 FROM parks WHERE parent=? AND state='armed' AND origin_pending=1 LIMIT 1", (parent,)).fetchone():
+            return False
         callbacks = {row['client']: row for row in self._db.execute('SELECT client,state,idempotent FROM callbacks WHERE parent=?', (parent,))}
         return all(q.get('clientUserMessageId') in callbacks
                    and callbacks[q['clientUserMessageId']]['state'] in ('pending', 'uncertain', 'starting', 'in_flight')
@@ -198,7 +236,7 @@ class Store:
     def expire_registration(self, park):
         with self._db:
             self._db.execute("UPDATE parks SET state='expired',error='Registration duration expired; completion remains unknown.' WHERE id=? AND state='armed'", (park,))
-            self._db.execute("UPDATE jobs SET status='expired' WHERE park=? AND status='armed'", (park,))
+            self._db.execute("UPDATE jobs SET status='expired',interruption_pending=0 WHERE park=? AND status='armed'", (park,))
             self._db.execute("UPDATE callbacks SET state=CASE WHEN state='ready' THEN 'expired' ELSE 'cancel_requested' END WHERE id IN (SELECT callback FROM jobs WHERE park=?) AND state IN ('ready','pending','starting','in_flight')", (park,))
 
     def jobs_to_observe(self, parent):
@@ -219,7 +257,9 @@ class Store:
 
     def finish_recovery(self, parent):
         with self._db:
-            self._db.execute("UPDATE parks SET generation=recovery_generation,recovery_generation=NULL WHERE parent=? AND state='armed' AND recovery_generation IS NOT NULL", (parent,))
+            self._db.execute("""UPDATE parks SET generation=recovery_generation,recovery_generation=NULL
+                WHERE parent=? AND state='armed' AND recovery_generation IS NOT NULL
+                AND NOT EXISTS (SELECT 1 FROM jobs WHERE jobs.park=parks.id AND status='armed' AND interruption_pending=1)""", (parent,))
 
     def batch(self, parent):
         with self._db:
@@ -286,7 +326,9 @@ class Store:
 
     def next_callback(self, parent, *, starting=False, native=False):
         state = 'pending' if starting else 'ready'
-        callback = self._db.execute('SELECT * FROM callbacks WHERE parent=? AND state=? LIMIT 1', (parent, state)).fetchone()
+        callback = self._db.execute('''SELECT * FROM callbacks WHERE parent=? AND state=?
+            AND NOT EXISTS (SELECT 1 FROM jobs JOIN parks ON parks.id=jobs.park
+                WHERE jobs.callback=callbacks.id AND parks.origin_pending=1) LIMIT 1''', (parent, state)).fetchone()
         if callback and callback['idempotent'] and not native:
             if not starting:
                 with self._db:
@@ -300,6 +342,9 @@ class Store:
             current = self._db.execute('SELECT * FROM callbacks WHERE id=?', (callback['id'],)).fetchone()
             expected = 'pending' if starting else 'ready'
             if not current or current['state'] != expected or self.callback_cancelling(current):
+                return None
+            if self._db.execute('''SELECT 1 FROM jobs JOIN parks ON parks.id=jobs.park
+                WHERE jobs.callback=? AND parks.origin_pending=1 LIMIT 1''', (current['id'],)).fetchone():
                 return None
             if current['idempotent'] and not native:
                 return None
@@ -337,7 +382,8 @@ class Store:
 
     def monitoring_succeeded(self, parent):
         with self._db:
-            self._db.execute("UPDATE parks SET error=NULL WHERE parent=? AND state<>'expired'", (parent,))
+            self._db.execute("""UPDATE parks SET error=NULL WHERE parent=? AND state NOT IN ('expired','cancelled')
+                AND origin_pending=0 AND NOT EXISTS (SELECT 1 FROM jobs WHERE jobs.park=parks.id AND interruption_pending=1)""", (parent,))
             # Legacy warning text is the on-disk provenance; keep its classification inside the ledger.
             self._db.execute("UPDATE callbacks SET error=NULL WHERE parent=? AND state='ready' AND error LIKE 'RPC unavailable (%); no blind enqueue retry.'", (parent,))
 
@@ -360,6 +406,6 @@ class Store:
     def expire_observation(self, parent):
         with self._db:
             self._db.execute("UPDATE parks SET state='expired',error='Observer duration expired; completion remains unknown.' WHERE parent=? AND state='armed'", (parent,))
-            self._db.execute("UPDATE jobs SET status='expired' WHERE status='armed' AND park IN (SELECT id FROM parks WHERE parent=? AND state='expired')", (parent,))
+            self._db.execute("UPDATE jobs SET status='expired',interruption_pending=0 WHERE status='armed' AND park IN (SELECT id FROM parks WHERE parent=? AND state='expired')", (parent,))
             self._db.execute("UPDATE callbacks SET state=CASE WHEN state='ready' THEN 'expired' ELSE 'uncertain' END,error='Observer duration expired; delivery needs positive reconciliation.' WHERE parent=? AND state IN ('ready','pending','starting','in_flight')", (parent,))
         self.publish(parent)
