@@ -388,8 +388,10 @@ class Store:
 
     def monitoring_succeeded(self, parent):
         with self._db:
+            # Successful monitoring does not resolve an active package-upgrade refusal.
             self._db.execute("""UPDATE parks SET error=NULL WHERE parent=? AND state NOT IN ('expired','cancelled')
-                AND origin_pending=0 AND NOT EXISTS (SELECT 1 FROM jobs WHERE jobs.park=parks.id AND interruption_pending=1)""", (parent,))
+                AND (state<>'armed' OR error IS NOT ?)
+                AND origin_pending=0 AND NOT EXISTS (SELECT 1 FROM jobs WHERE jobs.park=parks.id AND interruption_pending=1)""", (parent, UPGRADE_WARNING))
             # Legacy warning text is the on-disk provenance; keep its classification inside the ledger.
             self._db.execute("UPDATE callbacks SET error=NULL WHERE parent=? AND state='ready' AND error LIKE 'RPC unavailable (%); no blind enqueue retry.'", (parent,))
 

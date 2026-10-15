@@ -430,7 +430,6 @@ class Observer:
                     try:
                         active = self.step()
                         self.store.monitoring_succeeded(self.parent)
-                        self.store.publish(self.parent)
                         backoff = 1
                     except (OSError, ValueError, KeyError, TypeError) as exc:
                         if self.client:

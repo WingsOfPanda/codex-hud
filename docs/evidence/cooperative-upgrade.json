@@ -4,17 +4,17 @@
   "coordinator_protocol": 1,
   "bootstrap": "0.162.1-plus.0.0.4 and earlier require one quiet rollout; later same-protocol/upstream/target packages may transfer with jobs active",
   "source_sha256": {
-    "codex_plus/background.py": "b1db2b0cd3d2f5d2decc5bb9056dd327e51fc61447f80f1217bbcb1a6a332453",
-    "codex_plus/ledger.py": "99004f4a765edac9d482e239920ef72a24eae529c5342ab2b1202f6e93c52c6c",
+    "codex_plus/background.py": "126ed6115f8451f352b9c951a1cc36d5f01efa826208ae867272e6566242f02a",
+    "codex_plus/ledger.py": "cf1a4d4ec082b4973dc2ade5843244cbc6a0866fa0695b614693a1fb619d51f3",
     "codex_plus/upgrade.py": "644793411bb1f224bb96c75c954bcaf0087406a5f492ee97ad72ac83fde2d4d5",
-    "tests/test_upgrade.py": "5c39430782dbf57748248ce4b073de2f208ea71caa6bf28489b73d79c9b46e54",
+    "tests/test_upgrade.py": "39b9430704ab9719a98b8a20677704f59251b2e1b3ca1534073512a237ebfc09",
     "tests/test_cooperative_upgrade_integration.py": "8d22e8fc9ab7a039e08b69d3d742922ce13c743fb231098f78a5086dcb586c60",
     "tests/fixtures/cooperative_upgrade.py": "4c4deaad6aa91c9c1cb63574f8c29ec15030bbf8cc5a32a521f59801e45071de",
     "scripts/package-release.py": "93bb6c39b33ff4a9d029fba207264e062982ae64a35df02a0e4d17d5276358a4",
     "tests/test_packaging.py": "a7d3aa0304803d1c5987f9431bba8dc76c60e08707678b2a666efcb9fc4c7daf"
   },
   "root_checks": {
-    "upgrade_unit_tests": 25,
+    "upgrade_unit_tests": 27,
     "lifecycle_tests": 118,
     "packaging_tests": 13,
     "evidence_reader_tests": 18,
@@ -25,7 +25,9 @@
     "reader_launcher_log": "/home/liupan/.codex/codex-plus/logs/c9cd4a05-7f1d-4bb3-85bf-379a2bebe359.log",
     "integration_log": "/home/liupan/.codex/codex-plus/logs/f5edfb5d-92e4-442a-a6ed-ac876c5c5c3d.log",
     "integration_seconds": 54.294,
-    "upgrade_unit_log": "/home/liupan/.codex/codex-plus/logs/5b3fc655-860c-421c-84ea-f4e0c6d4cfbc.log"
+    "upgrade_unit_log": "/home/liupan/.codex/codex-plus/logs/a44793dd-5680-4704-9ab8-5e7914a0eeff.log",
+    "lifecycle_log": "/home/liupan/.codex/codex-plus/logs/a44793dd-5680-4704-9ab8-5e7914a0eeff.log",
+    "integration_source_commit": "d6cf9e1722bc05df1a6e3193ca5872d35f4b9d37"
   },
   "official_daemon": {
     "binary": "/home/liupan/.codex/packages/app-server-daemon/releases/0.162.1-x86_64-unknown-linux-musl/bin/codex",
@@ -132,6 +134,9 @@
     "manifest_sha256": "per target, SHA-256 of exact codex-plus.json bytes"
   },
   "regression_red_logs": [
-    "/home/liupan/.codex/codex-plus/logs/c374ea32-8de4-4cfc-a7b9-76bbf30a9584.log"
-  ]
+    "/home/liupan/.codex/codex-plus/logs/c374ea32-8de4-4cfc-a7b9-76bbf30a9584.log",
+    "/home/liupan/.codex/codex-plus/logs/418daadc-1136-467e-acb8-fc434c1af86e.log",
+    "/home/liupan/.codex/codex-plus/logs/79cda72a-cebf-430f-bd4e-a7b7c1c7d4f3.log"
+  ],
+  "warning_fix_verification": "Every published active-park status remains error under invalid target, including after RPC failure recovery; valid selection/completed registration clear the warning. 27 upgrade and 118 lifecycle checks passed after fix; real-stock transfer suite was not repeated for this warning-only follow-up."
 }

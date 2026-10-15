@@ -292,16 +292,58 @@ class HandoffTests(unittest.TestCase):
         self.assertEqual(next(row for row in final['jobs'] if row['id'] == cancelled_job['id']), cancelled_job)
 
     def test_invalid_target_keeps_observing_with_durable_warning(self):
-        states = []
+        states, published = [], []
+        original_publish = self.store.publish
+        def publish(parent):
+            view = original_publish(parent)
+            if self.store.active_parks(parent):
+                published.append(view['state'])
+            return view
         def sleep(_):
             with StoreContext(self.temp.name) as other:
                 states.append(other.status(PARENT)['health']['state'])
                 self.assertEqual(other.status(PARENT)['parks'][0]['error'], UPGRADE_WARNING)
             self.store.request_cancel(PARENT)
         with patch('codex_plus.background.select_package', side_effect=ValueError('bad candidate')), \
-                patch('codex_plus.background.time.sleep', sleep):
+                patch('codex_plus.background.time.sleep', sleep), \
+                patch.object(self.store, 'publish', side_effect=publish):
             self.assertIsNone(self.observer.run())
         self.assertEqual(states, ['error'])
+        self.assertTrue(published)
+        self.assertEqual(set(published), {'error'})
+
+    def test_upgrade_warning_clears_on_valid_selection_or_completed_registration(self):
+        self.store.upgrade_warning(PARENT, True)
+        with patch('codex_plus.background.select_package', return_value=None):
+            self.assertIsNone(background.check_upgrade(self.store, PARENT))
+        self.assertEqual(self.store.publish(PARENT)['state'], 'waiting')
+        self.store.upgrade_warning(PARENT, True)
+        self.fake.complete()
+        self.fake.idle()
+        self.assertFalse(self.observer.step())
+        self.store.monitoring_succeeded(PARENT)
+        self.assertEqual(self.store.publish(PARENT)['state'], 'idle')
+
+    def test_invalid_target_stays_visible_when_rpc_monitoring_recovers(self):
+        published, sleeps = [], []
+        original_publish = self.store.publish
+        self.fake.fail_read = True
+        def publish(parent):
+            view = original_publish(parent)
+            if self.store.active_parks(parent):
+                published.append(view['state'])
+            return view
+        def sleep(_):
+            sleeps.append(True)
+            self.fake.fail_read = False
+            if len(sleeps) == 2:
+                self.store.request_cancel(PARENT)
+        with patch('codex_plus.background.select_package', side_effect=ValueError('bad candidate')), \
+                patch('codex_plus.background.time.sleep', sleep), \
+                patch.object(self.store, 'publish', side_effect=publish):
+            self.assertIsNone(self.observer.run())
+        self.assertTrue(published)
+        self.assertEqual(set(published), {'error'})
 
     def test_lower_current_keeps_watching_and_preserves_frozen_callback_and_cancelled_history(self):
         self.fake.idle()
