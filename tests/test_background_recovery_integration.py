@@ -36,7 +36,7 @@ def run(binary, evidence, scenario='shell-restart'):
     evidence.mkdir(parents=True, exist_ok=True)
     report = {'binary': str(binary), 'scenario': scenario, 'remote_model_requests': 0}
     provider = rpc = native = observer = None
-    with tempfile.TemporaryDirectory(prefix='codex-plus-recovery-') as temporary:
+    with tempfile.TemporaryDirectory(prefix='r-') as temporary:
         root = Path(temporary)
         home, workspace = root / 'home', root / 'workspace'
         home.mkdir(mode=0o700)

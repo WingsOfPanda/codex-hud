@@ -62,7 +62,7 @@ class ProjectionClient:
 def fake_regression():
     """Small desired-behavior check also usable before the real fixture is ready."""
     from test_background import Fake, PARENT, CHILD
-    with tempfile.TemporaryDirectory(prefix='codex-plus-interruption-red-') as home:
+    with tempfile.TemporaryDirectory(prefix='i-red-') as home:
         fake = Fake()
         store = Store(home)
         try:
@@ -108,7 +108,7 @@ def run(binary, evidence, scenario):
     provider.server.RequestHandlerClass = HeldResponse
     native = rpc = store = adapter = None
     # Keep the private Unix socket path below the platform's pathname limit.
-    with tempfile.TemporaryDirectory(prefix='codex-plus-interruption-') as temporary:
+    with tempfile.TemporaryDirectory(prefix='i-') as temporary:
         root = Path(temporary)
         home, workspace = root / 'home', root / 'workspace'
         home.mkdir(mode=0o700)

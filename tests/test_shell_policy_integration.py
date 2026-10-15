@@ -320,7 +320,7 @@ def run_parallel_roots(binary, root, evidence):
 def process_running(pid):
     try:
         return Path(f'/proc/{pid}/stat').read_text().split(') ', 1)[1][0] != 'Z'
-    except FileNotFoundError:
+    except (FileNotFoundError, ProcessLookupError):
         return False
 
 
