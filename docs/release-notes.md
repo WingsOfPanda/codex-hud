@@ -1,8 +1,13 @@
-# Codex Plus 0.162.1-plus.4
+# Codex Plus 0.162.1-plus.0.0.4
 
 Wake reliability release, based on OpenAI Codex `rust-v0.162.1`
 (`092d3acd6bec3e3a14bdc7e7a2810ab628ab759d`). The package manifest records the
 exact Plus source revision, frontend patch hash, target, and artifact hashes.
+
+Plus now has an independent version, `0.0.4`. The combined release name is
+`<upstream>-plus.<Plus version>`; an upstream-only update retains the Plus
+version, for example `0.162.2-plus.0.0.4`. Earlier published `plus.N` names are
+unchanged. No `0.162.1-plus.4` package was published.
 
 This release supersedes `0.162.1-plus.3`. The Python coordinator preserves parks
 and watched workers when the stock daemon briefly projects a normal completion

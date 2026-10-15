@@ -30,7 +30,8 @@ from urllib.request import urlopen
 ROOT = Path(__file__).resolve().parents[1]
 UPSTREAM_COMMIT = '092d3acd6bec3e3a14bdc7e7a2810ab628ab759d'
 UPSTREAM_VERSION = '0.162.1'
-RELEASE = '0.162.1-plus.4'
+PLUS_VERSION = '0.0.4'
+RELEASE = f'{UPSTREAM_VERSION}-plus.{PLUS_VERSION}'
 PATCH = 'patches/codex-0.162.1-worker-hud.patch'
 TARGETS = {'x86_64-unknown-linux-gnu': 62, 'aarch64-unknown-linux-gnu': 183}
 HELPERS = tuple('codex_plus/' + name for name in
