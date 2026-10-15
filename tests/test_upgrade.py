@@ -183,6 +183,11 @@ class HandoffTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
+        # Keep ordinary lifecycle fixtures independent of the imported package location.
+        context = patch.multiple(background, PACKAGE_ROOT=Path(self.temp.name) / 'source',
+                                 state_home=lambda: Path(self.temp.name))
+        context.start()
+        self.addCleanup(context.stop)
         self.store = Store(self.temp.name)
         self.addCleanup(self.store.close)
         self.fake = Fake()
