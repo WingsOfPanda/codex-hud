@@ -111,7 +111,7 @@ let result = await tools.exec_command({
   cmd: "# codex-plus-shell: background\n/absolute/path/to/codex-plus run -- PROGRAM ARGUMENTS",
   yield_time_ms: 250, max_output_tokens: 1000, login: false
 });
-const log = result.output.match(/codex-plus log: (.+)/)?.[1];
+let log = result.output.match(/codex-plus log: (.+)/)?.[1];
 let output = result.output;
 while (result.session_id !== undefined && Date.now() < deadline) {
   result = await tools.write_stdin({
@@ -119,7 +119,9 @@ while (result.session_id !== undefined && Date.now() < deadline) {
     yield_time_ms: Math.min(300000, Math.max(1, deadline - Date.now())),
     max_output_tokens: 1000
   });
-  output = (output + result.output).slice(-4000);
+  output += result.output;
+  log ??= output.match(/codex-plus log: (.+)/)?.[1];
+  output = output.slice(-4000);
 }
 text({state: result.session_id === undefined ? "finished" : "budget_expired",
       exit_code: result.exit_code, session_id: result.session_id, log, output});

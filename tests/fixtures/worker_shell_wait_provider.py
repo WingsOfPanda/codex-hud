@@ -11,11 +11,13 @@ def wait_script(command, budget_ms=110000, outer_ms=120000):
     return f'''// @exec: {{"yield_time_ms": {outer_ms}, "max_output_tokens": 1000}}
 const deadline = Date.now() + {budget_ms};
 let result = await tools.exec_command({{cmd: {json.dumps(command)}, yield_time_ms: 250, max_output_tokens: 1000, login: false}});
-const log = result.output.match(/codex-plus log: (.+)/)?.[1];
+let log = result.output.match(/codex-plus log: (.+)/)?.[1];
 let output = result.output;
 while (result.session_id !== undefined && Date.now() < deadline) {{
   result = await tools.write_stdin({{session_id: result.session_id, chars: "", yield_time_ms: Math.min(300000, Math.max(1, deadline - Date.now())), max_output_tokens: 1000}});
-  output = (output + result.output).slice(-4000);
+  output += result.output;
+  log ??= output.match(/codex-plus log: (.+)/)?.[1];
+  output = output.slice(-4000);
 }}
 text({{state: result.session_id === undefined ? "finished" : "budget_expired", exit_code: result.exit_code, session_id: result.session_id, log, output}});
 '''
