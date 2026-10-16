@@ -1,0 +1,34 @@
+{
+  "release": "0.163.0-plus.0.1.1",
+  "plus_commit": "0b95c33cd81d0225b13e01217b61080f7ac2171f",
+  "coordinator_protocol": 1,
+  "upstream": {
+    "version": "0.163.0",
+    "tag": "rust-v0.163.0",
+    "commit": "83086188ae0614bd882818ff1aa23f3194962012"
+  },
+  "note": "docs/releases/0.163.0-plus.0.1.1.md",
+  "targets": {
+    "x86_64": {
+      "triple": "x86_64-unknown-linux-gnu",
+      "asset": "codex-plus-0.163.0-plus.0.1.1-x86_64-unknown-linux-gnu.tar.gz",
+      "sha256": "bcd5acba52defa5ac29cd90786d782b7e36fbaaaf7bfebd2cc86c484e5b0afc7",
+      "tree_sha256": "7568f15a5b2557b2783aa903efccfb8c8204e905c37915ae624b271927cda70f",
+      "manifest_sha256": "12ab2fccebd65cc859e800df720d428dca09dab20d326a4949a33a5f514a5164"
+    },
+    "aarch64": {
+      "triple": "aarch64-unknown-linux-gnu",
+      "asset": "codex-plus-0.163.0-plus.0.1.1-aarch64-unknown-linux-gnu.tar.gz",
+      "sha256": "dfa7761f7b420af8bdc1ca666f18912f49522035e334e6c9d0b9434aa9dc0b35",
+      "tree_sha256": "36bf509981e47f653e316f34e54a620f8fe8ca20a2eb0129dd88cc81b5e01a09",
+      "manifest_sha256": "423e77e7ce887a9a3ce87af45d6050e25e6fb27fadf549c0245c7dab3827a8b1"
+    }
+  },
+  "rollout": {
+    "daemon_restart": true,
+    "quiet_checkpoint": true,
+    "session_restart": "required",
+    "agents_md": null,
+    "notes": "Fleet baseline is still stock 0.162.1 and Plus 0.162.1-plus.0.1.0. Install this candidate directly instead of the staged 0.163.0-plus.0.1.0. Upstream bump: move stock CLI, stock daemon and matching Plus together. Hold new parks; drain helpers, armed parks, open callbacks and other active Codex work before the scheduled official-daemon restart. Use codex-stock for daemon maintenance, never the Plus TUI /daemon or historical force-stop sidecar. Users exit and codex resume after rollout. Cross-upstream cooperative transfer is intentionally refused even with protocol 1. Preserve previous/in-use packages. Every rollback is quiet and restores the matching old stock CLI/daemon pair; private representative history and pending-queue readability passed, not a general production rollback guarantee. Upstream state migrations 0060/0061 add guardian feedback and unread-thread state; no Plus daemon migration or callback receipt extension."
+  }
+}

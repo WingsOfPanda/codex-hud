@@ -1,0 +1,340 @@
+{
+  "release": "0.163.0-plus.0.1.1",
+  "plus_commit": "0b95c33cd81d0225b13e01217b61080f7ac2171f",
+  "upstream": {
+    "version": "0.163.0",
+    "tag": "rust-v0.163.0",
+    "commit": "83086188ae0614bd882818ff1aa23f3194962012"
+  },
+  "coordinator_protocol": 1,
+  "frontend_patch_sha256": "7d5229cff8f02904c962dc38861153c4e2a04654e68fe569291b39124112e6ed",
+  "rust": "1.99.0",
+  "build_glibc": "2.39",
+  "native_recompiled": true,
+  "voice": false,
+  "bundled_zsh": false,
+  "targets": {
+    "x86_64": {
+      "triple": "x86_64-unknown-linux-gnu",
+      "asset": "codex-plus-0.163.0-plus.0.1.1-x86_64-unknown-linux-gnu.tar.gz",
+      "sha256": "bcd5acba52defa5ac29cd90786d782b7e36fbaaaf7bfebd2cc86c484e5b0afc7",
+      "tree_sha256": "7568f15a5b2557b2783aa903efccfb8c8204e905c37915ae624b271927cda70f",
+      "manifest_sha256": "12ab2fccebd65cc859e800df720d428dca09dab20d326a4949a33a5f514a5164",
+      "archive": "/home/liupan/Aerius/codex-plus/.build/plus011/release/packages/codex-plus-0.163.0-plus.0.1.1-x86_64-unknown-linux-gnu.tar.gz",
+      "archive_bytes": 133363386,
+      "qualification_report": ".build/plus011/release/x86/qualification-summary.json",
+      "qualification_report_sha256": "330e8c1a8116e9723ca26af2eadf4a55416158fc6a293c5e5fae903deba876ee",
+      "root_acceptance": {
+        "passed": true,
+        "archive_sha256": "bcd5acba52defa5ac29cd90786d782b7e36fbaaaf7bfebd2cc86c484e5b0afc7",
+        "manifest_sha256": "12ab2fccebd65cc859e800df720d428dca09dab20d326a4949a33a5f514a5164",
+        "tree_sha256": "7568f15a5b2557b2783aa903efccfb8c8204e905c37915ae624b271927cda70f",
+        "packaged_modules": {
+          "codex_plus.background": "/home/liupan/Aerius/codex-plus/.build/plus011/release/root-x86/extracted/codex-plus-0.163.0-plus.0.1.1-x86_64-unknown-linux-gnu/codex_plus/background.py",
+          "codex_plus.ledger": "/home/liupan/Aerius/codex-plus/.build/plus011/release/root-x86/extracted/codex-plus-0.163.0-plus.0.1.1-x86_64-unknown-linux-gnu/codex_plus/ledger.py",
+          "codex_plus.rpc": "/home/liupan/Aerius/codex-plus/.build/plus011/release/root-x86/extracted/codex-plus-0.163.0-plus.0.1.1-x86_64-unknown-linux-gnu/codex_plus/rpc.py",
+          "codex_plus.runner": "/home/liupan/Aerius/codex-plus/.build/plus011/release/root-x86/extracted/codex-plus-0.163.0-plus.0.1.1-x86_64-unknown-linux-gnu/codex_plus/runner.py",
+          "codex_plus.evidence": "/home/liupan/Aerius/codex-plus/.build/plus011/release/root-x86/extracted/codex-plus-0.163.0-plus.0.1.1-x86_64-unknown-linux-gnu/codex_plus/evidence.py",
+          "codex_plus.upgrade": "/home/liupan/Aerius/codex-plus/.build/plus011/release/root-x86/extracted/codex-plus-0.163.0-plus.0.1.1-x86_64-unknown-linux-gnu/codex_plus/upgrade.py"
+        },
+        "wrapper": {
+          "native_path_args_stdout_exit_preserved": true,
+          "runner_uses_home_local_bin_codex_wrapper": true,
+          "daemon_update_test_used_only_stubs": true
+        },
+        "cooperative_scenarios": [
+          "after_enqueue",
+          "after_start",
+          "before_enqueue",
+          "clean-complete",
+          "completed-gap",
+          "crash-after-enqueue",
+          "crash-before-enqueue",
+          "rapid-A-B-C",
+          "running"
+        ],
+        "upstream_boundary_cases": [
+          "pending-nested-origin-abort",
+          "older-cell-later-interrupt",
+          "registered-worker-origin-abort",
+          "v2-eviction-reuse"
+        ],
+        "rollback_read": true,
+        "new_tui_cases": 2,
+        "package_tree_unchanged": true,
+        "official_binaries_unchanged": {
+          "/home/liupan/Aerius/codex-plus/.build/upstream-0163/official-x86/bin/codex": "399ff69c431c066e40de318fba45c2b07f45a76b19939d247ee4828fc70c4215",
+          "/home/liupan/.codex/packages/app-server-daemon/releases/0.162.1-x86_64-unknown-linux-musl/bin/codex": "628e35487d888a28f0427fc37501da529dd3d81fcbad7a2c3421c1e8670d92e1"
+        }
+      }
+    },
+    "aarch64": {
+      "triple": "aarch64-unknown-linux-gnu",
+      "asset": "codex-plus-0.163.0-plus.0.1.1-aarch64-unknown-linux-gnu.tar.gz",
+      "sha256": "dfa7761f7b420af8bdc1ca666f18912f49522035e334e6c9d0b9434aa9dc0b35",
+      "tree_sha256": "36bf509981e47f653e316f34e54a620f8fe8ca20a2eb0129dd88cc81b5e01a09",
+      "manifest_sha256": "423e77e7ce887a9a3ce87af45d6050e25e6fb27fadf549c0245c7dab3827a8b1",
+      "archive": "/data/liupan/codex-plus-build/plus011/packages/codex-plus-0.163.0-plus.0.1.1-aarch64-unknown-linux-gnu.tar.gz",
+      "archive_bytes": 125810236,
+      "qualification_report": ".build/plus011/release/arm/evidence/qualification-summary.json",
+      "qualification_report_sha256": "06503d46b12f462581ef917d1563394a22965e046bc1a8d3c287630d2c74629f",
+      "root_acceptance": {
+        "passed": true,
+        "archive_sha256": "dfa7761f7b420af8bdc1ca666f18912f49522035e334e6c9d0b9434aa9dc0b35",
+        "manifest_sha256": "423e77e7ce887a9a3ce87af45d6050e25e6fb27fadf549c0245c7dab3827a8b1",
+        "tree_sha256": "36bf509981e47f653e316f34e54a620f8fe8ca20a2eb0129dd88cc81b5e01a09",
+        "packaged_modules": {
+          "codex_plus.background": "/data/liupan/codex-plus-build/plus011/root-acceptance/out/extracted/codex-plus-0.163.0-plus.0.1.1-aarch64-unknown-linux-gnu/codex_plus/background.py",
+          "codex_plus.ledger": "/data/liupan/codex-plus-build/plus011/root-acceptance/out/extracted/codex-plus-0.163.0-plus.0.1.1-aarch64-unknown-linux-gnu/codex_plus/ledger.py",
+          "codex_plus.rpc": "/data/liupan/codex-plus-build/plus011/root-acceptance/out/extracted/codex-plus-0.163.0-plus.0.1.1-aarch64-unknown-linux-gnu/codex_plus/rpc.py",
+          "codex_plus.runner": "/data/liupan/codex-plus-build/plus011/root-acceptance/out/extracted/codex-plus-0.163.0-plus.0.1.1-aarch64-unknown-linux-gnu/codex_plus/runner.py",
+          "codex_plus.evidence": "/data/liupan/codex-plus-build/plus011/root-acceptance/out/extracted/codex-plus-0.163.0-plus.0.1.1-aarch64-unknown-linux-gnu/codex_plus/evidence.py",
+          "codex_plus.upgrade": "/data/liupan/codex-plus-build/plus011/root-acceptance/out/extracted/codex-plus-0.163.0-plus.0.1.1-aarch64-unknown-linux-gnu/codex_plus/upgrade.py"
+        },
+        "wrapper": {
+          "native_path_args_stdout_exit_preserved": true,
+          "runner_uses_home_local_bin_codex_wrapper": true,
+          "daemon_update_test_used_only_stubs": true
+        },
+        "cooperative_scenarios": [
+          "after_enqueue",
+          "after_start",
+          "before_enqueue",
+          "clean-complete",
+          "completed-gap",
+          "crash-after-enqueue",
+          "crash-before-enqueue",
+          "rapid-A-B-C",
+          "running"
+        ],
+        "upstream_boundary_cases": [
+          "pending-nested-origin-abort",
+          "older-cell-later-interrupt",
+          "registered-worker-origin-abort",
+          "v2-eviction-reuse"
+        ],
+        "rollback_read": true,
+        "new_tui_cases": 2,
+        "package_tree_unchanged": true,
+        "official_binaries_unchanged": {
+          "/data/liupan/codex-plus-build/plus011/official/bin/codex": "8a96f66d059d653e68bfd5f3c79337e6f1d7d170d80bf705eb7d0249b34c0ece",
+          "/data/liupan/codex-plus-build/plus011/rollback-official/bin/codex": "071cbe8d821cf1b02b6d8ba6c8b7991b228fcb8519dcb68a37d31222bb8cabe5"
+        }
+      }
+    }
+  },
+  "handoff": {
+    "path": "docs/releases/0.163.0-plus.0.1.1/handoff.json",
+    "sha256": "26719054dd0c9fb7fb3aa7090862141adfce9769f3a58af8b052ba29c3e7d023",
+    "rollout": {
+      "daemon_restart": true,
+      "quiet_checkpoint": true,
+      "session_restart": "required",
+      "agents_md": null,
+      "notes": "Fleet baseline is still stock 0.162.1 and Plus 0.162.1-plus.0.1.0. Install this candidate directly instead of the staged 0.163.0-plus.0.1.0. Upstream bump: move stock CLI, stock daemon and matching Plus together. Hold new parks; drain helpers, armed parks, open callbacks and other active Codex work before the scheduled official-daemon restart. Use codex-stock for daemon maintenance, never the Plus TUI /daemon or historical force-stop sidecar. Users exit and codex resume after rollout. Cross-upstream cooperative transfer is intentionally refused even with protocol 1. Preserve previous/in-use packages. Every rollback is quiet and restores the matching old stock CLI/daemon pair; private representative history and pending-queue readability passed, not a general production rollback guarantee. Upstream state migrations 0060/0061 add guardian feedback and unread-thread state; no Plus daemon migration or callback receipt extension."
+    }
+  },
+  "x86_counts": {
+    "unittest_methods_passed": 228,
+    "unittest_failed": 0,
+    "unittest_skipped": 0,
+    "package_gates_passed": 8,
+    "package_gates_failed": 1,
+    "package_skipped": 0,
+    "native_smoke_passed": 18,
+    "shell_policy_passed": 8,
+    "stock_park_passed": 1,
+    "isolated_integration_scenarios_passed": 35,
+    "integration_failed": 0,
+    "integration_skipped": 0
+  },
+  "arm_qualification": {
+    "package_checks": [
+      "manifest",
+      "public_commands",
+      "wrapper",
+      "resources",
+      "exec",
+      "stdio_code_mode",
+      "native_terminal",
+      "shell_terminal",
+      "manifest_after_runtime"
+    ],
+    "terminal": 18,
+    "shell_policy": 8,
+    "official_park": true,
+    "upgrade": 27,
+    "lifecycle": 118,
+    "evidence_reader": 18,
+    "source_guard": 7,
+    "packaging_unit": 13,
+    "runner": 15,
+    "terminal_fixture": 14,
+    "cooperative": 9,
+    "interruption": 11,
+    "stock_recovery": 7,
+    "normal_completion": true,
+    "upstream_boundaries": 4,
+    "rollback_read": true,
+    "upstream_tui": 2,
+    "supported_cli_sandbox_readonly": {
+      "official": {
+        "passed": true,
+        "exit_code": 0,
+        "stdout": "PRIVATE_SANDBOX_OK\nREAD_ONLY_ENFORCED\n",
+        "stderr": "touch: cannot touch 'denied-file': Read-only file system\n",
+        "sha256": "8a96f66d059d653e68bfd5f3c79337e6f1d7d170d80bf705eb7d0249b34c0ece",
+        "binary_unchanged": true
+      },
+      "plus": {
+        "passed": true,
+        "exit_code": 0,
+        "stdout": "PRIVATE_SANDBOX_OK\nREAD_ONLY_ENFORCED\n",
+        "stderr": "touch: cannot touch 'denied-file': Read-only file system\n",
+        "sha256": "33d9667cec72049f05b2be9f17feabd9be5433025071d2342a61b6b0d206613c",
+        "binary_unchanged": true
+      }
+    },
+    "reports": {
+      "interruption": [
+        {
+          "path": "/data/liupan/codex-plus-build/plus011/interruption/abort/report.json",
+          "passed": true
+        },
+        {
+          "path": "/data/liupan/codex-plus-build/plus011/interruption/active-parent/report.json",
+          "passed": true
+        },
+        {
+          "path": "/data/liupan/codex-plus-build/plus011/interruption/cancel/report.json",
+          "passed": true
+        },
+        {
+          "path": "/data/liupan/codex-plus-build/plus011/interruption/durable-abort/report.json",
+          "passed": true
+        },
+        {
+          "path": "/data/liupan/codex-plus-build/plus011/interruption/durable-evidence/report.json",
+          "passed": true
+        },
+        {
+          "path": "/data/liupan/codex-plus-build/plus011/interruption/foreign-queue/report.json",
+          "passed": true
+        },
+        {
+          "path": "/data/liupan/codex-plus-build/plus011/interruption/origin-projection/report.json",
+          "passed": true
+        },
+        {
+          "path": "/data/liupan/codex-plus-build/plus011/interruption/restart-completed/report.json",
+          "passed": true
+        },
+        {
+          "path": "/data/liupan/codex-plus-build/plus011/interruption/restart-pending/report.json",
+          "passed": true
+        },
+        {
+          "path": "/data/liupan/codex-plus-build/plus011/interruption/reuse/report.json",
+          "passed": true
+        },
+        {
+          "path": "/data/liupan/codex-plus-build/plus011/interruption/worker-projection/report.json",
+          "passed": true
+        }
+      ],
+      "recovery": [
+        {
+          "path": "/data/liupan/codex-plus-build/plus011/recovery/after-enqueue/report.json",
+          "passed": true
+        },
+        {
+          "path": "/data/liupan/codex-plus-build/plus011/recovery/after-start/report.json",
+          "passed": true
+        },
+        {
+          "path": "/data/liupan/codex-plus-build/plus011/recovery/observer-completed/report.json",
+          "passed": true
+        },
+        {
+          "path": "/data/liupan/codex-plus-build/plus011/recovery/observer-running/report.json",
+          "passed": true
+        },
+        {
+          "path": "/data/liupan/codex-plus-build/plus011/recovery/shell-restart/report.json",
+          "passed": true
+        },
+        {
+          "path": "/data/liupan/codex-plus-build/plus011/recovery/uncertain-enqueue/report.json",
+          "passed": true
+        },
+        {
+          "path": "/data/liupan/codex-plus-build/plus011/recovery/worker-restart/report.json",
+          "passed": true
+        }
+      ],
+      "cooperative": [
+        {
+          "path": "/data/liupan/codex-plus-build/plus011/cooperative/after_enqueue/summary.json",
+          "passed": true
+        },
+        {
+          "path": "/data/liupan/codex-plus-build/plus011/cooperative/after_start/summary.json",
+          "passed": true
+        },
+        {
+          "path": "/data/liupan/codex-plus-build/plus011/cooperative/before_enqueue/summary.json",
+          "passed": true
+        },
+        {
+          "path": "/data/liupan/codex-plus-build/plus011/cooperative/clean-complete/summary.json",
+          "passed": true
+        },
+        {
+          "path": "/data/liupan/codex-plus-build/plus011/cooperative/completed-gap/summary.json",
+          "passed": true
+        },
+        {
+          "path": "/data/liupan/codex-plus-build/plus011/cooperative/crash-after-enqueue/summary.json",
+          "passed": true
+        },
+        {
+          "path": "/data/liupan/codex-plus-build/plus011/cooperative/crash-before-enqueue/summary.json",
+          "passed": true
+        },
+        {
+          "path": "/data/liupan/codex-plus-build/plus011/cooperative/rapid-A-B-C/summary.json",
+          "passed": true
+        },
+        {
+          "path": "/data/liupan/codex-plus-build/plus011/cooperative/running/summary.json",
+          "passed": true
+        }
+      ],
+      "boundary": [
+        {
+          "path": "/data/liupan/codex-plus-build/plus011/boundary/older-cell-later-interrupt/report.json",
+          "passed": true
+        },
+        {
+          "path": "/data/liupan/codex-plus-build/plus011/boundary/pending-nested-origin-abort/report.json",
+          "passed": true
+        },
+        {
+          "path": "/data/liupan/codex-plus-build/plus011/boundary/registered-worker-origin-abort/report.json",
+          "passed": true
+        },
+        {
+          "path": "/data/liupan/codex-plus-build/plus011/boundary/v2-eviction-reuse/report.json",
+          "passed": true
+        }
+      ]
+    }
+  },
+  "limits": [
+    "x86 raw bwrap namespace gate fails with exit 1 identically to stock; supported CLI sandbox passes.",
+    "ARM first runner test gate hit an existing /proc exists/read race; unchanged 35-test rerun passed; first wrapper exit 1 preserved.",
+    "No full Rust workspace suite or older-glibc qualification.",
+    "Stock callback enqueue/ack ambiguity remains; no exactly-once execution guarantee.",
+    "Model labels are reported thread metadata, not per-turn provider routing."
+  ]
+}
