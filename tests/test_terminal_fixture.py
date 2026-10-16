@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pyte
 
-from native_smoke import FixtureScreen, assert_compact_hud, shell_rows, worker_rows
+from native_smoke import FixtureScreen, advisor_rows, assert_compact_hud, shell_rows, worker_rows
 from test_shell_policy_integration import process_running
 
 
@@ -54,6 +54,15 @@ class CompactHudAssertionTests(unittest.TestCase):
         text = self.screen(['Watcher unavailable · Workers stale · counts unavailable',
                             'mixed (mixed) · topic (3 agents) · 2:00 · ? tok', '+3 more'])
         assert_compact_hud(text, rows=3)
+
+    def test_advisor_shares_total_budget_with_warning_and_worker(self):
+        advisor = 'Advisor · GPT-6-Astra (xhigh) · reviewing · 1:23'
+        text = self.screen(['Wake delivery uncertain', advisor,
+                            'GPT-6.1-Sol (high) · task · 0:12 · ? tok'])
+        self.assertEqual(advisor_rows(text), [advisor])
+        assert_compact_hud(text, rows=3)
+        with self.assertRaises(AssertionError):
+            assert_compact_hud(text + '\n+2 more')
 
     def test_typed_draft_does_not_require_shortcuts_footer(self):
         assert_compact_hud('› draft\nroot-status\nBackground · command · seen 0:12', rows=1)

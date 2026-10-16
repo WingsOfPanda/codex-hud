@@ -85,6 +85,24 @@ class PackageIntegrityTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, 'coordinator compatibility'):
                     self.verify()
 
+    def test_advisor_is_required_in_package_and_source_inventory(self):
+        self.assertIn('codex_plus/advisor.py', package_release.HELPERS)
+        self.assertIn('codex_plus/advisor.py', package_release.SOURCE_FILES)
+        self.assertIn('docs/advisor.md', package_release.DOCS)
+        (self.package / 'codex_plus/advisor.py').unlink()
+        self.seal()
+        with self.assertRaisesRegex(ValueError, 'Missing regular package file: codex_plus/advisor.py'):
+            self.verify()
+
+    def test_protocol_one_upgrade_accepts_advisor_helper_inventory(self):
+        from codex_plus.upgrade import select_package
+        old = self.package.parent / 'previous'
+        old.mkdir()
+        previous = dict(self.manifest, release='0.163.0-plus.0.1.0')
+        (old / 'codex-plus.json').write_text(json.dumps(previous))
+        (self.package.parent / 'current').symlink_to(self.package.name)
+        self.assertEqual(select_package(old), self.package)
+
     def test_corruption_missing_and_additional_files_rejected(self):
         for mutation in ('corrupt', 'missing', 'extra', 'mode'):
             with self.subTest(mutation=mutation):

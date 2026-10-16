@@ -8,12 +8,17 @@ fi
 if [[ "${1:-}" == "run" ]]; then
     export PYTHONDONTWRITEBYTECODE=1
     export PYTHONPATH="$root${PYTHONPATH:+:$PYTHONPATH}"
-    exec python3 -m codex_plus.runner "$@"
+    exec python3 -P -m codex_plus.runner "$@"
 fi
 if [[ "${1:-}" == "park" ]]; then
     export PYTHONDONTWRITEBYTECODE=1
     export PYTHONPATH="$root${PYTHONPATH:+:$PYTHONPATH}"
-    exec python3 -m codex_plus.background "$@"
+    exec python3 -P -m codex_plus.background "$@"
+fi
+if [[ "${1:-}" == "advisor" ]]; then
+    export PYTHONDONTWRITEBYTECODE=1
+    export PYTHONPATH="$root${PYTHONPATH:+:$PYTHONPATH}"
+    exec python3 -P -m codex_plus.advisor "$@"
 fi
 native="$root/bin/codex"
 if [[ ! -x "$native" ]]; then

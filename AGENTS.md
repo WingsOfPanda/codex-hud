@@ -45,6 +45,10 @@ jobs, check the result, and end the main turn once monitoring is confirmed.
 Review already-finished results immediately; failed registration is not a park.
 Native subagents return results to their parent instead of parking themselves.
 
+For an independent read-only second opinion, the root session can use the
+[Astra advisor](docs/advisor.md). Supply a self-contained brief; the main agent
+owns the decision after reviewing the advisor's findings.
+
 Handle coordinator notifications by kind:
 
 - `LIVE COMPLETION`: inspect the referenced results and continue the current

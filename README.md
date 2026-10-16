@@ -89,7 +89,7 @@ model or token fields. The stock terminal API has no start timestamp: **seen
 measures time observed by this client**, not the command's total runtime, and resets when the
 client restarts or sees a new command identity.
 
-Workers, background commands, warnings, and any `+N more` line share a strict
+Workers, background commands, advisor status, warnings, and any `+N more` line share a strict
 three-row total limit below the shortcuts footer. This keeps the composer within
 AP's last-six-nonempty-lines readiness window. When space permits, mixed activity
 shows both a worker and a background command. Warnings take priority within the
@@ -151,6 +151,25 @@ Different batches and parent threads stay separate. Untagged or malformed names
 remain standalone rows. Grouping never guesses purpose from timing or similar
 names and makes no model calls.
 The three-row limit and `+N more` count groups, standalone workers, and shell jobs.
+
+## Astra advisor
+
+From the main session, request an explicit, read-only second opinion:
+
+```sh
+./bin/codex-plus advisor --brief 'Review the proposed approach and its main risks.'
+```
+
+The helper selects the newest available numeric Astra model supporting `xhigh`,
+then runs one isolated read-only consultation with the packaged native client.
+Supply a self-contained brief: the advisor receives clipped Git status and diff
+statistics, without the session transcript or diff contents. The footer shows
+readiness, the current consultation, and the completed call count and duration;
+refreshing it makes no model calls. See [advisor usage and limits](docs/advisor.md).
+
+Fleet-config owns installed wrapper routing. Its existing `codex-plus` whitelist
+routes only `park`, `run`, and `--version`; a future rollout must add `advisor`.
+Use the repository launcher above until that wrapper is updated.
 
 ## Background completion
 

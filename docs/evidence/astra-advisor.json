@@ -1,0 +1,155 @@
+{
+  "candidate": "0.163.0-plus.0.2.0",
+  "status": "source and x86 development acceptance passed; no release or deployment",
+  "upstream": {
+    "version": "0.163.0",
+    "commit": "83086188ae0614bd882818ff1aa23f3194962012"
+  },
+  "interface": "codex-plus advisor --brief TEXT",
+  "model_selection": "Newest visible numeric-version Astra advertising xhigh",
+  "effort": "xhigh",
+  "main_root_only": true,
+  "read_only": true,
+  "native": {
+    "candidate": "/home/liupan/Aerius/codex-plus/.build/astra-advisor/.build/native-advisor/codex",
+    "sha256": "9ba7146796347ef5afa779df8300adc94976de65600fa3056899ee0d8aadb60f",
+    "patch_sha256": "aca9c71a92fa9b592ad5f0edf413b446eb4af5cb0a66ea0b0c8b3d67dda90eed",
+    "source_checks": {
+      "passed": true,
+      "upstream_commit": "83086188ae0614bd882818ff1aa23f3194962012",
+      "patch_sha256": "aca9c71a92fa9b592ad5f0edf413b446eb4af5cb0a66ea0b0c8b3d67dda90eed",
+      "forward_check": true,
+      "reverse_check": true,
+      "exact_source_check": true,
+      "backend_unchanged": true,
+      "external_lock_packages_identical": true,
+      "external_lock_packages": 1314
+    },
+    "rust_filters": {
+      "advisor": 8,
+      "worker_hud": 38,
+      "shell_policy": 16
+    },
+    "rust_counts_overlap": true,
+    "root_log": "/home/liupan/.codex/codex-plus/logs/f4f7999c-ece3-4a98-8801-861782696cc5.log"
+  },
+  "python": {
+    "advisor": 16,
+    "launcher": 7,
+    "packaging": 15,
+    "terminal_fixture": 15,
+    "source_guard": 7,
+    "root_log": "/home/liupan/.codex/codex-plus/logs/9060e823-2465-452d-961a-d16b24ca2a75.log",
+    "source_guard_log": "/home/liupan/.codex/codex-plus/logs/43416d1d-46bc-40d2-9e7d-5aa50ab1a0e6.log"
+  },
+  "stock_integration": {
+    "binary": "/home/liupan/Aerius/codex-plus/.build/upstream-0163/official-x86/bin/codex",
+    "sha256": "399ff69c431c066e40de318fba45c2b07f45a76b19939d247ee4828fc70c4215",
+    "remote_provider_requests": 0,
+    "passed": [
+      "official stock exec reads evidence and kernel sandbox denies workspace write",
+      "selected exact Astra model and xhigh reach Responses requests",
+      "invalid response fails visibly without approval",
+      "failure response fails visibly without approval",
+      "SIGTERM interrupts owned stock exec and publishes an error",
+      "actual provider tool descriptors contain no delegation, spawn, or collaboration tools",
+      "immutable production args, isolated config, root-only metadata, no transcript or daemon mutation"
+    ],
+    "advertised_tool_names": [
+      "clock",
+      "exec",
+      "functions",
+      "request_user_input",
+      "request_user_input_async",
+      "sleep",
+      "wait"
+    ]
+  },
+  "terminal": {
+    "stages": [
+      "six active workers show two full-model rows plus +4 more in three total rows, with elapsed, unknown remote tokens, actual GPT-6.1-Sol high/GPT-6-Astra medium, and idle composer within last six nonempty lines",
+      "read-only /daemon shows status guidance and Close; no daemon update choices or exit",
+      "two simultaneous independent roots and editable composers",
+      "input remains editable during delayed metadata RPC",
+      "completion removes its row and promotes a hidden active worker",
+      "last completion hides the entire strip while both composers remain editable",
+      "later activity restores the compact strip without losing the draft",
+      "explicit three-member cohort reduces 3\u21922\u21921\u2192hidden without duplicate rows or shrinking dispatch elapsed; independent cohort stays separate, group resize/input preserve draft, final strip collapses",
+      "explicit approval wait survives alert plus overflow in three total rows, with idle composer within last six nonempty lines",
+      "small and normal PTY resize with preserved draft",
+      "partial metadata RPC failure marks counts stale and recovers",
+      "stale disconnect and automatic reconnect without cross-pane effect",
+      "zero turn/start or turn/steer requests and zero model calls",
+      "remote websocket roots ignore unrelated local watcher and advisor status files",
+      "isolated tmux server: two split panes, draft editing, small/normal resize, stale/reconnect, zero turn/start or turn/steer",
+      "private local app-server: two loopback seed turns, then idle roots, healthy waiting hidden, zero jobs pending visible, stale/uncertain/report/idle health, last-six composer detection, narrow draft editing, parent isolation, zero additional model calls or turns",
+      "unregistered remote shell-only and mixed worker/shell strips; three total rows including overflow and alerts; compact background labels and observed elapsed; item identity reset; parent isolation; shell-only stale failures and recovery; Unicode/control-safe narrow drafts; successful disappearance without success claim; zero UI turn or execution requests",
+      "real private local embedded app-server: one loopback tool turn, yielded finite shell survives completed turn, row and editable idle draft without park registration, actual command completion removes row, zero extra model calls or turns",
+      "advisor explicit Astra catalog: ready zero calls, running timer, done count/duration, error, stale/malformed/mismatched/FIFO/symlink status, full reported model per pane, managed advisor shell coalesces only while reviewing and unrelated shell stays visible, warning/advisor/real-shell share three rows with narrow AP composer, zero extra model calls or turns"
+    ],
+    "ui_model_calls_after_setup": 0,
+    "fixture_setup": {
+      "advisor_seeds": 2,
+      "advisor_shells": 4
+    },
+    "root_log": "/home/liupan/.codex/codex-plus/logs/d5386338-0afa-4d25-8612-fa44f26efe0d.log"
+  },
+  "upstream_tui_cases": [
+    {
+      "case": "config_and_footer_selection",
+      "geometry": {
+        "three_rows": {
+          "row": 28,
+          "column": 8,
+          "copied": "shortcuts"
+        },
+        "zero_rows": {
+          "row": 31,
+          "column": 8,
+          "copied": "shortcuts"
+        },
+        "narrow_one_row": {
+          "row": 10,
+          "column": 8,
+          "copied": "shortcuts"
+        }
+      },
+      "ui_started_turns": 0,
+      "model_calls": 0,
+      "passed": true
+    },
+    {
+      "case": "marked_background_program_status",
+      "statuses": [
+        "idle",
+        "working",
+        "idle",
+        "working",
+        "idle"
+      ],
+      "loopback_requests": 2,
+      "turns": 1,
+      "passed": true
+    }
+  ],
+  "regressions": [
+    "Clean feature-branch merge-base pointer, unknown status version, and recursive advisor checks.",
+    "Old checkout shadowed Python helpers; python3 -P fixes helper import precedence while child cwd imports remain intact.",
+    "Legacy multi_agent flag still advertised V2; agents.enabled=false and features.multi_agent_v2=false now remove actual delegation descriptors.",
+    "Old upstream UI fixture expected one job row; updated to count persistent advisor plus job and preserve zero-added-turn assertions."
+  ],
+  "coordinator_protocol": 1,
+  "limits": [
+    "No real advisor-model request, optimized or ARM build, full upstream workspace suite, publication, or fleet install.",
+    "Installed wrapper must route advisor; global instruction draft is in docs/advisor.md, not deployed.",
+    "Consultations read the live repository; the brief/git pointer is captured at start, not a frozen worktree snapshot.",
+    "A forced helper death may leave stale status; no automatic retry or crash-durable consultation resume is claimed.",
+    "Ambiguous shell syntax stays visible instead of being coalesced."
+  ],
+  "source_hashes": {
+    "codex_plus/advisor.py": "cf8b148135742a38ecae095ccd8a6d0b7120dbf0effbb380e868caec6af9c911",
+    "bin/codex-plus": "47da1d33f61b87bf69995b687491211979483d8657a3a59d50facfe32bf14c20",
+    "tests/test_advisor.py": "59d118a2b463b9751de729c4e2c37c499f43455217cc21a9db73dfcbc31d699a",
+    "tests/test_advisor_integration.py": "ddcc4df019f618770a6b6c3ccf6ac004f861582c8e394c7f7eb1aff2f1e23e4e"
+  }
+}

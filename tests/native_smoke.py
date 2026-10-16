@@ -28,6 +28,7 @@ from wcwidth import wcwidth
 
 from fixtures.native_server import AppServer
 from fixtures.background_provider import ResponsesProvider
+from fixtures.advisor_provider import AdvisorProvider
 from test_background_integration import REPO, RecordingClient, stop, wait as wait_server
 
 
@@ -134,9 +135,13 @@ def shell_rows(text):
     return [line.strip() for line in text.splitlines() if line.strip().startswith('Background · ')]
 
 
+def advisor_rows(text):
+    return [line.strip() for line in text.splitlines() if line.strip().startswith('Advisor · ')]
+
+
 def assert_compact_hud(text, *, rows=None, idle=True):
     lines = [line.strip() for line in text.splitlines() if line.strip()]
-    activities = worker_rows(text) + shell_rows(text)
+    activities = worker_rows(text) + shell_rows(text) + advisor_rows(text)
     alerts = [line for line in lines if line.startswith(('Workers stale', 'Workers unavailable',
               'Shells stale', 'Shells unavailable', 'Watcher ', 'Wake pending', 'Wake delivery ', 'Restart report '))]
     overflow = [line for line in lines if re.match(r'^\+\d+ more$', line)]
@@ -156,6 +161,27 @@ def assert_compact_hud(text, *, rows=None, idle=True):
     if idle:
         assert any(line.startswith('›') for line in lines[-6:]), f'idle composer fell outside last six nonempty lines\n{text}'
     return hud
+
+
+def write_model_catalog(home, *, astra=False):
+    """Keep baseline cases unavailable; opt advisor cases into an explicit catalog."""
+    models = []
+    for slug in (['gpt-6.1-sol', 'gpt-6-astra'] if astra else ['gpt-6.1-sol']):
+        models.append(dict(slug=slug, display_name=slug, description='loopback fixture model',
+            default_reasoning_level='high',
+            supported_reasoning_levels=[{'effort': 'high', 'description': 'High'},
+                                        {'effort': 'xhigh', 'description': 'Extra high'}],
+            shell_type='shell_command', visibility='list', minimal_client_version=[0, 1, 0],
+            supported_in_api=True, priority=0, upgrade=None,
+            model_messages={'instructions_template': 'Read fixture evidence.',
+                            'approvals': None, 'auto_review': None, 'permissions': None},
+            support_verbosity=False, default_verbosity=None, apply_patch_tool_type=None,
+            truncation_policy={'mode': 'bytes', 'limit': 10000},
+            supports_image_detail_original=False, context_window=272000,
+            max_context_window=272000, experimental_supported_tools=[]))
+    path = home / 'fixture-models.json'
+    path.write_text(json.dumps({'models': models}))
+    return f'model_catalog_json={json.dumps(str(path))}\n'
 
 
 def write_health(home, parent, state, *, jobs=0, uncertain=0, reports=0, age=0):
@@ -304,7 +330,7 @@ def local_shell_smoke(binary, root, evidence):
                f'printf canonical-shell-completion > {shlex.quote(str(finished))}')
     provider = ResponsesProvider(command)
     terminal = None
-    (home / 'config.toml').write_text(f'''model="gpt-6.1-sol"
+    (home / 'config.toml').write_text(write_model_catalog(home) + f'''model="gpt-6.1-sol"
 model_provider="isolated"
 model_reasoning_effort="high"
 suppress_unstable_features_warning=true
@@ -402,7 +428,7 @@ def local_health_smoke(binary, root, evidence):
     env = {key: value for key, value in os.environ.items()
            if not any(secret in key.upper() for secret in ('API_KEY', 'AUTH_TOKEN', 'BASE_URL'))}
     env.update(CODEX_HOME=str(home), RUST_LOG='warn')
-    (home / 'config.toml').write_text(f'''model="gpt-6.1-sol"
+    (home / 'config.toml').write_text(write_model_catalog(home) + f'''model="gpt-6.1-sol"
 model_provider="isolated"
 suppress_unstable_features_warning=true
 check_for_update_on_startup=false
@@ -505,6 +531,187 @@ stream_max_retries=0
         provider.close()
 
 
+def advisor_hud_smoke(binary, root, evidence):
+    """Local status changes render without consulting a model or changing turns."""
+    home, workspace = root / 'advisor-home', root / 'advisor-workspace'
+    home.mkdir(mode=0o700)
+    workspace.mkdir()
+    release = workspace / 'release-shell'
+    command = (f'deadline=$((SECONDS+90)); while [ ! -e {shlex.quote(str(release))} ] && '
+               '(( SECONDS < deadline )); do sleep 0.1; done; echo advisor-shell-complete')
+    fixture_bin = root / 'advisor-bin'
+    fixture_bin.mkdir()
+    fixture_launcher = fixture_bin / 'codex-plus'
+    fixture_launcher.write_text('#!/bin/bash\n'
+                                'if [[ "$1" == run && "$2" == -- ]]; then shift 2; exec "$@"; fi\n' +
+                                command + '\n')
+    fixture_launcher.chmod(0o755)
+    provider = AdvisorProvider(command)
+    provider.reset('seed')
+    native = rpc = None
+    terminals = []
+    native_log = (evidence / 'advisor-native.stderr').open('w')
+    env = {key: value for key, value in os.environ.items()
+           if not any(secret in key.upper() for secret in ('API_KEY', 'AUTH_TOKEN', 'BASE_URL'))}
+    env.update(CODEX_HOME=str(home), RUST_LOG='warn', PATH=str(fixture_bin) + os.pathsep + env['PATH'])
+    (home / 'config.toml').write_text(write_model_catalog(home, astra=True) + f'''model="gpt-6.1-sol"
+model_provider="isolated"
+suppress_unstable_features_warning=true
+check_for_update_on_startup=false
+analytics.enabled=false
+features.daemon_auto_start=false
+features.plugins=false
+features.unified_exec=true
+features.shell_tool=true
+[projects."{workspace}"]
+trust_level="trusted"
+[model_providers.isolated]
+name="loopback advisor footer acceptance"
+base_url="{provider.url}"
+wire_api="responses"
+requires_openai_auth=false
+request_max_retries=0
+stream_max_retries=0
+''')
+
+    def publish(identifier, state, *, model='gpt-6-astra', age=0, **changes):
+        now = time.time()
+        value = dict(version=1, parent=identifier, model=model, effort='xhigh', state=state,
+                     started_at=now - 83, updated_at=now - age,
+                     finished_at=None if state == 'running' else now, calls=2,
+                     last_duration_secs=None if state == 'running' else 222,
+                     error='exec_failed' if state == 'error' else None)
+        value.update(changes)
+        directory = home / 'codex-plus'
+        directory.mkdir(mode=0o700, exist_ok=True)
+        temporary = directory / 'advisor-fixture.tmp'
+        temporary.write_text(json.dumps(value))
+        temporary.chmod(0o600)
+        path = directory / f'{identifier}.advisor.json'
+        os.replace(temporary, path)
+        return path
+
+    def capture(name):
+        for index, terminal in enumerate(terminals):
+            (evidence / f'advisor-{name}-pane-{index}.txt').write_text(terminal.text + '\n')
+
+    try:
+        native = subprocess.Popen([str(binary), 'app-server', '--listen', 'unix://'], env=env,
+            stdin=subprocess.DEVNULL, stdout=native_log, stderr=native_log, start_new_session=True)
+        socket = home / 'app-server-control/app-server-control.sock'
+        wait_server(socket.exists, 'private advisor app-server did not start')
+        rpc = RecordingClient(socket)
+        parents = [rpc.call('thread/start', {'model': 'gpt-6.1-sol', 'cwd': str(workspace),
+            'approvalPolicy': 'never', 'sandbox': 'danger-full-access'})['thread']['id'] for _ in range(2)]
+        for index, parent in enumerate(parents):
+            rpc.call('turn/start', {'threadId': parent,
+                'input': [{'type': 'text', 'text': 'Seed isolated advisor footer root.', 'text_elements': []}]})
+            wait_server(lambda: provider.count == index + 1, 'advisor footer seed did not reach loopback')
+            wait_server(lambda: rpc.call('thread/read', {'threadId': parent})['thread']['status']['type'] == 'idle',
+                        'advisor footer seed did not finish')
+        assert provider.count == 2, provider.requests
+        provider.reset('success')
+        rpc.call('turn/start', {'threadId': parents[0],
+            'input': [{'type': 'text', 'text': 'Start the held shell and finish the turn.', 'text_elements': []}]})
+        wait_server(lambda: provider.count == 4, 'advisor mixed fixture shell did not yield')
+        wait_server(lambda: rpc.call('thread/read', {'threadId': parents[0]})['thread']['status']['type'] == 'idle',
+                    'advisor mixed fixture turn did not finish')
+        provider.command = '# codex-plus-shell: background\ncodex-plus run -- codex-plus advisor --brief task'
+        provider.reset('success')
+        rpc.call('turn/start', {'threadId': parents[0],
+            'input': [{'type': 'text', 'text': 'Start the held advisor command fixture and finish.', 'text_elements': []}]})
+        wait_server(lambda: provider.count == 6, 'advisor command fixture did not yield')
+        wait_server(lambda: rpc.call('thread/read', {'threadId': parents[0]})['thread']['status']['type'] == 'idle',
+                    'advisor command fixture turn did not finish')
+        before = provider.count
+        terminals = [Terminal(binary, home, workspace, parent=parent) for parent in parents]
+        first, second = terminals
+        ready = 'Advisor · GPT-6-Astra (xhigh) · ready · 0 calls'
+        wait(terminals, lambda: ready in first.text and ready in second.text,
+             'explicit Astra catalog did not show zero-call readiness', 30)
+        for index, terminal in enumerate(terminals):
+            os.write(terminal.master, f'advisor-draft-{index}'.encode())
+        wait(terminals, lambda: all(f'advisor-draft-{index}' in terminal.text
+             for index, terminal in enumerate(terminals)), 'advisor ready row blocked composer')
+        wait(terminals, lambda: len(shell_rows(first.text)) == 2, 'advisor fixture shells absent')
+        assert_compact_hud(first.text, rows=3)
+        capture('ready')
+        publish(parents[0], 'running')
+        publish(parents[1], 'done', model='gpt-7.2-astra', calls=1)
+        wait(terminals, lambda: 'GPT-6-Astra (xhigh) · reviewing · 1:' in first.text and
+             'GPT-7.2-Astra (xhigh) · 1 call · last 3:42' in second.text,
+             'running and completed status did not remain isolated per pane')
+        wait(terminals, lambda: len(shell_rows(first.text)) == 1,
+             'active advisor command shell was not coalesced')
+        assert 'advisor --brief' not in shell_rows(first.text)[0], first.text
+        assert_compact_hud(first.text, rows=2)
+        assert 'GPT-7.2-Astra' not in first.text and 'reviewing' not in second.text, capture('isolation')
+        initial = advisor_rows(first.text)[0]
+        wait(terminals, lambda: advisor_rows(first.text)[0] != initial,
+             'advisor elapsed timer did not advance without status writes')
+        capture('running')
+        publish(parents[0], 'done')
+        wait(terminals, lambda: '2 calls · last 3:42' in first.text and len(shell_rows(first.text)) == 2,
+             'done count/duration missing or finished advisor suppressed a shell')
+        capture('done')
+        publish(parents[0], 'error')
+        wait(terminals, lambda: 'GPT-6-Astra (xhigh) · error' in first.text, 'advisor error missing')
+        capture('error')
+        publish(parents[0], 'running', age=20)
+        wait(terminals, lambda: 'GPT-6-Astra (xhigh) · unavailable' in first.text,
+             'stale advisor heartbeat still looked active')
+        capture('stale')
+        path = publish(parents[0], 'running', parent=parents[1])
+        wait(terminals, lambda: 'Advisor · ? (xhigh) · unavailable' in first.text,
+             'mismatched parent status was accepted')
+        path.write_text('{invalid')
+        observed = time.monotonic()
+        wait(terminals, lambda: time.monotonic() - observed >= 1.5 and 'unavailable' in first.text,
+             'malformed advisor status was accepted')
+        capture('malformed')
+        path.unlink()
+        os.mkfifo(path)
+        os.write(first.master, b'-fifo')
+        observed = time.monotonic()
+        wait(terminals, lambda: time.monotonic() - observed >= 1.5 and
+             'advisor-draft-0-fifo' in first.text and 'unavailable' in first.text,
+             'advisor FIFO read blocked composer or status refresh')
+        path.unlink()
+        path.symlink_to(workspace / 'absent-status')
+        observed = time.monotonic()
+        wait(terminals, lambda: time.monotonic() - observed >= 1.5 and 'unavailable' in first.text,
+             'advisor symlink status was accepted')
+        path.unlink()
+        publish(parents[0], 'running')
+        write_health(home, parents[0], 'uncertain', uncertain=1)
+        wait(terminals, lambda: 'Wake delivery uncertain' in first.text and 'reviewing' in first.text,
+             'advisor displaced existing warning priority')
+        assert_compact_hud(first.text, rows=3)
+        first.resize(10, 80)
+        os.write(first.master, b'-small')
+        wait(terminals, lambda: 'advisor-draft-0-fifo-small' in first.text and 'reviewing' in first.text,
+             'advisor warning combination lost narrow composer')
+        assert_compact_hud(first.text)
+        capture('warning-small')
+        assert provider.count == before, 'advisor footer called a model: ' + repr(provider.requests)
+        for index, parent in enumerate(parents):
+            assert len(rpc.call('thread/read', {'threadId': parent, 'includeTurns': True})['thread']['turns']) == (3 if index == 0 else 1)
+        return ['advisor explicit Astra catalog: ready zero calls, running timer, done count/duration, error, stale/malformed/mismatched/FIFO/symlink status, full reported model per pane, managed advisor shell coalesces only while reviewing and unrelated shell stays visible, warning/advisor/real-shell share three rows with narrow AP composer, zero extra model calls or turns']
+    finally:
+        release.touch()
+        for index, terminal in enumerate(terminals):
+            (evidence / f'advisor-pane-{index}.ansi').write_bytes(terminal.output)
+            (evidence / f'advisor-pane-{index}-screen.txt').write_text(terminal.text + '\n')
+            terminal.close()
+        if rpc:
+            rpc.close()
+        if native:
+            stop(native)
+        native_log.close()
+        (evidence / 'advisor-provider-requests.json').write_text(json.dumps(provider.requests, indent=2) + '\n')
+        provider.close()
+
+
 def tmux_smoke(binary, root, evidence):
     """Use a private tmux server; never touch the user's server or sessions."""
     if not shutil.which('tmux'):
@@ -586,6 +793,10 @@ def run(binary, evidence):
             identifier = f'00000000-0000-0000-000{index}-000000000001'
             server = AppServer(identifier, workspace, count)
             write_health(home, identifier, 'uncertain', uncertain=987654)
+            (home / 'codex-plus' / f'{identifier}.advisor.json').write_text(json.dumps(dict(
+                version=1, parent=identifier, model='gpt-99-astra', effort='xhigh', state='running',
+                started_at=time.time(), updated_at=time.time(), finished_at=None, calls=987654,
+                last_duration_secs=None, error=None)))
             # A remote worker must never display an unrelated local cache's tokens.
             with sqlite3.connect(home / 'state_5.sqlite') as database:
                 database.execute('CREATE TABLE threads (id TEXT PRIMARY KEY, tokens_used INTEGER NOT NULL)')
@@ -609,6 +820,7 @@ def run(binary, evidence):
                 assert '+4 more' in terminal.text and 'worker 3 ·' not in terminal.text, terminal.text
             assert 'idle ' not in terminal.text and 'done ' not in terminal.text and 'other ' not in terminal.text, terminal.text
             assert 'Wake delivery uncertain' not in terminal.text and '987654' not in terminal.text, terminal.text
+            assert not advisor_rows(terminal.text), terminal.text
         (evidence / 'compact-six-active-screen.txt').write_text(terminals[1].text + '\n')
         stages.append('six active workers show two full-model rows plus +4 more in three total rows, with elapsed, unknown remote tokens, actual GPT-6.1-Sol high/GPT-6-Astra medium, and idle composer within last six nonempty lines')
         os.write(terminals[0].master, b'/daemon')
@@ -760,11 +972,12 @@ def run(binary, evidence):
             assert not server.errors, server.errors
             assert not any(request.get('method') in ('turn/start', 'turn/steer') for request in server.requests), server.requests
         stages.append('zero turn/start or turn/steer requests and zero model calls')
-        stages.append('remote websocket roots ignore an unrelated local watcher health file')
+        stages.append('remote websocket roots ignore unrelated local watcher and advisor status files')
         stages.extend(tmux_smoke(binary, root, evidence))
         stages.extend(local_health_smoke(binary, root, evidence))
         stages.extend(shell_hud_smoke(binary, root, evidence))
         stages.extend(local_shell_smoke(binary, root, evidence))
+        stages.extend(advisor_hud_smoke(binary, root, evidence))
     finally:
         for home in Path(temporary.name).glob('*home-*'):
             for log in home.glob('log/*'):
@@ -779,7 +992,7 @@ def run(binary, evidence):
             (evidence / f'rpc-{index}.json').write_text(json.dumps(server.requests, indent=2) + '\n')
             (evidence / f'fixture-errors-{index}.json').write_text(json.dumps(server.errors, indent=2) + '\n')
         temporary.cleanup()
-    report = {'binary': str(binary), 'passed': stages, 'ui_turn_start_requests': 0, 'ui_turn_steer_requests': 0, 'cursor_replies': [terminal.cursor_replies for terminal in terminals], 'model_calls_after_fixture_setup': 0, 'fixture_seed_model_calls': 2, 'fixture_shell_model_calls': 2, 'terminal_parser': 'pyte 0.8.2', 'tmux_required': False}
+    report = {'binary': str(binary), 'passed': stages, 'ui_turn_start_requests': 0, 'ui_turn_steer_requests': 0, 'cursor_replies': [terminal.cursor_replies for terminal in terminals], 'model_calls_after_fixture_setup': 0, 'fixture_seed_model_calls': 2, 'fixture_shell_model_calls': 2, 'fixture_advisor_seed_model_calls': 2, 'fixture_advisor_shell_model_calls': 4, 'terminal_parser': 'pyte 0.8.2', 'tmux_required': False}
     (evidence / 'report.json').write_text(json.dumps(report, indent=2) + '\n')
     print(json.dumps(report, indent=2))
 

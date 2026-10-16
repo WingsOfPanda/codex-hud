@@ -62,6 +62,33 @@ recognition accepts upstream's custom effort strings as well as known levels.
 This is source/development acceptance; optimized x86 and ARM release packages
 have not been built or qualified for this revision.
 
+### Astra advisor candidate
+
+The 0.2.0 source/development candidate passed 16 advisor, seven launcher,
+15 packaging, 15 terminal-fixture, and seven native source-guard checks. Root
+acceptance reran the advisor/HUD/shell-policy Rust filters (8/38/16 passing
+invocations, with overlap), all 19 native terminal stages, both upstream UI
+scenarios, and seven integration groups against official stock 0.163.0.
+See [astra-advisor.json](evidence/astra-advisor.json) for hashes and logs.
+
+```sh
+python3 -m unittest discover -s tests -p test_advisor.py -v
+python3 tests/test_advisor_integration.py OFFICIAL_BINARY --evidence EVIDENCE
+```
+
+The stock integration proves actual sandbox write denial, exact Astra/xhigh
+requests, structured results, interruption/failure handling, ignored user config,
+and absence of delegation tools in the provider-visible inventory. It reads
+root metadata without the conversation. All providers are loopback fixtures;
+no live consultation was used for implementation acceptance.
+
+The native scenarios cover persistent readiness/count/duration, running elapsed,
+error/stale/invalid files, pane isolation, conservative advisor-shell coalescing,
+unrelated jobs, and the shared three-row/AP prompt budget. Refreshing the footer
+adds no model requests. Source reconstruction and unchanged backend/external lock
+dependencies passed. Optimized/ARM packages and fleet wrapper/global-policy
+deployment remain separate work; this is not release qualification.
+
 ## Historical 0.162.1 verification
 
 The following sections record work against commit

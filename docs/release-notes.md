@@ -1,14 +1,14 @@
-# Codex Plus 0.163.0-plus.0.1.1
+# Codex Plus 0.163.0-plus.0.2.0
 
-Model-identity display update based on OpenAI Codex `rust-v0.163.0`
+Advisor feature candidate based on OpenAI Codex `rust-v0.163.0`
 (`83086188ae0614bd882818ff1aa23f3194962012`). The package manifest records the
 exact Plus source revision, frontend patch hash, target, and artifact hashes.
 
-Plus has an independent version, `0.1.1`. The combined release name is
+Plus has an independent version, `0.2.0`. The combined release name is
 `<upstream>-plus.<Plus version>`; an upstream-only update retains the Plus
-version, for example `0.164.0-plus.0.1.1`. Earlier published names are unchanged.
+version, for example `0.164.0-plus.0.2.0`. Earlier published names are unchanged.
 
-This release supersedes `0.163.0-plus.0.1.0`. Worker rows now show the full
+This release supersedes `0.163.0-plus.0.1.1` and retains the full
 reported model identifier, for example:
 
 ```text
@@ -21,7 +21,19 @@ remain mixed. The display uses Codex's thread model metadata; it is not proof of
 per-turn server-side routing. Group counts, effort, timing, tokens and the
 three-row cap retain their existing behavior.
 
-The Python helper is unchanged. This release retains coordinator protocol 1:
+The root session can request an independent read-only review with
+`codex-plus advisor --brief TEXT`. The advisor selects the newest available
+numeric-version Astra model supporting `xhigh`, uses a self-contained brief and
+repository change pointers, and returns structured findings. It does not receive
+the main conversation. A verdict is advice; the main session owns the decision.
+
+The native footer shows the advisor model/effort, running time, and consult count
+or last duration. The advisor shares the existing three-row total budget with
+workers, shells, alerts and overflow. Status refresh makes no model calls.
+The command and native display must ship together; fleet-config must route the
+new `advisor` helper command through its installed `codex-plus` wrapper.
+
+The Python park/wake coordinator is unchanged. This release retains coordinator protocol 1:
 observers finish their current cycle before transferring to a validated,
 strictly newer Plus package selected by the installer's `current` link. Watched
 jobs continue and frozen callback identities and messages survive for compatible

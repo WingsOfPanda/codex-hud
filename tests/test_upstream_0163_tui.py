@@ -23,7 +23,7 @@ from wcwidth import wcswidth
 
 from fixtures.native_server import AppServer
 from fixtures.shell_policy_provider import ShellPolicyProvider
-from native_smoke import Terminal, assert_compact_hud, shell_rows, wait, worker_rows
+from native_smoke import Terminal, advisor_rows, assert_compact_hud, shell_rows, wait, worker_rows
 from test_shell_policy_integration import command_for, configure, rollout, start_terminal, turns
 
 
@@ -187,7 +187,9 @@ def managed_shell_status(binary, root, evidence):
         wait([terminal], lambda: time.monotonic() - observed >= 2.2,
              'idle shell observation did not cover a HUD refresh', 4)
         assert shell_rows(terminal.text), terminal.text
-        assert_compact_hud(terminal.text, rows=1)
+        assert len(advisor_rows(terminal.text)) == 1, terminal.text
+        assert '(xhigh) · ready · 0 calls' in advisor_rows(terminal.text)[0], terminal.text
+        assert_compact_hud(terminal.text, rows=2)
         assert program_statuses(terminal.output)[-1] == 'working', program_statuses(terminal.output)
         assert 'esc to interrupt' not in terminal.text.lower(), terminal.text
         assert not re.search(r'(?m)^\s*[•◦●⠁-⣿].*\bWorking\b', terminal.text), terminal.text
@@ -201,6 +203,7 @@ def managed_shell_status(binary, root, evidence):
              'completed managed command did not clear its HUD and emit OSC 7501 Idle', 15)
         assert program_statuses(terminal.output[completion_offset:]) == ['idle'], program_statuses(terminal.output)
         assert 'status-editable-draft' in terminal.text, terminal.text
+        assert_compact_hud(terminal.text, rows=1)
         assert provider.count == 2 and turns(home) == 1, 'display refresh/completion started an extra model turn'
         logs = list((home / 'codex-plus/logs').glob('*'))
         assert len(logs) == 1 and 'POLICY_COMPLETE' in logs[0].read_text(), logs

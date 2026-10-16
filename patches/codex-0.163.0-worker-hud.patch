@@ -1529,10 +1529,18 @@ index ea0894b3e..90d3aa931 100644
  strum_macros = { workspace = true }
  supports-color = { workspace = true }
 diff --git a/codex-rs/tui/src/app.rs b/codex-rs/tui/src/app.rs
-index 1b07e9826..37a9ba0d5 100644
+index 1b07e9826..9d6093c5b 100644
 --- a/codex-rs/tui/src/app.rs
 +++ b/codex-rs/tui/src/app.rs
-@@ -208,6 +208,7 @@ pub(crate) mod agents_overview_discovery;
+@@ -196,6 +196,7 @@ use tokio_util::sync::CancellationToken;
+ use toml::Value as TomlValue;
+ use uuid::Uuid;
+ mod account_status;
++mod advisor;
+ mod agent_message_consolidation;
+ mod agent_navigation;
+ mod agent_picker;
+@@ -208,6 +209,7 @@ pub(crate) mod agents_overview_discovery;
  mod agents_overview_threads;
  mod agents_overview_usage;
  mod agents_overview_view;
@@ -1540,7 +1548,7 @@ index 1b07e9826..37a9ba0d5 100644
  pub(crate) use agents_overview::AGENTS_OVERVIEW_VIEW_ID;
  mod activity_groups;
  mod app_server_event_targets;
-@@ -633,6 +634,7 @@ pub(crate) struct App {
+@@ -633,6 +635,7 @@ pub(crate) struct App {
      pending_thread_titles: HashMap<(ThreadId, ThreadTitleDestination), CancellationToken>,
      thread_event_listener_tasks: HashMap<ThreadId, JoinHandle<()>>,
      agent_navigation: AgentNavigationState,
@@ -1548,7 +1556,7 @@ index 1b07e9826..37a9ba0d5 100644
      agents_overview: agents_overview::AgentsOverviewState,
      side_threads: HashMap<ThreadId, SideThreadState>,
      abandoned_side_threads: HashSet<ThreadId>,
-@@ -1154,6 +1156,7 @@ impl App {
+@@ -1154,6 +1157,7 @@ impl App {
                      }
                      self.chat_widget.pre_draw_tick();
                      self.refresh_agents_overview_usage(app_server, tui.frame_requester());
@@ -1556,6 +1564,299 @@ index 1b07e9826..37a9ba0d5 100644
                      let rendered_area = self.render_chat_widget_frame(tui, screen_size)?;
                      if tui.is_owned_screen()
                          && self.transcript_view.history
+diff --git a/codex-rs/tui/src/app/advisor.rs b/codex-rs/tui/src/app/advisor.rs
+new file mode 100644
+index 000000000..445759efd
+--- /dev/null
++++ b/codex-rs/tui/src/app/advisor.rs
+@@ -0,0 +1,287 @@
++//! Local advisory status only; consulting the model belongs to the explicit CLI helper.
++
++use super::worker_hud::read_status_bytes;
++use crate::bottom_pane::worker_hud::AdvisorRow;
++use crate::bottom_pane::worker_hud::AdvisorState;
++use codex_protocol::ThreadId;
++use codex_protocol::openai_models::ModelPreset;
++use codex_protocol::openai_models::ReasoningEffort;
++use std::path::Path;
++
++fn astra_version(model: &str) -> Option<Vec<u64>> {
++    model
++        .strip_prefix("gpt-")?
++        .strip_suffix("-astra")?
++        .split('.')
++        .map(|part| {
++            if part.is_empty() || !part.bytes().all(|ch| ch.is_ascii_digit()) {
++                return None;
++            }
++            part.parse().ok()
++        })
++        .collect()
++}
++
++pub(super) fn ready_model(models: &[ModelPreset]) -> Option<String> {
++    models
++        .iter()
++        .filter(|model| model.show_in_picker)
++        .filter(|model| {
++            model
++                .supported_reasoning_efforts
++                .iter()
++                .any(|effort| effort.effort == ReasoningEffort::XHigh)
++        })
++        .filter_map(|model| Some((astra_version(&model.model)?, &model.model)))
++        .max_by(|(a, _), (b, _)| a.cmp(b))
++        .map(|(_, model)| model.clone())
++}
++
++pub(super) fn unavailable() -> AdvisorRow {
++    AdvisorRow {
++        model: None,
++        state: AdvisorState::Unavailable,
++    }
++}
++
++#[derive(serde::Deserialize)]
++#[serde(rename_all = "snake_case")]
++enum State {
++    Running,
++    Done,
++    Error,
++}
++
++#[derive(serde::Deserialize)]
++#[serde(deny_unknown_fields)]
++struct Status {
++    version: u32,
++    parent: ThreadId,
++    model: String,
++    effort: String,
++    state: State,
++    started_at: f64,
++    updated_at: f64,
++    finished_at: Option<f64>,
++    calls: u64,
++    last_duration_secs: Option<f64>,
++    error: Option<String>,
++}
++
++pub(super) fn read_advisor(
++    path: &Path,
++    root: ThreadId,
++    now: f64,
++    ready: Option<String>,
++) -> Option<AdvisorRow> {
++    let bytes = match read_status_bytes(path) {
++        Ok(Some(bytes)) => bytes,
++        Ok(None) => {
++            return ready.map(|model| AdvisorRow {
++                model: Some(model),
++                state: AdvisorState::Ready,
++            });
++        }
++        Err(_) => return Some(unavailable()),
++    };
++    let Ok(status) = serde_json::from_slice::<Status>(&bytes) else {
++        return Some(unavailable());
++    };
++    let epoch = |time: f64| time.is_finite() && time >= 0.0;
++    if status.version != 1
++        || status.parent != root
++        || astra_version(&status.model).is_none()
++        || status.effort != "xhigh"
++        || status.calls == 0
++        || !epoch(status.started_at)
++        || !epoch(status.updated_at)
++        || status.updated_at < status.started_at
++        || status
++            .finished_at
++            .is_some_and(|time| !epoch(time) || time < status.started_at)
++        || status.last_duration_secs.is_some_and(|time| !epoch(time))
++        || status.error.as_ref().is_some_and(|code| {
++            code.is_empty()
++                || code.len() > 64
++                || !code
++                    .bytes()
++                    .all(|ch| ch.is_ascii_lowercase() || ch.is_ascii_digit() || ch == b'_')
++        })
++    {
++        return Some(unavailable());
++    }
++    let state = match status.state {
++        State::Running if status.finished_at.is_none() && status.error.is_none() => {
++            if now - status.updated_at > 15.0 || status.updated_at > now + 5.0 {
++                AdvisorState::Unavailable
++            } else {
++                AdvisorState::Running((now - status.started_at).max(0.0) as u64)
++            }
++        }
++        State::Done if status.finished_at.is_some() && status.error.is_none() => {
++            let Some(duration) = status.last_duration_secs else {
++                return Some(unavailable());
++            };
++            AdvisorState::Done {
++                calls: status.calls,
++                last_secs: duration as u64,
++            }
++        }
++        State::Error if status.finished_at.is_some() && status.error.is_some() => {
++            AdvisorState::Error
++        }
++        _ => return Some(unavailable()),
++    };
++    Some(AdvisorRow {
++        model: Some(status.model),
++        state,
++    })
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use codex_protocol::openai_models::ReasoningEffortPreset;
++
++    fn status(root: ThreadId, state: &str) -> serde_json::Value {
++        serde_json::json!({"version":1,"parent":root.to_string(),"model":"gpt-6-astra","effort":"xhigh",
++            "state":state,"started_at":100.0,"updated_at":105.0,"finished_at":null,"calls":2,
++            "last_duration_secs":222.0,"error":null})
++    }
++
++    #[test]
++    fn advisor_ready_uses_newest_numeric_astra_with_xhigh_only() {
++        fn preset(model: &str, effort: ReasoningEffort) -> ModelPreset {
++            let value = serde_json::json!({
++                "id":model, "model":model, "display_name":model, "description":"",
++                "default_reasoning_effort":"high", "supported_reasoning_efforts":[],
++                "is_default":false, "show_in_picker":true, "supported_in_api":true
++            });
++            let mut preset: ModelPreset = serde_json::from_value(value).unwrap();
++            preset.supported_reasoning_efforts = vec![ReasoningEffortPreset {
++                effort,
++                description: String::new(),
++            }];
++            preset
++        }
++        let mut hidden = preset("gpt-99-astra", ReasoningEffort::XHigh);
++        hidden.show_in_picker = false;
++        let models = vec![
++            hidden,
++            preset("gpt-6.9-astra", ReasoningEffort::XHigh),
++            preset("gpt-6.10-astra", ReasoningEffort::XHigh),
++            preset("gpt-7-astra", ReasoningEffort::High),
++            preset("gpt-9-sol", ReasoningEffort::XHigh),
++            preset("gpt-latest-astra", ReasoningEffort::XHigh),
++            preset("provider/gpt-8-astra", ReasoningEffort::XHigh),
++        ];
++        assert_eq!(ready_model(&models).as_deref(), Some("gpt-6.10-astra"));
++        assert_eq!(ready_model(&[]), None);
++        for slug in [
++            "gpt-6..1-astra",
++            "gpt--astra",
++            "gpt-6-astra-foo",
++            "gpt-999999999999999999999-astra",
++        ] {
++            assert_eq!(astra_version(slug), None);
++        }
++    }
++
++    #[test]
++    fn advisor_missing_ready_and_persistent_terminal_states() {
++        let dir = tempfile::tempdir().unwrap();
++        let path = dir.path().join("advisor.json");
++        let root = ThreadId::new();
++        assert_eq!(read_advisor(&path, root, 110.0, None), None);
++        assert!(!path.exists());
++        assert_eq!(
++            read_advisor(&path, root, 110.0, Some("gpt-7.2-astra".into()))
++                .unwrap()
++                .state,
++            AdvisorState::Ready
++        );
++        let mut value = status(root, "running");
++        std::fs::write(&path, value.to_string()).unwrap();
++        let row = read_advisor(&path, root, 110.0, Some("gpt-7-astra".into())).unwrap();
++        assert_eq!(row.model.as_deref(), Some("gpt-6-astra"));
++        assert_eq!(row.state, AdvisorState::Running(10));
++        assert_eq!(
++            read_advisor(&path, root, 120.0, None).unwrap().state,
++            AdvisorState::Running(20)
++        );
++        assert_eq!(
++            read_advisor(&path, root, 120.1, None).unwrap().state,
++            AdvisorState::Unavailable
++        );
++        value["state"] = serde_json::json!("done");
++        value["finished_at"] = serde_json::json!(110.0);
++        std::fs::write(&path, value.to_string()).unwrap();
++        assert_eq!(
++            read_advisor(&path, root, 9999.0, None).unwrap().state,
++            AdvisorState::Done {
++                calls: 2,
++                last_secs: 222
++            }
++        );
++        value["state"] = serde_json::json!("error");
++        value["error"] = serde_json::json!("exec_failed");
++        std::fs::write(&path, value.to_string()).unwrap();
++        assert_eq!(
++            read_advisor(&path, root, 9999.0, None).unwrap().state,
++            AdvisorState::Error
++        );
++    }
++
++    #[cfg(unix)]
++    #[test]
++    fn advisor_rejects_symlink_and_fifo_without_blocking() {
++        use std::os::unix::ffi::OsStrExt;
++        let dir = tempfile::tempdir().unwrap();
++        let path = dir.path().join("advisor.json");
++        let root = ThreadId::new();
++        let source = dir.path().join("source");
++        std::fs::write(&source, status(root, "running").to_string()).unwrap();
++        std::os::unix::fs::symlink(&source, &path).unwrap();
++        assert_eq!(read_advisor(&path, root, 110.0, None), Some(unavailable()));
++        std::fs::remove_file(&path).unwrap();
++        let cpath = std::ffi::CString::new(path.as_os_str().as_bytes()).unwrap();
++        assert_eq!(unsafe { libc::mkfifo(cpath.as_ptr(), 0o600) }, 0);
++        let at = std::time::Instant::now();
++        assert_eq!(read_advisor(&path, root, 110.0, None), Some(unavailable()));
++        assert!(at.elapsed() < std::time::Duration::from_millis(250));
++    }
++
++    #[test]
++    fn advisor_rejects_wrong_root_schema_and_escaped_status_text() {
++        let dir = tempfile::tempdir().unwrap();
++        let path = dir.path().join("advisor.json");
++        let root = ThreadId::new();
++        for (key, value) in [
++            ("parent", serde_json::json!(ThreadId::new().to_string())),
++            ("model", serde_json::json!("gpt-6-astra\nsecret")),
++            ("effort", serde_json::json!("high")),
++            ("calls", serde_json::json!(0)),
++            ("version", serde_json::json!(2)),
++            ("started_at", serde_json::json!(-1)),
++            ("updated_at", serde_json::json!(99)),
++            ("state", serde_json::json!("unknown")),
++            ("error", serde_json::json!("secret\u{1b}[2J")),
++            ("brief", serde_json::json!("secret")),
++            ("last_duration_secs", serde_json::json!(-1)),
++            ("finished_at", serde_json::json!(101)),
++        ] {
++            let mut invalid = status(root, "running");
++            invalid[key] = value;
++            std::fs::write(&path, invalid.to_string()).unwrap();
++            assert_eq!(
++                read_advisor(&path, root, 110.0, None),
++                Some(unavailable()),
++                "{key}"
++            );
++        }
++        for bytes in [b"broken".to_vec(), vec![b' '; 16385]] {
++            std::fs::write(&path, bytes).unwrap();
++            assert_eq!(read_advisor(&path, root, 110.0, None), Some(unavailable()));
++        }
++    }
++}
 diff --git a/codex-rs/tui/src/app/daemon_menu.rs b/codex-rs/tui/src/app/daemon_menu.rs
 index ada9e8808..c6e2f5818 100644
 --- a/codex-rs/tui/src/app/daemon_menu.rs
@@ -2081,7 +2382,7 @@ index 049849509..a60190597 100644
 +    Ok(())
  }
 diff --git a/codex-rs/tui/src/app/event_dispatch.rs b/codex-rs/tui/src/app/event_dispatch.rs
-index a7f7f1e82..cd0bb0f35 100644
+index a7f7f1e82..595c85d8a 100644
 --- a/codex-rs/tui/src/app/event_dispatch.rs
 +++ b/codex-rs/tui/src/app/event_dispatch.rs
 @@ -159,22 +159,11 @@ impl App {
@@ -2124,8 +2425,8 @@ index a7f7f1e82..cd0bb0f35 100644
 +                self.finish_shell_hud(primary_thread_id, request_id, result);
 +                tui.frame_requester().schedule_frame();
 +            }
-+            AppEvent::WatcherHealthLoaded { primary_thread_id, request_id, health } => {
-+                self.finish_watcher_health(primary_thread_id, request_id, health);
++            AppEvent::WatcherHealthLoaded { primary_thread_id, request_id, health, advisor } => {
++                self.finish_watcher_health(primary_thread_id, request_id, health, advisor);
 +                tui.frame_requester().schedule_frame();
 +            }
              AppEvent::SelectAgentThread(thread_id) => {
@@ -2544,10 +2845,10 @@ index 139c4dd43..0b996dccc 100644
 +  Workers stale · counts unavailable · Shells stale · counts unavailable
 diff --git a/codex-rs/tui/src/app/worker_hud.rs b/codex-rs/tui/src/app/worker_hud.rs
 new file mode 100644
-index 000000000..3847d91db
+index 000000000..568d94556
 --- /dev/null
 +++ b/codex-rs/tui/src/app/worker_hud.rs
-@@ -0,0 +1,1395 @@
+@@ -0,0 +1,1431 @@
 +//! Per-client worker metadata refresh. These requests never start or steer a turn.
 +
 +use super::*;
@@ -2595,6 +2896,7 @@ index 000000000..3847d91db
 +    watcher_pending: Option<Uuid>,
 +    watcher_attempted_at: Option<Instant>,
 +    watcher: Option<WatcherHealth>,
++    advisor: Option<crate::bottom_pane::worker_hud::AdvisorRow>,
 +}
 +
 +#[derive(Default)]
@@ -2989,10 +3291,14 @@ index 000000000..3847d91db
 +            self.worker_hud.watcher_pending = None;
 +            self.worker_hud.watcher = None;
 +            self.chat_widget.set_watcher_health(None);
++            self.worker_hud.advisor = None;
++            self.chat_widget.set_advisor(None);
 +            return;
 +        }
 +        self.chat_widget
 +            .set_watcher_health(self.worker_hud.watcher.clone());
++        self.chat_widget
++            .set_advisor(self.worker_hud.advisor.clone());
 +        if self.worker_hud.watcher_pending.is_some()
 +            || self
 +                .worker_hud
@@ -3010,6 +3316,12 @@ index 000000000..3847d91db
 +            .codex_home
 +            .join("codex-plus")
 +            .join(format!("{root}.status.json"));
++        let advisor_path = self
++            .config
++            .codex_home
++            .join("codex-plus")
++            .join(format!("{root}.advisor.json"));
++        let ready = super::advisor::ready_model(&self.model_catalog.models);
 +        let app_event_tx = self.app_event_tx.clone();
 +        tokio::spawn(async move {
 +            let read = tokio::task::spawn_blocking(move || {
@@ -3017,17 +3329,24 @@ index 000000000..3847d91db
 +                    .duration_since(UNIX_EPOCH)
 +                    .unwrap_or_default()
 +                    .as_secs_f64();
-+                read_watcher_health(path.as_path(), root, now)
++                (
++                    read_watcher_health(path.as_path(), root, now),
++                    super::advisor::read_advisor(&advisor_path, root, now, ready),
++                )
 +            });
-+            let health = tokio::time::timeout(WATCHER_TIMEOUT, read)
++            let (health, advisor) = tokio::time::timeout(WATCHER_TIMEOUT, read)
 +                .await
 +                .ok()
 +                .and_then(Result::ok)
-+                .unwrap_or(Some(WatcherHealth::Unavailable));
++                .unwrap_or((
++                    Some(WatcherHealth::Unavailable),
++                    Some(super::advisor::unavailable()),
++                ));
 +            app_event_tx.send(AppEvent::WatcherHealthLoaded {
 +                primary_thread_id: root,
 +                request_id,
 +                health,
++                advisor,
 +            });
 +        });
 +    }
@@ -3037,12 +3356,16 @@ index 000000000..3847d91db
 +        root: ThreadId,
 +        request_id: Uuid,
 +        health: Option<WatcherHealth>,
++        advisor: Option<crate::bottom_pane::worker_hud::AdvisorRow>,
 +    ) {
 +        if self.primary_thread_id == Some(root)
 +            && self.worker_hud.finish_watcher(root, request_id, health)
 +        {
 +            self.chat_widget
 +                .set_watcher_health(self.worker_hud.watcher.clone());
++            self.worker_hud.advisor = advisor;
++            self.chat_widget
++                .set_advisor(self.worker_hud.advisor.clone());
 +        }
 +    }
 +
@@ -3087,34 +3410,35 @@ index 000000000..3847d91db
 +    reports: u64,
 +}
 +
-+fn read_watcher_health(path: &std::path::Path, root: ThreadId, now: f64) -> Option<WatcherHealth> {
++pub(super) fn read_status_bytes(path: &std::path::Path) -> std::io::Result<Option<Vec<u8>>> {
 +    use std::io::Read;
-+    let read = || -> std::io::Result<Option<Vec<u8>>> {
-+        let mut options = std::fs::OpenOptions::new();
-+        options.read(true);
-+        #[cfg(unix)]
-+        {
-+            use std::os::unix::fs::OpenOptionsExt;
-+            // Opening a replaced path must not wait on a pipe instead of a status file.
-+            options.custom_flags(libc::O_NONBLOCK | libc::O_NOFOLLOW);
-+        }
-+        let file = match options.open(path) {
-+            Ok(file) => file,
-+            Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(None),
-+            Err(err) => return Err(err),
-+        };
-+        let metadata = file.metadata()?;
-+        if !metadata.is_file() || metadata.len() > WATCHER_MAX_BYTES {
-+            return Err(std::io::Error::other("invalid watcher status file"));
-+        }
-+        let mut bytes = Vec::new();
-+        file.take(WATCHER_MAX_BYTES + 1).read_to_end(&mut bytes)?;
-+        if bytes.len() as u64 > WATCHER_MAX_BYTES {
-+            return Err(std::io::Error::other("oversized watcher status file"));
-+        }
-+        Ok(Some(bytes))
++    let mut options = std::fs::OpenOptions::new();
++    options.read(true);
++    #[cfg(unix)]
++    {
++        use std::os::unix::fs::OpenOptionsExt;
++        // Opening a replaced path must not wait on a pipe instead of a status file.
++        options.custom_flags(libc::O_NONBLOCK | libc::O_NOFOLLOW);
++    }
++    let file = match options.open(path) {
++        Ok(file) => file,
++        Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(None),
++        Err(err) => return Err(err),
 +    };
-+    let bytes = match read() {
++    let metadata = file.metadata()?;
++    if !metadata.is_file() || metadata.len() > WATCHER_MAX_BYTES {
++        return Err(std::io::Error::other("invalid local status file"));
++    }
++    let mut bytes = Vec::new();
++    file.take(WATCHER_MAX_BYTES + 1).read_to_end(&mut bytes)?;
++    if bytes.len() as u64 > WATCHER_MAX_BYTES {
++        return Err(std::io::Error::other("oversized local status file"));
++    }
++    Ok(Some(bytes))
++}
++
++fn read_watcher_health(path: &std::path::Path, root: ThreadId, now: f64) -> Option<WatcherHealth> {
++    let bytes = match read_status_bytes(path) {
 +        Ok(bytes) => bytes?,
 +        Err(_) => return Some(WatcherHealth::Unavailable),
 +    };
@@ -3559,12 +3883,13 @@ index 000000000..3847d91db
 +            primary_thread_id,
 +            request_id,
 +            health,
++            advisor,
 +        } = event
 +        else {
 +            panic!("expected independent watcher refresh");
 +        };
 +        assert_eq!(health, Some(WatcherHealth::Uncertain(1)));
-+        app.finish_watcher_health(primary_thread_id, request_id, health);
++        app.finish_watcher_health(primary_thread_id, request_id, health, advisor);
 +        assert_eq!(app.worker_hud.watcher, Some(WatcherHealth::Uncertain(1)));
 +        assert_eq!(app.worker_hud.pending, Some(worker_request));
 +        assert!(app.worker_hud.rows.is_empty());
@@ -3578,16 +3903,26 @@ index 000000000..3847d91db
 +        app.primary_thread_id = Some(root);
 +        app.worker_hud.bind(Some(root));
 +        app.worker_hud.watcher = Some(WatcherHealth::Uncertain(1));
++        app.worker_hud.advisor = Some(super::super::advisor::unavailable());
 +        app.worker_hud.watcher_pending = Some(request_id);
 +        app.refresh_watcher_health(true);
++        assert_eq!(app.worker_hud.advisor, None);
 +        assert_eq!(app.worker_hud.watcher, None);
 +        assert_eq!(app.worker_hud.watcher_pending, None);
 +        assert_eq!(app.worker_hud.watcher_attempted_at, None);
-+        app.finish_watcher_health(root, request_id, Some(WatcherHealth::Uncertain(1)));
++        app.finish_watcher_health(
++            root,
++            request_id,
++            Some(WatcherHealth::Uncertain(1)),
++            Some(super::super::advisor::unavailable()),
++        );
 +        assert_eq!(app.worker_hud.watcher, None);
++        assert_eq!(app.worker_hud.advisor, None);
 +        app.primary_thread_id = None;
++        app.worker_hud.advisor = Some(super::super::advisor::unavailable());
 +        app.worker_hud.watcher = Some(WatcherHealth::Unavailable);
 +        app.refresh_watcher_health(false);
++        assert_eq!(app.worker_hud.advisor, None);
 +        assert_eq!(app.worker_hud.watcher, None);
 +        assert_eq!(app.worker_hud.watcher_attempted_at, None);
 +    }
@@ -3604,7 +3939,9 @@ index 000000000..3847d91db
 +        assert!(!state.finish_watcher(root, Uuid::new_v4(), Some(WatcherHealth::Unavailable)));
 +        assert!(state.finish_watcher(root, request_id, Some(WatcherHealth::Unavailable)));
 +        assert_eq!(state.watcher, Some(WatcherHealth::Unavailable));
++        state.advisor = Some(super::super::advisor::unavailable());
 +        state.bind(Some(other_root));
++        assert_eq!(state.advisor, None);
 +        assert_eq!(state.watcher, None);
 +        assert!(!state.finish_watcher(root, request_id, Some(WatcherHealth::Unavailable)));
 +    }
@@ -3944,10 +4281,10 @@ index 000000000..3847d91db
 +    }
 +}
 diff --git a/codex-rs/tui/src/app_event.rs b/codex-rs/tui/src/app_event.rs
-index a20193149..44c04876a 100644
+index a20193149..930cff629 100644
 --- a/codex-rs/tui/src/app_event.rs
 +++ b/codex-rs/tui/src/app_event.rs
-@@ -414,6 +414,21 @@ pub(crate) enum AppEvent {
+@@ -414,6 +414,22 @@ pub(crate) enum AppEvent {
          request_id: Uuid,
          result: Result<AgentPickerThreadRefresh, String>,
      },
@@ -3965,12 +4302,13 @@ index a20193149..44c04876a 100644
 +        primary_thread_id: ThreadId,
 +        request_id: Uuid,
 +        health: Option<crate::bottom_pane::worker_hud::WatcherHealth>,
++        advisor: Option<crate::bottom_pane::worker_hud::AdvisorRow>,
 +    },
      /// Switch the active thread to the selected agent.
      SelectAgentThread(ThreadId),
  
 diff --git a/codex-rs/tui/src/bottom_pane/mod.rs b/codex-rs/tui/src/bottom_pane/mod.rs
-index ae9405e9f..f74bbb894 100644
+index ae9405e9f..ca9a97ff8 100644
 --- a/codex-rs/tui/src/bottom_pane/mod.rs
 +++ b/codex-rs/tui/src/bottom_pane/mod.rs
 @@ -207,6 +207,7 @@ mod paste_burst;
@@ -3997,7 +4335,7 @@ index ae9405e9f..f74bbb894 100644
              esc_backtrack_hint: false,
              animations_enabled,
              effects,
-@@ -1732,6 +1735,34 @@ impl BottomPane {
+@@ -1732,6 +1735,40 @@ impl BottomPane {
          self.request_redraw();
      }
  
@@ -4023,6 +4361,12 @@ index ae9405e9f..f74bbb894 100644
 +        }
 +    }
 +
++    pub(crate) fn set_advisor(&mut self, advisor: Option<worker_hud::AdvisorRow>) {
++        if self.worker_hud.set_advisor(advisor) {
++            self.request_redraw();
++        }
++    }
++
 +    pub(crate) fn set_watcher_health(&mut self, health: Option<worker_hud::WatcherHealth>) {
 +        if self.worker_hud.set_watcher(health) {
 +            self.request_redraw();
@@ -4032,7 +4376,7 @@ index ae9405e9f..f74bbb894 100644
      /// Update the inactive-thread approval list shown above the composer.
      pub(crate) fn set_pending_thread_approvals(&mut self, threads: Vec<String>) {
          if self.pending_thread_approvals.set_threads(threads) {
-@@ -2495,6 +2526,7 @@ impl BottomPane {
+@@ -2495,6 +2532,7 @@ impl BottomPane {
                  }))
              };
              flex2.push(/*flex*/ 0, composer);
@@ -4040,7 +4384,7 @@ index ae9405e9f..f74bbb894 100644
              RenderableItem::Owned(Box::new(flex2))
          }
      }
-@@ -2729,6 +2761,85 @@ mod tests {
+@@ -2729,6 +2767,93 @@ mod tests {
          assert_eq!(pane.composer_text(), "main draft");
      }
  
@@ -4073,6 +4417,10 @@ index ae9405e9f..f74bbb894 100644
 +            false,
 +            true,
 +        );
++        pane.set_advisor(Some(worker_hud::AdvisorRow {
++            model: Some("gpt-6-astra".into()),
++            state: worker_hud::AdvisorState::Ready,
++        }));
 +        for running in [false, true] {
 +            pane.set_task_running(running);
 +            pane.handle_key_event(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE));
@@ -4096,6 +4444,10 @@ index ae9405e9f..f74bbb894 100644
 +    fn worker_hud_watcher_warning_keeps_draft_and_cursor_on_resize() {
 +        let (tx, _rx) = unbounded_channel();
 +        let mut pane = test_pane_with_disable_paste_burst(AppEventSender::new(tx), true);
++        pane.set_advisor(Some(worker_hud::AdvisorRow {
++            model: Some("gpt-6-astra".into()),
++            state: worker_hud::AdvisorState::Error,
++        }));
 +        for running in [false, true] {
 +            pane.set_task_running(running);
 +            pane.handle_key_event(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE));
@@ -4128,10 +4480,10 @@ index ae9405e9f..f74bbb894 100644
          let (tx, _rx) = unbounded_channel();
 diff --git a/codex-rs/tui/src/bottom_pane/worker_hud.rs b/codex-rs/tui/src/bottom_pane/worker_hud.rs
 new file mode 100644
-index 000000000..2a75fe21a
+index 000000000..d4dc51907
 --- /dev/null
 +++ b/codex-rs/tui/src/bottom_pane/worker_hud.rs
-@@ -0,0 +1,1046 @@
+@@ -0,0 +1,1276 @@
 +//! Read-only worker summary; clipping never takes space from the composer.
 +
 +use crate::line_truncation::truncate_line_with_ellipsis_if_overflow;
@@ -4214,6 +4566,7 @@ index 000000000..2a75fe21a
 +    shells_stale: bool,
 +    shells_visible: bool,
 +    watcher: Option<WatcherHealth>,
++    advisor: Option<AdvisorRow>,
 +}
 +
 +#[derive(Clone, Debug, PartialEq, Eq)]
@@ -4236,7 +4589,54 @@ index 000000000..2a75fe21a
 +    }
 +}
 +
++#[derive(Clone, Debug, PartialEq, Eq)]
++pub(crate) struct AdvisorRow {
++    pub(crate) model: Option<String>,
++    pub(crate) state: AdvisorState,
++}
++
++#[derive(Clone, Debug, PartialEq, Eq)]
++pub(crate) enum AdvisorState {
++    Ready,
++    Running(u64),
++    Done { calls: u64, last_secs: u64 },
++    Error,
++    Unavailable,
++}
++
++impl AdvisorRow {
++    fn line(&self) -> Line<'static> {
++        let model = model_label(self.model.as_deref());
++        let status = match self.state {
++            AdvisorState::Ready => "ready · 0 calls".to_string(),
++            AdvisorState::Running(secs) => format!("reviewing · {}:{:02}", secs / 60, secs % 60),
++            AdvisorState::Done { calls, last_secs } => format!(
++                "{calls} {} · last {}:{:02}",
++                if calls == 1 { "call" } else { "calls" },
++                last_secs / 60,
++                last_secs % 60
++            ),
++            AdvisorState::Error => "error".to_string(),
++            AdvisorState::Unavailable => "unavailable".to_string(),
++        };
++        let line = Line::from(format!("  Advisor · {model} (xhigh) · {status}"));
++        if matches!(self.state, AdvisorState::Error | AdvisorState::Unavailable) {
++            line.not_dim()
++        } else {
++            line.dim()
++        }
++    }
++}
++
 +impl WorkerHud {
++    pub(crate) fn set_advisor(&mut self, advisor: Option<AdvisorRow>) -> bool {
++        if self.advisor == advisor {
++            return false;
++        }
++        self.advisor = advisor;
++        true
++    }
++
 +    pub(crate) fn set_watcher(&mut self, watcher: Option<WatcherHealth>) -> bool {
 +        if self.watcher == watcher {
 +            return false;
@@ -4289,11 +4689,18 @@ index 000000000..2a75fe21a
 +        } else {
 +            Vec::new()
 +        };
-+        let shells = if self.shells_visible {
-+            self.shells.as_slice()
-+        } else {
-+            &[]
-+        };
++        let shells: Vec<_> = self
++            .shells
++            .iter()
++            .filter(|shell| {
++                self.shells_visible
++                    && !(self
++                        .advisor
++                        .as_ref()
++                        .is_some_and(|row| matches!(row.state, AdvisorState::Running(_)))
++                        && advisor_command(&shell.command))
++            })
++            .collect();
 +        let mut alerts = Vec::new();
 +        alerts.extend(self.watcher.as_ref().and_then(WatcherHealth::label));
 +        if self.visible && self.stale {
@@ -4306,7 +4713,10 @@ index 000000000..2a75fe21a
 +        if !alerts.is_empty() {
 +            lines.push(Line::from(format!("  {}", alerts.join(" · "))).not_dim());
 +        }
-+        // Alerts and overflow share the three-line budget with activity.
++        if let Some(advisor) = &self.advisor {
++            lines.push(advisor.line());
++        }
++        // Alerts, advisor and overflow share the three-line budget with activity.
 +        let available = 3 - lines.len();
 +        let total = display_rows.len() + shells.len();
 +        let activity_limit = available - usize::from(total > available);
@@ -4413,8 +4823,12 @@ index 000000000..2a75fe21a
 +            let command_width = usize::from(width)
 +                .saturating_sub(display_width(prefix) + display_width(&metrics))
 +                .max(12.min(usize::from(width).saturating_sub(display_width(prefix))));
++            // Keep raw syntax for coalescing; shorten managed commands for display only.
++            let label = crate::chatwidget::shell_policy::shell_directive(&shell.command)
++                .map(|(_, label)| label)
++                .unwrap_or_else(|| shell.command.clone());
 +            let command = truncate_line_with_ellipsis_if_overflow(
-+                Line::from(sanitize_label(&shell.command, 160)),
++                Line::from(sanitize_label(&label, 160)),
 +                command_width,
 +            );
 +            lines.push(Line::from(format!("{prefix}{command}{metrics}")).dim());
@@ -4425,6 +4839,56 @@ index 000000000..2a75fe21a
 +        }
 +        lines
 +    }
++}
++
++fn advisor_command(command: &str) -> bool {
++    fn invocation(args: &[String], depth: u8) -> bool {
++        if depth > 2 {
++            return false;
++        }
++        let Some(program) = args.first() else {
++            return false;
++        };
++        let launcher = program == "codex-plus"
++            || program == "./bin/codex-plus"
++            || (std::path::Path::new(program).is_absolute()
++                && program.ends_with("/bin/codex-plus"));
++        if launcher {
++            if args.len() == 4 && args[1] == "advisor" && args[2] == "--brief" {
++                return true;
++            }
++            if args.len() > 3 && args[1] == "run" && args[2] == "--" {
++                return invocation(&args[3..], depth + 1);
++            }
++        }
++        if args.len() == 3
++            && matches!(
++                std::path::Path::new(program)
++                    .file_name()
++                    .and_then(|s| s.to_str()),
++                Some("bash" | "sh" | "zsh")
++            )
++            && matches!(args[1].as_str(), "-c" | "-lc")
++        {
++            return canonical_args(&args[2]).is_some_and(|args| invocation(&args, depth + 1));
++        }
++        false
++    }
++    fn canonical_args(command: &str) -> Option<Vec<String>> {
++        let command = match command.split_once('\n') {
++            Some((
++                "# codex-plus-shell: auto"
++                | "# codex-plus-shell: background"
++                | "# codex-plus-shell: foreground",
++                body,
++            )) => body,
++            _ => command,
++        };
++        let args = shlex::split(command)?;
++        // Noncanonical shell syntax may contain operators; retaining it is safer than hiding it.
++        (shlex::try_join(args.iter().map(String::as_str)).as_deref() == Ok(command)).then_some(args)
++    }
++    canonical_args(command).is_some_and(|args| invocation(&args, 0))
 +}
 +
 +fn sanitize_label(label: &str, limit: usize) -> String {
@@ -4507,6 +4971,124 @@ index 000000000..2a75fe21a
 +mod tests {
 +    use super::*;
 +    use ratatui::style::Modifier;
++
++    #[test]
++    fn advisor_rows_keep_warnings_priority_and_three_total_rows() {
++        for advisor_state in [
++            AdvisorState::Ready,
++            AdvisorState::Running(83),
++            AdvisorState::Done {
++                calls: 2,
++                last_secs: 222,
++            },
++            AdvisorState::Error,
++            AdvisorState::Unavailable,
++        ] {
++            for workers in 0..5 {
++                for shells in 0..5 {
++                    for warning in [false, true] {
++                        let mut hud = WorkerHud::default();
++                        hud.set(
++                            (0..workers)
++                                .map(|n| {
++                                    grouped_member(
++                                        &format!("batch{n}"),
++                                        WorkerState::Active,
++                                        120,
++                                        1000,
++                                    )
++                                })
++                                .collect(),
++                            false,
++                            true,
++                        );
++                        hud.set_shells((0..shells).map(shell_row).collect(), false, true);
++                        hud.set_advisor(Some(AdvisorRow {
++                            model: Some("gpt-7.2-astra".into()),
++                            state: advisor_state.clone(),
++                        }));
++                        if warning {
++                            hud.set_watcher(Some(WatcherHealth::Unavailable));
++                        }
++                        let lines = hud.lines(100);
++                        assert!(lines.len() <= 3);
++                        let line = &lines[usize::from(warning)];
++                        assert!(line.to_string().contains("Advisor · GPT-7.2-Astra (xhigh)"));
++                        let warning_style = matches!(
++                            advisor_state,
++                            AdvisorState::Error | AdvisorState::Unavailable
++                        );
++                        assert_eq!(
++                            line.style.add_modifier.contains(Modifier::DIM),
++                            !warning_style
++                        );
++                        if warning {
++                            assert!(lines[0].to_string().contains("Watcher unavailable"));
++                        }
++                        if workers + shells > 3 - usize::from(warning) - 1 {
++                            assert!(lines.last().unwrap().to_string().contains("more"));
++                        }
++                    }
++                }
++            }
++        }
++    }
++
++    #[test]
++    fn advisor_coalesces_only_canonical_exact_invocations_while_running() {
++        let commands = [
++            ("codex-plus advisor --brief task", true),
++            ("./bin/codex-plus advisor --brief 'task with spaces'", true),
++            ("/opt/codex-plus/bin/codex-plus advisor --brief task", true),
++            ("codex-plus run -- codex-plus advisor --brief task", true),
++            ("bash -lc 'codex-plus advisor --brief task'", true),
++            ("echo codex-plus advisor --brief task", false),
++            ("my-advisor --brief task", false),
++            ("codex-plus advisor --brief task | cat", false),
++            ("codex-plus advisor --brief task; echo other", false),
++            ("codex-plus advisor --brief task;", false),
++            ("codex-plus advisor --brief $(other)", false),
++            ("codex-plus advisor --brief task\nother", false),
++            ("codex-plus advisor --brief task --extra", false),
++        ];
++        let marked =
++            "# codex-plus-shell: background\ncodex-plus run -- codex-plus advisor --brief task";
++        let wrapped = shlex::try_join(["bash", "-lc", marked]).unwrap();
++        assert!(advisor_command(marked));
++        assert!(advisor_command(&wrapped));
++        assert!(!advisor_command(
++            "# codex-plus-shell: background\ncodex-plus run -- codex-plus advisor --brief task;"
++        ));
++        assert!(!advisor_command(
++            "# codex-plus-shell: background\ncodex-plus advisor --brief task | cat"
++        ));
++        for (command, expected) in commands {
++            assert_eq!(advisor_command(command), expected, "{command}");
++            let mut hud = WorkerHud::default();
++            let mut shell = shell_row(1);
++            shell.command = command.into();
++            hud.set_shells(vec![shell, shell_row(2)], false, true);
++            for state in [
++                AdvisorState::Ready,
++                AdvisorState::Running(4),
++                AdvisorState::Error,
++                AdvisorState::Unavailable,
++            ] {
++                hud.set_advisor(Some(AdvisorRow {
++                    model: Some("gpt-6-astra".into()),
++                    state: state.clone(),
++                }));
++                let lines = hud.lines(100);
++                let hidden = expected && matches!(state, AdvisorState::Running(_));
++                assert_eq!(lines.len(), if hidden { 2 } else { 3 });
++                assert!(
++                    lines
++                        .iter()
++                        .any(|line| line.to_string().contains("cargo test 2"))
++                );
++            }
++        }
++    }
 +
 +    fn shell_row(n: usize) -> ShellRow {
 +        ShellRow {
@@ -5179,17 +5761,17 @@ index 000000000..2a75fe21a
 +    }
 +}
 diff --git a/codex-rs/tui/src/chatwidget.rs b/codex-rs/tui/src/chatwidget.rs
-index 2f74f843d..36b1c4e3e 100644
+index 2f74f843d..e9bfff680 100644
 --- a/codex-rs/tui/src/chatwidget.rs
 +++ b/codex-rs/tui/src/chatwidget.rs
-@@ -257,6 +257,7 @@ use crate::tui::FrameRequester;
- mod activity_groups;
- mod activity_presentation;
- mod command_lifecycle;
+@@ -263,6 +263,7 @@ mod connectors;
+ mod constructor;
+ mod dynamic_activity;
+ mod empty_state_policy;
 +pub(crate) mod shell_policy;
- mod config_panel;
- mod connector_mentions;
- mod connectors;
+ pub(crate) use self::connectors::ConnectorScopeGeneration;
+ use self::connectors::ConnectorsState;
+ mod exec_state;
 @@ -604,6 +605,8 @@ pub(crate) struct ChatWidget {
      suppress_image_paste_until: Instant,
      copy_last_response_binding: Vec<KeyBinding>,
@@ -5231,7 +5813,7 @@ index 2f74f843d..36b1c4e3e 100644
          if let Some(mut cell) = self.transcript.take_active_cell() {
              // Insert finalized cell into history and keep grouping consistent.
              if let Some(exec) = cell.as_any_mut().downcast_mut::<ExecCell>() {
-@@ -1452,6 +1459,32 @@ impl ChatWidget {
+@@ -1452,6 +1459,39 @@ impl ChatWidget {
          }
      }
  
@@ -5254,6 +5836,13 @@ index 2f74f843d..36b1c4e3e 100644
 +        self.publish_shell_hud();
 +    }
 +
++    pub(crate) fn set_advisor(
++        &mut self,
++        advisor: Option<crate::bottom_pane::worker_hud::AdvisorRow>,
++    ) {
++        self.bottom_pane.set_advisor(advisor);
++    }
++
 +    pub(crate) fn set_watcher_health(
 +        &mut self,
 +        health: Option<crate::bottom_pane::worker_hud::WatcherHealth>,
@@ -5264,7 +5853,7 @@ index 2f74f843d..36b1c4e3e 100644
      pub(crate) fn set_pending_thread_approvals(&mut self, threads: Vec<String>) {
          self.bottom_pane.set_pending_thread_approvals(threads);
      }
-@@ -1498,6 +1531,8 @@ impl ChatWidget {
+@@ -1498,6 +1538,8 @@ impl ChatWidget {
      fn clean_background_terminals(&mut self) {
          self.submit_op(AppCommand::clean_background_terminals());
          self.unified_exec_processes.clear();
@@ -5580,10 +6169,10 @@ index 6077a0f9e..a969a80de 100644
          for turn in retained_turns {
 diff --git a/codex-rs/tui/src/chatwidget/shell_policy.rs b/codex-rs/tui/src/chatwidget/shell_policy.rs
 new file mode 100644
-index 000000000..44a8af419
+index 000000000..5d2409fa1
 --- /dev/null
 +++ b/codex-rs/tui/src/chatwidget/shell_policy.rs
-@@ -0,0 +1,282 @@
+@@ -0,0 +1,280 @@
 +//! Explicit presentation policy for noninteractive agent shell commands.
 +
 +use super::*;
@@ -5605,6 +6194,7 @@ index 000000000..44a8af419
 +    pub(super) quiet: bool,
 +    pub(super) process_id: Option<String>,
 +    pub(super) command: String,
++    raw_command: String,
 +}
 +
 +/// Recognize only a complete first directive line, after shell wrappers.
@@ -5741,6 +6331,7 @@ index 000000000..44a8af419
 +        if !eligible_shell(*source) {
 +            return false;
 +        }
++        let raw_command = command.clone();
 +        let Some((policy, command)) = shell_directive(command) else {
 +            return false;
 +        };
@@ -5757,6 +6348,7 @@ index 000000000..44a8af419
 +                    quiet: policy == ShellVisibility::Background,
 +                    process_id: process_id.clone(),
 +                    command: command.clone(),
++                    raw_command,
 +                },
 +            );
 +            if policy == ShellVisibility::Auto {
@@ -5841,11 +6433,6 @@ index 000000000..44a8af419
 +                !shell.quiet && shell.process_id.as_ref().unwrap_or(id) == &row.job_id
 +            })
 +        });
-+        for row in &mut rows {
-+            if let Some((_, command)) = shell_directive(&row.command) {
-+                row.command = command;
-+            }
-+        }
 +        for (id, shell) in &self.managed_shells {
 +            if !shell.quiet {
 +                continue;
@@ -5853,7 +6440,7 @@ index 000000000..44a8af419
 +            let job_id = shell.process_id.as_ref().unwrap_or(id);
 +            if !rows.iter().any(|row| &row.job_id == job_id) {
 +                rows.push(ShellRow {
-+                    command: shell.command.clone(),
++                    command: shell.raw_command.clone(),
 +                    job_id: job_id.clone(),
 +                    seen_secs: Some(shell.started.elapsed().as_secs()),
 +                });
@@ -5880,10 +6467,10 @@ index 8534d753f..0df6d0931 100644
  mod guardian;
 diff --git a/codex-rs/tui/src/chatwidget/tests/shell_policy.rs b/codex-rs/tui/src/chatwidget/tests/shell_policy.rs
 new file mode 100644
-index 000000000..66fa9bc35
+index 000000000..c2a065034
 --- /dev/null
 +++ b/codex-rs/tui/src/chatwidget/tests/shell_policy.rs
-@@ -0,0 +1,403 @@
+@@ -0,0 +1,444 @@
 +use super::*;
 +use crate::chatwidget::shell_policy::{
 +    SHELL_FOREGROUND_LIMIT, ShellVisibility, eligible_shell, quiet_shell, shell_directive,
@@ -6286,6 +6873,47 @@ index 000000000..66fa9bc35
 +    assert!(text.contains("Shell failed (exit 130)"));
 +    assert!(text.contains("terminated"));
 +    assert!(text.contains("Log: /tmp/run.log"));
++}
++
++#[tokio::test]
++async fn shell_policy_advisor_coalescing_checks_raw_syntax_before_display_shortening() {
++    for (body, hidden) in [
++        ("codex-plus run -- codex-plus advisor --brief task", true),
++        ("codex-plus run -- codex-plus advisor --brief task;", false),
++        (
++            "codex-plus run -- codex-plus advisor --brief task | cat",
++            false,
++        ),
++    ] {
++        for local in [false, true] {
++            let (mut chat, _, _) = make_chatwidget_manual(None).await;
++            chat.set_advisor(Some(crate::bottom_pane::worker_hud::AdvisorRow {
++                model: Some("gpt-6-astra".into()),
++                state: crate::bottom_pane::worker_hud::AdvisorState::Running(1),
++            }));
++            let command = format!("# codex-plus-shell: background\n{body}");
++            if local {
++                chat.on_task_started();
++                begin_unified_exec_startup(&mut chat, "advisor", "proc", &command);
++            } else {
++                chat.set_shell_hud(
++                    vec![crate::bottom_pane::worker_hud::ShellRow {
++                        command,
++                        job_id: "proc".into(),
++                        seen_secs: Some(1),
++                    }],
++                    false,
++                    true,
++                );
++            }
++            let screen = render_bottom_popup(&chat, 120);
++            assert_eq!(
++                screen.contains("Background ·"),
++                !hidden,
++                "local={local}: {body}\n{screen}"
++            );
++        }
++    }
 +}
 diff --git a/codex-rs/tui/src/thread_transcript/tools.rs b/codex-rs/tui/src/thread_transcript/tools.rs
 index 73e80d617..e665186e2 100644

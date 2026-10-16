@@ -92,9 +92,14 @@ class Server(socketserver.ThreadingTCPServer):
     daemon_threads = True
 
 
+class UnixServer(socketserver.ThreadingUnixStreamServer):
+    daemon_threads = True
+
+
 class AppServer:
-    def __init__(self, root, cwd, workers):
+    def __init__(self, root, cwd, workers, *, models=None, socket_path=None):
         self.root, self.cwd = root, str(cwd)
+        self.models = models or []
         self.requests, self.errors = [], []
         self.lock, self.connections = threading.Lock(), set()
         self.available = threading.Event()
@@ -115,9 +120,11 @@ class AppServer:
         for index, worker in enumerate(self.workers):
             worker['createdAt'] = now - max(30, 120 - index * 30)
         self.turns = {worker['id']: [{'id': 'latest', 'items': [], 'status': 'inProgress', 'error': None, 'startedAt': now - 12, 'completedAt': None}] for worker in self.workers}
-        self.server = Server(('127.0.0.1', 0), Handler)
+        self.server = (UnixServer(str(socket_path), Handler) if socket_path is not None
+                       else Server(('127.0.0.1', 0), Handler))
         self.server.fixture = self
-        self.url = f'ws://127.0.0.1:{self.server.server_address[1]}'
+        self.url = (None if socket_path is not None
+                    else f'ws://127.0.0.1:{self.server.server_address[1]}')
         threading.Thread(target=self.server.serve_forever, daemon=True).start()
 
     def thread(self, identifier, parent=None, status='idle', name=None):
@@ -139,7 +146,9 @@ class AppServer:
             result = {'data': [{'name': name, 'stage': 'stable', 'displayName': None, 'description': None, 'announcement': None, 'enabled': True, 'defaultEnabled': True} for name in ['api_key_model_discovery', 'code_mode_host', 'auth_elicitation']], 'nextCursor': None}
         elif method == 'account/read':
             result = {'account': {'type': 'apiKey'}, 'requiresOpenaiAuth': False}
-        elif method in ('model/list', 'collaborationMode/list', 'skills/list', 'app/list', 'mcpServerStatus/list'):
+        elif method == 'model/list':
+            result = {'data': self.models, 'nextCursor': None}
+        elif method in ('collaborationMode/list', 'skills/list', 'app/list', 'mcpServerStatus/list'):
             result = {'data': [], 'nextCursor': None}
         elif method == 'config/read':
             result = {'config': {'model': 'gpt-6-sol', 'model_provider': 'openai', 'analytics': {'enabled': False}, 'tui': {'status_line': ['thread-id']}, 'projects': {self.cwd: {'trust_level': 'trusted'}}}, 'origins': {}, 'layers': []}

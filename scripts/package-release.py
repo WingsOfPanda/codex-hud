@@ -30,16 +30,16 @@ from urllib.request import urlopen
 ROOT = Path(__file__).resolve().parents[1]
 UPSTREAM_COMMIT = '83086188ae0614bd882818ff1aa23f3194962012'
 UPSTREAM_VERSION = '0.163.0'
-PLUS_VERSION = '0.1.1'
+PLUS_VERSION = '0.2.0'
 RELEASE = f'{UPSTREAM_VERSION}-plus.{PLUS_VERSION}'
 COORDINATOR_PROTOCOL = 1
 PATCH = 'patches/codex-0.163.0-worker-hud.patch'
 TARGETS = {'x86_64-unknown-linux-gnu': 62, 'aarch64-unknown-linux-gnu': 183}
 HELPERS = tuple('codex_plus/' + name for name in
-                ('__init__.py', 'background.py', 'evidence.py', 'ledger.py', 'rpc.py', 'runner.py', 'upgrade.py'))
+                ('__init__.py', 'advisor.py', 'background.py', 'evidence.py', 'ledger.py', 'rpc.py', 'runner.py', 'upgrade.py'))
 DOCS = ('README.md', 'GLOSSARY.md', 'docs/background-work.md',
         'docs/shell-workflow.md', 'docs/verification.md', 'docs/release-notes.md',
-        'docs/releasing.md')
+        'docs/releasing.md', 'docs/advisor.md')
 SOURCE_FILES = HELPERS + DOCS + ('bin/codex-plus', 'LICENSE', PATCH,
                                'scripts/package-release.py', 'scripts/build-release.sh')
 EXECUTABLES = ('bin/codex', 'bin/codex-code-mode-host', 'codex-resources/bwrap',
