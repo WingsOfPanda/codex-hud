@@ -92,6 +92,59 @@ Two seconds is a requested tool yield and a frontend display threshold, not a
 hard deadline for the main model to become idle. Quiet rendering alone does not
 save model turns. Ending the main turn and avoiding repeated model polling do.
 
+## Native subagent waits
+
+A native subagent keeps its turn open until its command finishes. Ending the
+child turn immediately marks it completed and delivers its result to the parent;
+the root-only park coordinator cannot hold that child open.
+
+When `functions.exec` exposes `tools.exec_command` and `tools.write_stdin`, wait
+inside one code cell. Choose a finite command budget and set the **outer**
+`@exec` yield above it. The inner shell yield only returns a terminal ID; it does
+not keep the code cell from yielding to the model. This example allows 110
+seconds, with a 120-second outer yield:
+
+```js
+// @exec: {"yield_time_ms": 120000, "max_output_tokens": 1000}
+const deadline = Date.now() + 110000;
+let result = await tools.exec_command({
+  cmd: "# codex-plus-shell: background\n/absolute/path/to/codex-plus run -- PROGRAM ARGUMENTS",
+  yield_time_ms: 250, max_output_tokens: 1000, login: false
+});
+const log = result.output.match(/codex-plus log: (.+)/)?.[1];
+let output = result.output;
+while (result.session_id !== undefined && Date.now() < deadline) {
+  result = await tools.write_stdin({
+    session_id: result.session_id, chars: "",
+    yield_time_ms: Math.min(300000, Math.max(1, deadline - Date.now())),
+    max_output_tokens: 1000
+  });
+  output = (output + result.output).slice(-4000);
+}
+text({state: result.session_id === undefined ? "finished" : "budget_expired",
+      exit_code: result.exit_code, session_id: result.session_id, log, output});
+```
+
+These empty reads run locally inside the pending tool call: they make no model
+requests. Each read waits at most 300 seconds; the platform may round a short
+empty read up to five seconds, so leave margin in the outer yield. Keep the
+complete managed log and bounded output, then inspect the actual exit code before
+returning the child result. A nonzero exit is a failure result.
+
+`budget_expired` means the command is still pending, with its native session ID
+and log. Continue an authorized wait in another bounded cell or report the
+pending command and limit; completion is established only by a terminal result.
+If the outer call itself yields `Script running with cell ID ...`, use
+`functions.wait` for that cell with a sufficient finite yield. Repeated short
+outer yields would reintroduce model polling. Where code mode or a sufficiently
+long outer yield is unavailable, report that limitation to the parent.
+
+This is an in-process wait, not a durable park: interruption, a daemon restart,
+or ending the child turn does not preserve the wait. An interrupted turn can
+leave the shell running; inspect and stop the owned terminal explicitly when
+cancellation requires it. Native subagents do not register themselves with
+`codex-plus park`.
+
 ## Fleet rollout
 
 Distribute this workflow with the helper and frontend build. The shared global

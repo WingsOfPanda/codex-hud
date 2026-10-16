@@ -1,0 +1,25 @@
+{
+  "feature": "native worker bounded shell waits without interim model requests",
+  "stock_binary": "/home/liupan/Aerius/codex-plus/.build/upstream-0163/official-x86/bin/codex",
+  "stock_binary_sha256": "399ff69c431c066e40de318fba45c2b07f45a76b19939d247ee4828fc70c4215",
+  "root_acceptance_command": "python3 tests/test_worker_shell_wait_integration.py OFFICIAL_0_163_BINARY --evidence .build/worker-wait/root-success (repeat --scenario failure, interrupt, budget)",
+  "root_log": "/home/liupan/.codex/codex-plus/logs/2f4f576c-3f09-495f-b941-a7ec04291a2e.log",
+  "success": {
+    "last_observation_elapsed": 64.73952393396758,
+    "observations": 257,
+    "child_requests_while_waiting": 1,
+    "child_requests_total": 2,
+    "parent_completion_count": 1
+  },
+  "failure_exit_code": 7,
+  "interrupted_child_requests": 1,
+  "budget_expired_preserves_pending_session": true,
+  "fixture_terminals_cleaned": true,
+  "remote_model_requests": 0,
+  "limits": [
+    "Workflow uses existing stock code-mode orchestration; no automatic runtime enforcement added.",
+    "Outer yield and finite wait budget must cover the command; platform caps can yield earlier.",
+    "Wait does not survive interruption, daemon restart, or ending the child turn.",
+    "Global fleet policy and installed release documents are not changed by this branch."
+  ]
+}
