@@ -1,6 +1,6 @@
 # Codex Plus 0.163.0-plus.0.2.0
 
-Advisor feature candidate based on OpenAI Codex `rust-v0.163.0`
+Advisor and bounded worker-wait feature release based on OpenAI Codex `rust-v0.163.0`
 (`83086188ae0614bd882818ff1aa23f3194962012`). The package manifest records the
 exact Plus source revision, frontend patch hash, target, and artifact hashes.
 
@@ -33,6 +33,14 @@ workers, shells, alerts and overflow. Status refresh makes no model calls.
 The command and native display must ship together; fleet-config must route the
 new `advisor` helper command through its installed `codex-plus` wrapper.
 
+Native workers can wait for finite shell jobs inside one bounded Code Mode cell.
+The local code waits for the command and returns its real exit status and log;
+the model makes no interim status requests while that cell remains pending.
+The outer yield must cover the chosen wait budget. A worker keeps its turn open
+until it has reviewed the result; this is not durable child parking and does not
+survive interruption or daemon restart. Expired budgets report the native session
+as still pending. See [worker shell waits](shell-workflow.md#native-subagent-waits).
+
 The Python park/wake coordinator is unchanged. This release retains coordinator protocol 1:
 observers finish their current cycle before transferring to a validated,
 strictly newer Plus package selected by the installer's `current` link. Watched
@@ -46,7 +54,9 @@ preserving the installer's cleanup protection while cwd changes during exec.
 The normal `codex`, `codex-plus park` and `codex-plus run` interfaces remain the
 same. Transfer uses local checks and no model polling or release downloads.
 
-**Deployment:** restart native TUI sessions to see the new labels. This update
+**Deployment:** restart native TUI sessions to see the advisor footer. Update the
+fleet wrapper to route `advisor` and install the advisor/worker-wait instructions.
+This update
 does not require a daemon change when stock Codex 0.163.0 and protocol-1 helpers
 are already installed. Boxes still on 0.162.1 must complete the paired upstream
 upgrade with a quiet checkpoint and official-daemon restart through fleet-config.
@@ -64,7 +74,7 @@ its time, cause, and evidence. Existing cancelled jobs remain cancelled.
 The compact footer from plus.3 remains intact. Worker rows start with model and
 effort; root shell commands use the `Background` label. Redundant count headers
 and healthy watcher-waiting rows are hidden. Approval/input waits, stale data,
-and wake-delivery problems remain visible. All activity, alerts, and overflow
+and wake-delivery problems remain visible. Advisor status, all activity, alerts, and overflow
 share three total rows, keeping the idle composer within AP's last six nonempty
 lines. Group counts and metrics retain their existing meaning.
 
