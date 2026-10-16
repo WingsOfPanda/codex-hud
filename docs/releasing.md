@@ -8,7 +8,7 @@ copying `.build/codex` alone is not a complete release.
 
 `UPSTREAM_VERSION` and `PLUS_VERSION` in `scripts/package-release.py` are
 independent. The package name combines them as `<upstream>-plus.<Plus version>`,
-for example `0.162.1-plus.0.0.4`. Preserve the Plus version across upstream-only
+for example `0.163.0-plus.0.1.0`. Preserve the Plus version across upstream-only
 updates; increment its patch component for Plus fixes and its minor component
 for Plus features. Every new combination still needs qualified target packages.
 Existing published `plus.N` releases retain their original identities.
@@ -69,6 +69,7 @@ The native directory must contain `codex`, `codex-code-mode-host`, and `bwrap`.
 Repeat with the ARM target and its native binaries. The packager preserves the
 canonical `bin/`, `codex-path/`, and `codex-resources/` layout. Codex voice is
 deliberately omitted and declared in the manifest and [release notes](release-notes.md).
+The 0.163.0 package contains ripgrep and bwrap; upstream removed bundled zsh.
 The Plus manifest is separate from upstream's `codex-package.json`, whose version
 remains the upstream version.
 

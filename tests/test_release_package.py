@@ -82,8 +82,8 @@ def manifest_check(package):
     protocol = manifest.get('coordinator_protocol')
     if protocol is not None:
         assert type(protocol) is int and protocol == 1, 'unsupported coordinator protocol'
-    assert manifest['upstream'] == {'version': '0.162.1', 'tag': 'rust-v0.162.1',
-        'commit': '092d3acd6bec3e3a14bdc7e7a2810ab628ab759d'}, manifest['upstream']
+    assert manifest['upstream'] == {'version': '0.163.0', 'tag': 'rust-v0.163.0',
+        'commit': '83086188ae0614bd882818ff1aa23f3194962012'}, manifest['upstream']
     assert manifest['build']['rust'] == '1.99.0' and manifest['build']['cargo_profile'] == 'release'
     assert manifest['resources'], 'resource provenance missing'
     assert manifest['target'] == f'{platform.machine()}-unknown-linux-gnu', manifest['target']
@@ -91,11 +91,11 @@ def manifest_check(package):
         'target': manifest['target'], 'variant': 'codex', 'entrypoint': 'bin/codex',
         'resourcesDir': 'codex-resources', 'pathDir': 'codex-path'}, upstream
     required = ['bin/codex', 'bin/codex-plus', 'bin/codex-code-mode-host', 'codex-path/rg',
-        'codex-resources/bwrap', 'codex-resources/zsh/bin/zsh', 'codex-package.json',
+        'codex-resources/bwrap', 'codex-package.json',
         'codex_plus/runner.py', 'codex_plus/background.py', 'codex_plus/rpc.py',
         'docs/shell-workflow.md', 'docs/background-work.md', 'LICENSE', 'NOTICE',
         'licenses/bubblewrap-COPYING', 'licenses/ripgrep-LICENSE-MIT',
-        'licenses/ripgrep-LICENSE-UNLICENSE', 'licenses/zsh-LICENCE',
+        'licenses/ripgrep-LICENSE-UNLICENSE',
         'licenses/rusty-v8-LICENSE', 'licenses/v8-LICENSE', 'licenses/v8-LICENSE.v8',
         'licenses/codex-plus-LICENSE', 'licenses/provenance.json',
         'licenses/rusty-v8-release-manifests.sha256', 'README.md', 'GLOSSARY.md',
@@ -114,7 +114,7 @@ def manifest_check(package):
     tree = hashlib.sha256(json.dumps(actual, sort_keys=True, separators=(',', ':'),
                                      ensure_ascii=True).encode('ascii')).hexdigest()
     assert tree == manifest['tree_sha256'], 'tree digest mismatch'
-    for path in required[:6]:
+    for path in required[:5]:
         assert os.access(package / path, os.X_OK), f'{path} is not executable'
     with (package / 'bin/codex').open('rb') as stream:
         with mmap.mmap(stream.fileno(), 0, access=mmap.ACCESS_READ) as binary:
@@ -182,7 +182,7 @@ def resources_check(package, root, evidence):
     env, cwd = private_env(root)
     results = {}
     for relative in ('bin/codex', 'bin/codex-code-mode-host', 'codex-path/rg',
-                     'codex-resources/zsh/bin/zsh', 'codex-resources/bwrap'):
+                     'codex-resources/bwrap'):
         path = package / relative
         with path.open('rb') as stream:
             assert stream.read(4) == b'\x7fELF', relative
@@ -193,8 +193,6 @@ def resources_check(package, root, evidence):
             ('not a dynamic executable', 'statically linked')), output
         results[relative] = {'sha256': digest(path), 'ldd': output}
     assert 'ripgrep' in command([package / 'codex-path/rg', '--version'], cwd, env)
-    assert command([package / 'codex-resources/zsh/bin/zsh', '-f', '-c',
-                    'print -r -- PACKAGE_ZSH'], cwd, env).strip() == 'PACKAGE_ZSH'
     (evidence / 'resource-dependencies.json').write_text(json.dumps(results, indent=2) + '\n')
     command([package / 'codex-resources/bwrap', '--ro-bind', '/', '/', '--unshare-pid', '--as-pid-1',
              '--proc', '/proc', '--dev', '/dev', '--', '/bin/sh', '-c',

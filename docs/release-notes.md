@@ -1,18 +1,18 @@
-# Codex Plus 0.162.1-plus.0.1.0
+# Codex Plus 0.163.0-plus.0.1.0
 
-Cooperative observer upgrade release, based on OpenAI Codex `rust-v0.162.1`
-(`092d3acd6bec3e3a14bdc7e7a2810ab628ab759d`). The package manifest records the
+Upstream update based on OpenAI Codex `rust-v0.163.0`
+(`83086188ae0614bd882818ff1aa23f3194962012`). The package manifest records the
 exact Plus source revision, frontend patch hash, target, and artifact hashes.
 
 Plus has an independent version, `0.1.0`. The combined release name is
 `<upstream>-plus.<Plus version>`; an upstream-only update retains the Plus
-version, for example `0.162.2-plus.0.1.0`. Earlier published names are unchanged.
+version, for example `0.164.0-plus.0.1.0`. Earlier published names are unchanged.
 
-This release supersedes `0.162.1-plus.0.0.4`. It introduces coordinator protocol
+This release supersedes `0.162.1-plus.0.1.0` and retains coordinator protocol
 1: observers finish their current cycle before transferring to a validated,
 strictly newer Plus package selected by the installer's `current` link. Watched
-jobs continue, frozen callback identities and messages survive, and the stock
-daemon remains unchanged. Protocol, upstream identity and target must match.
+jobs continue and frozen callback identities and messages survive for compatible
+helper updates. Protocol, upstream identity and target must match.
 Lower, equal or invalid targets are refused with a stable watcher warning;
 rollbacks require a quiet checkpoint. Failed exec keeps the old observer working.
 
@@ -21,11 +21,12 @@ preserving the installer's cleanup protection while cwd changes during exec.
 The normal `codex`, `codex-plus park` and `codex-plus run` interfaces remain the
 same. Transfer uses local checks and no model polling or release downloads.
 
-**First-install limitation:** existing 0.0.4 and older observers cannot transfer
-cooperatively. Installing this release still needs one quiet checkpoint with
-new parks held and no helpers, armed parks or open callbacks remaining. Later
-compatible updates can proceed while watched jobs run. Restarting the TUI does
-not replace a legacy observer; do not use the historical force-stop sidecar.
+**Upstream-bump requirement:** installing this release requires a quiet checkpoint
+with new parks held and no helpers, armed parks or open callbacks remaining, plus
+an official-daemon upgrade/restart through fleet-config. Even protocol-1 helpers
+cannot transfer across different upstream identities. Later compatible helper
+updates can proceed while watched jobs run. Older 0.0.4 observers also lack the
+cooperative protocol; do not use the historical force-stop sidecar.
 
 The wake reliability fixes remain: the Python coordinator preserves parks
 and watched workers when the stock daemon briefly projects a normal completion
@@ -43,9 +44,10 @@ lines. Group counts and metrics retain their existing meaning.
 
 The daemon-boundary fixes from plus.2 remain intact. The launcher preserves
 the caller's PATH, so commands inside `codex-plus run` use the fleet's `codex`
-wrapper. The `/daemon` menu is read-only; both update choices are removed, and
-the CLI rejects any daemon-update action handed off by the TUI before spawning
-a process. Upstream remains at 0.162.1; no daemon replacement is required.
+wrapper. The `/daemon` menu is read-only; both update choices and the new
+in-process restart action are blocked. The CLI also rejects any daemon-update
+action handed off by the TUI before spawning a process. Fleet-config owns the
+official-daemon upgrade to 0.163.0.
 
 The release retains the per-session worker/shell HUD, local watcher health, explicit
 park/wake coordination, and managed shell logging with a two-second foreground
@@ -56,9 +58,10 @@ unchanged; the experimental receipt extension is excluded.
 ## Runtime contents
 
 Packages preserve upstream's canonical runtime layout: the native CLI, code-mode
-host, digest-matched bubblewrap helper, bundled ripgrep and zsh, and package
+host, digest-matched bubblewrap helper, bundled ripgrep, and package
 metadata. They also contain the Python helper, `codex-plus` launcher, workflow
 documentation, license notices, and a per-file integrity manifest.
+Upstream 0.163.0 removes bundled zsh and the zsh-fork execution path.
 
 **Codex voice is intentionally excluded.** There is no voice host, voice runtime,
 voice subtree, or voice-license bundle. Voice functionality is not supported by
@@ -66,8 +69,9 @@ this release. Other runtime resources and their applicable notices remain includ
 
 Targets are `x86_64-unknown-linux-gnu` and `aarch64-unknown-linux-gnu`. The build
 glibc recorded in each manifest is a build baseline, not a measured minimum
-runtime version. Qualification is on the Ubuntu 24.04/glibc 2.39 fleet; installers
-must check dependencies on the destination host.
+runtime version. Qualification must run on both native architectures; the
+companion release note records actual results and limits. Installers must check
+dependencies on the destination host.
 
 ## Installation and behavior
 
@@ -83,15 +87,17 @@ register finite remaining work and end their turn to become idle. Stock delivery
 ambiguity remains visible and is not blindly retried. Log retention is manual.
 Ctrl-C interrupts the turn; `/stop` terminates its background terminals.
 
-The ledger schema and callback states are unchanged from 0.0.4. No native daemon
-migration or replacement is needed. A newly selected observer retains the
-existing recovery policy: reconfirmed running work can later produce LIVE
+The Plus ledger schema and callback states are unchanged from 0.0.4. The upstream
+upgrade requires the official-daemon restart and quiet checkpoint described above.
+A newly selected observer retains the existing recovery policy: reconfirmed
+running work can later produce LIVE
 COMPLETION; completion discovered during the transfer gap produces REPORT ONLY.
 Unavailable terminal evidence and ambiguous delivery remain unresolved rather
 than triggering a blind resend. Previously cancelled callbacks stay cancelled.
 
-The source and runtime acceptance evidence accompany the release handoff.
-The native client and HUD are unchanged. A TUI restart is optional for this
-helper-only release; new parks use the installed wrapper's current package.
+The release handoff must include source and runtime acceptance evidence.
+The native client is rebuilt against 0.163.0. Existing TUI sessions must exit and
+resume through the new package to adopt the updated client; new parks use the
+installed wrapper's current package.
 Keep previous installations while any process still references them. Fleet-config
 owns the package switch, compatibility checks, and bootstrap/rollback coordination.

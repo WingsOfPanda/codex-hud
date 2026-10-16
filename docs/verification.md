@@ -1,10 +1,56 @@
 # Native HUD verification
 
-Target: Codex 0.162.1, commit
-`092d3acd6bec3e3a14bdc7e7a2810ab628ab759d`, Linux x86_64,
-Rust 1.99.0. The ordinary installed Codex and global configuration remain intact.
+Target: Codex 0.163.0, commit
+`83086188ae0614bd882818ff1aa23f3194962012`, Linux x86_64 and ARM64,
+Rust 1.99.0. Keep the ordinary installed Codex and global configuration intact.
 
-## Frontend release boundary
+## Current release acceptance
+
+The frontend patch changes TUI, CLI, and workspace lock reconciliation only;
+backend and database source must match the pinned 0.163.0 tag. The historical
+0.162.1 receipt extension is not part of this release and has not been ported.
+Check clean and reverse patch application, exact-source reconstruction including
+new files, and equality of external Cargo.lock entries with the 0.163.0 tag.
+
+Run source-guard and packaging tests from this repository:
+
+```sh
+python3 -m unittest discover -s tests -p test_build_native.py -v
+python3 -m unittest discover -s tests -p test_packaging.py -v
+```
+
+From the patched upstream `codex-rs` directory, build with `--locked` and run
+the focused native tests (the environment may require `RUST_MIN_STACK=33554432`):
+
+```sh
+cargo +1.99.0 test --locked -p codex-tui --lib worker_hud --profile dev-small -j 12
+cargo +1.99.0 test --locked -p codex-tui --lib shell_policy --profile dev-small -j 12
+cargo +1.99.0 test --locked -p codex-tui --lib command_lifecycle --profile dev-small -j 12
+cargo +1.99.0 test --locked -p codex-tui --lib thread_transcript::tools::tests --profile dev-small -j 12
+cargo +1.99.0 test --locked -p codex-tui --lib daemon_menu --profile dev-small -j 12
+cargo +1.99.0 test --locked -p codex-cli --bin codex daemon_update_tests --profile dev-small -j 12
+```
+
+Also exercise the affected upstream footer selection, config panel, status-line
+style, terminal-program status, session status/lifecycle, retained reply, and
+disconnect tests. Verify terminal start/resume, PTY and pane isolation, compact
+footer placement, composer editing, and zero model calls from HUD refresh with
+`tests/native_smoke.py`. Use the [release procedure](releasing.md) for fresh
+GNU builds and extracted-package qualification on each native architecture;
+bundled zsh is no longer a package resource. Run coordinator lifecycle and
+affected isolated integration gates from [background verification](background-work.md#verification)
+against an official 0.163.0 daemon in private homes with loopback providers.
+
+The companion release note and evidence record the checks actually run and any
+remaining limits. The 0.162.1 results below are historical and do not qualify
+the 0.163.0 port.
+
+## Historical 0.162.1 verification
+
+The following sections record work against commit
+`092d3acd6bec3e3a14bdc7e7a2810ab628ab759d` and its historical release patches.
+
+### Frontend release boundary
 
 The default patch contains the HUD, workspace lock reconciliation, and frontend
 guards that disable daemon updates from the TUI. The
@@ -41,7 +87,7 @@ local `.build/codex`; the prior combined binary is preserved at
 `.build/codex.before-frontend-release`. The shared official daemon was unchanged.
 See [frontend-release.json](evidence/frontend-release.json) for hashes and logs.
 
-## Checks
+### Checks
 
 From the patched upstream `codex-rs` directory:
 
@@ -102,7 +148,7 @@ The packaged patch applies cleanly to the pinned upstream source and passes a
 reverse-application check. External dependency entries in `Cargo.lock` are
 identical to upstream. The launcher and build script pass `bash -n`.
 
-## Optimized release
+### Optimized release
 
 These startup measurements describe the earlier HUD-only release. The recovery
 build is recorded in [wake-recovery.json](evidence/wake-recovery.json); the newer
@@ -124,7 +170,7 @@ cold starts, or token savings. See [release-build.json](evidence/release-build.j
 [release-benchmark.json](evidence/release-benchmark.json), and
 [release-acceptance.json](evidence/release-acceptance.json).
 
-## Historical experimental recovery
+### Historical experimental recovery
 
 The recovery release passed 64 coordinator tests, 51 native queue/protocol tests,
 seven real-daemon crash/restart scenarios, the normal background integration, and
@@ -144,7 +190,7 @@ extension is now [excluded from release builds](experimental-daemon-receipts.md)
 These historical results do not establish the stock daemon's delivery guarantees
 and are not instructions to replace the shared daemon.
 
-## Watcher health and notification modes
+### Watcher health and notification modes
 
 The watcher changes passed 92 coordinator tests and 29 focused native HUD tests.
 The primary agent also ran normal completion plus seven recovery cases against
@@ -166,7 +212,7 @@ binary is kept as `.build/codex.before-watcher-lessons`. Existing CLI processes
 need to be relaunched to display the health line. The shared daemon was untouched.
 See [watcher-lessons.json](evidence/watcher-lessons.json) for hashes and reports.
 
-## Background shell HUD
+### Background shell HUD
 
 The shell display passed 33 focused native tests and 16 terminal smoke stages.
 The original worker and watcher-health behavior is retained. New checks exercise
@@ -190,7 +236,7 @@ the TUI; the shared stock daemon was not replaced. See
 The installed client is `.build/codex`, with its predecessor preserved as
 `.build/codex.before-shell-hud`. Relaunch the client to display shell rows.
 
-## Managed shell policy
+### Managed shell policy
 
 The [shell workflow](shell-workflow.md) is implemented by a private logging runner
 and frontend-only rendering. Explicit command markers choose `auto`, `background`,
@@ -238,7 +284,7 @@ loopback fixtures. The installed local binary is `.build/codex`, with its previo
 frontend release preserved at `.build/codex.before-shell-policy`. Relaunch the
 client to use the policy display. See [shell-policy.json](evidence/shell-policy.json).
 
-## Compact activity rows
+### Compact activity rows
 
 The compact layout removes the count header, puts model/role/effort before the
 worker task, labels root shell jobs `Background`, and hides healthy watcher
@@ -257,7 +303,7 @@ See [compact-rows.json](evidence/compact-rows.json) for the candidate hash and
 reports. This acceptance covers a Linux x86_64 `dev-small` candidate; optimized
 release builds, ARM qualification, and fleet installation are separate work.
 
-## Limits
+### Limits
 
 - Live workers and the strip's placement were confirmed in the user's pane.
   Local token metadata was checked read-only; automated terminal lifecycle tests

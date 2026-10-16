@@ -42,7 +42,7 @@ class PackageIntegrityTests(unittest.TestCase):
             path.chmod(0o755)
         bwrap_hash = hashlib.sha256(elf(62)).hexdigest().encode()
         (self.package / 'bin/codex').write_bytes(elf(62) + bwrap_hash)
-        metadata = {'layoutVersion': 1, 'version': '0.162.1',
+        metadata = {'layoutVersion': 1, 'version': '0.163.0',
                     'target': 'x86_64-unknown-linux-gnu', 'variant': 'codex',
                     'entrypoint': 'bin/codex', 'resourcesDir': 'codex-resources',
                     'pathDir': 'codex-path'}
@@ -51,7 +51,7 @@ class PackageIntegrityTests(unittest.TestCase):
             'schema_version': 1, 'release': package_release.RELEASE, 'plus_commit': 'a' * 40,
             'coordinator_protocol': package_release.COORDINATOR_PROTOCOL,
             'frontend_patch_sha256': 'b' * 64, 'target': 'x86_64-unknown-linux-gnu',
-            'upstream': {'version': '0.162.1', 'tag': 'rust-v0.162.1',
+            'upstream': {'version': '0.163.0', 'tag': 'rust-v0.163.0',
                          'commit': package_release.UPSTREAM_COMMIT},
             'build': {'glibc': '2.39', 'rust': '1.99.0', 'cargo_profile': 'release'},
             'voice': False,
@@ -74,6 +74,7 @@ class PackageIntegrityTests(unittest.TestCase):
     def test_valid_package_and_declared_hash_recipe(self):
         from codex_plus.upgrade import COORDINATOR_PROTOCOL
         self.assertEqual(package_release.COORDINATOR_PROTOCOL, COORDINATOR_PROTOCOL)
+        self.assertFalse((self.package / 'codex-resources/zsh').exists())
         self.assertEqual(self.verify()['tree_sha256'], self.manifest['tree_sha256'])
 
     def test_coordinator_protocol_must_be_explicit_and_supported(self):
@@ -104,7 +105,7 @@ class PackageIntegrityTests(unittest.TestCase):
                 (self.package / 'unexpected').unlink(missing_ok=True)
 
     def test_missing_required_resource_rejected_even_when_resealed(self):
-        (self.package / 'codex-resources/zsh/bin/zsh').unlink()
+        (self.package / 'codex-resources/bwrap').unlink()
         self.seal()
         with self.assertRaisesRegex(ValueError, 'Missing regular package file'):
             self.verify()

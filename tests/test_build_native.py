@@ -7,7 +7,7 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PIN = '092d3acd6bec3e3a14bdc7e7a2810ab628ab759d'
+PIN = '83086188ae0614bd882818ff1aa23f3194962012'
 
 
 class BuildNativeSourceGuardTests(unittest.TestCase):
@@ -33,7 +33,7 @@ class BuildNativeSourceGuardTests(unittest.TestCase):
         script = (ROOT / 'scripts/build-native.sh').read_text().replace(PIN, commit)
         (scripts / 'build-native.sh').write_text(script)
         (self.root / 'patches').mkdir()
-        self.patch = self.root / 'patches/codex-0.162.1-worker-hud.patch'
+        self.patch = self.root / 'patches/codex-0.163.0-worker-hud.patch'
         (self.source / 'codex-rs/tui/hud.rs').write_text('// frontend HUD\n')
         (self.source / 'codex-rs/tui/new_hud.rs').write_text('// new HUD module\n')
         self.git('add', '--intent-to-add', 'codex-rs/tui/new_hud.rs')

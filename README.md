@@ -6,8 +6,8 @@ tracks its own parent thread in ordinary terminals and split tmux panes.
 Release builds patch the frontend and keep upstream daemon code unchanged.
 The HUD and Python completion coordinator work with the official stock daemon.
 
-The patch targets **Codex 0.162.1**, upstream commit
-`092d3acd6bec3e3a14bdc7e7a2810ab628ab759d`.
+The patch targets **Codex 0.163.0**, upstream commit
+`83086188ae0614bd882818ff1aa23f3194962012`.
 
 ## Run
 
@@ -32,23 +32,25 @@ rustup toolchain install 1.99.0
 ```
 
 The script fetches the pinned upstream source into `.build/source`, applies
-`patches/codex-0.162.1-worker-hud.patch`, and builds `.build/codex`. It refuses an
+`patches/codex-0.163.0-worker-hud.patch`, and builds `.build/codex`. It refuses an
 unexpected source revision or a checkout that differs from the exact release
 patch, including old daemon modifications. The patch also reconciles the
 release tag's workspace versions in `Cargo.lock`; external dependency versions
-are unchanged. The first build downloads and compiles Codex's dependencies.
+match the 0.163.0 tag. The first build downloads and compiles Codex's dependencies.
+Preserve or move aside an existing checkout at another upstream revision before
+building; the script refuses to overwrite it.
 
 The historical receipt extension is preserved in
 `patches/experimental/codex-0.162.1-daemon-receipts.patch` and is excluded from the
 build script. See [experimental receipts](docs/experimental-daemon-receipts.md)
-for its scope and patch order. A previous combined source checkout must be moved
-aside before building the frontend release; the script will not erase it.
+for its historical 0.162.1 scope and patch order. It is not ported to 0.163.0.
 
 Builds use Cargo's optimized release profile (thin LTO and four codegen units).
 Installation strips symbols; the original release binary stays in the build
-directory. The tested executable shrank from 404.8 MB to 282.4 MB. Paired warm
-startup medians improved from 26.9 to 11.5 ms for `--version` and 29.2 to 12.1 ms
-for `--help` (21 samples each). This does not measure UI or model-response speed.
+directory. Historical 0.162.1 measurements showed the executable shrinking from
+404.8 MB to 282.4 MB. Paired warm startup medians improved from 26.9 to 11.5 ms
+for `--version` and 29.2 to 12.1 ms for `--help` (21 samples each). These do not
+measure 0.163.0, UI, or model-response speed.
 
 For complete distributable packages, follow [release building](docs/releasing.md).
 The packager stages native x86_64 and ARM64 outputs with upstream runtime resources,
@@ -188,4 +190,4 @@ the launcher.
 
 The native patch is version-specific. Updating the ordinary Codex installation
 does not update this build; rebase and retest the patch before changing its
-upstream version. Upstream Codex is [Apache-2.0 licensed](https://github.com/openai/codex/blob/rust-v0.162.1/LICENSE).
+upstream version. Upstream Codex is [Apache-2.0 licensed](https://github.com/openai/codex/blob/rust-v0.163.0/LICENSE).

@@ -58,8 +58,8 @@ def make_package(root, label):
             files[path.relative_to(package).as_posix()] = {
                 "sha256": digest(path), "mode": "0644", "size": path.stat().st_size}
     manifest = {"schema_version": 1, "coordinator_protocol": 1,
-                "release": f"0.162.1-plus.0.1.{ord(label) - ord('A')}", "plus_commit": label.lower() * 40,
-                "upstream": {"version": "0.162.1", "tag": "private-stock-proof", "commit": "0" * 40},
+                "release": f"0.163.0-plus.0.1.{ord(label) - ord('A')}", "plus_commit": label.lower() * 40,
+                "upstream": {"version": "0.163.0", "tag": "private-stock-proof", "commit": "0" * 40},
                 "target": "x86_64-unknown-linux-gnu", "files": files,
                 "tree_sha256": hashlib.sha256(json.dumps(files, sort_keys=True,
                     separators=(",", ":"), ensure_ascii=True).encode("ascii")).hexdigest()}
