@@ -1,15 +1,28 @@
-# Codex Plus 0.163.0-plus.0.1.0
+# Codex Plus 0.163.0-plus.0.1.1
 
-Upstream update based on OpenAI Codex `rust-v0.163.0`
+Model-identity display update based on OpenAI Codex `rust-v0.163.0`
 (`83086188ae0614bd882818ff1aa23f3194962012`). The package manifest records the
 exact Plus source revision, frontend patch hash, target, and artifact hashes.
 
-Plus has an independent version, `0.1.0`. The combined release name is
+Plus has an independent version, `0.1.1`. The combined release name is
 `<upstream>-plus.<Plus version>`; an upstream-only update retains the Plus
-version, for example `0.164.0-plus.0.1.0`. Earlier published names are unchanged.
+version, for example `0.164.0-plus.0.1.1`. Earlier published names are unchanged.
 
-This release supersedes `0.162.1-plus.0.1.0` and retains coordinator protocol
-1: observers finish their current cycle before transferring to a validated,
+This release supersedes `0.163.0-plus.0.1.0`. Worker rows now show the full
+reported model identifier, for example:
+
+```text
+GPT-6.1-Sol (high) · glm upstream contribution · 2:53 · 175M tok
+```
+
+The redundant worker/workers word is removed. Versions and snapshot suffixes
+are preserved, custom/provider identifiers stay intact, and mixed-model groups
+remain mixed. The display uses Codex's thread model metadata; it is not proof of
+per-turn server-side routing. Group counts, effort, timing, tokens and the
+three-row cap retain their existing behavior.
+
+The Python helper is unchanged. This release retains coordinator protocol 1:
+observers finish their current cycle before transferring to a validated,
 strictly newer Plus package selected by the installer's `current` link. Watched
 jobs continue and frozen callback identities and messages survive for compatible
 helper updates. Protocol, upstream identity and target must match.
@@ -21,12 +34,13 @@ preserving the installer's cleanup protection while cwd changes during exec.
 The normal `codex`, `codex-plus park` and `codex-plus run` interfaces remain the
 same. Transfer uses local checks and no model polling or release downloads.
 
-**Upstream-bump requirement:** installing this release requires a quiet checkpoint
-with new parks held and no helpers, armed parks or open callbacks remaining, plus
-an official-daemon upgrade/restart through fleet-config. Even protocol-1 helpers
-cannot transfer across different upstream identities. Later compatible helper
-updates can proceed while watched jobs run. Older 0.0.4 observers also lack the
-cooperative protocol; do not use the historical force-stop sidecar.
+**Deployment:** restart native TUI sessions to see the new labels. This update
+does not require a daemon change when stock Codex 0.163.0 and protocol-1 helpers
+are already installed. Boxes still on 0.162.1 must complete the paired upstream
+upgrade with a quiet checkpoint and official-daemon restart through fleet-config.
+Even protocol-1 helpers cannot transfer across different upstream identities.
+Older 0.0.4 observers lack the cooperative protocol; do not use the historical
+force-stop sidecar.
 
 The wake reliability fixes remain: the Python coordinator preserves parks
 and watched workers when the stock daemon briefly projects a normal completion
@@ -35,7 +49,7 @@ delivery; bounded exact-turn evidence resolves the hold. Verified daemon loss
 still produces an UNKNOWN report without rerunning work. Cancellation records
 its time, cause, and evidence. Existing cancelled jobs remain cancelled.
 
-The compact footer from plus.3 remains intact. Worker rows start with model, role, and
+The compact footer from plus.3 remains intact. Worker rows start with model and
 effort; root shell commands use the `Background` label. Redundant count headers
 and healthy watcher-waiting rows are hidden. Approval/input waits, stale data,
 and wake-delivery problems remain visible. All activity, alerts, and overflow

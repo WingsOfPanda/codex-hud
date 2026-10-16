@@ -1,0 +1,65 @@
+{
+  "release": "0.163.0-plus.0.1.1",
+  "status": "source and x86 development acceptance passed; release packages pending",
+  "upstream": {
+    "version": "0.163.0",
+    "commit": "83086188ae0614bd882818ff1aa23f3194962012"
+  },
+  "patch_sha256": "7d5229cff8f02904c962dc38861153c4e2a04654e68fe569291b39124112e6ed",
+  "candidate": {
+    "path": "/home/liupan/Aerius/codex-plus/.build/plus011/native/codex",
+    "sha256": "c7367db43aebc7f4f896b237351fb3cbc3bae9a02ed670e5a6c2fa9aaf176eec",
+    "profile": "dev-small",
+    "target": "x86_64"
+  },
+  "source_checks": {
+    "passed": true,
+    "upstream_commit": "83086188ae0614bd882818ff1aa23f3194962012",
+    "patch_sha256": "7d5229cff8f02904c962dc38861153c4e2a04654e68fe569291b39124112e6ed",
+    "inherited_workspace_versions": 160,
+    "external_lock_packages": 1314,
+    "forward_check": true,
+    "reverse_check": true,
+    "exact_source_check": true,
+    "external_lock_packages_identical": true
+  },
+  "root_checks": [
+    {
+      "command": "cargo +1.99.0 test --locked -p codex-tui --lib worker_hud --profile dev-small -j 12",
+      "passed": 36,
+      "log": "/home/liupan/Aerius/codex-plus/.build/plus011/native/root-worker-hud.log"
+    },
+    {
+      "command": "python -m unittest discover -s tests -p test_terminal_fixture.py -v",
+      "passed": 14,
+      "log": "/home/liupan/.codex/codex-plus/logs/92870b2f-e301-42ae-bc89-e64e93a5ec27.log"
+    },
+    {
+      "commands": [
+        "python3 -m unittest discover -s tests -p test_packaging.py -v",
+        "python3 -m unittest discover -s tests -p test_build_native.py -v"
+      ],
+      "passed": 20,
+      "log": "/home/liupan/.codex/codex-plus/logs/1a416d26-5492-49bd-be3a-cc5e77da0483.log"
+    },
+    {
+      "command": "python tests/native_smoke.py .build/plus011/native/codex --evidence .build/plus011/root-terminal",
+      "passed": 18,
+      "report": "/home/liupan/Aerius/codex-plus/.build/plus011/root-terminal/report.json",
+      "model_calls_after_fixture_setup": 0
+    },
+    {
+      "command": "python tests/test_upstream_0163_tui.py .build/plus011/native/codex --evidence .build/plus011/root-upstream-tui",
+      "passed": 2,
+      "report": "/home/liupan/Aerius/codex-plus/.build/plus011/root-upstream-tui/report.json"
+    }
+  ],
+  "limits": [
+    "No optimized release archives or ARM qualification for this revision.",
+    "No full upstream workspace suite, publication, merge, or installation.",
+    "Model labels use reported thread metadata, not per-turn provider routing.",
+    "Narrow terminals retain existing clipping behavior."
+  ],
+  "python_coordinator_changed": false,
+  "coordinator_protocol": 1
+}

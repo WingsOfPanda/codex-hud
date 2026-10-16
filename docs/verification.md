@@ -45,6 +45,23 @@ The companion release note and evidence record the checks actually run and any
 remaining limits. The 0.162.1 results below are historical and do not qualify
 the 0.163.0 port.
 
+### Full model labels for Plus 0.1.1
+
+The x86 development candidate passed 36 focused Rust HUD tests, 14 terminal
+fixture tests, 13 packaging tests, seven source-guard tests, all 18 native
+terminal smoke stages, and both 0.163 UI scenarios. Root acceptance checked the
+actual candidate, clean/reverse patch application, exact source reconstruction,
+and unchanged external lock dependencies. See
+[full-model-labels.json](evidence/full-model-labels.json) for commands and hashes.
+
+Rows retain reported model versions and suffixes, effort, grouped active counts,
+metrics, dim styling, and the three-row budget including alerts/overflow. Terminal
+checks cover the idle prompt in the last six nonempty lines, editing, resizing,
+pane isolation, footer selection, and zero model calls from HUD refresh. Fixture
+recognition accepts upstream's custom effort strings as well as known levels.
+This is source/development acceptance; optimized x86 and ARM release packages
+have not been built or qualified for this revision.
+
 ## Historical 0.162.1 verification
 
 The following sections record work against commit

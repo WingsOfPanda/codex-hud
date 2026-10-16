@@ -44,7 +44,7 @@ class CompactHudAssertionTests(unittest.TestCase):
         return '\n'.join(['› draft', '? for shortcuts', *rows, 'root-status'])
 
     def test_healthy_mixed_rows_and_overflow_count_toward_total(self):
-        text = self.screen(['Sol worker (high) · task · 0:12 · ? tok',
+        text = self.screen(['GPT-6.1-Sol (high) · task · 0:12 · ? tok',
                             'Background · python train.py · seen 0:12', '+4 more'])
         self.assertEqual(len(assert_compact_hud(text, rows=3)), 3)
         self.assertEqual(len(worker_rows(text)), 1)
@@ -52,7 +52,7 @@ class CompactHudAssertionTests(unittest.TestCase):
 
     def test_combined_alert_and_overflow_keep_composer_in_last_six(self):
         text = self.screen(['Watcher unavailable · Workers stale · counts unavailable',
-                            'mixed workers (mixed) · topic (3 agents) · 2:00 · ? tok', '+3 more'])
+                            'mixed (mixed) · topic (3 agents) · 2:00 · ? tok', '+3 more'])
         assert_compact_hud(text, rows=3)
 
     def test_typed_draft_does_not_require_shortcuts_footer(self):
@@ -62,14 +62,47 @@ class CompactHudAssertionTests(unittest.TestCase):
 
     def test_old_summary_and_four_total_rows_are_rejected(self):
         for rows in (['Workers 6 active'], ['Workers stale · counts unavailable',
-                'Sol worker (high) · first · 0:12 · ? tok',
-                'Astra worker (medium) · second · 0:12 · ? tok', '+4 more']):
+                'GPT-6.1-Sol (high) · first · 0:12 · ? tok',
+                'GPT-6-Astra (medium) · second · 0:12 · ? tok', '+4 more']):
             with self.subTest(rows=rows), self.assertRaises(AssertionError):
                 assert_compact_hud(self.screen(rows))
 
     def test_idle_composer_outside_last_six_is_rejected(self):
         with self.assertRaises(AssertionError):
             assert_compact_hud('› draft\n' + '\n'.join(f'line {n}' for n in range(6)))
+
+    def test_worker_recognition_preserves_full_custom_and_unknown_models(self):
+        rows = ['GPT-6.1-Sol (high) · first · 0:12 · ? tok',
+                'GPT-6-Astra (medium) · second · 2:03 · 1.2K tok',
+                'provider/gpt-7-sol-preview (xhigh) · third · 0:00 · 0 tok',
+                'custom:model name (none) · fourth · 12:34 · 1M tok',
+                'other-model (minimal) · large usage · 123:45 · 1.23T tok',
+                'GPT-6.1-Sol (max) · maximum · 0:12 · ? tok',
+                'GPT-6.1-Sol (ultra) · ultra · 0:12 · ? tok',
+                'GPT-6.1-Sol (persistent) · persistent · 0:12 · ? tok',
+                'custom-model (future effort) · custom · 0:12 · ? tok',
+                'mixed (mixed) · topic (3 agents) · 2:00 · ? tok',
+                '? (?) · unknown · stale · ? · ? tok',
+                'vendor/model (low) · approval · wait approval · 1:02 · 234 tok']
+        self.assertEqual(worker_rows('\n'.join('  ' + row for row in rows)), rows)
+
+    def test_worker_recognition_accepts_clipped_metric_suffix(self):
+        row = 'GPT-6.1-Sol (high) · task · 0:12 · ? tok'
+        for suffix in (' · ? tok', ' · ? to', ' · ? t', ' · ?', ''):
+            clipped = row.removesuffix(' · ? tok') + suffix
+            with self.subTest(row=clipped):
+                self.assertEqual(worker_rows(clipped), [clipped])
+
+    def test_worker_recognition_excludes_shells_alerts_and_conversation(self):
+        lines = ['Background · command (high) · seen 0:12',
+                 'Workers stale · counts unavailable', '+4 more',
+                 'Watcher unavailable · Workers stale · counts unavailable',
+                 'GPT-6.1-Sol (high) · ordinary text without metrics',
+                 'GPT-6.1-Sol · missing effort · 0:12 · ? tok',
+                 'GPT-6.1-Sol (high) · task · 0:12 · ? tok extra text',
+                 '› GPT-6.1-Sol (high) · draft · 0:12 · ? tok',
+                 '> GPT-6.1-Sol (high) · quoted row · 0:12 · ? tok']
+        self.assertEqual(worker_rows('\n'.join(lines)), [])
 
 
 if __name__ == '__main__':

@@ -63,14 +63,16 @@ see the [release notes](docs/release-notes.md).
 The strip shows active and waiting direct workers without a count header:
 
 ```text
-Sol worker (high) · integration probe · 3:42 · 123.4K tok
+GPT-6.1-Sol (high) · integration probe · 3:42 · 123.4K tok
 ```
 
-Rows start with model, role, and actual reasoning effort, followed by a short task
+Rows start with the full reported model and reasoning effort, followed by a short task
 name, elapsed time, and cumulative reported tokens. Routine active state is
 implicit; approval/input waits and stale data remain explicit. Long names shorten
 to leave room for metrics. Activity rows are dim; warnings use normal brightness.
-Sol and Astra are shown by family; other model identifiers remain visible.
+Recognized GPT Sol/Astra names use display casing while preserving their version
+and suffixes; custom and provider-prefixed identifiers remain intact. The model
+comes from Codex's thread metadata, which is not per-turn execution telemetry.
 Unknown values, including missing effort, show `?`. Finished,
 interrupted, failed, and idle workers disappear. The strip hides once no activity
 or warnings remain. Small terminals clip rows to preserve the prompt.
@@ -135,7 +137,7 @@ belong to the existing batch. Each member name remains unique.
 These names produce one row:
 
 ```text
-Sol workers (high) · hud styling (3 agents) · 1:20 · 250K tok
+GPT-6.1-Sol (high) · hud styling (3 agents) · 1:20 · 250K tok
 ```
 
 The count includes only active/waiting members: 3 becomes 2, then 1, and the group

@@ -125,7 +125,9 @@ def wait(terminals, predicate, reason, timeout=15):
 
 def worker_rows(text):
     return [line.strip() for line in text.splitlines()
-            if re.match(r'^[^·]+ workers?(?: \([^)]*\))? · ', line.strip())]
+            if re.fullmatch(r'[^·›>]+ \([^()·›>]*\) · '
+                            r'.+ · (?:\d+:\d{2}|\?)(?: · (?:\?|[\d,.]+[kKmMbBtT]?)'
+                            r'(?: (?:t|to|tok))?)?', line.strip())]
 
 
 def shell_rows(text):
@@ -599,7 +601,7 @@ def run(binary, evidence):
             worker_lines = worker_rows(terminal.text)
             assert len(worker_lines) == 2, terminal.text
             for index, line in enumerate(worker_lines):
-                assert ('Sol worker (high)' if index % 2 == 0 else 'Astra worker (medium)') + f' · worker {index + 1} ·' in line, line
+                assert ('GPT-6.1-Sol (high)' if index % 2 == 0 else 'GPT-6-Astra (medium)') + f' · worker {index + 1} ·' in line, line
                 assert '? tok' in line, line
                 assert re.search(r' · \d+:\d{2} · ', line), line
                 assert '/root/' not in line and 'worker_' not in line, line
@@ -608,7 +610,7 @@ def run(binary, evidence):
             assert 'idle ' not in terminal.text and 'done ' not in terminal.text and 'other ' not in terminal.text, terminal.text
             assert 'Wake delivery uncertain' not in terminal.text and '987654' not in terminal.text, terminal.text
         (evidence / 'compact-six-active-screen.txt').write_text(terminals[1].text + '\n')
-        stages.append('six active workers show two model-first rows plus +4 more in three total rows, with elapsed, unknown remote tokens, actual Sol high/Astra medium, and idle composer within last six nonempty lines')
+        stages.append('six active workers show two full-model rows plus +4 more in three total rows, with elapsed, unknown remote tokens, actual GPT-6.1-Sol high/GPT-6-Astra medium, and idle composer within last six nonempty lines')
         os.write(terminals[0].master, b'/daemon')
         wait(terminals, lambda: '/daemon' in terminals[0].text, '/daemon did not finish rendering')
         os.write(terminals[0].master, b'\r')
@@ -672,7 +674,7 @@ def run(binary, evidence):
             return next((line.strip() for line in grouped_terminal.screen.display if 'hud styling (' in line), '')
 
         wait(terminals, lambda: '(3 agents)' in group_line() and '+2 more' in grouped_terminal.text, 'explicit cohort did not replace three individual rows')
-        assert group_line().startswith('mixed workers (mixed) ·') and '? tok' in group_line(), group_line()
+        assert group_line().startswith('mixed (mixed) ·') and '? tok' in group_line(), group_line()
         assert_compact_hud(grouped_terminal.text, rows=3)
         assert 'worker 1 ·' not in grouped_terminal.text and 'worker 2 ·' not in grouped_terminal.text and 'worker 3 ·' not in grouped_terminal.text, grouped_terminal.text
         initial_age = re.search(r' · (\d+):(\d{2}) · ', group_line())

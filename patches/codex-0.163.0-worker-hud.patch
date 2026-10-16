@@ -3970,7 +3970,7 @@ index a20193149..44c04876a 100644
      SelectAgentThread(ThreadId),
  
 diff --git a/codex-rs/tui/src/bottom_pane/mod.rs b/codex-rs/tui/src/bottom_pane/mod.rs
-index ae9405e9f..e7363be1e 100644
+index ae9405e9f..f74bbb894 100644
 --- a/codex-rs/tui/src/bottom_pane/mod.rs
 +++ b/codex-rs/tui/src/bottom_pane/mod.rs
 @@ -207,6 +207,7 @@ mod paste_burst;
@@ -4078,7 +4078,7 @@ index ae9405e9f..e7363be1e 100644
 +            pane.handle_key_event(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE));
 +            for width in [12, 40, 120] {
 +                let full = Rect::new(0, 0, width, pane.desired_height(width));
-+                assert!(render_snapshot(&pane, full).contains("Sol worker"));
++                assert!(render_snapshot(&pane, full).contains("GPT-6-Sol"));
 +                for height in [3, full.height] {
 +                    let area = Rect::new(0, 0, width, height);
 +                    assert!(
@@ -4128,10 +4128,10 @@ index ae9405e9f..e7363be1e 100644
          let (tx, _rx) = unbounded_channel();
 diff --git a/codex-rs/tui/src/bottom_pane/worker_hud.rs b/codex-rs/tui/src/bottom_pane/worker_hud.rs
 new file mode 100644
-index 000000000..2b344c256
+index 000000000..2a75fe21a
 --- /dev/null
 +++ b/codex-rs/tui/src/bottom_pane/worker_hud.rs
-@@ -0,0 +1,1030 @@
+@@ -0,0 +1,1046 @@
 +//! Read-only worker summary; clipping never takes space from the composer.
 +
 +use crate::line_truncation::truncate_line_with_ellipsis_if_overflow;
@@ -4372,8 +4372,7 @@ index 000000000..2b344c256
 +            } else {
 +                "mixed".to_string()
 +            };
-+            let kind = if grouped { "workers" } else { "worker" };
-+            let prefix = format!("  {model} {kind} ({effort}) · ");
++            let prefix = format!("  {model} ({effort}) · ");
 +            let state = if state.is_empty() {
 +                String::new()
 +            } else {
@@ -4460,12 +4459,25 @@ index 000000000..2b344c256
 +        .map(|ch| if ch.is_control() { ' ' } else { ch })
 +        .collect();
 +    let model = model.trim();
-+    for segment in model.split(|ch: char| !ch.is_ascii_alphanumeric()) {
-+        if segment.eq_ignore_ascii_case("sol") {
-+            return "Sol".to_string();
-+        }
-+        if segment.eq_ignore_ascii_case("astra") {
-+            return "Astra".to_string();
++    let mut parts = model.splitn(4, '-');
++    if let (Some(prefix), Some(version), Some(family)) = (parts.next(), parts.next(), parts.next())
++        && prefix.eq_ignore_ascii_case("gpt")
++        && version
++            .split('.')
++            .all(|part| !part.is_empty() && part.bytes().all(|byte| byte.is_ascii_digit()))
++    {
++        let family = if family.eq_ignore_ascii_case("sol") {
++            Some("Sol")
++        } else if family.eq_ignore_ascii_case("astra") {
++            Some("Astra")
++        } else {
++            None
++        };
++        if let Some(family) = family {
++            return match parts.next() {
++                Some(suffix) => format!("GPT-{version}-{family}-{suffix}"),
++                None => format!("GPT-{version}-{family}"),
++            };
 +        }
 +    }
 +    if model.is_empty() {
@@ -4556,9 +4568,9 @@ index 000000000..2b344c256
 +                                );
 +                            }
 +                            if shown >= 2 && workers > 0 && shells > 0 {
-+                                assert!(
-+                                    lines.iter().any(|line| line.to_string().contains("worker"))
-+                                );
++                                assert!(lines.iter().any(|line| {
++                                    line.to_string().starts_with("  GPT-6.1-Sol (high)")
++                                }));
 +                                assert!(
 +                                    lines
 +                                        .iter()
@@ -4741,7 +4753,7 @@ index 000000000..2b344c256
 +        assert_eq!(lines.len(), 2);
 +        assert_eq!(
 +            lines[0].to_string(),
-+            "  Sol worker (high) · glm w8 graph trial · 24:31 · 9.04M tok"
++            "  GPT-6.1-Sol (high) · glm w8 graph trial · 24:31 · 9.04M tok"
 +        );
 +        assert_eq!(
 +            lines[1].to_string(),
@@ -4787,9 +4799,9 @@ index 000000000..2b344c256
 +        hud.render(area, &mut buf);
 +        for n in 0..2 {
 +            let rendered: String = (0..80).map(|x| buf[(x, n)].symbol()).collect();
-+            assert_eq!(buf[(28, n)].symbol(), "测");
-+            assert_eq!(buf[(30, n)].symbol(), "试");
-+            assert_eq!(buf[(32, n)].symbol(), n.to_string());
++            assert_eq!(buf[(27, n)].symbol(), "测");
++            assert_eq!(buf[(29, n)].symbol(), "试");
++            assert_eq!(buf[(31, n)].symbol(), n.to_string());
 +            assert!(rendered.contains("1:02 · 12.3K tok"));
 +            assert!(buf[(2, n)].modifier.contains(Modifier::DIM));
 +        }
@@ -4887,7 +4899,7 @@ index 000000000..2b344c256
 +            true,
 +        );
 +        let line = hud.lines(80)[0].to_string();
-+        assert!(line.starts_with("  Astra worker (medium) · 测试"));
++        assert!(line.starts_with("  GPT-6-Astra (medium) · 测试"));
 +        assert!(line.contains('…'));
 +        assert!(line.ends_with(" · 3:42 · 12.3K tok"));
 +        assert!(display_width(&line) <= 80);
@@ -4920,7 +4932,7 @@ index 000000000..2b344c256
 +            let mut buf = Buffer::empty(area);
 +            hud.render(area, &mut buf);
 +            let rendered: String = (0..width).map(|x| buf[(x, 0)].symbol()).collect();
-+            assert!(rendered.starts_with("  Astra"));
++            assert!(rendered.starts_with("  GPT-6-"));
 +        }
 +    }
 +
@@ -4941,15 +4953,9 @@ index 000000000..2b344c256
 +            false,
 +            true,
 +        );
-+        assert_eq!(
-+            hud.lines(80)[0].to_string(),
-+            "  ? worker (?) · probe · ? · 0 tok"
-+        );
++        assert_eq!(hud.lines(80)[0].to_string(), "  ? (?) · probe · ? · 0 tok");
 +        hud.rows[0].total_tokens = None;
-+        assert_eq!(
-+            hud.lines(80)[0].to_string(),
-+            "  ? worker (?) · probe · ? · ? tok"
-+        );
++        assert_eq!(hud.lines(80)[0].to_string(), "  ? (?) · probe · ? · ? tok");
 +        hud.rows[0].total_tokens = Some(-1);
 +        assert!(hud.lines(80)[0].to_string().contains("? tok"));
 +    }
@@ -4984,7 +4990,7 @@ index 000000000..2b344c256
 +            assert!(
 +                hud.lines(80)[0]
 +                    .to_string()
-+                    .starts_with(&format!("  Sol worker ({expected}) ·"))
++                    .starts_with(&format!("  GPT-6.1-Sol ({expected}) ·"))
 +            );
 +            let area = Rect::new(0, 0, 80, 2);
 +            let mut buf = Buffer::empty(area);
@@ -5039,7 +5045,7 @@ index 000000000..2b344c256
 +                assert_eq!(
 +                    lines[0].to_string(),
 +                    format!(
-+                        "  Sol workers (high) · hud styling ({remaining} agent{suffix}) · {state} · 2:00 · 6K tok"
++                        "  GPT-6.1-Sol (high) · hud styling ({remaining} agent{suffix}) · {state} · 2:00 · 6K tok"
 +                    )
 +                );
 +                rows[3 - remaining].state = WorkerState::Done;
@@ -5065,30 +5071,22 @@ index 000000000..2b344c256
 +        assert!(
 +            hud.lines(100)[0]
 +                .to_string()
-+                .starts_with("  Sol workers (high)")
++                .starts_with("  GPT-6.1-Sol (high)")
 +        );
 +        hud.rows[2].model = Some("gpt-6-sol".into());
-+        assert!(
-+            hud.lines(100)[0]
-+                .to_string()
-+                .starts_with("  mixed workers (high)")
-+        );
++        assert!(hud.lines(100)[0].to_string().starts_with("  mixed (high)"));
 +        hud.rows[2].model = Some("gpt-6.1-sol".into());
 +        hud.rows[2].reasoning_effort = Some(ReasoningEffort::Medium);
 +        assert!(
 +            hud.lines(100)[0]
 +                .to_string()
-+                .starts_with("  Sol workers (mixed)")
++                .starts_with("  GPT-6.1-Sol (mixed)")
 +        );
 +        hud.rows[2].model = Some("gpt-6-sol".into());
-+        assert!(
-+            hud.lines(100)[0]
-+                .to_string()
-+                .starts_with("  mixed workers (mixed)")
-+        );
++        assert!(hud.lines(100)[0].to_string().starts_with("  mixed (mixed)"));
 +        hud.rows[2].model = None;
 +        hud.rows[2].reasoning_effort = None;
-+        assert!(hud.lines(100)[0].to_string().starts_with("  ? workers (?)"));
++        assert!(hud.lines(100)[0].to_string().starts_with("  ? (?)"));
 +        for tokens in [None, Some(-1), Some(i64::MAX)] {
 +            hud.rows[0].total_tokens = tokens;
 +            assert!(hud.lines(100)[0].to_string().contains("? tok"));
@@ -5146,15 +5144,33 @@ index 000000000..2b344c256
 +    }
 +
 +    #[test]
-+    fn model_families_and_unknown_identifiers_are_preserved() {
++    fn worker_hud_full_model_labels_preserve_versions_suffixes_and_unknown_ids() {
 +        for (model, expected) in [
-+            ("gpt-6-sol", "Sol"),
-+            ("GPT-6.1-SOL", "Sol"),
-+            ("gpt-6-astra", "Astra"),
++            ("gpt-6-sol", "GPT-6-Sol"),
++            ("GPT-6.1-SOL", "GPT-6.1-Sol"),
++            ("gpt-6-astra", "GPT-6-Astra"),
++            ("gpt-12.34.5-astra", "GPT-12.34.5-Astra"),
++            ("gpt-6.1-sol-2026-10-16", "GPT-6.1-Sol-2026-10-16"),
++            ("gpt-6-astra-preview-FAST", "GPT-6-Astra-preview-FAST"),
++            ("gpt-6-sol-", "GPT-6-Sol-"),
 +            ("Astra", "Astra"),
++            ("gpt-6-solar", "gpt-6-solar"),
 +            ("gpt-solar", "gpt-solar"),
++            ("gpt--sol", "gpt--sol"),
++            ("gpt-6..1-sol", "gpt-6..1-sol"),
++            ("gpt-.6-sol", "gpt-.6-sol"),
++            ("gpt-6.-sol", "gpt-6.-sol"),
++            ("gpt-six-sol", "gpt-six-sol"),
++            ("gpt-６-sol", "gpt-６-sol"),
++            ("provider/gpt-6.1-sol", "provider/gpt-6.1-sol"),
++            ("provider-gpt-6-astra", "provider-gpt-6-astra"),
++            ("custom-sol-v2", "custom-sol-v2"),
++            ("custom/astra-v2", "custom/astra-v2"),
++            ("自定义/sol-模型", "自定义/sol-模型"),
 +            ("custom/model-v2", "custom/model-v2"),
 +            ("custom\nmodel\u{1b}", "custom model"),
++            (" gpt-6.1-sol ", "GPT-6.1-Sol"),
++            ("\n\u{1b}\t", "?"),
 +            ("", "?"),
 +        ] {
 +            assert_eq!(model_label(Some(model)), expected);
