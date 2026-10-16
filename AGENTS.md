@@ -44,6 +44,8 @@ For root sessions with only finite background work remaining, read
 jobs, check the result, and end the main turn once monitoring is confirmed.
 Review already-finished results immediately; failed registration is not a park.
 Native subagents return results to their parent instead of parking themselves.
+Before a native subagent waits for a shell result, read
+[worker shell waits](docs/shell-workflow.md#native-subagent-waits).
 
 Handle coordinator notifications by kind:
 
