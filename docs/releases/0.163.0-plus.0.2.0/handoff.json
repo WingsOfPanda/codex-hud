@@ -1,0 +1,34 @@
+{
+  "release": "0.163.0-plus.0.2.0",
+  "plus_commit": "e0c19a02fbb5cf62f84e4a250b2f73a9c1a5fa26",
+  "coordinator_protocol": 1,
+  "upstream": {
+    "commit": "83086188ae0614bd882818ff1aa23f3194962012",
+    "tag": "rust-v0.163.0",
+    "version": "0.163.0"
+  },
+  "note": "docs/releases/0.163.0-plus.0.2.0.md",
+  "targets": {
+    "x86_64": {
+      "triple": "x86_64-unknown-linux-gnu",
+      "asset": "codex-plus-0.163.0-plus.0.2.0-x86_64-unknown-linux-gnu.tar.gz",
+      "sha256": "ff0be8b947b3fbc7674d5855a6617396cb36095a8e6a314de53bcc41f2e0a077",
+      "tree_sha256": "38d304d2c0dea4a4e82da0b88f7c05acfe4a89389c955da97c8fc40442f83f42",
+      "manifest_sha256": "434230c7037219748a44b4d6eb00f315e2b14cdbfa09303adf3bf9583b342cde"
+    },
+    "aarch64": {
+      "triple": "aarch64-unknown-linux-gnu",
+      "asset": "codex-plus-0.163.0-plus.0.2.0-aarch64-unknown-linux-gnu.tar.gz",
+      "sha256": "9ed472e87a6445f3b89b675b1c24ed1543f85696b424209fc1e74985ffab53bb",
+      "tree_sha256": "9d0e9f7d222a40895719df6bf53969a7d0b4e5dfc608ae94926bb57e244d4f6a",
+      "manifest_sha256": "13b182345d7ab0342e268e8a5820b88dfbdd14e6a613c444edd9f05145bda305"
+    }
+  },
+  "rollout": {
+    "daemon_restart": true,
+    "quiet_checkpoint": true,
+    "session_restart": "required",
+    "agents_md": "## Codex Plus shell work and completion wakes\n\nApply this workflow in every repository, including independent AP sessions.\n\nFor finite noninteractive shell work, capture logs from launch:\n\n```sh\n# codex-plus-shell: auto\ncodex-plus run -- PROGRAM ARGUMENTS\n```\n\nPut the marker on the first line of the shell-tool command. Choose:\n- `# codex-plus-shell: auto`: short or uncertain duration; request `yield_time_ms=2000`.\n- `# codex-plus-shell: background`: known long work; request a short yield, such as `250`.\n- `# codex-plus-shell: foreground`: explicitly requested foreground work.\n\nUse an explicit shell for shell syntax: `codex-plus run -- bash -c 'COMMAND'`.\nThe runner closes stdin. Keep interactive or unclassified commands in ordinary\nvisible execution. For persistent services, check readiness with finite work.\nOn completion, inspect the result and give a concise outcome with its log path.\n\nWhen a root session has only finite background work remaining, register it:\n\n```sh\ncodex-plus park --process TOOL_SESSION_ID --worker CHILD_THREAD_ID --reason \"Review results and continue the task\"\n```\n\nUse only applicable options; repeat them for multiple jobs. Process IDs are native\nshell-tool session IDs, not OS PIDs. Workers must be direct children, selected by\nthread UUID or canonical path. Keep the reason within 240 printable characters.\nAP workers finish their brief within the turn; parking is for interactive root sessions.\nNative subagents return results to their parent.\nBefore a native subagent waits for a shell result, read\n[worker shell waits](/home/liupan/.local/share/skill-manager/codex-plus/current/docs/shell-workflow.md#native-subagent-waits)\nand keep the wait inside one bounded code cell.\n\nConfirm jobs are armed or already registered, give a short waiting notice, and\nend the turn. Let the local observer monitor them. Review already-finished jobs\nimmediately. If registration fails, resolve or report the monitoring failure.\n\nOn `LIVE COMPLETION`, inspect results and continue the currently authorized task;\nend the turn again when only registered work remains. On `REPORT ONLY`, report\noutcomes and await renewed direction before resuming old follow-up actions.\n\nFor uncertain delivery, lost outcomes, or unavailable watcher health, inspect\n`codex-plus park --status`, preserve the ledger, and report what remains unknown.\nUse verified evidence before recovery; avoid blind callback resends or job reruns.\n\n## Astra advisor\n\nFor an independent second opinion, the main root session may call\n`codex-plus advisor --brief TEXT`. Supply the decision, constraints, and review\nfocus. It uses the newest available Astra at `xhigh` in a read-only sandbox;\ntreat its findings as advice. Follow the existing managed-shell and root-only\npark rules while waiting, then inspect the exit status and returned JSON.\n",
+    "notes": "Fleet baseline is stock 0.162.1 with Plus 0.162.1-plus.0.1.0; supersede the staged 0.163.0-plus.0.1.1 candidate. Move official stock CLI/daemon and matching Plus together. Hold new parks and drain helpers, armed parks, open callbacks and other active Codex work before the scheduled official-daemon restart. Use codex-stock for daemon maintenance. Add advisor to the fleet codex-plus helper dispatch alongside park/run/--version, then apply agents_md after the commands exist. Users restart native sessions with codex resume. Leave the isolated xjp_l20_2 advisor preview untouched. Preserve previous and in-use package folders. Cross-upstream cooperative transfer is refused. Every rollback requires a quiet checkpoint and the matching stock CLI/daemon pair. Private representative old history and pending-queue readability passed; this is not a universal production downgrade guarantee. No Plus daemon receipt migration is included."
+  }
+}

@@ -1,0 +1,448 @@
+{
+  "release": "0.163.0-plus.0.2.0",
+  "plus_commit": "e0c19a02fbb5cf62f84e4a250b2f73a9c1a5fa26",
+  "upstream": {
+    "commit": "83086188ae0614bd882818ff1aa23f3194962012",
+    "tag": "rust-v0.163.0",
+    "version": "0.163.0"
+  },
+  "coordinator_protocol": 1,
+  "status": "qualified; awaiting publication approval",
+  "frontend_patch_sha256": "aca9c71a92fa9b592ad5f0edf413b446eb4af5cb0a66ea0b0c8b3d67dda90eed",
+  "native_build_plus_commit": "f17c024feeb7e13dd7951e67f687f6e9d5435030",
+  "post_build_corrections": {
+    "changed_payload_files": [
+      "docs/shell-workflow.md"
+    ],
+    "unchanged_other_payload_files": 32,
+    "first_correction": {
+      "native_build_plus_commit": "f17c024feeb7e13dd7951e67f687f6e9d5435030",
+      "final_package_plus_commit": "f4df6fd2a481647d37a65c5f39b8a62d22af6e90",
+      "all_packaged_source_files_unchanged": [
+        "codex_plus/__init__.py",
+        "codex_plus/advisor.py",
+        "codex_plus/background.py",
+        "codex_plus/evidence.py",
+        "codex_plus/ledger.py",
+        "codex_plus/rpc.py",
+        "codex_plus/runner.py",
+        "codex_plus/upgrade.py",
+        "README.md",
+        "GLOSSARY.md",
+        "docs/background-work.md",
+        "docs/shell-workflow.md",
+        "docs/verification.md",
+        "docs/release-notes.md",
+        "docs/releasing.md",
+        "docs/advisor.md",
+        "bin/codex-plus",
+        "LICENSE",
+        "patches/codex-0.163.0-worker-hud.patch",
+        "scripts/package-release.py",
+        "scripts/build-release.sh"
+      ],
+      "frontend_patch_unchanged": true,
+      "changed_test": "tests/test_shell_policy_integration.py",
+      "reason": "Two shell HUD assertions now explicitly count the existing persistent Astra advisor-ready row. No runtime change."
+    },
+    "second_correction": {
+      "old_fixture_fails": true,
+      "corrected_fixture_passes": true,
+      "old_failure_count": 1,
+      "new_test_methods": 1,
+      "cases": [
+        "empty initial output",
+        "log initially available",
+        "later output exceeds4000characters"
+      ],
+      "production_failure_log": "/home/liupan/.codex/codex-plus/logs/4b261e45-2718-47fe-8eba-a856a74160e5.log"
+    }
+  },
+  "native_source_acceptance": {
+    "advisor": 8,
+    "worker_hud": 38,
+    "shell_policy": 16,
+    "filters_overlap": true,
+    "repeated_on_arm": false,
+    "evidence": "docs/evidence/astra-advisor.json"
+  },
+  "source_acceptance": {
+    "plus_commit": "f17c024feeb7e13dd7951e67f687f6e9d5435030",
+    "passed": true,
+    "unit_counts": {
+      "advisor": 16,
+      "launcher": 7,
+      "packaging": 15
+    },
+    "worker_wait": {
+      "scenarios": [
+        "success",
+        "failure",
+        "interrupt",
+        "budget"
+      ],
+      "success_pending_observations": 257,
+      "success_last_pending_seconds": 64.69900869205594,
+      "child_requests_while_waiting": 1,
+      "child_requests_total": 2,
+      "source_unchanged_after_checks": true
+    },
+    "advisor_stock": {
+      "binary": "/home/liupan/Aerius/codex-plus/.build/upstream-0163/official-x86/bin/codex",
+      "sha256": "399ff69c431c066e40de318fba45c2b07f45a76b19939d247ee4828fc70c4215",
+      "remote_provider_requests": 0,
+      "passed": [
+        "official stock exec reads evidence and kernel sandbox denies workspace write",
+        "selected exact Astra model and xhigh reach Responses requests",
+        "invalid response fails visibly without approval",
+        "failure response fails visibly without approval",
+        "SIGTERM interrupts owned stock exec and publishes an error",
+        "actual provider tool descriptors contain no delegation, spawn, or collaboration tools",
+        "immutable production args, isolated config, root-only metadata, no transcript or daemon mutation"
+      ],
+      "advertised_tool_names": [
+        "clock",
+        "exec",
+        "functions",
+        "request_user_input",
+        "request_user_input_async",
+        "sleep",
+        "wait"
+      ]
+    },
+    "log": "/home/liupan/.codex/codex-plus/logs/69f4bc7b-0536-49b3-a1a8-2a495b1915c0.log",
+    "frontend_patch_sha256": "aca9c71a92fa9b592ad5f0edf413b446eb4af5cb0a66ea0b0c8b3d67dda90eed"
+  },
+  "targets": {
+    "x86_64": {
+      "triple": "x86_64-unknown-linux-gnu",
+      "asset": "codex-plus-0.163.0-plus.0.2.0-x86_64-unknown-linux-gnu.tar.gz",
+      "sha256": "ff0be8b947b3fbc7674d5855a6617396cb36095a8e6a314de53bcc41f2e0a077",
+      "tree_sha256": "38d304d2c0dea4a4e82da0b88f7c05acfe4a89389c955da97c8fc40442f83f42",
+      "manifest_sha256": "434230c7037219748a44b4d6eb00f315e2b14cdbfa09303adf3bf9583b342cde"
+    },
+    "aarch64": {
+      "triple": "aarch64-unknown-linux-gnu",
+      "asset": "codex-plus-0.163.0-plus.0.2.0-aarch64-unknown-linux-gnu.tar.gz",
+      "sha256": "9ed472e87a6445f3b89b675b1c24ed1543f85696b424209fc1e74985ffab53bb",
+      "tree_sha256": "9d0e9f7d222a40895719df6bf53969a7d0b4e5dfc608ae94926bb57e244d4f6a",
+      "manifest_sha256": "13b182345d7ab0342e268e8a5820b88dfbdd14e6a613c444edd9f05145bda305"
+    }
+  },
+  "x86_64": {
+    "archive_bytes": 133374478,
+    "counts": {
+      "unittest_methods_passed": 248,
+      "unittest_failed": 0,
+      "unittest_skipped": 0,
+      "package_gates_passed": 8,
+      "package_gates_failed": 1,
+      "package_skipped": 0,
+      "native_smoke_passed": 19,
+      "shell_policy_passed": 8,
+      "stock_park_passed": 1,
+      "isolated_integration_scenarios_passed": 39,
+      "integration_failed": 0,
+      "integration_skipped": 0
+    },
+    "native_binaries": {
+      "codex": {
+        "path": "/home/liupan/Aerius/codex-plus/.build/plus020/release/x86/native/codex",
+        "sha256": "939f2d345d5016dedd6ddb2304ac78e9eeaf4619ac53ababe1ec316e6c489621",
+        "bytes": 285811128
+      },
+      "codex-code-mode-host": {
+        "path": "/home/liupan/Aerius/codex-plus/.build/plus020/release/x86/native/codex-code-mode-host",
+        "sha256": "3062b09d807c146984352ceb69efb3b3b6bd7d95b784bf568bd05f0d1accd299",
+        "bytes": 67726288
+      },
+      "bwrap": {
+        "path": "/home/liupan/Aerius/codex-plus/.build/plus020/release/x86/native/bwrap",
+        "sha256": "a8984e58f926e5da33e69707aad19e31c0fd48252f739552b4813fba3a9674fa",
+        "bytes": 382920
+      }
+    },
+    "native_build_seconds": 876.1476304531097,
+    "final_direct_checks": {
+      "shell_policy": 8,
+      "stock_park": 1,
+      "worker_wait": 4,
+      "worker_wait_fixture": 1,
+      "worker_wait_fixture_subtests": 2,
+      "public_commands": true,
+      "wrapper": true,
+      "manifest_before_after": true,
+      "module_origins": true,
+      "unmodified_final_source_tests": true
+    },
+    "host_limit": "Raw bwrap uid-map setup denied identically for official and Plus; supported CLI read-only sandbox enforcement passes for both.",
+    "advisor_stock_groups": 7,
+    "advisor_packaged_groups": 7,
+    "initial_failure": "/home/liupan/Aerius/codex-plus/.build/plus020/release/x86/qualification/report.json",
+    "initial_adapter": "/home/liupan/Aerius/codex-plus/.build/plus020/release/x86/shell-fixture-adaptation.json",
+    "qualification": {
+      "path": "/home/liupan/Aerius/codex-plus/.build/plus020/release/x86/corrected/qualification-summary.json",
+      "sha256": "9b7e43b1a4db8def95b40b9a79926a80ae61fb8b0119ed151385a246a1e08acd"
+    },
+    "root_acceptance": {
+      "passed": true,
+      "archive_sha256": "ff0be8b947b3fbc7674d5855a6617396cb36095a8e6a314de53bcc41f2e0a077",
+      "manifest_sha256": "434230c7037219748a44b4d6eb00f315e2b14cdbfa09303adf3bf9583b342cde",
+      "tree_sha256": "38d304d2c0dea4a4e82da0b88f7c05acfe4a89389c955da97c8fc40442f83f42",
+      "plus_commit": "e0c19a02fbb5cf62f84e4a250b2f73a9c1a5fa26",
+      "wrapper": {
+        "native_path_args_stdout_exit_preserved": true,
+        "runner_uses_home_local_bin_codex_wrapper": true,
+        "daemon_update_test_used_only_stubs": true
+      },
+      "advisor_execution_mode": "packaged_plus_cli",
+      "packaged_advisor_checks": [
+        "official stock exec reads evidence and kernel sandbox denies workspace write",
+        "selected exact Astra model and xhigh reach Responses requests",
+        "invalid response fails visibly without approval",
+        "failure response fails visibly without approval",
+        "SIGTERM interrupts owned stock exec and publishes an error",
+        "actual provider tool descriptors contain no delegation, spawn, or collaboration tools",
+        "immutable production args, isolated config, root-only metadata, no transcript or daemon mutation"
+      ],
+      "advertised_tool_names": [
+        "clock",
+        "exec",
+        "functions",
+        "request_user_input",
+        "request_user_input_async",
+        "sleep",
+        "wait"
+      ],
+      "worker_wait": {
+        "child_requests_while_waiting": 1,
+        "total_child_requests": 2,
+        "observations": 257
+      },
+      "shell_policy_cases": 8,
+      "shell_fixture_adapter": false,
+      "upstream_tui_cases": 2,
+      "package_unchanged": true,
+      "official_binary_unchanged": true,
+      "module_origins": {
+        "codex_plus.advisor": "/home/liupan/Aerius/codex-plus/.build/plus020/release/root-x86-corrected/extracted/codex-plus-0.163.0-plus.0.2.0-x86_64-unknown-linux-gnu/codex_plus/advisor.py",
+        "codex_plus.background": "/home/liupan/Aerius/codex-plus/.build/plus020/release/root-x86-corrected/extracted/codex-plus-0.163.0-plus.0.2.0-x86_64-unknown-linux-gnu/codex_plus/background.py",
+        "codex_plus.ledger": "/home/liupan/Aerius/codex-plus/.build/plus020/release/root-x86-corrected/extracted/codex-plus-0.163.0-plus.0.2.0-x86_64-unknown-linux-gnu/codex_plus/ledger.py",
+        "codex_plus.rpc": "/home/liupan/Aerius/codex-plus/.build/plus020/release/root-x86-corrected/extracted/codex-plus-0.163.0-plus.0.2.0-x86_64-unknown-linux-gnu/codex_plus/rpc.py",
+        "codex_plus.runner": "/home/liupan/Aerius/codex-plus/.build/plus020/release/root-x86-corrected/extracted/codex-plus-0.163.0-plus.0.2.0-x86_64-unknown-linux-gnu/codex_plus/runner.py",
+        "codex_plus.evidence": "/home/liupan/Aerius/codex-plus/.build/plus020/release/root-x86-corrected/extracted/codex-plus-0.163.0-plus.0.2.0-x86_64-unknown-linux-gnu/codex_plus/evidence.py",
+        "codex_plus.upgrade": "/home/liupan/Aerius/codex-plus/.build/plus020/release/root-x86-corrected/extracted/codex-plus-0.163.0-plus.0.2.0-x86_64-unknown-linux-gnu/codex_plus/upgrade.py"
+      }
+    }
+  },
+  "aarch64": {
+    "archive_bytes": 125755865,
+    "native_binaries": {
+      "bin/codex": "7cc15bc8afe9b07bd116b0dff7b41b6aa99f1472f3d54125c2f6d8246ad83b97",
+      "bin/codex-code-mode-host": "f3286984ac41a67b92cfc6ca3f427f3288b5e32071433d1758e9e173c21e529e",
+      "codex-resources/bwrap": "ddfdc570da3144210685dc538d117b868624b1939a1d836f612b0d6bde919004",
+      "codex-path/rg": "e36d0eb52e70696bdf1781392722e05a21bb91d3b7b762ef5ec20e5df2ec687b"
+    },
+    "qualification_counts": {
+      "package_checks": [
+        "manifest",
+        "public_commands",
+        "wrapper",
+        "resources",
+        "exec",
+        "stdio_code_mode",
+        "native_terminal",
+        "shell_terminal",
+        "manifest_after_runtime"
+      ],
+      "terminal": 19,
+      "shell_policy": 8,
+      "official_park": true,
+      "upgrade": 27,
+      "lifecycle": 118,
+      "evidence_reader": 18,
+      "source_guard": 7,
+      "packaging_unit": 15,
+      "runner": 15,
+      "advisor_unit": 16,
+      "launcher": "not rerun on ARM; root x86 acceptance covers7",
+      "terminal_fixture": 15,
+      "cooperative": 9,
+      "interruption": 11,
+      "stock_recovery": 7,
+      "normal_completion": true,
+      "upstream_boundaries": 4,
+      "rollback_read": true,
+      "upstream_tui": 2,
+      "supported_cli_sandbox_readonly": {
+        "official": {
+          "passed": true,
+          "exit_code": 0,
+          "stdout": "PRIVATE_SANDBOX_OK\nREAD_ONLY_ENFORCED\n",
+          "stderr": "touch: cannot touch 'denied-file': Read-only file system\n",
+          "sha256": "8a96f66d059d653e68bfd5f3c79337e6f1d7d170d80bf705eb7d0249b34c0ece",
+          "binary_unchanged": true
+        },
+        "plus": {
+          "passed": true,
+          "exit_code": 0,
+          "stdout": "PRIVATE_SANDBOX_OK\nREAD_ONLY_ENFORCED\n",
+          "stderr": "touch: cannot touch 'denied-file': Read-only file system\n",
+          "sha256": "7cc15bc8afe9b07bd116b0dff7b41b6aa99f1472f3d54125c2f6d8246ad83b97",
+          "binary_unchanged": true
+        }
+      }
+    },
+    "gate_exit_codes": {
+      "advisor-packaged": 0,
+      "advisor-stock": 0,
+      "advisor-unit": 0,
+      "boundary": 0,
+      "cooperative": 0,
+      "fixture": 0,
+      "interruption": 0,
+      "normal": 0,
+      "package": 0,
+      "recovery": 0,
+      "rollback": 0,
+      "source": 0,
+      "tui163": 0,
+      "unit": 0,
+      "workerwait": 0
+    },
+    "correction_gate_exit_codes": {
+      "workerwait": 0,
+      "package": 0
+    },
+    "initial_failures": [
+      {
+        "gate": "source",
+        "reason": "Existing test_runner.py:224 /proc exists/read_text race after correct process cancellation",
+        "initial": "/data/liupan/codex-plus-build/plus020/logs/source.log",
+        "rerun": "/data/liupan/codex-plus-build/plus020/logs/final-source.log",
+        "frozen_test_unchanged": true
+      },
+      {
+        "gate": "package",
+        "reason": "f17 shell fixture expected one row; new idle advisor adds readiness row. Only tracked test assertions corrected at f4.",
+        "initial": "/data/liupan/codex-plus-build/plus020/logs/package.log",
+        "rerun": "/data/liupan/codex-plus-build/plus020/logs/final-package.log"
+      },
+      {
+        "gate": "cooperative",
+        "reason": "Worker harness asserted8 test methods but actual class has7 producing9 scenarios; initial tests did not run. Harness count corrected only.",
+        "initial": "/data/liupan/codex-plus-build/plus020/logs/cooperative.log",
+        "rerun": "/data/liupan/codex-plus-build/plus020/logs/final-cooperative.log"
+      }
+    ],
+    "raw_bwrap_exit": 0,
+    "advisor_stock_groups": 7,
+    "advisor_packaged_groups": 7,
+    "correction": {
+      "reason": "Retain log paths that arrive after the first tool yield in the documented native-worker example and test fixture.",
+      "native_rebuild": false,
+      "native_build_plus_commit": "f17c024feeb7e13dd7951e67f687f6e9d5435030",
+      "previous_plus_commit": "f4df6fd2a481647d37a65c5f39b8a62d22af6e90",
+      "previous_archive": "/data/liupan/codex-plus-build/plus020/packages-final/codex-plus-0.163.0-plus.0.2.0-aarch64-unknown-linux-gnu.tar.gz",
+      "previous_archive_sha256": "582241ab931b376117b1a469fa6955775d111824a056c5bf547156e467c15214",
+      "previous_tree_sha256": "b2002940f12fdcb0787ae80fc987a81d1c9488153076046475fd0159b6e0892a",
+      "changed_payload_files": [
+        "docs/shell-workflow.md"
+      ],
+      "runtime_binaries_and_helpers_identical": true,
+      "fresh_checks": {
+        "package": 9,
+        "pty": 19,
+        "shell_policy": 8,
+        "official_stock_park": true,
+        "workerwait": 4,
+        "workerwait_success_seconds": 65
+      },
+      "reused_evidence": "Other f4/f17 functional evidence remains valid: all runtime binaries/helpers are byte-identical; only the shipped shell-workflow documentation changed.",
+      "prior_acceptance_failure": "Root found a timing-sensitive missing result.log in the old worker-wait fixture after an empty first250ms yield; the runner itself succeeded.",
+      "started": "2026-10-16T23:09:50+08:00"
+    },
+    "skipped": [
+      "launcher unit rerun",
+      "Rust unit filters"
+    ],
+    "qualification": {
+      "path": "/home/liupan/Aerius/codex-plus/.build/plus020/release/arm/evidence/qualification-summary-corrected.json",
+      "sha256": "0a650e20023fcad66432443b43d6e6b47efbae7bb579aacf0b437530aa82cacf"
+    },
+    "root_acceptance": {
+      "passed": true,
+      "archive_sha256": "9ed472e87a6445f3b89b675b1c24ed1543f85696b424209fc1e74985ffab53bb",
+      "manifest_sha256": "13b182345d7ab0342e268e8a5820b88dfbdd14e6a613c444edd9f05145bda305",
+      "tree_sha256": "9d0e9f7d222a40895719df6bf53969a7d0b4e5dfc608ae94926bb57e244d4f6a",
+      "plus_commit": "e0c19a02fbb5cf62f84e4a250b2f73a9c1a5fa26",
+      "wrapper": {
+        "native_path_args_stdout_exit_preserved": true,
+        "runner_uses_home_local_bin_codex_wrapper": true,
+        "daemon_update_test_used_only_stubs": true
+      },
+      "advisor_execution_mode": "packaged_plus_cli",
+      "packaged_advisor_checks": [
+        "official stock exec reads evidence and kernel sandbox denies workspace write",
+        "selected exact Astra model and xhigh reach Responses requests",
+        "invalid response fails visibly without approval",
+        "failure response fails visibly without approval",
+        "SIGTERM interrupts owned stock exec and publishes an error",
+        "actual provider tool descriptors contain no delegation, spawn, or collaboration tools",
+        "immutable production args, isolated config, root-only metadata, no transcript or daemon mutation"
+      ],
+      "advertised_tool_names": [
+        "clock",
+        "exec",
+        "functions",
+        "request_user_input",
+        "request_user_input_async",
+        "sleep",
+        "wait"
+      ],
+      "worker_wait": {
+        "child_requests_while_waiting": 1,
+        "total_child_requests": 2,
+        "observations": 254
+      },
+      "shell_policy_cases": 8,
+      "shell_fixture_adapter": false,
+      "upstream_tui_cases": 2,
+      "package_unchanged": true,
+      "official_binary_unchanged": true,
+      "module_origins": {
+        "codex_plus.advisor": "/data/liupan/codex-plus-build/plus020/root-acceptance-corrected/extracted/codex-plus-0.163.0-plus.0.2.0-aarch64-unknown-linux-gnu/codex_plus/advisor.py",
+        "codex_plus.background": "/data/liupan/codex-plus-build/plus020/root-acceptance-corrected/extracted/codex-plus-0.163.0-plus.0.2.0-aarch64-unknown-linux-gnu/codex_plus/background.py",
+        "codex_plus.ledger": "/data/liupan/codex-plus-build/plus020/root-acceptance-corrected/extracted/codex-plus-0.163.0-plus.0.2.0-aarch64-unknown-linux-gnu/codex_plus/ledger.py",
+        "codex_plus.rpc": "/data/liupan/codex-plus-build/plus020/root-acceptance-corrected/extracted/codex-plus-0.163.0-plus.0.2.0-aarch64-unknown-linux-gnu/codex_plus/rpc.py",
+        "codex_plus.runner": "/data/liupan/codex-plus-build/plus020/root-acceptance-corrected/extracted/codex-plus-0.163.0-plus.0.2.0-aarch64-unknown-linux-gnu/codex_plus/runner.py",
+        "codex_plus.evidence": "/data/liupan/codex-plus-build/plus020/root-acceptance-corrected/extracted/codex-plus-0.163.0-plus.0.2.0-aarch64-unknown-linux-gnu/codex_plus/evidence.py",
+        "codex_plus.upgrade": "/data/liupan/codex-plus-build/plus020/root-acceptance-corrected/extracted/codex-plus-0.163.0-plus.0.2.0-aarch64-unknown-linux-gnu/codex_plus/upgrade.py"
+      }
+    }
+  },
+  "root_reports": {
+    "x86_64": {
+      "path": "/home/liupan/Aerius/codex-plus/.build/plus020/release/root-x86-corrected/report.json",
+      "sha256": "58da06fe339ecfd68665fda350f7ca31bad3ae528a029d841748ea78d88510c7"
+    },
+    "aarch64": {
+      "path": "/home/liupan/Aerius/codex-plus/.build/plus020/release/root-arm-corrected/report.json",
+      "sha256": "20fbad82aa2f33d37ff2daf2a9ccd4bc240c77696be1d0d2b7ce267697305cfb"
+    }
+  },
+  "remote_model_requests": 0,
+  "published": false,
+  "merged_to_main": false,
+  "installed_on_fleet": false,
+  "limits": [
+    "Full upstream workspace tests and older glibc baselines were not run.",
+    "Loopback acceptance does not establish production advisor availability or immutable repository snapshots.",
+    "Bounded native-worker shell waits are not durable parking and do not survive turn interruption or daemon restart.",
+    "Stock queue enqueue/ack ambiguity remains; no exactly-once external effects are claimed.",
+    "X86 raw bwrap host UID-map denial is stock-equivalent; supported CLI read-only enforcement passes.",
+    "Rollback proof covers representative private history and pending queue readability, not all production data.",
+    "Voice is intentionally excluded; glibc 2.39 is a build/test baseline, not a measured minimum.",
+    "Current long root session exceeded the park process-selection scan limit (32 pages); final acceptance used bounded direct waits instead of claiming an armed callback."
+  ]
+}
