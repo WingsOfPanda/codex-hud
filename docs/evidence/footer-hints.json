@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "status": "source/development acceptance; no release archives",
+  "candidate": "0.163.0-plus.0.3.0",
+  "rust": "1.99.1",
+  "upstream_commit": "83086188ae0614bd882818ff1aa23f3194962012",
+  "source_proof": {
+    "passed": true,
+    "upstream_commit": "83086188ae0614bd882818ff1aa23f3194962012",
+    "patch_sha256": "1a346eded04a7a57537c6e341ab825ea8a6841dcb7b92d55f55db8d6c78614af",
+    "source_tree": "7b324b569c1479fc8ebf03593bacc643e02cea8a",
+    "clean_apply": true,
+    "reverse_apply": true,
+    "exact_reconstruction": true,
+    "frontend_boundary": true,
+    "external_packages_unchanged": 1314,
+    "rust1991_snapshot_alignment": "codex-rs/tui/src/bottom_pane/request_user_input/snapshots/codex_tui__bottom_pane__request_user_input__render__tests__request_user_input_halfwidth_sound_marks_truncation.snap"
+  },
+  "cli_sha256": "05aa420e1a055efce2278dc034f74a5f649c9da3cb936bce1bd1a8cb9b0854fc",
+  "native_profile": "dev-small",
+  "native_source": ".build/footer-hint/source",
+  "code_mode_host": {
+    "sha256": "3062b09d807c146984352ceb69efb3b3b6bd7d95b784bf568bd05f0d1accd299",
+    "from_release": "0.163.0-plus.0.2.0",
+    "upstream_matched": true,
+    "private_sibling_only": true,
+    "reuse_scope": "development fixture; full1.99.1 release must build its own host"
+  },
+  "root_checks": {
+    "bottom_pane": {
+      "passed": 1110,
+      "ignored": 1,
+      "excluded": 0
+    },
+    "status_surface_filter": 37,
+    "hidden_hint_filter": 1,
+    "worker_hud_filter": 38,
+    "filters_overlap": true,
+    "python_terminal_fixture": 18,
+    "upstream_parser": 2,
+    "terminal_smoke_stages": 21,
+    "upstream_ui_scenarios": 2,
+    "ui_turn_start_requests": 0,
+    "ui_turn_steer_requests": 0,
+    "model_calls_from_refresh": 0
+  },
+  "behavior": [
+    "Automatic agents/shortcuts hint labels hidden",
+    "No passive separate hint row reserved",
+    "Left navigation and explicit keyboard help retained",
+    "Status, shell mode, side conversations, warnings, queue, search and quit hints retained",
+    "Three-row worker/background/advisor/alert/overflow budget and last-six prompt detection retained"
+  ],
+  "fixture_updates": [
+    "Prompt readiness uses actual composer instead of removed hint text",
+    "Footer selection asserts retained model token rather than removed shortcuts word",
+    "Advisor transcript fixture explicitly enables code_mode_host and uses a matching private sibling host"
+  ],
+  "preserved_initial_failures": [
+    {
+      "case": "selection copied removed shortcuts word",
+      "resolution": "select retained model token; actual OSC52 geometry still asserted"
+    },
+    {
+      "case": "advisor transcript provider lacked exec tool",
+      "resolution": "explicit private code_mode_host flag and matching host; no backend/product change"
+    },
+    {
+      "case": "halfwidth Debug snapshot escaping differs with Rust1.99.1",
+      "resolution": "update two expected Debug strings; actual rendered buffer/assertions unchanged; full1110 cases pass without exclusion",
+      "failure_log": ".build/footer-hint/bottom-pane-preexisting-debug-drift.log"
+    }
+  ],
+  "evidence": ".build/rust-runtime-030/.build/root-footer-hint",
+  "limits": [
+    "One existing ignored native test",
+    "Complete optimized x86 and ARM client packages not built or qualified",
+    "Full upstream suite not run",
+    "No publishing, merge, fleet install or global configuration change"
+  ],
+  "remote_provider_requests": 0
+}

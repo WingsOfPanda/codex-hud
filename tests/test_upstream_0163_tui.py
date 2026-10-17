@@ -23,7 +23,7 @@ from wcwidth import wcswidth
 
 from fixtures.native_server import AppServer
 from fixtures.shell_policy_provider import ShellPolicyProvider
-from native_smoke import Terminal, advisor_rows, assert_compact_hud, shell_rows, wait, worker_rows
+from native_smoke import Terminal, advisor_rows, assert_compact_hud, composer_ready, shell_rows, wait, worker_rows
 from test_shell_policy_integration import command_for, configure, rollout, start_terminal, turns
 
 
@@ -47,7 +47,7 @@ def private_terminal(*args, **kwargs):
         return Terminal(*args, **kwargs)
 
 
-def footer_position(terminal, token='shortcuts'):
+def footer_position(terminal, token='gpt-6-sol'):
     for row, line in enumerate(terminal.screen.display):
         if token in line:
             return wcswidth(line[:line.index(token)]), row
@@ -65,7 +65,7 @@ def copy_footer(terminal, evidence, label):
     wait([terminal], lambda: clipboard_payloads(terminal.output[before:]),
          'native footer selection did not emit its private OSC 52 copy')
     copied = clipboard_payloads(terminal.output[before:])
-    assert copied == ['shortcuts'], copied
+    assert copied == ['gpt-6-sol'], copied
     (evidence / f'{label}-screen.txt').write_text(terminal.text + '\n')
     # Kitty's explicit Escape avoids folding the next character into an Alt chord.
     os.write(terminal.master, b'\x1b[27u')
@@ -89,7 +89,7 @@ def config_and_selection(binary, root, evidence):
     geometry = {}
     try:
         terminal = private_terminal(binary, home, workspace, server.url)
-        wait([terminal], lambda: '+4 more' in terminal.text and 'for shortcuts' in terminal.text,
+        wait([terminal], lambda: '+4 more' in terminal.text and composer_ready(terminal.text),
              'three-row HUD and native footer did not initialize', 30)
         assert_compact_hud(terminal.text, rows=3)
         geometry['three_rows'] = copy_footer(terminal, evidence, 'selection-three-rows')
@@ -99,7 +99,7 @@ def config_and_selection(binary, root, evidence):
         wait([terminal], lambda: draft in terminal.text, 'selection consumed composer input')
         # The native kill buffer is the supported way to run a slash command mid-draft.
         os.write(terminal.master, b'\x01\x0b')
-        wait([terminal], lambda: draft not in terminal.text and 'for shortcuts' in terminal.text,
+        wait([terminal], lambda: draft not in terminal.text and composer_ready(terminal.text),
              'draft did not enter the native kill buffer')
         os.write(terminal.master, b'/config')
         wait([terminal], lambda: '/config' in terminal.text, '/config input did not render')
@@ -122,7 +122,7 @@ def config_and_selection(binary, root, evidence):
         (evidence / 'config-restored-draft-screen.txt').write_text(terminal.text + '\n')
 
         os.write(terminal.master, b'\x01\x0b')
-        wait([terminal], lambda: draft not in terminal.text and 'for shortcuts' in terminal.text,
+        wait([terminal], lambda: draft not in terminal.text and composer_ready(terminal.text),
              'draft did not return to kill buffer before geometry check')
         server.reject_turn_metadata = False
         for worker in server.workers:
@@ -138,7 +138,7 @@ def config_and_selection(binary, root, evidence):
         wait([terminal], lambda: len(shell_rows(terminal.text)) == 1,
              'shell snapshot did not restore one HUD row')
         replies = terminal.resize(12, 60)
-        wait([terminal], lambda: terminal.resized_frame(replies) and 'for shortcuts' in terminal.text
+        wait([terminal], lambda: terminal.resized_frame(replies) and composer_ready(terminal.text)
              and shell_rows(terminal.text), 'narrow footer/HUD frame did not finish')
         assert_compact_hud(terminal.text, rows=1)
         geometry['narrow_one_row'] = copy_footer(terminal, evidence, 'selection-narrow-one-row')

@@ -34,7 +34,9 @@ or tool execution, reboot persistence, or automatic job reruns.
 
 The existing three-row activity limit remains shared by workers, background
 commands, advisor status, alerts, and overflow. Healthy watcher waiting adds no
-row. The merged foreground advisor UI is included: a locally timed conversation
+row. The automatic `← for agents · ? for shortcuts` hint row is removed without
+reserving an empty line; its keyboard bindings and contextual help are retained.
+The merged foreground advisor UI is included: a locally timed conversation
 row becomes completed or failed after the consult, while the footer retains
 model, effort, count, and duration. No UI refresh invokes a model. Native client
 sessions must restart to adopt that client display when upgrading from 0.2.0.

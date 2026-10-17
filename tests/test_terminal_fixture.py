@@ -42,7 +42,7 @@ class ProcessObservationTests(unittest.TestCase):
 
 class CompactHudAssertionTests(unittest.TestCase):
     def screen(self, rows):
-        return '\n'.join(['› draft', '? for shortcuts', *rows, 'root-status'])
+        return '\n'.join(['› draft', 'root-status', *rows])
 
     def test_healthy_mixed_rows_and_overflow_count_toward_total(self):
         text = self.screen(['GPT-6.1-Sol (high) · task · 0:12 · ? tok',
@@ -91,6 +91,11 @@ class CompactHudAssertionTests(unittest.TestCase):
         assert_compact_hud('› draft\nroot-status\nBackground · command · seen 0:12', rows=1)
         assert_compact_hud('› draft\ntab to queue message\nBackground · command · seen 0:12',
                            rows=1, idle=False)
+
+    def test_removed_navigation_hints_are_rejected(self):
+        for hint in ('← for agents · ? for shortcuts', '? for shortcuts'):
+            with self.subTest(hint=hint), self.assertRaises(AssertionError):
+                assert_compact_hud('› draft\n' + hint)
 
     def test_old_summary_and_four_total_rows_are_rejected(self):
         for rows in (['Workers 6 active'], ['Workers stale · counts unavailable',

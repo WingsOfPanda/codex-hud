@@ -1,6 +1,6 @@
 # Codex Plus
 
-Codex Plus combines the native Codex CLI, a worker HUD below its shortcuts
+Codex Plus combines the native Codex CLI, a worker HUD below its prompt
 footer, and a `park` helper for background completion callbacks. Each client
 tracks its own parent thread in ordinary terminals and split tmux panes.
 Release builds patch the frontend and keep upstream daemon code unchanged.
@@ -99,7 +99,9 @@ measures time observed by this client**, not the command's total runtime, and re
 client restarts or sees a new command identity.
 
 Workers, background commands, advisor status, warnings, and any `+N more` line share a strict
-three-row total limit below the shortcuts footer. This keeps the composer within
+three-row total limit below the prompt footer. The automatic
+`← for agents · ? for shortcuts` hint row is hidden; the shortcuts remain active.
+Contextual footer information and explicit help remain available. This keeps the composer within
 AP's last-six-nonempty-lines readiness window. When space permits, mixed activity
 shows both a worker and a background command. Warnings take priority within the
 same limit; overflow represents activity that does not fit.

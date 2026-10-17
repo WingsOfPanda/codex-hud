@@ -67,6 +67,24 @@ The companion release note and evidence record the checks actually run and any
 remaining limits. The 0.162.1 results below are historical and do not qualify
 the 0.163.0 port.
 
+### Hidden navigation hints for Plus 0.3
+
+The automatic agents/shortcuts hint is absent and consumes no separate row.
+Left-arrow navigation and explicit `?` help still work. Status/context, shell
+mode, side conversations, warnings, search, queue, and quit controls retain their
+required space. Regression checks cover height, rendering, editable input and
+help open/close geometry with the persistent status enabled and disabled.
+
+Root acceptance checks the native status-surface, hidden-hint and HUD filters,
+terminal fixture/parser tests, all terminal smoke stages and both upstream UI
+scenarios. The smoke uses a matching private 0.163.0 code-mode host and explicitly
+enables `code_mode_host` in the transcript fixture. This is development-candidate
+qualification; complete release packages require freshly built target resources.
+An existing halfwidth-character snapshot needed two expected Debug strings
+updated for Rust 1.99.1; its rendered buffer and test assertions are unchanged.
+See [footer-hints.json](evidence/footer-hints.json) for final counts, source proof,
+preserved failures and artifact identities.
+
 ### Full model labels for Plus 0.1.1
 
 The x86 development candidate passed 36 focused Rust HUD tests, 14 terminal

@@ -18,7 +18,7 @@ import tempfile
 import time
 
 from fixtures.shell_policy_provider import ShellPolicyProvider
-from native_smoke import Terminal, advisor_rows, assert_compact_hud, wait
+from native_smoke import Terminal, advisor_rows, assert_compact_hud, composer_ready, wait
 from test_background_integration import (REPO, RecordingClient, coordinator_state, health_state,
                                          stop, stop_observers, wait as wait_server)
 
@@ -84,7 +84,7 @@ def command_for(workspace, marker, held=False, failed=False):
 
 def start_terminal(binary, home, workspace, provider, name):
     terminal = Terminal(binary, home, workspace)
-    wait([terminal], lambda: 'for shortcuts' in terminal.text, 'TUI did not initialize', 30)
+    wait([terminal], lambda: composer_ready(terminal.text), 'TUI did not initialize', 30)
     os.write(terminal.master, f'/rename {name}'.encode())
     wait([terminal], lambda: f'/rename {name}' in terminal.text, 'rename input did not render')
     os.write(terminal.master, b'\r')
