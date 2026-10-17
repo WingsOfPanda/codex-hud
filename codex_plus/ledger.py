@@ -9,6 +9,16 @@ import uuid
 
 MAX_SECONDS = 24 * 60 * 60
 TERMINAL = {'completed', 'failed', 'interrupted', 'lost'}
+UPGRADE_WARNING = 'Coordinator upgrade unavailable; continuing installed observer.'
+
+
+def state_directory(home):
+    directory = Path(home) / 'codex-plus'
+    if directory.is_symlink():
+        raise ValueError('background directory must not be a symlink')
+    directory.mkdir(mode=0o700, parents=True, exist_ok=True)
+    os.chmod(directory, 0o700)
+    return directory
 
 
 class RegistrationError(ValueError):
@@ -17,11 +27,7 @@ class RegistrationError(ValueError):
 
 class Store:
     def __init__(self, home):
-        self.directory = Path(home) / 'codex-plus'
-        if self.directory.is_symlink():
-            raise ValueError('background directory must not be a symlink')
-        self.directory.mkdir(mode=0o700, parents=True, exist_ok=True)
-        os.chmod(self.directory, 0o700)
+        self.directory = state_directory(home)
         path = self.directory / 'background.sqlite'
         # Refuse a substituted path before opening writable local state.
         if path.is_symlink():
@@ -382,10 +388,17 @@ class Store:
 
     def monitoring_succeeded(self, parent):
         with self._db:
+            # Successful monitoring does not resolve an active package-upgrade refusal.
             self._db.execute("""UPDATE parks SET error=NULL WHERE parent=? AND state NOT IN ('expired','cancelled')
-                AND origin_pending=0 AND NOT EXISTS (SELECT 1 FROM jobs WHERE jobs.park=parks.id AND interruption_pending=1)""", (parent,))
+                AND (state<>'armed' OR error IS NOT ?)
+                AND origin_pending=0 AND NOT EXISTS (SELECT 1 FROM jobs WHERE jobs.park=parks.id AND interruption_pending=1)""", (parent, UPGRADE_WARNING))
             # Legacy warning text is the on-disk provenance; keep its classification inside the ledger.
             self._db.execute("UPDATE callbacks SET error=NULL WHERE parent=? AND state='ready' AND error LIKE 'RPC unavailable (%); no blind enqueue retry.'", (parent,))
+
+    def upgrade_warning(self, parent, invalid):
+        with self._db:
+            self._db.execute("UPDATE parks SET error=? WHERE parent=? AND state='armed' AND (error IS NULL OR error=?)",
+                             (UPGRADE_WARNING if invalid else None, parent, UPGRADE_WARNING))
 
     def monitoring_failed(self, parent, error_type):
         with self._db:

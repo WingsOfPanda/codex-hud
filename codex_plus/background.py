@@ -1,5 +1,6 @@
 """Explicit, durable background completion callbacks for a loaded local parent."""
 import argparse
+from contextlib import contextmanager, nullcontext
 import fcntl
 import json
 import math
@@ -12,12 +13,36 @@ import time
 import uuid
 
 from .rpc import Client
-from .ledger import MAX_SECONDS, TERMINAL, RegistrationError, Store
+from .ledger import MAX_SECONDS, TERMINAL, RegistrationError, Store, state_directory
 from .evidence import terminal_event
+from .upgrade import UPGRADE_EXIT, exec_package, package_command, package_env, select_package
 
 MAX_PAGES = 32
 HEARTBEAT_SECONDS = 5
 SOURCES = ['subAgent', 'subAgentThreadSpawn', 'subAgentOther', 'subAgentReview', 'subAgentCompact']
+PACKAGE_ROOT = Path(__file__).resolve().parent.parent
+FAILED_PACKAGE = Path(os.environ['CODEX_PLUS_FAILED_PACKAGE']) if os.environ.get('CODEX_PLUS_FAILED_PACKAGE') else None
+
+
+@contextmanager
+def role_lock(home, parent, action):
+    suffix = 'supervisor.lock' if action == 'supervise' else 'lock'
+    fd = os.open(state_directory(home) / f'{parent}.{suffix}', os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
+    with os.fdopen(fd, 'w') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        yield
+
+
+def check_upgrade(store, parent):
+    try:
+        candidate = select_package(PACKAGE_ROOT)
+        if candidate is not None and candidate == FAILED_PACKAGE:
+            raise ValueError('package exec previously failed')
+    except ValueError:
+        store.upgrade_warning(parent, True)
+        return None
+    store.upgrade_warning(parent, False)
+    return candidate
 
 
 class HistoryLimitError(ValueError):
@@ -391,12 +416,11 @@ class Observer:
         self.deliver()
         return self.store.finish_cycle(self.parent)
 
-    def run(self):
-        lock_path = self.store.directory / f'{self.parent}.lock'
-        fd = os.open(lock_path, os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
-        with os.fdopen(fd, 'w') as lock:
+    def run(self, lock_held=False):
+        with nullcontext() if lock_held else role_lock(self.store.directory.parent, self.parent, 'observe'):
             # Every registration launches a contender; a waiting contender rechecks durable work.
-            fcntl.flock(lock, fcntl.LOCK_EX)
+            if check_upgrade(self.store, self.parent):
+                return UPGRADE_EXIT
             self.recover()
             self.store.publish(self.parent)
             backoff = 1
@@ -406,9 +430,6 @@ class Observer:
                     try:
                         active = self.step()
                         self.store.monitoring_succeeded(self.parent)
-                        self.store.publish(self.parent)
-                        if not active:
-                            return
                         backoff = 1
                     except (OSError, ValueError, KeyError, TypeError) as exc:
                         if self.client:
@@ -418,6 +439,13 @@ class Observer:
                         self.store.monitoring_failed(self.parent, type(exc).__name__)
                         self.store.publish(self.parent)
                         backoff = min(30, backoff * 2)
+                        active = True
+                    # Queue mutations and their acknowledgements have settled before selection.
+                    if check_upgrade(self.store, self.parent):
+                        return UPGRADE_EXIT
+                    self.store.publish(self.parent)
+                    if not active:
+                        return
                     remaining = backoff
                     while remaining > 0:
                         delay = min(HEARTBEAT_SECONDS, remaining)
@@ -431,43 +459,58 @@ class Observer:
             self.store.expire_observation(self.parent)
 
 
-def supervise(store, parent, home):
-    fd = os.open(store.directory / f'{parent}.supervisor.lock', os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
-    with os.fdopen(fd, 'w') as lock:
-        fcntl.flock(lock, fcntl.LOCK_EX)
-        for attempt in range(6):
+def supervise(store, parent, home, lock_held=False):
+    with nullcontext() if lock_held else role_lock(home, parent, 'supervise'):
+        attempt = int(os.environ.get('CODEX_PLUS_SUPERVISOR_FAILURES', '0'))
+        store.supervisor_failures = attempt
+        if check_upgrade(store, parent):
+            return UPGRADE_EXIT
+        while attempt < 6:
             try:
-                child = subprocess.Popen([sys.executable, '-m', 'codex_plus.background', 'observe', '--parent', parent],
-                                         cwd=Path(__file__).resolve().parent.parent,
-                                         env=dict(os.environ, CODEX_HOME=str(home)), stdin=subprocess.DEVNULL,
+                child = subprocess.Popen(package_command(PACKAGE_ROOT, 'observe', parent),
+                                         cwd=PACKAGE_ROOT,
+                                         env=dict(package_env(PACKAGE_ROOT, home), CODEX_PLUS_SUPERVISED='1',
+                                                  CODEX_PLUS_FAILED_PACKAGE=str(FAILED_PACKAGE or '')), stdin=subprocess.DEVNULL,
                                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, close_fds=True)
-                if child.wait() == 0:
+                result = child.wait()
+                if result == 0:
                     return
+                if result == UPGRADE_EXIT:
+                    if check_upgrade(store, parent):
+                        store.supervisor_failures = attempt
+                        return UPGRADE_EXIT
+                    store.publish(parent)
+                    continue
             except OSError:
                 pass
             if attempt < 5:
                 time.sleep(min(30, 2 ** attempt))
+            attempt += 1
         store.supervisor_failed(parent)
 
 
 def launch(parent, home):
-    subprocess.Popen([sys.executable, '-m', 'codex_plus.background', 'supervise', '--parent', parent],
-                     cwd=Path(__file__).resolve().parent.parent, env=dict(os.environ, CODEX_HOME=str(home)),
+    subprocess.Popen(package_command(PACKAGE_ROOT, 'supervise', parent),
+                     cwd=PACKAGE_ROOT, env=package_env(PACKAGE_ROOT, home),
                      stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                      start_new_session=True, close_fds=True)
 
 
 def main(argv=None):
+    global FAILED_PACKAGE
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('action', choices=['park', 'observe', 'supervise'])
     parser.add_argument('--parent', default=os.environ.get('CODEX_THREAD_ID'))
     parser.add_argument('--worker', action='append', default=[])
     parser.add_argument('--process', action='append', default=[])
     parser.add_argument('--reason')
+    parser.add_argument('--package-root', help=argparse.SUPPRESS)
     modes = parser.add_mutually_exclusive_group()
     modes.add_argument('--status', action='store_true')
     modes.add_argument('--cancel', action='store_true')
     args = parser.parse_args(argv)
+    if args.package_root is not None and args.package_root != str(PACKAGE_ROOT) + '/':
+        parser.error('--package-root must identify this package directory with a trailing slash')
     try:
         parent = str(uuid.UUID(args.parent or ''))
     except ValueError:
@@ -475,33 +518,63 @@ def main(argv=None):
     if args.action == 'park' and not (args.status or args.cancel) and (not (args.worker or args.process) or not args.reason or len(args.reason) > 240 or not args.reason.isprintable()):
         parser.error('park needs explicit --worker/--process and a printable --reason of at most 240 characters')
     home = state_home()
-    store = Store(home)
+    store = None
     try:
-        if args.action == 'observe':
-            Observer(store, parent).run()
-        elif args.action == 'supervise':
-            supervise(store, parent, home)
-        elif args.cancel:
-            store.request_cancel(parent)
-            launch(parent, home)
-            print(json.dumps(store.status(parent)))
-        elif args.status:
-            print(json.dumps(store.status(parent)))
-        else:
-            client = Client(home / 'app-server-control' / 'app-server-control.sock')
-            try:
-                result = register(store, client, parent, args.worker, args.process, args.reason)
-            finally:
-                client.close()
-            if result['state'] in ('armed', 'already_registered'):
+        if args.action != 'park' and (PACKAGE_ROOT / 'codex-plus.json').exists():
+            os.chdir(PACKAGE_ROOT)
+            if args.package_root is None:
+                # Pin own source in cmdline while a later exec temporarily changes cwd.
+                exec_package(PACKAGE_ROOT, args.action, parent, home,
+                             list(argv) if argv is not None else sys.argv[1:])
+        while True:
+            # A blocked old contender must select again before opening or migrating the ledger.
+            lock = role_lock(home, parent, args.action) if args.action != 'park' else nullcontext()
+            with lock:
+                invalid = False
                 try:
-                    launch(parent, home)
+                    candidate = select_package(PACKAGE_ROOT)
+                    if candidate is not None and candidate == FAILED_PACKAGE:
+                        raise ValueError('package exec previously failed')
+                except ValueError:
+                    candidate, invalid = None, True
+                if candidate is None:
+                    store = Store(home)
+                    try:
+                        store.upgrade_warning(parent, invalid)
+                        if invalid and args.action == 'park':
+                            print('codex-plus: coordinator upgrade unavailable; continuing installed helper.', file=sys.stderr)
+                        if args.action == 'observe':
+                            result = Observer(store, parent).run(lock_held=True)
+                        elif args.action == 'supervise':
+                            result = supervise(store, parent, home, lock_held=True)
+                        else:
+                            result = park(store, args, parent, home)
+                            store.upgrade_warning(parent, invalid)
+                            store.publish(parent)
+                        if result != UPGRADE_EXIT:
+                            return result or 0
+                        if args.action == 'supervise':
+                            os.environ['CODEX_PLUS_SUPERVISOR_FAILURES'] = str(store.supervisor_failures)
+                        if args.action == 'observe' and os.environ.get('CODEX_PLUS_SUPERVISED') == '1':
+                            return UPGRADE_EXIT
+                    finally:
+                        store.close()
+                        store = None
+            # Locks and SQLite are closed before exec; the new process rechecks under its lock.
+            if candidate is None:
+                try:
+                    candidate = select_package(PACKAGE_ROOT)
+                except ValueError:
+                    continue
+            if candidate is not None:
+                if args.action == 'observe' and os.environ.get('CODEX_PLUS_SUPERVISED') == '1':
+                    return UPGRADE_EXIT
+                try:
+                    exec_package(candidate, args.action, parent, home,
+                                 list(argv) if argv is not None else sys.argv[1:])
                 except OSError:
-                    store.launch_failed(parent)
-                    raise
-                result['next'] = 'End the parent turn now. The local observer will wake it only after registered completion and actual Idle.'
-            print(json.dumps(result))
-        return 0
+                    # Immutable packages are retried only in a new process or after current advances.
+                    FAILED_PACKAGE = candidate
     except HistoryLimitError:
         print(f'codex-plus park: local history exceeds {MAX_PAGES} pages; selection remains unknown.', file=sys.stderr)
         return 1
@@ -512,7 +585,31 @@ def main(argv=None):
         print(f'codex-plus park failed ({type(exc).__name__}); inspect local daemon availability and selectors.', file=sys.stderr)
         return 1
     finally:
-        store.close()
+        if store is not None:
+            store.close()
+
+
+def park(store, args, parent, home):
+    if args.cancel:
+        store.request_cancel(parent)
+        launch(parent, home)
+        print(json.dumps(store.status(parent)))
+    elif args.status:
+        print(json.dumps(store.status(parent)))
+    else:
+        client = Client(home / 'app-server-control' / 'app-server-control.sock')
+        try:
+            result = register(store, client, parent, args.worker, args.process, args.reason)
+        finally:
+            client.close()
+        if result['state'] in ('armed', 'already_registered'):
+            try:
+                launch(parent, home)
+            except OSError:
+                store.launch_failed(parent)
+                raise
+            result['next'] = 'End the parent turn now. The local observer will wake it only after registered completion and actual Idle.'
+        print(json.dumps(result))
 
 
 if __name__ == '__main__':

@@ -1,0 +1,62 @@
+{
+  "change": "Foreground default for decision-gating advisor consultations; explicit background remains available for independent work.",
+  "source_base": "5995ba886fecdff890d7434012bc4cf8c20629e8",
+  "runtime_changes": false,
+  "native_changes": false,
+  "daemon_changes": false,
+  "official_binary": "/home/liupan/Aerius/codex-plus/.build/upstream-0163/official-x86/bin/codex",
+  "official_sha256": "399ff69c431c066e40de318fba45c2b07f45a76b19939d247ee4828fc70c4215",
+  "root_acceptance": {
+    "passed": true,
+    "held_seconds": 65.1482120018918,
+    "outer_yield_ms": 1620000,
+    "root_requests_while_pending": 1,
+    "root_requests_total": 2,
+    "advisor_requests": 1,
+    "parks": 0,
+    "callbacks": 0,
+    "remaining_terminals": 0,
+    "pending_observations": 258,
+    "status": {
+      "model": "gpt-6-astra",
+      "effort": "xhigh",
+      "transitions": [
+        "running",
+        "done"
+      ],
+      "calls": 1
+    },
+    "documented_cell_used": true,
+    "only_cell_command_replaced": true,
+    "report": "/home/liupan/Aerius/codex-plus/.build/foreground-advisor/.build/root-foreground-acceptance/report.json",
+    "report_sha256": "8feac02605993f00ca992f343a4703e74784269205e234f14c3ff9b2dc4ee2b8",
+    "log": "/home/liupan/.codex/codex-plus/logs/7bdf6971-221d-4aca-97aa-048a52969b1b.log"
+  },
+  "advisor_units": {
+    "passed": 16,
+    "runner_log": "/home/liupan/.codex/codex-plus/logs/5f03f068-5ca7-44b2-b147-16619c0509ce.log"
+  },
+  "worker_stock_advisor_regression": {
+    "passed_groups": 7,
+    "report": "/tmp/codex-plus-advisor-existing-worker/report.json",
+    "repeated_by_root": false,
+    "reason": "Runtime code unchanged; root reran documented foreground acceptance and all advisor units."
+  },
+  "production_yield_limit_evidence": {
+    "upstream": "83086188ae0614bd882818ff1aa23f3194962012",
+    "core/src/tools/code_mode/mod.rs:247": "Uses session_provider.create_session.",
+    "core/src/code_mode_host.rs:55": "Creates session with default CodeModeSessionCellExecutionLimits.",
+    "code-mode-protocol/src/session.rs:26": "Default max_yield_time_ms is None.",
+    "code-mode-runtime/src/service.rs:201": "Requested yield is capped only by optional configured limit.",
+    "code-mode/src/grpc_session/operations.rs:122": "RPC timeout derives from requested yield plus1second."
+  },
+  "global_advisor_section_sha256": "466d954eac39c0de80fe7d3425962a9638e86ec15efafa2f1c86825ff03797de",
+  "remote_provider_requests": 0,
+  "limits": [
+    "27-minute endurance was not run; requested27-minute yield was exercised for65seconds and its uncapped production path read.",
+    "Custom harnesses can impose additional limits; report those instead of claiming a continuous pending call.",
+    "Ctrl-C can interrupt a turn while native terminals survive. Use native terminal stop for cancellation; direct helper signal/timeout group cleanup is covered by advisor unit tests.",
+    "No package/native rebuild or release was needed for this instruction change; immutable installed package docs remain unchanged until a future release.",
+    "Fleet-config owns global instruction application and synchronization."
+  ]
+}

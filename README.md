@@ -6,8 +6,8 @@ tracks its own parent thread in ordinary terminals and split tmux panes.
 Release builds patch the frontend and keep upstream daemon code unchanged.
 The HUD and Python completion coordinator work with the official stock daemon.
 
-The patch targets **Codex 0.162.1**, upstream commit
-`092d3acd6bec3e3a14bdc7e7a2810ab628ab759d`.
+The patch targets **Codex 0.163.0**, upstream commit
+`83086188ae0614bd882818ff1aa23f3194962012`.
 
 ## Run
 
@@ -32,23 +32,25 @@ rustup toolchain install 1.99.0
 ```
 
 The script fetches the pinned upstream source into `.build/source`, applies
-`patches/codex-0.162.1-worker-hud.patch`, and builds `.build/codex`. It refuses an
+`patches/codex-0.163.0-worker-hud.patch`, and builds `.build/codex`. It refuses an
 unexpected source revision or a checkout that differs from the exact release
 patch, including old daemon modifications. The patch also reconciles the
 release tag's workspace versions in `Cargo.lock`; external dependency versions
-are unchanged. The first build downloads and compiles Codex's dependencies.
+match the 0.163.0 tag. The first build downloads and compiles Codex's dependencies.
+Preserve or move aside an existing checkout at another upstream revision before
+building; the script refuses to overwrite it.
 
 The historical receipt extension is preserved in
 `patches/experimental/codex-0.162.1-daemon-receipts.patch` and is excluded from the
 build script. See [experimental receipts](docs/experimental-daemon-receipts.md)
-for its scope and patch order. A previous combined source checkout must be moved
-aside before building the frontend release; the script will not erase it.
+for its historical 0.162.1 scope and patch order. It is not ported to 0.163.0.
 
 Builds use Cargo's optimized release profile (thin LTO and four codegen units).
 Installation strips symbols; the original release binary stays in the build
-directory. The tested executable shrank from 404.8 MB to 282.4 MB. Paired warm
-startup medians improved from 26.9 to 11.5 ms for `--version` and 29.2 to 12.1 ms
-for `--help` (21 samples each). This does not measure UI or model-response speed.
+directory. Historical 0.162.1 measurements showed the executable shrinking from
+404.8 MB to 282.4 MB. Paired warm startup medians improved from 26.9 to 11.5 ms
+for `--version` and 29.2 to 12.1 ms for `--help` (21 samples each). These do not
+measure 0.163.0, UI, or model-response speed.
 
 For complete distributable packages, follow [release building](docs/releasing.md).
 The packager stages native x86_64 and ARM64 outputs with upstream runtime resources,
@@ -61,14 +63,16 @@ see the [release notes](docs/release-notes.md).
 The strip shows active and waiting direct workers without a count header:
 
 ```text
-Sol worker (high) · integration probe · 3:42 · 123.4K tok
+GPT-6.1-Sol (high) · integration probe · 3:42 · 123.4K tok
 ```
 
-Rows start with model, role, and actual reasoning effort, followed by a short task
+Rows start with the full reported model and reasoning effort, followed by a short task
 name, elapsed time, and cumulative reported tokens. Routine active state is
 implicit; approval/input waits and stale data remain explicit. Long names shorten
 to leave room for metrics. Activity rows are dim; warnings use normal brightness.
-Sol and Astra are shown by family; other model identifiers remain visible.
+Recognized GPT Sol/Astra names use display casing while preserving their version
+and suffixes; custom and provider-prefixed identifiers remain intact. The model
+comes from Codex's thread metadata, which is not per-turn execution telemetry.
 Unknown values, including missing effort, show `?`. Finished,
 interrupted, failed, and idle workers disappear. The strip hides once no activity
 or warnings remain. Small terminals clip rows to preserve the prompt.
@@ -85,7 +89,7 @@ model or token fields. The stock terminal API has no start timestamp: **seen
 measures time observed by this client**, not the command's total runtime, and resets when the
 client restarts or sees a new command identity.
 
-Workers, background commands, warnings, and any `+N more` line share a strict
+Workers, background commands, advisor status, warnings, and any `+N more` line share a strict
 three-row total limit below the shortcuts footer. This keeps the composer within
 AP's last-six-nonempty-lines readiness window. When space permits, mixed activity
 shows both a worker and a background command. Warnings take priority within the
@@ -133,7 +137,7 @@ belong to the existing batch. Each member name remains unique.
 These names produce one row:
 
 ```text
-Sol workers (high) · hud styling (3 agents) · 1:20 · 250K tok
+GPT-6.1-Sol (high) · hud styling (3 agents) · 1:20 · 250K tok
 ```
 
 The count includes only active/waiting members: 3 becomes 2, then 1, and the group
@@ -147,6 +151,28 @@ Different batches and parent threads stay separate. Untagged or malformed names
 remain standalone rows. Grouping never guesses purpose from timing or similar
 names and makes no model calls.
 The three-row limit and `+N more` count groups, standalone workers, and shell jobs.
+
+## Astra advisor
+
+From the main session, request an explicit, read-only second opinion:
+
+```sh
+./bin/codex-plus advisor --brief 'Review the proposed approach and its main risks.'
+```
+
+The helper selects the newest available numeric Astra model supporting `xhigh`,
+then runs one isolated read-only consultation with the packaged native client.
+Supply a self-contained brief: the advisor receives clipped Git status and diff
+statistics, without the session transcript or diff contents. The footer shows
+readiness, the current consultation, and the completed call count and duration;
+refreshing it makes no model calls. Consultations needed before the next decision
+stay foreground, with a live conversation row such as
+`● Advising using GPT-6-Astra · 0m59s`, then a completed or failed summary.
+See [advisor usage and limits](docs/advisor.md) for the bounded local wait.
+
+Fleet-config owns installed wrapper routing; `advisor` must reach the package's
+helper alongside `park`, `run`, and `--version`. The repository launcher above
+works without changing the installed fleet wrapper.
 
 ## Background completion
 
@@ -188,4 +214,4 @@ the launcher.
 
 The native patch is version-specific. Updating the ordinary Codex installation
 does not update this build; rebase and retest the patch before changing its
-upstream version. Upstream Codex is [Apache-2.0 licensed](https://github.com/openai/codex/blob/rust-v0.162.1/LICENSE).
+upstream version. Upstream Codex is [Apache-2.0 licensed](https://github.com/openai/codex/blob/rust-v0.163.0/LICENSE).

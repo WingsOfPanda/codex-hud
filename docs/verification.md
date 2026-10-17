@@ -1,10 +1,133 @@
 # Native HUD verification
 
-Target: Codex 0.162.1, commit
-`092d3acd6bec3e3a14bdc7e7a2810ab628ab759d`, Linux x86_64,
-Rust 1.99.0. The ordinary installed Codex and global configuration remain intact.
+Target: Codex 0.163.0, commit
+`83086188ae0614bd882818ff1aa23f3194962012`, Linux x86_64 and ARM64,
+Rust 1.99.0. Keep the ordinary installed Codex and global configuration intact.
 
-## Frontend release boundary
+## Current release acceptance
+
+The frontend patch changes TUI, CLI, and workspace lock reconciliation only;
+backend and database source must match the pinned 0.163.0 tag. The historical
+0.162.1 receipt extension is not part of this release and has not been ported.
+Check clean and reverse patch application, exact-source reconstruction including
+new files, and equality of external Cargo.lock entries with the 0.163.0 tag.
+
+Run source-guard and packaging tests from this repository:
+
+```sh
+python3 -m unittest discover -s tests -p test_build_native.py -v
+python3 -m unittest discover -s tests -p test_packaging.py -v
+```
+
+From the patched upstream `codex-rs` directory, build with `--locked` and run
+the focused native tests (the environment may require `RUST_MIN_STACK=33554432`):
+
+```sh
+cargo +1.99.0 test --locked -p codex-tui --lib worker_hud --profile dev-small -j 12
+cargo +1.99.0 test --locked -p codex-tui --lib shell_policy --profile dev-small -j 12
+cargo +1.99.0 test --locked -p codex-tui --lib chatwidget::tests::exec_flow --profile dev-small -j 12
+cargo +1.99.0 test --locked -p codex-tui --lib thread_transcript::tools::tests --profile dev-small -j 12
+cargo +1.99.0 test --locked -p codex-tui --lib daemon_menu --profile dev-small -j 12
+cargo +1.99.0 test --locked -p codex-cli --bin codex daemon_update_tests --profile dev-small -j 12
+```
+
+Also exercise the affected upstream footer selection, config panel, status-line
+style, terminal-program status, session status/lifecycle, retained reply, and
+disconnect tests. Verify terminal start/resume, PTY and pane isolation, compact
+footer placement, composer editing, and zero model calls from HUD refresh with
+`tests/native_smoke.py`. Use the [release procedure](releasing.md) for fresh
+GNU builds and extracted-package qualification on each native architecture;
+bundled zsh is no longer a package resource. Run coordinator lifecycle and
+affected isolated integration gates from [background verification](background-work.md#verification)
+against an official 0.163.0 daemon in private homes with loopback providers.
+
+The companion release note and evidence record the checks actually run and any
+remaining limits. The 0.162.1 results below are historical and do not qualify
+the 0.163.0 port.
+
+### Full model labels for Plus 0.1.1
+
+The x86 development candidate passed 36 focused Rust HUD tests, 14 terminal
+fixture tests, 13 packaging tests, seven source-guard tests, all 18 native
+terminal smoke stages, and both 0.163 UI scenarios. Root acceptance checked the
+actual candidate, clean/reverse patch application, exact source reconstruction,
+and unchanged external lock dependencies. See
+[full-model-labels.json](evidence/full-model-labels.json) for commands and hashes.
+
+Rows retain reported model versions and suffixes, effort, grouped active counts,
+metrics, dim styling, and the three-row budget including alerts/overflow. Terminal
+checks cover the idle prompt in the last six nonempty lines, editing, resizing,
+pane isolation, footer selection, and zero model calls from HUD refresh. Fixture
+recognition accepts upstream's custom effort strings as well as known levels.
+This is source/development acceptance; optimized x86 and ARM release packages
+have not been built or qualified for this revision.
+
+### Astra advisor candidate
+
+The 0.2.0 source/development candidate passed 16 advisor, seven launcher,
+15 packaging, 15 terminal-fixture, and seven native source-guard checks. Root
+acceptance reran the advisor/HUD/shell-policy Rust filters (8/38/16 passing
+invocations, with overlap), all 19 native terminal stages, both upstream UI
+scenarios, and seven integration groups against official stock 0.163.0.
+See [astra-advisor.json](evidence/astra-advisor.json) for hashes and logs.
+
+```sh
+python3 -m unittest discover -s tests -p test_advisor.py -v
+python3 tests/test_advisor_integration.py OFFICIAL_BINARY --evidence EVIDENCE
+```
+
+The stock integration proves actual sandbox write denial, exact Astra/xhigh
+requests, structured results, interruption/failure handling, ignored user config,
+and absence of delegation tools in the provider-visible inventory. It reads
+root metadata without the conversation. All providers are loopback fixtures;
+no live consultation was used for implementation acceptance.
+
+The native scenarios cover persistent readiness/count/duration, running elapsed,
+error/stale/invalid files, pane isolation, conservative advisor-shell coalescing,
+unrelated jobs, and the shared three-row/AP prompt budget. Refreshing the footer
+adds no model requests. Source reconstruction and unchanged backend/external lock
+dependencies passed. Optimized/ARM packages and fleet wrapper/global-policy
+deployment remain separate work; this is not release qualification.
+
+### Foreground advisor workflow
+
+```sh
+python3 tests/test_advisor_foreground_integration.py OFFICIAL_BINARY --evidence EVIDENCE
+```
+
+This uses the exact [documented wait cell](advisor.md), replacing only its command
+with private fixture paths. A loopback advisor is held for 65 seconds. The root
+must remain in progress with one model request while waiting, receive the result
+on its second request, and create no park, queued callback or surviving terminal.
+Advisor status must move from running to done with the selected Astra at xhigh.
+The fixture verifies the long outer-yield request over 65 seconds; it is not a
+27-minute endurance test. See [advisor-foreground.json](evidence/advisor-foreground.json).
+
+### Advisor conversation rows
+
+The native terminal smoke includes real Code Mode exec/wait cases for a held
+advisor. A single conversation header must tick locally past the initial shell
+yield, then settle to the completed or failed header without a second row. The
+fixture holds status bytes constant while checking elapsed updates, verifies no
+extra model request, edits and resizes the composer, and retains the footer's
+three-row budget. The advisor itself is simulated; the TUI, shell and Code Mode
+lifecycle are real.
+
+Root acceptance passed 21 terminal stages, 17 fixture tests and the focused Rust
+filters: advisor 13, HUD 38, shell policy 18, exec flow 53 and historical tools 6
+(filters overlap). Clean/reverse patch application, exact reconstruction, unchanged
+backend and all 1,314 external Cargo packages passed. The timestamp regression
+covers a process publishing status before its ItemStarted notification; current-turn
+correlation replaces the incorrect notification-time cutoff. See
+[advisor-transcript.json](evidence/advisor-transcript.json) for hashes, preserved
+initial failures and limits. No native fleet runtime was installed by this work.
+
+## Historical 0.162.1 verification
+
+The following sections record work against commit
+`092d3acd6bec3e3a14bdc7e7a2810ab628ab759d` and its historical release patches.
+
+### Frontend release boundary
 
 The default patch contains the HUD, workspace lock reconciliation, and frontend
 guards that disable daemon updates from the TUI. The
@@ -41,7 +164,7 @@ local `.build/codex`; the prior combined binary is preserved at
 `.build/codex.before-frontend-release`. The shared official daemon was unchanged.
 See [frontend-release.json](evidence/frontend-release.json) for hashes and logs.
 
-## Checks
+### Checks
 
 From the patched upstream `codex-rs` directory:
 
@@ -102,7 +225,7 @@ The packaged patch applies cleanly to the pinned upstream source and passes a
 reverse-application check. External dependency entries in `Cargo.lock` are
 identical to upstream. The launcher and build script pass `bash -n`.
 
-## Optimized release
+### Optimized release
 
 These startup measurements describe the earlier HUD-only release. The recovery
 build is recorded in [wake-recovery.json](evidence/wake-recovery.json); the newer
@@ -124,7 +247,7 @@ cold starts, or token savings. See [release-build.json](evidence/release-build.j
 [release-benchmark.json](evidence/release-benchmark.json), and
 [release-acceptance.json](evidence/release-acceptance.json).
 
-## Historical experimental recovery
+### Historical experimental recovery
 
 The recovery release passed 64 coordinator tests, 51 native queue/protocol tests,
 seven real-daemon crash/restart scenarios, the normal background integration, and
@@ -144,7 +267,7 @@ extension is now [excluded from release builds](experimental-daemon-receipts.md)
 These historical results do not establish the stock daemon's delivery guarantees
 and are not instructions to replace the shared daemon.
 
-## Watcher health and notification modes
+### Watcher health and notification modes
 
 The watcher changes passed 92 coordinator tests and 29 focused native HUD tests.
 The primary agent also ran normal completion plus seven recovery cases against
@@ -166,7 +289,7 @@ binary is kept as `.build/codex.before-watcher-lessons`. Existing CLI processes
 need to be relaunched to display the health line. The shared daemon was untouched.
 See [watcher-lessons.json](evidence/watcher-lessons.json) for hashes and reports.
 
-## Background shell HUD
+### Background shell HUD
 
 The shell display passed 33 focused native tests and 16 terminal smoke stages.
 The original worker and watcher-health behavior is retained. New checks exercise
@@ -190,7 +313,7 @@ the TUI; the shared stock daemon was not replaced. See
 The installed client is `.build/codex`, with its predecessor preserved as
 `.build/codex.before-shell-hud`. Relaunch the client to display shell rows.
 
-## Managed shell policy
+### Managed shell policy
 
 The [shell workflow](shell-workflow.md) is implemented by a private logging runner
 and frontend-only rendering. Explicit command markers choose `auto`, `background`,
@@ -238,7 +361,7 @@ loopback fixtures. The installed local binary is `.build/codex`, with its previo
 frontend release preserved at `.build/codex.before-shell-policy`. Relaunch the
 client to use the policy display. See [shell-policy.json](evidence/shell-policy.json).
 
-## Compact activity rows
+### Compact activity rows
 
 The compact layout removes the count header, puts model/role/effort before the
 worker task, labels root shell jobs `Background`, and hides healthy watcher
@@ -257,7 +380,7 @@ See [compact-rows.json](evidence/compact-rows.json) for the candidate hash and
 reports. This acceptance covers a Linux x86_64 `dev-small` candidate; optimized
 release builds, ARM qualification, and fleet installation are separate work.
 
-## Limits
+### Limits
 
 - Live workers and the strip's placement were confirmed in the user's pane.
   Local token metadata was checked read-only; automated terminal lifecycle tests

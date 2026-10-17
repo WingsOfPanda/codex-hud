@@ -1,0 +1,394 @@
+{
+  "release": "0.163.0-plus.0.1.0",
+  "plus_commit": "c36e4fc31f4695ef60b90946d6af590289453b23",
+  "upstream": {
+    "version": "0.163.0",
+    "tag": "rust-v0.163.0",
+    "commit": "83086188ae0614bd882818ff1aa23f3194962012"
+  },
+  "coordinator_protocol": 1,
+  "frontend_patch_sha256": "77192d77b3fb5455a775ad3addccb839c5b6385899eecd5b8f2512d5b66c01a2",
+  "native_recompiled": true,
+  "rust": "1.99.0",
+  "build_glibc": "2.39",
+  "voice": false,
+  "bundled_zsh": false,
+  "handoff": {
+    "path": "docs/releases/0.163.0-plus.0.1.0/handoff.json",
+    "sha256": "00a30dc6b6dcda93b9d3f3aaf1b9b1d33c26d82d0e5b4eb7b78fb4cf40bad818",
+    "rollout": {
+      "daemon_restart": true,
+      "quiet_checkpoint": true,
+      "session_restart": "required",
+      "agents_md": null,
+      "notes": "Upstream bump: move stock CLI, stock daemon and matching Plus together. Hold new parks; drain helpers, armed parks, open callbacks and other active Codex work before the scheduled official-daemon restart. Use codex-stock for daemon maintenance, never the Plus TUI /daemon or historical force-stop sidecar. Users exit and codex resume after rollout. Cross-upstream cooperative transfer is intentionally refused even with protocol 1. Preserve previous/in-use packages. Every rollback is quiet and restores the matching old stock CLI/daemon pair; private representative history and pending-queue readability passed, not a general production rollback guarantee. Upstream state migrations 0060/0061 add guardian feedback and unread-thread state; no Plus daemon migration or callback receipt extension."
+    }
+  },
+  "targets": {
+    "x86_64": {
+      "triple": "x86_64-unknown-linux-gnu",
+      "asset": "codex-plus-0.163.0-plus.0.1.0-x86_64-unknown-linux-gnu.tar.gz",
+      "sha256": "7d7602390878cbd698433314f3c893ebb77ed9e3da2141e653925e467627fb48",
+      "tree_sha256": "b58011068abf0f7c6f3019a29155a8f69d0589ea71b9234784104d004fe0cb58",
+      "manifest_sha256": "38787155fc3605b2e6190f3d6d37ceec9a69422d0432d062a4674600668b19ef",
+      "archive": "/home/liupan/Aerius/codex-plus/.build/upstream-0163/packages/codex-plus-0.163.0-plus.0.1.0-x86_64-unknown-linux-gnu.tar.gz",
+      "archive_bytes": 133356883,
+      "qualification_report": ".build/upstream-0163/x86-release/qualification-summary.json",
+      "qualification_report_sha256": "d1e95b529468e8222260f9267d8d07cb1c8f267cb92f674eb61a1df473900655",
+      "root_acceptance": {
+        "passed": true,
+        "archive_sha256": "7d7602390878cbd698433314f3c893ebb77ed9e3da2141e653925e467627fb48",
+        "manifest_sha256": "38787155fc3605b2e6190f3d6d37ceec9a69422d0432d062a4674600668b19ef",
+        "tree_sha256": "b58011068abf0f7c6f3019a29155a8f69d0589ea71b9234784104d004fe0cb58",
+        "packaged_modules": {
+          "codex_plus.background": "/home/liupan/Aerius/codex-plus/.build/upstream-0163/root-package-x86/extracted/codex-plus-0.163.0-plus.0.1.0-x86_64-unknown-linux-gnu/codex_plus/background.py",
+          "codex_plus.ledger": "/home/liupan/Aerius/codex-plus/.build/upstream-0163/root-package-x86/extracted/codex-plus-0.163.0-plus.0.1.0-x86_64-unknown-linux-gnu/codex_plus/ledger.py",
+          "codex_plus.rpc": "/home/liupan/Aerius/codex-plus/.build/upstream-0163/root-package-x86/extracted/codex-plus-0.163.0-plus.0.1.0-x86_64-unknown-linux-gnu/codex_plus/rpc.py",
+          "codex_plus.runner": "/home/liupan/Aerius/codex-plus/.build/upstream-0163/root-package-x86/extracted/codex-plus-0.163.0-plus.0.1.0-x86_64-unknown-linux-gnu/codex_plus/runner.py",
+          "codex_plus.evidence": "/home/liupan/Aerius/codex-plus/.build/upstream-0163/root-package-x86/extracted/codex-plus-0.163.0-plus.0.1.0-x86_64-unknown-linux-gnu/codex_plus/evidence.py",
+          "codex_plus.upgrade": "/home/liupan/Aerius/codex-plus/.build/upstream-0163/root-package-x86/extracted/codex-plus-0.163.0-plus.0.1.0-x86_64-unknown-linux-gnu/codex_plus/upgrade.py"
+        },
+        "wrapper": {
+          "native_path_args_stdout_exit_preserved": true,
+          "runner_uses_home_local_bin_codex_wrapper": true,
+          "daemon_update_test_used_only_stubs": true
+        },
+        "cooperative_scenarios": [
+          "after_enqueue",
+          "after_start",
+          "before_enqueue",
+          "clean-complete",
+          "completed-gap",
+          "crash-after-enqueue",
+          "crash-before-enqueue",
+          "rapid-A-B-C",
+          "running"
+        ],
+        "upstream_boundary_cases": [
+          "pending-nested-origin-abort",
+          "older-cell-later-interrupt",
+          "registered-worker-origin-abort",
+          "v2-eviction-reuse"
+        ],
+        "rollback_read": true,
+        "new_tui_cases": 2,
+        "package_tree_unchanged": true,
+        "official_binaries_unchanged": {
+          "/home/liupan/Aerius/codex-plus/.build/upstream-0163/official-x86/bin/codex": "399ff69c431c066e40de318fba45c2b07f45a76b19939d247ee4828fc70c4215",
+          "/home/liupan/.codex/packages/app-server-daemon/releases/0.162.1-x86_64-unknown-linux-musl/bin/codex": "628e35487d888a28f0427fc37501da529dd3d81fcbad7a2c3421c1e8670d92e1"
+        }
+      },
+      "common_checks": {
+        "helper_units": 163,
+        "terminal_stages": 18,
+        "shell_policy_cases": 8,
+        "stock_park": 1,
+        "interruption": 11,
+        "stock_recovery": 7,
+        "normal_completion": 1,
+        "cooperative": 9,
+        "upstream_boundary": 4,
+        "rollback_read": 1,
+        "upstream_tui": 2
+      },
+      "package_gate_exit": 1,
+      "package_gates_passed": 8,
+      "native_binaries": {
+        "codex": {
+          "path": "/home/liupan/Aerius/codex-plus/.build/upstream-0163/x86-release/native/codex",
+          "sha256": "4c84add8740bdc97ca7ce568d973a9e3800316cd61e272f930b941dd3854b375",
+          "bytes": 285800888
+        },
+        "codex-code-mode-host": {
+          "path": "/home/liupan/Aerius/codex-plus/.build/upstream-0163/x86-release/native/codex-code-mode-host",
+          "sha256": "c85a6f2c6b283e0d9408fb5162369c295644528ada86cb5ad7570be1e3c2a946",
+          "bytes": 67726288
+        },
+        "bwrap": {
+          "path": "/home/liupan/Aerius/codex-plus/.build/upstream-0163/x86-release/native/bwrap",
+          "sha256": "6e4edc6621a23dba8eed00de03e98fc06c0b857360424494c7cac82630d84c61",
+          "bytes": 382920
+        }
+      },
+      "remote_model_requests": 0,
+      "unittest_counts": {
+        "unit": {
+          "run": 163,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "runner": {
+          "run": 15,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "launcher": {
+          "run": 6,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "packaging": {
+          "run": 13,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "sourceguard": {
+          "run": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "fixture": {
+          "run": 11,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "tui-fixture": {
+          "run": 2,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "cooperative": {
+          "run": 8,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      },
+      "counts": {
+        "unittest_methods_passed": 225,
+        "unittest_failed": 0,
+        "unittest_skipped": 0,
+        "package_gates_passed": 8,
+        "package_gates_failed": 1,
+        "package_skipped": 0,
+        "native_smoke_passed": 18,
+        "shell_policy_passed": 8,
+        "stock_park_passed": 1,
+        "isolated_integration_scenarios_passed": 35,
+        "integration_failed": 0,
+        "integration_skipped": 0
+      },
+      "build_seconds": 805.1992635726929,
+      "total_elapsed_seconds": 1127.3979034423828
+    },
+    "aarch64": {
+      "triple": "aarch64-unknown-linux-gnu",
+      "asset": "codex-plus-0.163.0-plus.0.1.0-aarch64-unknown-linux-gnu.tar.gz",
+      "sha256": "40789d196faad29089be385f312d0658e2bea14a241d038caaec868a12db0b2f",
+      "tree_sha256": "23b6e9574dc53a4f95762e0572f0a46bb37c0e0d8d45dc126d4465f61249d6ee",
+      "manifest_sha256": "bdad6970432b36a96de86f11a056cb4deef95472437a05f52ded64c135ef0e11",
+      "archive": "/data/liupan/codex-plus-build/upstream0163/packages/codex-plus-0.163.0-plus.0.1.0-aarch64-unknown-linux-gnu.tar.gz",
+      "archive_bytes": 125750722,
+      "qualification_report": ".build/upstream-0163/arm/evidence/qualification-summary.json",
+      "qualification_report_sha256": "cd8bd3bb2e67c5b0d216fa343df0798d7feea2e2623f6d71a65c70e5bd1db7e9",
+      "root_acceptance": {
+        "passed": true,
+        "archive_sha256": "40789d196faad29089be385f312d0658e2bea14a241d038caaec868a12db0b2f",
+        "manifest_sha256": "bdad6970432b36a96de86f11a056cb4deef95472437a05f52ded64c135ef0e11",
+        "tree_sha256": "23b6e9574dc53a4f95762e0572f0a46bb37c0e0d8d45dc126d4465f61249d6ee",
+        "packaged_modules": {
+          "codex_plus.background": "/data/liupan/codex-plus-build/upstream0163/root-package-acceptance/extracted/codex-plus-0.163.0-plus.0.1.0-aarch64-unknown-linux-gnu/codex_plus/background.py",
+          "codex_plus.ledger": "/data/liupan/codex-plus-build/upstream0163/root-package-acceptance/extracted/codex-plus-0.163.0-plus.0.1.0-aarch64-unknown-linux-gnu/codex_plus/ledger.py",
+          "codex_plus.rpc": "/data/liupan/codex-plus-build/upstream0163/root-package-acceptance/extracted/codex-plus-0.163.0-plus.0.1.0-aarch64-unknown-linux-gnu/codex_plus/rpc.py",
+          "codex_plus.runner": "/data/liupan/codex-plus-build/upstream0163/root-package-acceptance/extracted/codex-plus-0.163.0-plus.0.1.0-aarch64-unknown-linux-gnu/codex_plus/runner.py",
+          "codex_plus.evidence": "/data/liupan/codex-plus-build/upstream0163/root-package-acceptance/extracted/codex-plus-0.163.0-plus.0.1.0-aarch64-unknown-linux-gnu/codex_plus/evidence.py",
+          "codex_plus.upgrade": "/data/liupan/codex-plus-build/upstream0163/root-package-acceptance/extracted/codex-plus-0.163.0-plus.0.1.0-aarch64-unknown-linux-gnu/codex_plus/upgrade.py"
+        },
+        "wrapper": {
+          "native_path_args_stdout_exit_preserved": true,
+          "runner_uses_home_local_bin_codex_wrapper": true,
+          "daemon_update_test_used_only_stubs": true
+        },
+        "cooperative_scenarios": [
+          "after_enqueue",
+          "after_start",
+          "before_enqueue",
+          "clean-complete",
+          "completed-gap",
+          "crash-after-enqueue",
+          "crash-before-enqueue",
+          "rapid-A-B-C",
+          "running"
+        ],
+        "upstream_boundary_cases": [
+          "pending-nested-origin-abort",
+          "older-cell-later-interrupt",
+          "registered-worker-origin-abort",
+          "v2-eviction-reuse"
+        ],
+        "rollback_read": true,
+        "new_tui_cases": 2,
+        "package_tree_unchanged": true,
+        "official_binaries_unchanged": {
+          "/data/liupan/codex-plus-build/upstream0163/official/bin/codex": "8a96f66d059d653e68bfd5f3c79337e6f1d7d170d80bf705eb7d0249b34c0ece",
+          "/data/liupan/codex-plus-build/upstream0163/rollback-official/bin/codex": "071cbe8d821cf1b02b6d8ba6c8b7991b228fcb8519dcb68a37d31222bb8cabe5"
+        }
+      },
+      "common_checks": {
+        "helper_units": 163,
+        "terminal_stages": 18,
+        "shell_policy_cases": 8,
+        "stock_park": 1,
+        "interruption": 11,
+        "stock_recovery": 7,
+        "normal_completion": 1,
+        "cooperative": 9,
+        "upstream_boundary": 4,
+        "rollback_read": 1,
+        "upstream_tui": 2
+      },
+      "package_gate_exit": 0,
+      "package_gates_passed": 9,
+      "native_binaries": {
+        "bin/codex": "6c2b2117e8d8d4d70d6f37ccbb641e8944eb504598db42fb1dd075f543fe3246",
+        "bin/codex-code-mode-host": "01b6490a9343678db68b54d2872c241e1737a488a105f241ede76be706d3532d",
+        "codex-resources/bwrap": "987615778946bdef2d2327c3e15b3304784e975ca3efafb5dab2c453df80d00b",
+        "codex-path/rg": "e36d0eb52e70696bdf1781392722e05a21bb91d3b7b762ef5ec20e5df2ec687b"
+      },
+      "remote_model_requests": 0,
+      "terminal_fixture_checks": 11,
+      "native_build": {
+        "cargo_profile": "release",
+        "glibc": "2.39",
+        "rust": "1.99.0"
+      },
+      "all_gate_exit_codes": {
+        "boundary": 0,
+        "cooperative": 0,
+        "fixture": 0,
+        "interruption": 0,
+        "normal": 0,
+        "package": 0,
+        "recovery": 0,
+        "rollback": 0,
+        "tui163": 0,
+        "unit": 0
+      },
+      "unchanged_userns_policy": "0"
+    }
+  },
+  "source_acceptance": {
+    "native_worker_report": ".build/upstream-0163/native-port/native-summary.json",
+    "native_worker_filters": 15,
+    "passing_native_invocations_with_overlapping_filters": 219,
+    "root_native_filters": [
+      {
+        "name": "worker_hud",
+        "exit": 0,
+        "results": [
+          "test result: ok. 36 passed; 0 failed; 0 ignored; 0 measured; 5778 filtered out; finished in 0.19s"
+        ],
+        "log": "/home/liupan/Aerius/codex-plus/.build/upstream-0163/root-worker_hud.log"
+      },
+      {
+        "name": "daemon_menu",
+        "exit": 0,
+        "results": [
+          "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 5811 filtered out; finished in 0.18s"
+        ],
+        "log": "/home/liupan/Aerius/codex-plus/.build/upstream-0163/root-daemon_menu.log"
+      },
+      {
+        "name": "managed_background",
+        "exit": 0,
+        "results": [
+          "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 5813 filtered out; finished in 0.03s"
+        ],
+        "log": "/home/liupan/Aerius/codex-plus/.build/upstream-0163/root-managed_background.log"
+      },
+      {
+        "name": "cli_guard",
+        "exit": 0,
+        "results": [
+          "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 305 filtered out; finished in 0.00s"
+        ],
+        "log": "/home/liupan/Aerius/codex-plus/.build/upstream-0163/root-cli_guard.log"
+      }
+    ],
+    "source_checks": {
+      "passed": true,
+      "upstream_commit": "83086188ae0614bd882818ff1aa23f3194962012",
+      "patch_sha256": "77192d77b3fb5455a775ad3addccb839c5b6385899eecd5b8f2512d5b66c01a2",
+      "changed_files": [
+        "codex-rs/Cargo.lock",
+        "codex-rs/cli/src/daemon_update_tests.rs",
+        "codex-rs/cli/src/main.rs",
+        "codex-rs/tui/Cargo.toml",
+        "codex-rs/tui/src/app.rs",
+        "codex-rs/tui/src/app/daemon_menu.rs",
+        "codex-rs/tui/src/app/daemon_menu_tests.rs",
+        "codex-rs/tui/src/app/event_dispatch.rs",
+        "codex-rs/tui/src/app/owned_transcript_tests.rs",
+        "codex-rs/tui/src/app/reconnect.rs",
+        "codex-rs/tui/src/app/session_lifecycle.rs",
+        "codex-rs/tui/src/app/snapshots/codex_tui__app__daemon_menu__tests__daemon_cli_confirmation.snap",
+        "codex-rs/tui/src/app/snapshots/codex_tui__app__daemon_menu__tests__daemon_disconnected.snap",
+        "codex-rs/tui/src/app/snapshots/codex_tui__app__daemon_menu__tests__daemon_menu.snap",
+        "codex-rs/tui/src/app/snapshots/codex_tui__app__daemon_menu__tests__daemon_no_cli_handoff.snap",
+        "codex-rs/tui/src/app/snapshots/codex_tui__app__daemon_menu__tests__daemon_remote_guidance.snap",
+        "codex-rs/tui/src/app/snapshots/codex_tui__app__daemon_menu__tests__daemon_restart_confirmation.snap",
+        "codex-rs/tui/src/app/snapshots/codex_tui__app__daemon_menu__tests__daemon_stable_confirmation.snap",
+        "codex-rs/tui/src/app/snapshots/codex_tui__app__daemon_menu__tests__daemon_unmanaged.snap",
+        "codex-rs/tui/src/app/snapshots/codex_tui__app__daemon_menu__tests__daemon_unpackaged_cli.snap",
+        "codex-rs/tui/src/app/startup.rs",
+        "codex-rs/tui/src/app/test_support.rs",
+        "codex-rs/tui/src/app/tests.rs",
+        "codex-rs/tui/src/app/tests/snapshots/codex_tui__app__tests__disconnect__offline_draft.snap",
+        "codex-rs/tui/src/app/worker_hud.rs",
+        "codex-rs/tui/src/app_event.rs",
+        "codex-rs/tui/src/bottom_pane/mod.rs",
+        "codex-rs/tui/src/bottom_pane/worker_hud.rs",
+        "codex-rs/tui/src/chatwidget.rs",
+        "codex-rs/tui/src/chatwidget/command_lifecycle.rs",
+        "codex-rs/tui/src/chatwidget/constructor.rs",
+        "codex-rs/tui/src/chatwidget/session_flow.rs",
+        "codex-rs/tui/src/chatwidget/shell_policy.rs",
+        "codex-rs/tui/src/chatwidget/tests.rs",
+        "codex-rs/tui/src/chatwidget/tests/shell_policy.rs",
+        "codex-rs/tui/src/thread_transcript/tools.rs",
+        "codex-rs/tui/src/thread_transcript/tools_tests.rs"
+      ],
+      "inherited_workspace_versions": 160,
+      "external_lock_packages": 1314,
+      "forward_check": true,
+      "reverse_check": true,
+      "exact_source_check": true,
+      "external_lock_packages_identical": true
+    },
+    "root_native_log": "/home/liupan/.codex/codex-plus/logs/7a98c2d8-43f9-4f4a-aaf3-b8dfe85fea0f.log",
+    "root_baseline_log": "/home/liupan/.codex/codex-plus/logs/19627c05-5e96-4a6a-8668-f21bf0a90955.log",
+    "root_tui_log": "/home/liupan/.codex/codex-plus/logs/a230c0d5-9187-4e4b-a2d8-fa67c70676f3.log",
+    "root_stock_log": "/home/liupan/.codex/codex-plus/logs/1b58e47a-2f72-47b7-9fed-87985c36c253.log"
+  },
+  "root_package_logs": {
+    "x86_64": "/home/liupan/.codex/codex-plus/logs/ba2f4def-17e4-42bf-9073-ae84716f6cd8.log",
+    "aarch64": "/home/liupan/.codex/codex-plus/logs/e9128f5c-58c4-4dbe-b485-6fdc269250c2.log"
+  },
+  "upstream_state_migrations": [
+    "0060_guardian_review_feedback.sql",
+    "0061_thread_read_state.sql"
+  ],
+  "plus_ledger_migration": false,
+  "initial_findings_resolved_before_freeze": [
+    "155 static workspace count missed five inherited path packages; corrected160 with1314 external records unchanged",
+    "ThreadListParams new excluded_thread_ids initializer set None",
+    "shell_policy module visibility restored pub(crate)",
+    "Disconnect stale-HUD snapshot updated to intended Plus rendering",
+    "Private PTY bare ESC coalesced with text as Alt; negotiated explicit CSI27u fixes fixture without weakening draft assertions"
+  ],
+  "limits": [
+    "x86 raw bwrap uid-map denial matches stock; gate exit1 retained; supported CLI readonly tests pass both",
+    "ARM policy0 unchanged; raw bwrap and supported CLI readonly tests pass",
+    "No full Rust workspace suite or older glibc qualification",
+    "Rollback tested private representative history/metadata/pending queue, not universal production rollback",
+    "Stock callback enqueue/ack ambiguity retained; no blind resends",
+    "No publish, merge, install, shared daemon settings or live registration/GLM changes"
+  ]
+}

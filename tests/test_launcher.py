@@ -102,6 +102,13 @@ class InstalledLauncherTests(unittest.TestCase):
         result = self.launch('park', '--help')
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn('--status', result.stdout)
+        result = self.launch('advisor', '--help')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('--brief', result.stdout)
+        self.env.pop('CODEX_THREAD_ID', None)
+        result = self.launch('advisor', '--brief', 'Installed advisor routing check.')
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn('root_required', result.stderr)
         parent = '00000000-0000-0000-0000-000000000001'
         result = self.launch('park', '--status', '--parent', parent)
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -110,6 +117,28 @@ class InstalledLauncherTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(sorted(path.relative_to(self.root) for path in self.root.rglob('*')),
                          inventory, 'Helpers and detached observers changed the installed package')
+
+    def test_helpers_ignore_cwd_package_without_changing_child_imports(self):
+        shutil.copytree(ROOT / 'codex_plus', self.root / 'codex_plus',
+                        ignore=shutil.ignore_patterns('__pycache__'))
+        cwd = Path(self.temp.name) / 'working directory'
+        decoy = cwd / 'codex_plus'
+        decoy.mkdir(parents=True)
+        (decoy / '__init__.py').write_text('raise RuntimeError("decoy package imported")\n')
+        (cwd / 'cwd_module.py').write_text('VALUE = "working directory import retained"\n')
+        self.env.pop('PYTHONSAFEPATH', None)
+        for helper, code in (('advisor', 0), ('park', 0), ('run', 2)):
+            with self.subTest(helper=helper):
+                result = subprocess.run([str(self.link), helper, '--help'], cwd=cwd,
+                                        env=self.env, capture_output=True, text=True, timeout=5)
+                self.assertEqual(result.returncode, code, result.stderr)
+                self.assertNotIn('decoy package imported', result.stderr)
+                self.assertIn('usage:', result.stdout + result.stderr)
+        result = subprocess.run([str(self.link), 'run', '--', sys.executable, '-c',
+                                 'import cwd_module; print(cwd_module.VALUE)'], cwd=cwd,
+                                env=self.env, capture_output=True, text=True, timeout=5)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('working directory import retained', result.stdout)
 
 
 if __name__ == '__main__':

@@ -1,0 +1,178 @@
+{
+  "release": "0.162.1-plus.0.1.0",
+  "plus_commit": "bb8af5ff64e13953e77969f62da16b9b2f3278a7",
+  "upstream": {
+    "commit": "092d3acd6bec3e3a14bdc7e7a2810ab628ab759d",
+    "tag": "rust-v0.162.1",
+    "version": "0.162.1"
+  },
+  "coordinator_protocol": 1,
+  "native_recompiled": false,
+  "native_reused_from": "qualified 0.0.4/plus.3 native outputs",
+  "frontend_patch_sha256": "1f9b93b34a9328874b59b52e29328ecf7b79a0b5580af825a45c804a36723405",
+  "build_glibc": "2.39",
+  "original_rust": "1.99.0",
+  "voice": false,
+  "handoff": {
+    "path": "docs/releases/0.162.1-plus.0.1.0/handoff.json",
+    "sha256": "904e25bbd862980304037cd9b63f339d6728b8754fe50b65bbc1f7b0a7a73da7",
+    "rollout": {
+      "daemon_restart": false,
+      "quiet_checkpoint": true,
+      "session_restart": "optional",
+      "agents_md": null,
+      "notes": "First protocol-1 installation from 0.0.4 requires a quiet checkpoint: hold new parks and let all helpers, armed parks and open callbacks drain. Do not use the historical force-stop handoff sidecar. Native CLI/HUD and stock daemon are unchanged. Later qualified transfers require a strictly higher Plus M.m.p version with matching coordinator protocol, upstream identity and target. Rollbacks always require a quiet checkpoint. Keep previous/in-use packages; helpers pin their package in cwd and --package-root argv."
+    }
+  },
+  "targets": {
+    "x86_64": {
+      "triple": "x86_64-unknown-linux-gnu",
+      "asset": "codex-plus-0.162.1-plus.0.1.0-x86_64-unknown-linux-gnu.tar.gz",
+      "sha256": "a2192e5f05e6343f359f1ec26c29de707cf9e74f72416602341069a3eb8f57ad",
+      "tree_sha256": "36a95fa6f13898680deeca95f6fce40af28b2325753613e1fb381f6a0c846b50",
+      "manifest_sha256": "2c72da58540b818962112f13d003c711e7a97b1cc3b0859de005114c93e2147f",
+      "archive": "/home/liupan/Aerius/codex-plus/.build/plus010-release/packages/codex-plus-0.162.1-plus.0.1.0-x86_64-unknown-linux-gnu.tar.gz",
+      "archive_bytes": 132142529,
+      "qualification_report": ".build/plus010-release/x86_64-unknown-linux-gnu/qualification-summary.json",
+      "qualification_report_sha256": "d4490b90bf5958a16a8e89960834a8d80256fa8cc039c6bc85d7f14e4137d34e",
+      "root_acceptance": {
+        "passed": true,
+        "archive_sha256": "a2192e5f05e6343f359f1ec26c29de707cf9e74f72416602341069a3eb8f57ad",
+        "packaged_modules": {
+          "codex_plus.background": "/home/liupan/Aerius/codex-plus/.build/plus010-release/root-x86/extracted/codex-plus-0.162.1-plus.0.1.0-x86_64-unknown-linux-gnu/codex_plus/background.py",
+          "codex_plus.evidence": "/home/liupan/Aerius/codex-plus/.build/plus010-release/root-x86/extracted/codex-plus-0.162.1-plus.0.1.0-x86_64-unknown-linux-gnu/codex_plus/evidence.py",
+          "codex_plus.ledger": "/home/liupan/Aerius/codex-plus/.build/plus010-release/root-x86/extracted/codex-plus-0.162.1-plus.0.1.0-x86_64-unknown-linux-gnu/codex_plus/ledger.py",
+          "codex_plus.rpc": "/home/liupan/Aerius/codex-plus/.build/plus010-release/root-x86/extracted/codex-plus-0.162.1-plus.0.1.0-x86_64-unknown-linux-gnu/codex_plus/rpc.py",
+          "codex_plus.runner": "/home/liupan/Aerius/codex-plus/.build/plus010-release/root-x86/extracted/codex-plus-0.162.1-plus.0.1.0-x86_64-unknown-linux-gnu/codex_plus/runner.py",
+          "codex_plus.upgrade": "/home/liupan/Aerius/codex-plus/.build/plus010-release/root-x86/extracted/codex-plus-0.162.1-plus.0.1.0-x86_64-unknown-linux-gnu/codex_plus/upgrade.py"
+        },
+        "wrapper": {
+          "native_path_args_stdout_exit_preserved": true,
+          "runner_uses_home_local_bin_codex_wrapper": true,
+          "daemon_update_test_used_only_stubs": true
+        },
+        "cooperative_scenarios": [
+          "after_enqueue",
+          "after_start",
+          "before_enqueue",
+          "clean-complete",
+          "completed-gap",
+          "crash-after-enqueue",
+          "crash-before-enqueue",
+          "rapid-A-B-C",
+          "running"
+        ],
+        "coordinator_protocol": 1,
+        "tree_sha256": "36a95fa6f13898680deeca95f6fce40af28b2325753613e1fb381f6a0c846b50",
+        "package_tree_unchanged": true,
+        "official_binary_unchanged": true,
+        "official_sha256": "628e35487d888a28f0427fc37501da529dd3d81fcbad7a2c3421c1e8670d92e1"
+      },
+      "coordinator_units": {
+        "upgrade": 27,
+        "lifecycle": 118,
+        "evidence_reader": 18
+      },
+      "native_terminal_stages": 18,
+      "shell_policy_cases": 8,
+      "stock_park": true,
+      "interruption_cases": 11,
+      "recovery_cases": 7,
+      "cooperative_scenarios": 9,
+      "native_hashes": {
+        "codex": "5f6baceb5a8caffacb4d17d7e69b58cf901ed4a5000387fc06ba70bf953cc556",
+        "codex-code-mode-host": "2f7cd4d1f94dd3bc7d669e6a533051469219b3f7ca5b51b77cbc1e94ad3004ea",
+        "bwrap": "96415554f7f6d03416b47121f2f01bff2b41028440f6f0ddf5d9256ba86c884b"
+      },
+      "package_gate_exit": 1,
+      "package_gates_passed": 8,
+      "launcher_tests": 6,
+      "packaging_tests": 13
+    },
+    "aarch64": {
+      "triple": "aarch64-unknown-linux-gnu",
+      "asset": "codex-plus-0.162.1-plus.0.1.0-aarch64-unknown-linux-gnu.tar.gz",
+      "sha256": "3cd86a28e22f2df00210c591ca084a6786d878d4606a5e1fe0bd623e9fdd77ce",
+      "tree_sha256": "24cb2a885ce96fde32cb7579a77329f318e49287ae747439100e4e6547bb3bbf",
+      "manifest_sha256": "4103aa54ce8742efa449dd306d17c2e2d242b364c53cb6df04012c0d6a46ccc8",
+      "archive": "/data/liupan/codex-plus-build/plus010/packages/codex-plus-0.162.1-plus.0.1.0-aarch64-unknown-linux-gnu.tar.gz",
+      "archive_bytes": 124651631,
+      "qualification_report": ".build/plus010-release/aarch64-unknown-linux-gnu/evidence/qualification-summary.json",
+      "qualification_report_sha256": "7816e474b192db0f239306c2b2a25421c9381dabec2d80825ed0b91043087dec",
+      "root_acceptance": {
+        "passed": true,
+        "archive_sha256": "3cd86a28e22f2df00210c591ca084a6786d878d4606a5e1fe0bd623e9fdd77ce",
+        "packaged_modules": {
+          "codex_plus.background": "/data/liupan/codex-plus-build/plus010/root-acceptance/extracted/codex-plus-0.162.1-plus.0.1.0-aarch64-unknown-linux-gnu/codex_plus/background.py",
+          "codex_plus.evidence": "/data/liupan/codex-plus-build/plus010/root-acceptance/extracted/codex-plus-0.162.1-plus.0.1.0-aarch64-unknown-linux-gnu/codex_plus/evidence.py",
+          "codex_plus.ledger": "/data/liupan/codex-plus-build/plus010/root-acceptance/extracted/codex-plus-0.162.1-plus.0.1.0-aarch64-unknown-linux-gnu/codex_plus/ledger.py",
+          "codex_plus.rpc": "/data/liupan/codex-plus-build/plus010/root-acceptance/extracted/codex-plus-0.162.1-plus.0.1.0-aarch64-unknown-linux-gnu/codex_plus/rpc.py",
+          "codex_plus.runner": "/data/liupan/codex-plus-build/plus010/root-acceptance/extracted/codex-plus-0.162.1-plus.0.1.0-aarch64-unknown-linux-gnu/codex_plus/runner.py",
+          "codex_plus.upgrade": "/data/liupan/codex-plus-build/plus010/root-acceptance/extracted/codex-plus-0.162.1-plus.0.1.0-aarch64-unknown-linux-gnu/codex_plus/upgrade.py"
+        },
+        "wrapper": {
+          "native_path_args_stdout_exit_preserved": true,
+          "runner_uses_home_local_bin_codex_wrapper": true,
+          "daemon_update_test_used_only_stubs": true
+        },
+        "cooperative_scenarios": [
+          "after_enqueue",
+          "after_start",
+          "before_enqueue",
+          "clean-complete",
+          "completed-gap",
+          "crash-after-enqueue",
+          "crash-before-enqueue",
+          "rapid-A-B-C",
+          "running"
+        ],
+        "coordinator_protocol": 1,
+        "tree_sha256": "24cb2a885ce96fde32cb7579a77329f318e49287ae747439100e4e6547bb3bbf",
+        "package_tree_unchanged": true,
+        "official_binary_unchanged": true,
+        "official_sha256": "071cbe8d821cf1b02b6d8ba6c8b7991b228fcb8519dcb68a37d31222bb8cabe5"
+      },
+      "coordinator_units": {
+        "upgrade": 27,
+        "lifecycle": 118,
+        "evidence_reader": 18
+      },
+      "native_terminal_stages": 18,
+      "shell_policy_cases": 8,
+      "stock_park": true,
+      "interruption_cases": 11,
+      "recovery_cases": 7,
+      "cooperative_scenarios": 9,
+      "native_hashes": {
+        "bin/codex": "0d4844cced460750567495514ad2415ebb810078a8cbe2d6c5845f3b5f98f1ca",
+        "bin/codex-code-mode-host": "6f14273bbb9d5dc8eb98e3db22a9966c76a44fa503c0c5506ba693628d10c794",
+        "codex-resources/bwrap": "cb1d4fddb17d6d623a5ceb235fa76f58278c86e17fdd90257458c5846f7bdfdc",
+        "codex-path/rg": "e36d0eb52e70696bdf1781392722e05a21bb91d3b7b762ef5ec20e5df2ec687b",
+        "codex-resources/zsh/bin/zsh": "58e7ca378584d915a41cb1df347830f608f72f4fdd726d256ff2c0341de18d2d"
+      },
+      "package_gate_exit": 0,
+      "package_gates_passed": 9,
+      "terminal_fixture_tests": 11,
+      "normal_completion": true
+    }
+  },
+  "root_logs": {
+    "x86": "/home/liupan/.codex/codex-plus/logs/3e1a0b8e-6e38-422a-888f-47c3e9dc6bb0.log",
+    "arm": "/home/liupan/.codex/codex-plus/logs/df56c436-09ed-4f00-a2f6-1b2b64bd7eda.log"
+  },
+  "harness_corrections": [
+    "Private test_upgrade fixture package context independent of imported package path; original failure retained and corrected overlays used with packaged imports.",
+    "Short b- normal-fixture prefix on ARM stays below Unix socket limit; corrected overlay exactly matches repository.",
+    "Cooperative scenario count distinguishes seven test methods/nine real scenarios plus one sealing method.",
+    "Primary scratch acceptance reads release identity from manifest bytes, not the integrity-check summary; initial pre-runtime error retained."
+  ],
+  "limits": [
+    "x86 raw bwrap UID-map denied identically to stock; raw gate exit1 retained, supported CLI readonly sandbox passed for both.",
+    "ARM raw bwrap and supported readonly sandboxes pass under unchanged user policy0.",
+    "No native Rust recompilation; full upstream source suite and older glibc not tested.",
+    "First protocol-aware rollout requires quiet bootstrap from0.0.4; every rollback quiet.",
+    "Cooperative tests seal copies of extracted helper source in private homes; no live legacy upgrade claim.",
+    "Stock delivery ambiguity remains unknown without positive evidence; no blind resend.",
+    "Build-only authorization; no publication, merge, installed package/wrapper/daemon/GLM changes."
+  ]
+}

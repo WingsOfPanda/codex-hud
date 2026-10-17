@@ -8,7 +8,7 @@ copying `.build/codex` alone is not a complete release.
 
 `UPSTREAM_VERSION` and `PLUS_VERSION` in `scripts/package-release.py` are
 independent. The package name combines them as `<upstream>-plus.<Plus version>`,
-for example `0.162.1-plus.0.0.4`. Preserve the Plus version across upstream-only
+for example `0.163.0-plus.0.1.0`. Preserve the Plus version across upstream-only
 updates; increment its patch component for Plus fixes and its minor component
 for Plus features. Every new combination still needs qualified target packages.
 Existing published `plus.N` releases retain their original identities.
@@ -69,6 +69,7 @@ The native directory must contain `codex`, `codex-code-mode-host`, and `bwrap`.
 Repeat with the ARM target and its native binaries. The packager preserves the
 canonical `bin/`, `codex-path/`, and `codex-resources/` layout. Codex voice is
 deliberately omitted and declared in the manifest and [release notes](release-notes.md).
+The 0.163.0 package contains ripgrep and bwrap; upstream removed bundled zsh.
 The Plus manifest is separate from upstream's `codex-package.json`, whose version
 remains the upstream version.
 
@@ -94,7 +95,70 @@ providers. Run ARM acceptance on 910b itself. Record unavailable host facilities
 as explicit qualification limits; do not change host security policy to make a
 test pass.
 
-Hand fleet-config both archives, archive checksums, manifests, source revision,
-release notes, and per-target acceptance results. Fleet-config owns deployment,
-actual AP/PATH validation on each box, official-daemon maintenance, and rollback.
-Publishing or installing a release is separate from building its candidates.
+From the release after `0.162.1-plus.0.0.4`, attach `handoff.json` alongside both
+qualified archives and their `.sha256` files. Use the following schema, matching
+fleet-config's `codex-plus/RELEASING.md`, section 2, step 3:
+
+```json
+{
+  "release": "<tag>",
+  "plus_commit": "<the manifest's plus_commit>",
+  "coordinator_protocol": 1,
+  "upstream": {"version": "<X>", "tag": "rust-v<X>", "commit": "<sha>"},
+  "note": "docs/releases/<release>.md",
+  "targets": {
+    "x86_64": {"triple": "x86_64-unknown-linux-gnu", "asset": "<archive file name>", "sha256": "<hex>", "tree_sha256": "<hex>", "manifest_sha256": "<hex>"},
+    "aarch64": {"triple": "aarch64-unknown-linux-gnu", "asset": "<archive file name>", "sha256": "<hex>", "tree_sha256": "<hex>", "manifest_sha256": "<hex>"}
+  },
+  "rollout": {
+    "daemon_restart": false,
+    "quiet_checkpoint": true,
+    "session_restart": "none | optional | required",
+    "agents_md": null,
+    "notes": "<anything else the rollout must do or watch>"
+  }
+}
+```
+
+Fill identity and hash fields from the qualified manifests and archives, and
+verify archive hashes against GitHub's asset digests before handing over. The
+release tag may point to a later companion-note commit than `plus_commit`.
+Copy `coordinator_protocol` exactly from both target manifests; the values must
+agree. `manifest_sha256` hashes the exact bytes of each package's
+`codex-plus.json`, including its identity fields. Fleet-config can pin that hash
+and verify the installed manifest as well as its payload tree.
+Choose exactly one `session_restart` value. Set `daemon_restart` for an upstream
+bump; assess it explicitly for other changes. With `quiet_checkpoint: true`, a
+box with live park helpers waits until no helper, armed park, or open callback
+remains. `agents_md` is the exact replacement park/shell Markdown block when it
+changes, otherwise `null`. Put additional rollout requirements in `notes`, and
+keep test results, failures, skipped checks, and accepted limits in the companion
+note referenced by `note`.
+
+When replacing the global block, use the current approved advisor section from
+[advisor.md](advisor.md) and compare the complete replacement with fleet-config's
+live policy. Preserve its foreground wait wording; copying an older release's
+`agents_md` would restore the superseded background default. Published handoffs
+remain immutable.
+
+For cooperative upgrades, manifests advertise `coordinator_protocol: 1`.
+Set `quiet_checkpoint: false` only when the installed observers and candidate
+support the same protocol, upstream identity and target, the candidate's Plus
+`M.m.p` version is strictly higher, and cooperative upgrade/recovery acceptance
+has passed. Compare numeric version components, not release-name strings.
+Every rollback requires `quiet_checkpoint: true`; live observers refuse a lower
+or equal Plus version in another package directory and keep monitoring with a
+warning. The first rollout from `0.0.4` or older
+still requires `quiet_checkpoint: true`; incompatible protocol or upstream
+changes also require quiet coordination. Keep previous/in-use immutable package
+directories while any process still references them. The installer switches
+`current`; it does not signal observers. A compatible helper upgrade follows the
+link independently of the TUI. Set `session_restart` according to the actual
+client change, rather than using a restart as an observer-handoff command.
+
+Once the release and its handoff asset are verified, message fleet-config only
+the tag. Fleet-config runs `stage.py pin` to validate the asset digests and stage
+`pins.next.json`, then `stage.py test` in throwaway homes on x86 and ARM. It owns
+the rollout approval, deployment, AP/PATH checks, official-daemon maintenance,
+and rollback. Build, publish, and merge retain their separate user gates. Do not
+retrofit this asset into already published releases as part of this procedure.

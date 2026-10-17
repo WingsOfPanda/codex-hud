@@ -18,7 +18,7 @@ import tempfile
 import time
 
 from fixtures.shell_policy_provider import ShellPolicyProvider
-from native_smoke import Terminal, assert_compact_hud, wait
+from native_smoke import Terminal, advisor_rows, assert_compact_hud, wait
 from test_background_integration import (REPO, RecordingClient, coordinator_state, health_state,
                                          stop, stop_observers, wait as wait_server)
 
@@ -137,7 +137,8 @@ def run_tui_case(binary, root, evidence, case):
                 os.write(terminal.master, b'policy-editable-draft')
                 wait([terminal], lambda: 'policy-editable-draft' in terminal.text and 'Background ·' in terminal.text,
                      'quiet shell prevented composer edits')
-                assert_compact_hud(terminal.text, rows=1, idle=False)
+                assert advisor_rows(terminal.text) == ['Advisor · GPT-6-Astra (xhigh) · ready · 0 calls'], terminal.text
+                assert_compact_hud(terminal.text, rows=2, idle=False)
                 (evidence / f'{case}-running-screen.txt').write_text(terminal.text + '\n')
             (workspace / 'release').touch()
         provider.final_gate.set()
@@ -291,7 +292,8 @@ def run_parallel_roots(binary, root, evidence):
             os.write(terminal.master, f'parallel-draft-{index}'.encode())
         wait(terminals, lambda: all(f'parallel-draft-{index}' in terminal.text
              for index, terminal in enumerate(terminals)), 'parallel policy roots blocked composers')
-        assert_compact_hud(background.text, rows=1, idle=False)
+        assert advisor_rows(background.text) == ['Advisor · GPT-6-Astra (xhigh) · ready · 0 calls'], background.text
+        assert_compact_hud(background.text, rows=2, idle=False)
         (fixtures[0][1] / 'release').touch()
         fixtures[0][2].final_gate.set()
         wait(terminals, lambda: 'Shell completed (exit 0)' in background.text and 'Background ·' not in background.text,

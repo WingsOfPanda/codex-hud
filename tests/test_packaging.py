@@ -42,15 +42,16 @@ class PackageIntegrityTests(unittest.TestCase):
             path.chmod(0o755)
         bwrap_hash = hashlib.sha256(elf(62)).hexdigest().encode()
         (self.package / 'bin/codex').write_bytes(elf(62) + bwrap_hash)
-        metadata = {'layoutVersion': 1, 'version': '0.162.1',
+        metadata = {'layoutVersion': 1, 'version': '0.163.0',
                     'target': 'x86_64-unknown-linux-gnu', 'variant': 'codex',
                     'entrypoint': 'bin/codex', 'resourcesDir': 'codex-resources',
                     'pathDir': 'codex-path'}
         (self.package / 'codex-package.json').write_text(json.dumps(metadata))
         self.manifest = {
             'schema_version': 1, 'release': package_release.RELEASE, 'plus_commit': 'a' * 40,
+            'coordinator_protocol': package_release.COORDINATOR_PROTOCOL,
             'frontend_patch_sha256': 'b' * 64, 'target': 'x86_64-unknown-linux-gnu',
-            'upstream': {'version': '0.162.1', 'tag': 'rust-v0.162.1',
+            'upstream': {'version': '0.163.0', 'tag': 'rust-v0.163.0',
                          'commit': package_release.UPSTREAM_COMMIT},
             'build': {'glibc': '2.39', 'rust': '1.99.0', 'cargo_profile': 'release'},
             'voice': False,
@@ -71,7 +72,36 @@ class PackageIntegrityTests(unittest.TestCase):
         return package_release.verify_package(self.package)
 
     def test_valid_package_and_declared_hash_recipe(self):
+        from codex_plus.upgrade import COORDINATOR_PROTOCOL
+        self.assertEqual(package_release.COORDINATOR_PROTOCOL, COORDINATOR_PROTOCOL)
+        self.assertFalse((self.package / 'codex-resources/zsh').exists())
         self.assertEqual(self.verify()['tree_sha256'], self.manifest['tree_sha256'])
+
+    def test_coordinator_protocol_must_be_explicit_and_supported(self):
+        for value in (None, True, 0, 2, '1'):
+            with self.subTest(protocol=value):
+                self.manifest['coordinator_protocol'] = value
+                self.save_manifest()
+                with self.assertRaisesRegex(ValueError, 'coordinator compatibility'):
+                    self.verify()
+
+    def test_advisor_is_required_in_package_and_source_inventory(self):
+        self.assertIn('codex_plus/advisor.py', package_release.HELPERS)
+        self.assertIn('codex_plus/advisor.py', package_release.SOURCE_FILES)
+        self.assertIn('docs/advisor.md', package_release.DOCS)
+        (self.package / 'codex_plus/advisor.py').unlink()
+        self.seal()
+        with self.assertRaisesRegex(ValueError, 'Missing regular package file: codex_plus/advisor.py'):
+            self.verify()
+
+    def test_protocol_one_upgrade_accepts_advisor_helper_inventory(self):
+        from codex_plus.upgrade import select_package
+        old = self.package.parent / 'previous'
+        old.mkdir()
+        previous = dict(self.manifest, release='0.163.0-plus.0.1.0')
+        (old / 'codex-plus.json').write_text(json.dumps(previous))
+        (self.package.parent / 'current').symlink_to(self.package.name)
+        self.assertEqual(select_package(old), self.package)
 
     def test_corruption_missing_and_additional_files_rejected(self):
         for mutation in ('corrupt', 'missing', 'extra', 'mode'):
@@ -93,7 +123,7 @@ class PackageIntegrityTests(unittest.TestCase):
                 (self.package / 'unexpected').unlink(missing_ok=True)
 
     def test_missing_required_resource_rejected_even_when_resealed(self):
-        (self.package / 'codex-resources/zsh/bin/zsh').unlink()
+        (self.package / 'codex-resources/bwrap').unlink()
         self.seal()
         with self.assertRaisesRegex(ValueError, 'Missing regular package file'):
             self.verify()

@@ -223,9 +223,92 @@ old-schema migration fixtures may construct legacy tables directly.
 
 The [glossary](../GLOSSARY.md) defines parks, watched jobs, and callbacks. Pending
 interruption gates and cancellation provenance use additive coordinator SQLite
-columns; no native daemon migration or rebuild is required. Already running
-observers keep their old helper code. Deployment must account for them: older
-helpers do not enforce the new gates, even if they can open the expanded schema.
+columns; no native daemon migration or rebuild is required.
+
+## Cooperative package upgrades
+
+Protocol-aware packaged coordinators follow the installer's adjacent `current`
+symlink. The installer validates and stages an immutable package, then switches
+that link. An observer finishes its current cycle, including any callback RPC
+and its recorded result, before yielding. Its supervisor selects the current
+compatible package and restarts itself from that concrete directory. No watched
+job is stopped, no callback is recreated, and no daemon restart or model polling
+is involved. The TUI can be exited and resumed normally; it does not perform the
+observer transfer and need not stay open for it.
+
+The package manifest declares `coordinator_protocol: 1`. Automatic transfer
+requires the same protocol, upstream identity, and CPU target on both sides.
+The target must also have a strictly higher Plus `M.m.p` version, compared as
+three numeric components. A lower or equal version in a different directory,
+or a malformed release name, is refused with the existing upgrade warning.
+Selecting the helper's own directory remains a no-op. Rollbacks always use a
+quiet checkpoint; protocol compatibility does not qualify a live downgrade.
+Protocol compatibility promises that either helper can safely use the shared
+ledger, including callback identities, frozen messages and cancellation states.
+An incompatible ledger or delivery change requires a new protocol and a quiet
+rollout; an additive schema change alone does not establish compatibility.
+
+Both supervisor and observer contenders recheck the selected package after
+acquiring their process locks and before opening/migrating the ledger. A waiting
+old contender therefore cannot resume old observation after a compatible switch.
+The candidate's helper inventory is validated before execution. An invalid or
+incompatible candidate leaves the working observer running and surfaces an
+upgrade warning through watcher health. Development checkouts without a package
+manifest and adjacent `current` link stay pinned to their source checkout.
+
+Helpers keep their immutable source directory in cwd and in an internal
+`--package-root` process argument. The argument retains the old package during
+the small cwd-to-exec interval, so the installer's existing exe/cwd/cmdline scan
+cannot remove a still-needed fallback. Successful exec updates both paths and
+sets `PYTHONPATH` to the selected package alone; failed exec restores the old
+cwd and continues monitoring there with a warning. The same failed immutable
+target is suppressed for that process lifetime; a different selected target or
+a new process can retry. No fallback uses `previous` or another stale release.
+
+Recovery semantics are unchanged: work positively observed still running by the
+new observer can later produce LIVE COMPLETION. Completion discovered during
+the transfer gap produces REPORT ONLY. Frozen callbacks retain their identity
+and wording; an unresolved stock enqueue/ack gap remains uncertain and is not
+blindly resent. A process crash during transfer follows ordinary recovery; a
+cooperative transfer is not counted as an observer crash.
+
+**Bootstrap limitation:** released `0.162.1-plus.0.0.4` and earlier observers do
+not implement this protocol. The first rollout containing it still needs a
+quiet checkpoint: no helpers, armed parks, or open callbacks, with new parks
+held by the owner. Once protocol-aware helpers are installed, later compatible
+updates can proceed while watched jobs run. Changing the symlink or restarting
+the TUI cannot teach an already-running legacy observer this behavior.
+
+Fleet-config owns the package switch and rollout checks. This feature does not
+download releases, enable automatic OpenAI updates, or use the historical
+`scripts/handoff-observer.py` force-stop procedure.
+
+Installer contract: preserve the existing directory layout and atomic `current`
+switch after package verification. Process names stay
+`python3 -m codex_plus.background supervise|observe --parent UUID`, with the
+additional internal `--package-root /absolute/package/` argument. The trailing
+slash makes the package visible to the existing cmdline retention check. The
+ledger remains `$CODEX_HOME/codex-plus/background.sqlite`; table names and
+callback states are unchanged. The existing quiet check still applies to the
+bootstrap and incompatible updates. No wrapper or installer changes are needed
+for the transfer itself.
+
+Run the focused protocol checks and real stock-daemon acceptance in private
+homes before qualifying a release:
+
+```sh
+python3 -m unittest discover -s tests -p test_upgrade.py -v
+COOPERATIVE_OFFICIAL_DAEMON=/absolute/path/to/official/codex \
+COOPERATIVE_EVIDENCE=.build/cooperative-upgrade \
+python3 tests/test_cooperative_upgrade_integration.py -v
+```
+
+The integration fixture seals distinct copies of the current helper source;
+it does not establish compatibility with legacy observers or replace native
+per-target release qualification. It exercises real shell jobs, callback
+consumption, crash recovery, competing supervisors, rapid package selection,
+and preserved daemon/ledger identities. Native-worker continuity and explicit
+queue/start acknowledgement boundaries also have focused coordinator tests.
 
 ## Verification
 

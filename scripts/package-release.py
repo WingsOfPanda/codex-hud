@@ -28,29 +28,28 @@ from urllib.request import urlopen
 
 
 ROOT = Path(__file__).resolve().parents[1]
-UPSTREAM_COMMIT = '092d3acd6bec3e3a14bdc7e7a2810ab628ab759d'
-UPSTREAM_VERSION = '0.162.1'
-PLUS_VERSION = '0.0.4'
+UPSTREAM_COMMIT = '83086188ae0614bd882818ff1aa23f3194962012'
+UPSTREAM_VERSION = '0.163.0'
+PLUS_VERSION = '0.2.0'
 RELEASE = f'{UPSTREAM_VERSION}-plus.{PLUS_VERSION}'
-PATCH = 'patches/codex-0.162.1-worker-hud.patch'
+COORDINATOR_PROTOCOL = 1
+PATCH = 'patches/codex-0.163.0-worker-hud.patch'
 TARGETS = {'x86_64-unknown-linux-gnu': 62, 'aarch64-unknown-linux-gnu': 183}
 HELPERS = tuple('codex_plus/' + name for name in
-                ('__init__.py', 'background.py', 'evidence.py', 'ledger.py', 'rpc.py', 'runner.py'))
+                ('__init__.py', 'advisor.py', 'background.py', 'evidence.py', 'ledger.py', 'rpc.py', 'runner.py', 'upgrade.py'))
 DOCS = ('README.md', 'GLOSSARY.md', 'docs/background-work.md',
         'docs/shell-workflow.md', 'docs/verification.md', 'docs/release-notes.md',
-        'docs/releasing.md')
+        'docs/releasing.md', 'docs/advisor.md')
 SOURCE_FILES = HELPERS + DOCS + ('bin/codex-plus', 'LICENSE', PATCH,
                                'scripts/package-release.py', 'scripts/build-release.sh')
 EXECUTABLES = ('bin/codex', 'bin/codex-code-mode-host', 'codex-resources/bwrap',
-               'codex-resources/zsh/bin/zsh', 'codex-path/rg')
+               'codex-path/rg')
 # Licenses are pinned independently because the binary archives omit them.
 LICENSE_DOWNLOADS = {
     'ripgrep-LICENSE-MIT': ('BurntSushi/ripgrep/15.2.0/LICENSE-MIT',
                           '0f96a83840e146e43c0ec96a22ec1f392e0680e6c1226e6f3ba87e0740af850f'),
     'ripgrep-LICENSE-UNLICENSE': ('BurntSushi/ripgrep/15.2.0/UNLICENSE',
                                 '7e12e5df4bae12cb21581ba157ced20e1986a0508dd10d0e8a4ab9a4cf94e85c'),
-    'zsh-LICENCE': ('zsh-users/zsh/77045ef899e53b9598bebc5a41db93a548a40ca6/LICENCE',
-                    'd06fdf3ef9b1ec69d6b9e170b0a9516fbad3523261ff1668bde3bfea6e0ef5f5'),
     'rusty-v8-LICENSE': ('denoland/rusty_v8/v150.4.0/LICENSE',
                          '1c6356fb751d45f0c53093ebf8a7f5e580e802f51999178e19d60f3ec39e147d'),
     'v8-LICENSE': ('v8/v8/15.0.245.2/LICENSE',
@@ -136,9 +135,12 @@ def verify_package(package):
     manifest = json.loads(manifest_path.read_text())
     if manifest.get('voice') is not False:
         raise ValueError('Manifest must explicitly declare voice=false')
+    if (type(manifest.get('coordinator_protocol')) is not int or
+            manifest['coordinator_protocol'] != COORDINATOR_PROTOCOL):
+        raise ValueError('Invalid coordinator compatibility protocol')
     if (manifest.get('schema_version') != 1 or manifest.get('release') != RELEASE or
             manifest.get('target') not in TARGETS or
-            manifest.get('upstream') != {'version': UPSTREAM_VERSION, 'tag': 'rust-v0.162.1',
+            manifest.get('upstream') != {'version': UPSTREAM_VERSION, 'tag': 'rust-v0.163.0',
                                           'commit': UPSTREAM_COMMIT}):
         raise ValueError('Invalid release identity')
     if not re.fullmatch(r'[0-9a-f]{40}', manifest.get('plus_commit', '')):
@@ -228,7 +230,7 @@ def resource_provenance(source, target):
     from codex_package.dotslash import artifact_for_target
     from codex_package.targets import TARGET_SPECS
     result = {}
-    for name in ('rg', 'codex-zsh'):
+    for name in ('rg',):
         relative = f'scripts/codex_package/{name}'
         artifact = artifact_for_target(TARGET_SPECS[target], source / relative,
                                        artifact_label=name)
@@ -297,7 +299,8 @@ def build(args):
             (stage / name).chmod(0o755)
         manifest = {
             'schema_version': 1, 'release': RELEASE, 'plus_commit': args.plus_commit,
-            'upstream': {'version': UPSTREAM_VERSION, 'tag': 'rust-v0.162.1',
+            'coordinator_protocol': COORDINATOR_PROTOCOL,
+            'upstream': {'version': UPSTREAM_VERSION, 'tag': 'rust-v0.163.0',
                          'commit': UPSTREAM_COMMIT},
             'frontend_patch_sha256': sha256(ROOT / PATCH), 'target': args.target,
             'build': {'glibc': args.build_glibc, 'rust': '1.99.0', 'cargo_profile': 'release'},
