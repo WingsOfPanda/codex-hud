@@ -89,6 +89,20 @@ adds no model requests. Source reconstruction and unchanged backend/external loc
 dependencies passed. Optimized/ARM packages and fleet wrapper/global-policy
 deployment remain separate work; this is not release qualification.
 
+### Foreground advisor workflow
+
+```sh
+python3 tests/test_advisor_foreground_integration.py OFFICIAL_BINARY --evidence EVIDENCE
+```
+
+This uses the exact [documented wait cell](advisor.md), replacing only its command
+with private fixture paths. A loopback advisor is held for 65 seconds. The root
+must remain in progress with one model request while waiting, receive the result
+on its second request, and create no park, queued callback or surviving terminal.
+Advisor status must move from running to done with the selected Astra at xhigh.
+The fixture verifies the long outer-yield request over 65 seconds; it is not a
+27-minute endurance test. See [advisor-foreground.json](evidence/advisor-foreground.json).
+
 ## Historical 0.162.1 verification
 
 The following sections record work against commit

@@ -12,12 +12,14 @@ stays unchanged. Fleet-config owns installation and the shared agent policy.
 | Finite, noninteractive; duration uncertain or expected short | `auto`: request a 2,000 ms initial yield |
 | Known long noninteractive build, test, download, or similar job | `background`: request a short initial yield, such as 250 ms |
 | Explicitly requested foreground noninteractive command | `foreground` |
+| Advisor advice needed before the next decision | `foreground`; follow the [advisor wait](advisor.md) and keep the turn open until its result |
 | Needs live input, or cannot safely be classified | Ordinary visible execution; no managed runner |
 | Persistent service | Start appropriately, then check readiness with a finite command; do not wait for service termination |
 
 An `auto` command that finishes within two seconds stays foreground. A longer one
-has quiet progress in the HUD. A dependency on its result does not make a long
-command foreground: do independent work, or register it and end the turn.
+has quiet progress in the HUD. Decision-gating advisor consultations use the
+foreground rule above. For other long commands, do independent work or register
+the command and end the turn, even when later work needs its result.
 An explicit user instruction overrides this default. Never infer interactivity
 from a command name or from the absence of output.
 

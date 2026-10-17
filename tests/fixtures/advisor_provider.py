@@ -11,7 +11,7 @@ RESULT = {'verdict': 'revise', 'summary': 'The sandbox denied the attempted writ
 
 
 class AdvisorProvider:
-    def __init__(self, command):
+    def __init__(self, command, hold_timeout=20):
         self.command, self.mode = command, 'success'
         self.requests = []
         self.offset = 0
@@ -31,7 +31,7 @@ class AdvisorProvider:
                     return
                 if fixture.mode == 'held':
                     fixture.entered.set()
-                    fixture.release.wait(20)
+                    fixture.release.wait(hold_timeout)
                 if number == 1 and fixture.mode == 'success':
                     item = {'type': 'function_call', 'call_id': 'read-only-probe', 'name': 'exec_command',
                             'arguments': json.dumps({'cmd': fixture.command, 'yield_time_ms': 1000,
