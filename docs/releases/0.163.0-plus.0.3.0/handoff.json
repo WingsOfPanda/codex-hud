@@ -1,0 +1,34 @@
+{
+  "release": "0.163.0-plus.0.3.0",
+  "plus_commit": "fc9595c3e26a75cda46b839244978c556a0d19f4",
+  "coordinator_protocol": 2,
+  "upstream": {
+    "version": "0.163.0",
+    "tag": "rust-v0.163.0",
+    "commit": "83086188ae0614bd882818ff1aa23f3194962012"
+  },
+  "note": "docs/releases/0.163.0-plus.0.3.0.md",
+  "targets": {
+    "x86_64": {
+      "triple": "x86_64-unknown-linux-gnu",
+      "asset": "codex-plus-0.163.0-plus.0.3.0-x86_64-unknown-linux-gnu.tar.gz",
+      "sha256": "ddb2b9836689225fe8a2366ca3e9fad10e3fc566c147ee95b9674fb1da32f2db",
+      "tree_sha256": "243cbf24b4871caf84690c9968e0145b6cadfc2f17ada98cc9b0f982ac305f2d",
+      "manifest_sha256": "f9fc5c0861cfaa251aeed736b0bc7d203ef4cb74e3dd727a05812c2dd10b3a58"
+    },
+    "aarch64": {
+      "triple": "aarch64-unknown-linux-gnu",
+      "asset": "codex-plus-0.163.0-plus.0.3.0-aarch64-unknown-linux-gnu.tar.gz",
+      "sha256": "d4b4641af0eba957629f83dffc4398518b1f741b5200fb621f0f890dd260ced4",
+      "tree_sha256": "807f75968542c02510043958c04540ca2192ee34d38707f071e5430b25df5cb0",
+      "manifest_sha256": "bc6f4dc09e1d4fe049a4ee999cb805aab8af40dfffc3bea9adc73b49323f5ead"
+    }
+  },
+  "rollout": {
+    "daemon_restart": false,
+    "quiet_checkpoint": true,
+    "session_restart": "required",
+    "agents_md": null,
+    "notes": "Protocol-1 Python to protocol-2 Rust bootstrap: pause new parks and reach zero Python/native helpers, armed parks and open callbacks without cancelling or resending pending work to force a checkpoint. Fleet quiet/helpers scans must recognize native codex-plus-runtime roles and launcher prefix --package-root as reviewed. Preserve ledger and explicitly retain the last qualified Python 0.163.0-plus.0.2.0 package and interpreter beyond ordinary previous retention until rollback is retired. Rollbacks always require quiet checkpoints. Native sessions exit and codex resume for advisor transcript UI and removed passive navigation hints; shortcuts remain active and the activity strip stays at most three rows. Existing stock CLI/shared daemon remain 0.163.0; use codex-stock for maintenance. Wrapper dispatch and global park/shell/advisor syntax are unchanged. No system Python removal or automatic updates."
+  }
+}

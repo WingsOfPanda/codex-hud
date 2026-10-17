@@ -18,6 +18,10 @@ The git pointer is captured at the start; subsequent inspection reads the live
 repository, which may change during the consultation. It is not an immutable
 snapshot of the full working tree.
 
+From Plus 0.3 the launcher uses the native Rust helper. Development requires
+`./scripts/build-runtime.sh`; installed consultations require no Python. The
+advisor still launches the package's native Codex in its read-only sandbox.
+
 Keep a consultation **foreground by default** when its result is needed for the
 next decision. Mark its managed shell command `foreground` and keep the root turn
 open in one bounded Code Mode cell until the result or the helper's 25-minute

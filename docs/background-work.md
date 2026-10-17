@@ -187,7 +187,7 @@ to cancel, resume, or declare completion.
 The release uses the official stock daemon API and does not advertise the
 experimental `queueIdempotency` capability. The historical daemon extension is
 preserved as a [separate experimental patch](experimental-daemon-receipts.md);
-the build script never applies it. The Python coordinator retains its optional
+the build script never applies it. The Rust coordinator retains its optional
 receipt support so existing keyed ledger entries keep their provenance. Such
 entries wait for receipt support if they cannot be reconciled from positive
 consumed-message evidence; switching to stock does not make them safe to resend.
@@ -199,8 +199,7 @@ bounded read-only reconciliation for temporarily delayed history. To retry that
 inspection without blindly resubmitting a legacy callback:
 
 ```sh
-cd /home/liupan/Aerius/codex-plus
-python3 -m codex_plus.background observe --parent SESSION_UUID
+/absolute/package/bin/codex-plus observe --parent SESSION_UUID
 ```
 
 Do not delete the coordinator ledger to retry delivery: doing so removes duplicate
@@ -209,14 +208,14 @@ monitoring deadline is reached.
 
 ## Coordinator ownership
 
-`codex_plus/ledger.py` owns the durable lifecycle: registration deduplication,
+`rust-runtime/src/ledger.rs` owns the durable lifecycle: registration deduplication,
 recovery classification, callback batching and frozen payloads, cancellation,
 delivery transitions, and watcher health. Its `Store` operations check current
 durable state; callers supply observed facts rather than write table state.
 
-`codex_plus/background.py` validates RPC identities, gathers queue/history and
+`rust-runtime/src/background.rs` validates RPC identities, gathers queue/history and
 job evidence, and schedules observation and delivery. Process locks, deadlines,
-backoff, and supervision stay there. `rpc.py` owns transport; `evidence.py` owns
+backoff, and supervision stay there. `rpc.rs` owns transport; `evidence.rs` owns
 the bounded, read-only exact-turn rollout fallback. Keep SQL inside the
 ledger and test lifecycle behavior through its operations and observer outcomes;
 old-schema migration fixtures may construct legacy tables directly.
@@ -236,7 +235,7 @@ job is stopped, no callback is recreated, and no daemon restart or model polling
 is involved. The TUI can be exited and resumed normally; it does not perform the
 observer transfer and need not stay open for it.
 
-The package manifest declares `coordinator_protocol: 1`. Automatic transfer
+The Rust package manifest declares `coordinator_protocol: 2`. Automatic transfer
 requires the same protocol, upstream identity, and CPU target on both sides.
 The target must also have a strictly higher Plus `M.m.p` version, compared as
 three numeric components. A lower or equal version in a different directory,
@@ -260,7 +259,7 @@ Helpers keep their immutable source directory in cwd and in an internal
 `--package-root` process argument. The argument retains the old package during
 the small cwd-to-exec interval, so the installer's existing exe/cwd/cmdline scan
 cannot remove a still-needed fallback. Successful exec updates both paths and
-sets `PYTHONPATH` to the selected package alone; failed exec restores the old
+executes the selected native helper; failed exec restores the old
 cwd and continues monitoring there with a warning. The same failed immutable
 target is suppressed for that process lifetime; a different selected target or
 a new process can retry. No fallback uses `previous` or another stale release.
@@ -272,38 +271,47 @@ and wording; an unresolved stock enqueue/ack gap remains uncertain and is not
 blindly resent. A process crash during transfer follows ordinary recovery; a
 cooperative transfer is not counted as an observer crash.
 
-**Bootstrap limitation:** released `0.162.1-plus.0.0.4` and earlier observers do
-not implement this protocol. The first rollout containing it still needs a
-quiet checkpoint: no helpers, armed parks, or open callbacks, with new parks
-held by the owner. Once protocol-aware helpers are installed, later compatible
-updates can proceed while watched jobs run. Changing the symlink or restarting
-the TUI cannot teach an already-running legacy observer this behavior.
+**Python-to-Rust cutover:** Python releases use protocol 1 and cannot transfer
+live to Rust protocol 2. Hold new parks and reach a quiet checkpoint: no Python
+or Rust helpers, armed parks, or open callbacks. Preserve the ledger and status
+files, then switch the package. The ledger schema and status JSON remain version
+1; existing callback identities, frozen text, and cancellations are retained.
+The first new park uses the installed wrapper's current Rust helper. Compatible,
+strictly newer protocol-2 releases can subsequently transfer while jobs run.
+Restarting a TUI does not settle a registration or transfer an existing Python
+observer. Historical releases before 0.1.0 also lack cooperative transfer.
+
+Rollback to Python requires another quiet checkpoint. Keep the last qualified
+Python package and its interpreter available until that rollback is retired;
+the normal one-generation `previous` link alone does not retain it indefinitely.
+Do not uninstall system Python as part of this runtime migration.
 
 Fleet-config owns the package switch and rollout checks. This feature does not
 download releases, enable automatic OpenAI updates, or use the historical
 `scripts/handoff-observer.py` force-stop procedure.
 
 Installer contract: preserve the existing directory layout and atomic `current`
-switch after package verification. Process names stay
-`python3 -m codex_plus.background supervise|observe --parent UUID`, with the
-additional internal `--package-root /absolute/package/` argument. The trailing
+switch after package verification. Rust process command lines are
+`/absolute/package/bin/codex-plus-runtime supervise|observe --parent UUID`, with
+the internal `--package-root /absolute/package/` argument. The trailing
 slash makes the package visible to the existing cmdline retention check. The
 ledger remains `$CODEX_HOME/codex-plus/background.sqlite`; table names and
 callback states are unchanged. The existing quiet check still applies to the
-bootstrap and incompatible updates. No wrapper or installer changes are needed
-for the transfer itself.
+bootstrap and incompatible updates. Fleet quiet/helper checks must recognize
+both legacy Python command lines and the new native runtime roles. Package
+retention continues to use executable, cwd, and command-line paths. Public
+`advisor`, `park`, and `run` wrapper routes remain unchanged.
 
 Run the focused protocol checks and real stock-daemon acceptance in private
 homes before qualifying a release:
 
 ```sh
-python3 -m unittest discover -s tests -p test_upgrade.py -v
-COOPERATIVE_OFFICIAL_DAEMON=/absolute/path/to/official/codex \
-COOPERATIVE_EVIDENCE=.build/cooperative-upgrade \
-python3 tests/test_cooperative_upgrade_integration.py -v
+./scripts/build-runtime.sh
+python3 tests/test_rust_runtime_upgrade.py \
+  --runtime .build/codex-plus-runtime --evidence .build/rust-upgrade -v
 ```
 
-The integration fixture seals distinct copies of the current helper source;
+The integration fixture seals distinct copies of the native helper executable;
 it does not establish compatibility with legacy observers or replace native
 per-target release qualification. It exercises real shell jobs, callback
 consumption, crash recovery, competing supervisors, rapid package selection,
@@ -313,17 +321,18 @@ queue/start acknowledgement boundaries also have focused coordinator tests.
 ## Verification
 
 ```sh
-python3 -m unittest discover -s tests -p test_background.py -v
-python3 -m unittest discover -s tests -p test_terminal_evidence.py -v
-python3 tests/test_background_integration.py .build/codex \
-  --evidence .build/auto-resume-root-gate
-python3 tests/test_background_recovery_integration.py .build/codex \
-  --evidence .build/frontend-recovery
-python3 tests/test_interruption_integration.py /path/to/official/codex \
-  --evidence .build/interruption-acceptance --scenario all
+cargo +1.99.1 test --locked --manifest-path rust-runtime/Cargo.toml --lib
+python3 tests/test_rust_runtime_acceptance.py \
+  --runtime .build/codex-plus-runtime --evidence .build/rust-coordinator -v
+python3 tests/test_rust_runtime_stock_integration.py \
+  --runtime .build/codex-plus-runtime --stock-binary /path/to/official/codex \
+  --evidence .build/rust-stock --scenario all
+python3 tests/test_rust_runtime_stock_lifecycle.py \
+  --runtime .build/codex-plus-runtime --stock-binary /path/to/official/codex \
+  --evidence .build/rust-stock-lifecycle --scenario all
 ```
 
-The interruption suite uses real native workers and a private official daemon.
+The preserved Python 0.2 interruption suite uses real native workers and a private official daemon.
 It injects a selected RPC projection and, when needed, unavailable evidence to
 make the race deterministic; it does not claim to control the daemon's actual
 thread scheduling. It verifies exact-turn completion, genuine abort/cancel,
@@ -331,7 +340,7 @@ durable pending state after reopening SQLite, worker reuse, and one callback
 without provider requests during monitoring. The recovery suite separately
 exercises real daemon restarts. All provider fixtures stay on loopback.
 
-Primary acceptance for the interruption fix passed 118 lifecycle tests, 18
+Historical Python acceptance for the interruption fix passed 118 lifecycle tests, 18
 evidence-reader tests, 11 interruption integration scenarios, all seven stock
 recovery scenarios, and the normal completion integration. Packaging and launcher
 checks passed too. The initial worker-restart failure exposed an overly broad

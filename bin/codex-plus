@@ -2,24 +2,21 @@
 set -euo pipefail
 launcher=$(readlink -f -- "${BASH_SOURCE[0]}")
 root=$(cd -- "$(dirname -- "$launcher")/.." && pwd)
-if [[ "$#" == 1 && "$1" == "--version" && -f "$root/codex-plus.json" ]]; then
-    exec python3 -c 'import json,sys; p=json.load(open(sys.argv[1])); print("codex-plus " + p["release"] + " (Plus " + p["plus_commit"][:12] + "; upstream " + p["upstream"]["version"] + ")")' "$root/codex-plus.json"
-fi
-if [[ "${1:-}" == "run" ]]; then
-    export PYTHONDONTWRITEBYTECODE=1
-    export PYTHONPATH="$root${PYTHONPATH:+:$PYTHONPATH}"
-    exec python3 -P -m codex_plus.runner "$@"
-fi
-if [[ "${1:-}" == "park" ]]; then
-    export PYTHONDONTWRITEBYTECODE=1
-    export PYTHONPATH="$root${PYTHONPATH:+:$PYTHONPATH}"
-    exec python3 -P -m codex_plus.background "$@"
-fi
-if [[ "${1:-}" == "advisor" ]]; then
-    export PYTHONDONTWRITEBYTECODE=1
-    export PYTHONPATH="$root${PYTHONPATH:+:$PYTHONPATH}"
-    exec python3 -P -m codex_plus.advisor "$@"
-fi
+case "${1:-}" in
+    run|park|advisor|observe|supervise|--version)
+        if [[ "$1" != --version || ( "$#" == 1 && -f "$root/codex-plus.json" ) ]]; then
+            runtime="$root/bin/codex-plus-runtime"
+            if [[ ! -x "$runtime" ]]; then
+                runtime="$root/.build/codex-plus-runtime"
+            fi
+            if [[ ! -x "$runtime" ]]; then
+                echo "Build the native runtime first: $root/scripts/build-runtime.sh" >&2
+                exit 1
+            fi
+            exec "$runtime" --package-root "$root" "$@"
+        fi
+        ;;
+esac
 native="$root/bin/codex"
 if [[ ! -x "$native" ]]; then
     native="$root/.build/codex"

@@ -15,7 +15,7 @@ Existing published `plus.N` releases retain their original identities.
 
 ## Native binaries
 
-Build natively on each target with Rust 1.99.0, the pinned upstream source and only
+Build natively on each target with Rust 1.99.1, the pinned upstream source and only
 the frontend patch. Use `--locked`, `--release`, and an explicit GNU target.
 On 910b, keep the checkout, Rust homes, Cargo target directory, downloads,
 `TMPDIR`, cache and outputs under `/data/liupan/codex-plus-build`. Install the
@@ -31,7 +31,9 @@ The required build order is:
    `RUSTY_V8_ARCHIVE` and `RUSTY_V8_SRC_BINDING_PATH` into the build.
 4. Build `codex-cli`'s `codex` and `codex-code-mode-host` with that same environment.
    Strip the shipping copies; retain native logs and compiler/glibc versions.
-5. Check the native ELF architecture, dependency resolution, and runtime behavior
+5. Build the Plus helper with `./scripts/build-runtime.sh` from that same Plus
+   source snapshot. Copy `.build/codex-plus-runtime` into the native directory.
+6. Check the native ELF architecture, dependency resolution, and runtime behavior
    on the architecture that produced them. Do not execute ARM binaries on x86 to
    establish compatibility.
 
@@ -54,7 +56,8 @@ Assemble and qualify each archive on its native build host using the same clean
 Plus commit. This avoids transferring ARM binaries away and then returning the
 archive for testing. Central assembly remains supported; it copies each target's
 binaries and fetches pinned runtime resources without running foreign binaries.
-The native directory must contain `codex`, `codex-code-mode-host`, and `bwrap`.
+The native directory must contain `codex`, `codex-plus-runtime`,
+`codex-code-mode-host`, and `bwrap`.
 
 ```sh
 ./scripts/build-release.sh \
@@ -73,8 +76,13 @@ The 0.163.0 package contains ripgrep and bwrap; upstream removed bundled zsh.
 The Plus manifest is separate from upstream's `codex-package.json`, whose version
 remains the upstream version.
 
-The launcher suppresses Python bytecode writes for `run` and `park`, including
-detached observers, so normal helper use does not mutate the installed package.
+The package contains a Bash launcher and native Rust helper, with no Python
+source, bytecode, interpreter, or `libpython` dependency. The build-time packager
+still requires Python 3.11+, Cargo's locked offline dependency sources, and the
+pinned toolchain's standard-library copyright file. It generates deterministic
+runtime notices and dependency/source provenance under `licenses/`, recorded in
+the manifest's `runtime` object and full file inventory. Helper use does not
+mutate the installed package.
 Its native CLI branch retains ordinary stdin, argument, signal, and exit behavior.
 `codex-plus --version` reports the Plus release and source revision; the native
 `codex --version` continues to report the upstream version.
@@ -103,7 +111,7 @@ fleet-config's `codex-plus/RELEASING.md`, section 2, step 3:
 {
   "release": "<tag>",
   "plus_commit": "<the manifest's plus_commit>",
-  "coordinator_protocol": 1,
+  "coordinator_protocol": 2,
   "upstream": {"version": "<X>", "tag": "rust-v<X>", "commit": "<sha>"},
   "note": "docs/releases/<release>.md",
   "targets": {
@@ -141,20 +149,27 @@ live policy. Preserve its foreground wait wording; copying an older release's
 `agents_md` would restore the superseded background default. Published handoffs
 remain immutable.
 
-For cooperative upgrades, manifests advertise `coordinator_protocol: 1`.
+For cooperative Rust upgrades, manifests advertise `coordinator_protocol: 2`.
 Set `quiet_checkpoint: false` only when the installed observers and candidate
 support the same protocol, upstream identity and target, the candidate's Plus
 `M.m.p` version is strictly higher, and cooperative upgrade/recovery acceptance
 has passed. Compare numeric version components, not release-name strings.
 Every rollback requires `quiet_checkpoint: true`; live observers refuse a lower
 or equal Plus version in another package directory and keep monitoring with a
-warning. The first rollout from `0.0.4` or older
-still requires `quiet_checkpoint: true`; incompatible protocol or upstream
+warning. The first Python-to-Rust rollout from any protocol-1 release
+requires `quiet_checkpoint: true`; incompatible protocol or upstream
 changes also require quiet coordination. Keep previous/in-use immutable package
 directories while any process still references them. The installer switches
 `current`; it does not signal observers. A compatible helper upgrade follows the
 link independently of the TUI. Set `session_restart` according to the actual
 client change, rather than using a restart as an observer-handoff command.
+
+For the Python-to-Rust cutover, fleet helper scans must include native
+`codex-plus-runtime supervise|observe` and legacy Python processes. Preserve
+the ledger and explicitly retain the last Python package and interpreter for
+a quiet rollback, beyond ordinary `previous` cleanup. No shared-daemon restart
+is needed when both releases use upstream 0.163.0. See
+[the cutover contract](background-work.md#cooperative-package-upgrades).
 
 Once the release and its handoff asset are verified, message fleet-config only
 the tag. Fleet-config runs `stage.py pin` to validate the asset digests and stage

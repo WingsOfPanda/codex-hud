@@ -4310,6 +4310,568 @@ index a20193149..930cff629 100644
      /// Switch the active thread to the selected agent.
      SelectAgentThread(ThreadId),
  
+diff --git a/codex-rs/tui/src/bottom_pane/chat_composer.rs b/codex-rs/tui/src/bottom_pane/chat_composer.rs
+index 2ad3f1cd9..3d6643d34 100644
+--- a/codex-rs/tui/src/bottom_pane/chat_composer.rs
++++ b/codex-rs/tui/src/bottom_pane/chat_composer.rs
+@@ -10,9 +10,9 @@
+ //! paste only while the same thread, draft, and cursor remain eligible. Intervening input or focus
+ //! loss cancels the pending paste; a late clipboard result cannot overwrite newer input.
+ //! The live voice strip renders after effort ignition, followed by the Astra sparkle when eligible.
+-//! Owned transcripts keep persistent status below the composer and hints on a separate final row.
+-//! Shortcut help expands above the composer, with its close hint replacing the final shortcuts row
+-//! so input and persistent status stay anchored when help opens or closes.
++//! Owned transcripts keep persistent status below the composer; contextual hints reserve a final
++//! row only while needed. Ordinary agents/shortcuts hints stay hidden.
++//! Shortcut help expands above the composer and reserves a final close hint below the status.
+ //! Escape dismisses visible shortcut help before editing, transcript backtracking, or interruption.
+ //! Fullscreen limits the composer height; wheel browsing preserves the caret until editor input.
+ //! Transcript interactions borrow the hint footer through `ComposerRenderOptions`;
+@@ -4562,14 +4562,7 @@ impl ChatComposer {
+                 let show_cycle_hint = self.status_surface_height(options) == 0
+                     && !footer_props.is_task_running
+                     && self.footer.collaboration_mode_indicator.is_some();
+-                let show_shortcuts_hint = match footer_props.mode {
+-                    FooterMode::ComposerEmpty => !self.is_in_paste_burst(),
+-                    FooterMode::ComposerHasDraft => false,
+-                    FooterMode::HistorySearch
+-                    | FooterMode::QuitShortcutReminder
+-                    | FooterMode::ShortcutOverlay
+-                    | FooterMode::EscHint => false,
+-                };
++                let show_shortcuts_hint = false;
+                 let show_queue_hint = match footer_props.mode {
+                     FooterMode::ComposerHasDraft => footer_props.is_task_running,
+                     FooterMode::HistorySearch
+@@ -5073,10 +5066,10 @@ mod tests {
+     }
+ 
+     #[test]
+-    fn footer_hint_row_is_separated_from_composer() {
++    fn ordinary_footer_hides_navigation_hints() {
+         let (tx, _rx) = unbounded_channel::<AppEvent>();
+         let sender = AppEventSender::new(tx);
+-        let composer = ChatComposer::new(
++        let mut composer = ChatComposer::new(
+             /*has_input_focus*/ true,
+             sender,
+             /*enhanced_keys_supported*/ false,
+@@ -5084,46 +5077,14 @@ mod tests {
+             /*disable_paste_burst*/ false,
+         );
+ 
+-        let area = Rect::new(0, 0, 40, 6);
++        composer.set_agents_navigation_enabled(/*enabled*/ true);
++        let area = Rect::new(0, 0, 80, composer.desired_height(80));
+         let mut buf = Buffer::empty(area);
+         composer.render(area, &mut buf);
+ 
+-        let row_to_string = |y: u16| {
+-            let mut row = String::new();
+-            for x in 0..area.width {
+-                row.push(buf[(x, y)].symbol().chars().next().unwrap_or(' '));
+-            }
+-            row
+-        };
+-
+-        let mut hint_row: Option<(u16, String)> = None;
+-        for y in 0..area.height {
+-            let row = row_to_string(y);
+-            if row.contains("? for shortcuts") {
+-                hint_row = Some((y, row));
+-                break;
+-            }
+-        }
+-
+-        let (hint_row_idx, hint_row_contents) =
+-            hint_row.expect("expected footer hint row to be rendered");
+-        assert_eq!(
+-            hint_row_idx,
+-            area.height - 1,
+-            "hint row should occupy the bottom line: {hint_row_contents:?}",
+-        );
+-
+-        assert!(
+-            hint_row_idx > 0,
+-            "expected a spacing row above the footer hints",
+-        );
+-
+-        let spacing_row = row_to_string(hint_row_idx - 1);
+-        assert_eq!(
+-            spacing_row.trim(),
+-            "",
+-            "expected blank spacing row above hints but saw: {spacing_row:?}",
+-        );
++        let text = format!("{buf:?}");
++        assert!(!text.contains("for agents"), "{text}");
++        assert!(!text.contains("for shortcuts"), "{text}");
+     }
+ 
+     #[test]
+diff --git a/codex-rs/tui/src/bottom_pane/chat_composer/footer_state.rs b/codex-rs/tui/src/bottom_pane/chat_composer/footer_state.rs
+index bcc92a3ed..48b5c8d75 100644
+--- a/codex-rs/tui/src/bottom_pane/chat_composer/footer_state.rs
++++ b/codex-rs/tui/src/bottom_pane/chat_composer/footer_state.rs
+@@ -279,16 +279,23 @@ impl super::ChatComposer {
+         if self.show_warning_notice(options) || self.shortcuts_above_composer(options) {
+             return 1;
+         }
+-        options
+-            .footer
+-            .map_or_else(
+-                || {
+-                    self.custom_footer_height()
+-                        .unwrap_or_else(|| footer_height(&self.hint_footer_props(options), width))
+-                },
+-                |footer| footer.text.height().try_into().unwrap_or(u16::MAX),
+-            )
+-            .max(u16::from(options.separate_status_line))
++        options.footer.map_or_else(
++            || {
++                self.custom_footer_height().unwrap_or_else(|| {
++                    let props = self.hint_footer_props(options);
++                    if options.separate_status_line
++                        && shows_passive_footer_line(&props)
++                        && !self.is_bang_shell_command()
++                        && self.footer.side_conversation_context_label.is_none()
++                    {
++                        0
++                    } else {
++                        footer_height(&props, width)
++                    }
++                })
++            },
++            |footer| footer.text.height().try_into().unwrap_or(u16::MAX),
++        )
+     }
+ 
+     pub(super) fn render_transcript_footer(
+diff --git a/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__snapshot_tests__voice_composer.snap b/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__snapshot_tests__voice_composer.snap
+index 3b8930982..e9bbcf22b 100644
+--- a/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__snapshot_tests__voice_composer.snap
++++ b/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__snapshot_tests__voice_composer.snap
+@@ -7,4 +7,4 @@ expression: rows
+                                                             
+ › Ask Codex to do anything                                  
+                                                             
+-  ? for shortcuts                        100% context left
++                                         100% context left
+diff --git a/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__a_fresh_astra_response_waits_for_the_pending_command_to_leave.snap b/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__a_fresh_astra_response_waits_for_the_pending_command_to_leave.snap
+index 6697092d6..34fb39c6c 100644
+--- a/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__a_fresh_astra_response_waits_for_the_pending_command_to_leave.snap
++++ b/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__a_fresh_astra_response_waits_for_the_pending_command_to_leave.snap
+@@ -1,6 +1,5 @@
+ ---
+ source: tui/src/bottom_pane/chat_composer/sparkle_tests.rs
+-assertion_line: 561
+ expression: "format!(\"command during startup:\\n{}\\n\\nafter command:\\n{}\", text(&pending),\ntext(&completed))"
+ ---
+ command during startup:
+@@ -15,4 +14,4 @@ after command:
+                             ⠈     ⢀     ⠁                 ⠂
+ ›⠁Ask Codex to do anything         ⠈      ⠁
+        ⢀            ⠠     ⠄         ⠠          ⢀    ⠠     ⡀
+-  ? for shortcuts                                            100% context left
++                                                             100% context left
+diff --git a/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__canceled_history_search_restores_visible_stars_only_before_the_original_deadline.snap b/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__canceled_history_search_restores_visible_stars_only_before_the_original_deadline.snap
+index baa784f4f..cd6bcc003 100644
+--- a/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__canceled_history_search_restores_visible_stars_only_before_the_original_deadline.snap
++++ b/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__canceled_history_search_restores_visible_stars_only_before_the_original_deadline.snap
+@@ -7,7 +7,7 @@ initial:
+                             ⠈     ⢀     ⠁                 ⠂
+ ›⠁Ask Codex to do anything         ⠈      ⠁
+        ⢀            ⠠     ⠄         ⠠          ⢀    ⠠     ⡀
+-  ? for shortcuts                                            100% context left
++                                                             100% context left
+ searching:
+ 
+ › stored draft
+@@ -17,14 +17,14 @@ after escape:
+                                         ⠁               ⡀   ⠄           ⠄   ⠄
+ › Ask Codex to do anything                                   ⠈
+       ⠠                             ⠠        ⢀ ⢀     ⡀                         ⠄
+-  ? for shortcuts                                            100% context left
++                                                             100% context left
+ 
+ expires while open: true
+ initial:
+                             ⠈     ⢀     ⠁                 ⠂
+ ›⠁Ask Codex to do anything         ⠈      ⠁
+        ⢀            ⠠     ⠄         ⠠          ⢀    ⠠     ⡀
+-  ? for shortcuts                                            100% context left
++                                                             100% context left
+ searching:
+ 
+ › stored draft
+@@ -34,4 +34,4 @@ after escape:
+ 
+ › Ask Codex to do anything
+ 
+-  ? for shortcuts                                            100% context left
++                                                             100% context left
+diff --git a/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__cleared_recovered_draft_keeps_sparkle_dismissed.snap b/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__cleared_recovered_draft_keeps_sparkle_dismissed.snap
+index 5cac07929..74d0328c3 100644
+--- a/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__cleared_recovered_draft_keeps_sparkle_dismissed.snap
++++ b/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__cleared_recovered_draft_keeps_sparkle_dismissed.snap
+@@ -1,9 +1,8 @@
+ ---
+ source: tui/src/bottom_pane/chat_composer/sparkle_tests.rs
+-assertion_line: 900
+ expression: "text(&draw(&pane.composer, 80, now).0)"
+ ---
+ 
+ › Ask Codex to do anything
+ 
+-  ? for shortcuts                                            100% context left
++                                                             100% context left
+diff --git a/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__disconnected_sparkle_edits_are_tracked_between_renders.snap b/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__disconnected_sparkle_edits_are_tracked_between_renders.snap
+index 0c60de5e7..b2064100d 100644
+--- a/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__disconnected_sparkle_edits_are_tracked_between_renders.snap
++++ b/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__disconnected_sparkle_edits_are_tracked_between_renders.snap
+@@ -7,21 +7,21 @@ before disconnect:
+                             ⠈     ⢀     ⠁                 ⠂
+ ›⠁Ask Codex to do anything         ⠈      ⠁
+        ⢀            ⠠     ⠄         ⠠          ⢀    ⠠     ⡀
+-  ? for shortcuts                                            100% context left
++                                                             100% context left
+ after typing and erasing without rendering:
+ 
+ › Ask Codex to do anything
+ 
+-  ? for shortcuts                                            100% context left
++                                                             100% context left
+ 
+ gpt-5.5
+ before disconnect:
+ 
+ › Ask Codex to do anything
+ 
+-  ? for shortcuts                                            100% context left
++                                                             100% context left
+ after typing and erasing without rendering:
+ 
+ › Ask Codex to do anything
+ 
+-  ? for shortcuts                                            100% context left
++                                                             100% context left
+diff --git a/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__history_search_acceptance_and_cancellation_update_sparkles_before_rendering.snap b/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__history_search_acceptance_and_cancellation_update_sparkles_before_rendering.snap
+index a671d9f4a..6fe81eee7 100644
+--- a/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__history_search_acceptance_and_cancellation_update_sparkles_before_rendering.snap
++++ b/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__history_search_acceptance_and_cancellation_update_sparkles_before_rendering.snap
+@@ -6,10 +6,10 @@ accept:
+ 
+ › Ask Codex to do anything
+ 
+-  ? for shortcuts                                            100% context left
++                                                             100% context left
+ 
+ escape:
+                             ⠈     ⢀     ⠁                 ⠂
+ ›⠁Ask Codex to do anything         ⠈      ⠁
+        ⢀            ⠠     ⠄         ⠠          ⢀    ⠠     ⡀
+-  ? for shortcuts                                            100% context left
++                                                             100% context left
+diff --git a/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__history_search_preserves_a_held_sparkle_command_without_reclassifying_it.snap b/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__history_search_preserves_a_held_sparkle_command_without_reclassifying_it.snap
+index 80bcb14f7..d6ee18494 100644
+--- a/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__history_search_preserves_a_held_sparkle_command_without_reclassifying_it.snap
++++ b/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__history_search_preserves_a_held_sparkle_command_without_reclassifying_it.snap
+@@ -12,12 +12,12 @@ after canceling and erasing the slash:
+                                         ⠁               ⡀   ⠄           ⠄   ⠄
+ › Ask Codex to do anything                                   ⠈
+       ⠠                             ⠠        ⢀ ⢀     ⡀                         ⠄
+-  ? for shortcuts                                            100% context left
++                                                             100% context left
+ after /model selects Astra:
+                                         ⠁               ⡀   ⠄           ⠄   ⠄
+ › Ask Codex to do anything                                   ⠈
+       ⠠                             ⠠        ⢀ ⢀     ⡀                         ⠄
+-  ? for shortcuts                                            100% context left
++                                                             100% context left
+ 
+ gpt-5.5
+ searching with an explicit pasted query:
+@@ -29,9 +29,9 @@ after canceling and erasing the slash:
+ 
+ › Ask Codex to do anything
+ 
+-  ? for shortcuts                                            100% context left
++                                                             100% context left
+ after /model selects Astra:
+                             ⠈     ⢀     ⠁                 ⠂
+ ›⠁Ask Codex to do anything         ⠈      ⠁
+        ⢀            ⠠     ⠄         ⠠          ⢀    ⠠     ⡀
+-  ? for shortcuts                                            100% context left
++                                                             100% context left
+diff --git a/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__review_regression_canceling_a_held_slash_restores_sparkle_command_tracking.snap b/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__review_regression_canceling_a_held_slash_restores_sparkle_command_tracking.snap
+index 030167639..5ec7d3929 100644
+--- a/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__review_regression_canceling_a_held_slash_restores_sparkle_command_tracking.snap
++++ b/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__review_regression_canceling_a_held_slash_restores_sparkle_command_tracking.snap
+@@ -7,21 +7,21 @@ after immediately canceling the held slash:
+                             ⠈     ⢀     ⠁                 ⠂
+ ›⠁Ask Codex to do anything         ⠈      ⠁
+        ⢀            ⠠     ⠄         ⠠          ⢀    ⠠     ⡀
+-  ? for shortcuts                                            100% context left
++                                                             100% context left
+ after /model:
+                             ⠈     ⢀     ⠁                 ⠂
+ ›⠁Ask Codex to do anything         ⠈      ⠁
+        ⢀            ⠠     ⠄         ⠠          ⢀    ⠠     ⡀
+-  ? for shortcuts                                            100% context left
++                                                             100% context left
+ 
+ gpt-5.5
+ after immediately canceling the held slash:
+ 
+ › Ask Codex to do anything
+ 
+-  ? for shortcuts                                            100% context left
++                                                             100% context left
+ after /model:
+                             ⠈     ⢀     ⠁                 ⠂
+ ›⠁Ask Codex to do anything         ⠈      ⠁
+        ⢀            ⠠     ⠄         ⠠          ⢀    ⠠     ⡀
+-  ? for shortcuts                                            100% context left
++                                                             100% context left
+diff --git a/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__shortcut_help_hides_visible_sparkles_without_restarting_their_deadline.snap b/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__shortcut_help_hides_visible_sparkles_without_restarting_their_deadline.snap
+index 8a719ad03..dd49d44d2 100644
+--- a/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__shortcut_help_hides_visible_sparkles_without_restarting_their_deadline.snap
++++ b/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__shortcut_help_hides_visible_sparkles_without_restarting_their_deadline.snap
+@@ -7,7 +7,7 @@ initial:
+                             ⠈     ⢀     ⠁                 ⠂
+ ›⠁Ask Codex to do anything         ⠈      ⠁
+        ⢀            ⠠     ⠄         ⠠          ⢀    ⠠     ⡀
+-  ? for shortcuts                                            100% context left
++                                                             100% context left
+ shortcut help:
+   Keyboard shortcuts
+ 
+@@ -36,14 +36,14 @@ after closing:
+                                         ⠁               ⡀   ⠄           ⠄   ⠄
+ › Ask Codex to do anything                                   ⠈
+       ⠠                             ⠠        ⢀ ⢀     ⡀                         ⠄
+-  ? for shortcuts                                            100% context left
++                                                             100% context left
+ 
+ expires during help: true
+ initial:
+                             ⠈     ⢀     ⠁                 ⠂
+ ›⠁Ask Codex to do anything         ⠈      ⠁
+        ⢀            ⠠     ⠄         ⠠          ⢀    ⠠     ⡀
+-  ? for shortcuts                                            100% context left
++                                                             100% context left
+ shortcut help:
+   Keyboard shortcuts
+ 
+@@ -72,4 +72,4 @@ after closing:
+ 
+ › Ask Codex to do anything
+ 
+-  ? for shortcuts                                            100% context left
++                                                             100% context left
+diff --git a/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__shortcut_help_preserves_an_unused_sparkle_but_literal_question_marks_do_not.snap b/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__shortcut_help_preserves_an_unused_sparkle_but_literal_question_marks_do_not.snap
+index d945b4320..8bc169c47 100644
+--- a/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__shortcut_help_preserves_an_unused_sparkle_but_literal_question_marks_do_not.snap
++++ b/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__shortcut_help_preserves_an_unused_sparkle_but_literal_question_marks_do_not.snap
+@@ -31,7 +31,7 @@ after /model selects Astra:
+                             ⠈     ⢀     ⠁                 ⠂
+ ›⠁Ask Codex to do anything         ⠈      ⠁
+        ⢀            ⠠     ⠄         ⠠          ⢀    ⠠     ⡀
+-  ? for shortcuts                                            100% context left
++                                                             100% context left
+ 
+ literal pasted question mark:
+ 
+@@ -43,4 +43,4 @@ after clearing and selecting Astra:
+ 
+ › Ask Codex to do anything
+ 
+-  ? for shortcuts                                            100% context left
++                                                             100% context left
+diff --git a/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__sparkle_fades_without_adding_dots_and_finishes_by_fifteen_seconds.snap b/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__sparkle_fades_without_adding_dots_and_finishes_by_fifteen_seconds.snap
+index 0cfba1ed1..7bdd0026c 100644
+--- a/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__sparkle_fades_without_adding_dots_and_finishes_by_fifteen_seconds.snap
++++ b/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__sparkle_fades_without_adding_dots_and_finishes_by_fifteen_seconds.snap
+@@ -6,14 +6,14 @@ before fade:
+ ⠁             ⠄          ⢀  ⠈           ⠁               ⡀ ⠂ ⠄
+ › Ask Codex to do anything   ⠈     ⠈ ⠂    ⠁                                ⠂
+        ⢀⠐        ⠄        ⠄                    ⢀    ⠠ ⠄
+-  ? for shortcuts                                            100% context left
++                                                             100% context left
+ fading:
+ ⠁             ⠄          ⢀  ⠈           ⠁               ⡀ ⠂ ⠄
+ › Ask Codex to do anything   ⠈     ⠈ ⠂    ⠁
+         ⠐        ⠄        ⠄                    ⢀    ⠠ ⠄
+-  ? for shortcuts                                            100% context left
++                                                             100% context left
+ finished:
+ 
+ › Ask Codex to do anything
+ 
+-  ? for shortcuts                                            100% context left
++                                                             100% context left
+diff --git a/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__sparkle_matches_the_original_starfield_and_protects_the_placeholder_and_cursor.snap b/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__sparkle_matches_the_original_starfield_and_protects_the_placeholder_and_cursor.snap
+index 9edbf115e..9c1dc07b3 100644
+--- a/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__sparkle_matches_the_original_starfield_and_protects_the_placeholder_and_cursor.snap
++++ b/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__sparkle_matches_the_original_starfield_and_protects_the_placeholder_and_cursor.snap
+@@ -6,7 +6,7 @@ expression: "snapshots.join(\"\\n\\n\")"
+                             ⠈     ⢀
+ ›⠁Ask Codex to do anything         ⠈
+        ⢀            ⠠     ⠄         ⠠
+-  ? for shortcuts    100% context left
++                     100% context left
+ first input:
+ 
+ › x
+@@ -17,7 +17,7 @@ first input:
+                             ⠈     ⢀     ⠁                 ⠂
+ ›⠁Ask Codex to do anything         ⠈      ⠁
+        ⢀            ⠠     ⠄         ⠠          ⢀    ⠠     ⡀
+-  ? for shortcuts                                            100% context left
++                                                             100% context left
+ first input:
+ 
+ › x
+diff --git a/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__status_surface__tests__fullscreen_plan_cycle_hint.snap b/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__status_surface__tests__fullscreen_plan_cycle_hint.snap
+index 833484264..ab8479a90 100644
+--- a/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__status_surface__tests__fullscreen_plan_cycle_hint.snap
++++ b/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__status_surface__tests__fullscreen_plan_cycle_hint.snap
+@@ -14,4 +14,3 @@ expression: wide
+ › Ask Codex
+ 
+   MODEL · ~/project · Context 20% used                                   Plan mode (⇧tab to cycle)
+-  ? for shortcuts
+diff --git a/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__status_surface__tests__persistent_status_and_messages.snap b/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__status_surface__tests__persistent_status_and_messages.snap
+index c35c2d93e..10a855cf9 100644
+--- a/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__status_surface__tests__persistent_status_and_messages.snap
++++ b/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__status_surface__tests__persistent_status_and_messages.snap
+@@ -14,7 +14,6 @@ expression: "states.join(\"\\n---\\n\")"
+ › Ask Codex
+ 
+   MODEL · ~/project · Context 20% used               Plan mode
+-  ? for shortcuts
+ ---
+ 
+ 
+diff --git a/codex-rs/tui/src/bottom_pane/chat_composer/status_surface.rs b/codex-rs/tui/src/bottom_pane/chat_composer/status_surface.rs
+index 60ee2e0fa..13536bf43 100644
+--- a/codex-rs/tui/src/bottom_pane/chat_composer/status_surface.rs
++++ b/codex-rs/tui/src/bottom_pane/chat_composer/status_surface.rs
+@@ -16,6 +16,9 @@ impl ChatComposer {
+             props.status_line_value = None;
+             props.active_agent_label = None;
+         }
++        if props.mode != FooterMode::ShortcutOverlay {
++            props.key_hints.agents = None;
++        }
+         props
+     }
+ 
+diff --git a/codex-rs/tui/src/bottom_pane/chat_composer/status_surface_tests.rs b/codex-rs/tui/src/bottom_pane/chat_composer/status_surface_tests.rs
+index 03e761f4f..8625d6f3e 100644
+--- a/codex-rs/tui/src/bottom_pane/chat_composer/status_surface_tests.rs
++++ b/codex-rs/tui/src/bottom_pane/chat_composer/status_surface_tests.rs
+@@ -57,6 +57,53 @@ fn render_with_height(
+     (text, composer.cursor_pos_with_options(area, options))
+ }
+ 
++#[test]
++fn ordinary_hint_row_collapses_without_affecting_status_or_navigation() {
++    for status_enabled in [true, false] {
++        let mut composer = composer();
++        composer.set_status_line_enabled(status_enabled);
++        composer.set_agents_navigation_enabled(/*enabled*/ true);
++        let options = ComposerRenderOptions {
++            separate_status_line: true,
++            ..ComposerRenderOptions::default()
++        };
++        for draft in ["", "editable draft"] {
++            composer.set_text_content(draft.into(), Vec::new(), Vec::new());
++            let height = composer.desired_height_with_options(80, options);
++            assert_eq!(height, 3 + u16::from(status_enabled));
++            let area = Rect::new(0, 0, 80, height);
++            let layout = composer.layout_with_options(area, options);
++            assert_eq!(layout.footer.height, 0);
++            assert_eq!(layout.status.height, u16::from(status_enabled));
++            let (text, cursor) = render(&composer, 80, None);
++            assert!(!text.contains("for agents"), "{text}");
++            assert!(!text.contains("for shortcuts"), "{text}");
++            assert!(cursor.is_some());
++            assert_eq!(text.contains("MODEL"), status_enabled);
++        }
++        composer.set_text_content(String::new(), Vec::new(), Vec::new());
++        assert!(composer.handle_agents_navigation(KeyCode::Left.into()));
++        composer.handle_key_event(KeyCode::Char('?').into());
++        let (text, _) = render(&composer, 80, None);
++        assert!(text.contains("Keyboard shortcuts"), "{text}");
++        assert!(text.contains("? / esc close"), "{text}");
++    }
++}
++
++#[test]
++fn shell_and_side_conversation_input_context_keep_the_hint_row() {
++    let mut composer = composer();
++    composer.set_text_content("!ls".into(), Vec::new(), Vec::new());
++    let (shell, _) = render(&composer, 80, None);
++    assert!(shell.contains("Shell mode"), "{shell}");
++    assert!(!shell.contains("for shortcuts"), "{shell}");
++    composer.set_text_content(String::new(), Vec::new(), Vec::new());
++    composer.set_side_conversation_context_label(Some("Side conversation".into()));
++    let (side, _) = render(&composer, 80, None);
++    assert!(side.contains("Side conversation"), "{side}");
++    assert!(!side.contains("for shortcuts"), "{side}");
++}
++
+ #[test]
+ fn passive_activity_keeps_shortcuts_only_when_the_complete_hint_fits() {
+     let mut composer = composer();
+@@ -124,7 +171,7 @@ fn fullscreen_plan_indicator_keeps_the_cycle_hint_when_it_fits() {
+     composer.set_status_line(/*status_line*/ None);
+     let (empty_narrow, _) = render(&composer, /*width*/ 24, /*footer*/ None);
+     assert_eq!(
+-        empty_narrow.lines().rev().nth(1).map(str::trim),
++        empty_narrow.lines().last().map(str::trim),
+         Some("Plan mode")
+     );
+     let (empty_wide, _) = render(&composer, /*width*/ 100, /*footer*/ None);
+@@ -135,15 +182,12 @@ fn fullscreen_plan_indicator_keeps_the_cycle_hint_when_it_fits() {
+ 
+     composer.set_input_enabled(/*enabled*/ false, /*placeholder*/ None);
+     let (read_only, _) = render(&composer, /*width*/ 100, /*footer*/ None);
+-    assert_eq!(
+-        read_only.lines().rev().nth(1).map(str::trim),
+-        Some("Plan mode")
+-    );
++    assert_eq!(read_only.lines().last().map(str::trim), Some("Plan mode"));
+     composer.set_input_enabled(/*enabled*/ true, /*placeholder*/ None);
+     composer.set_parent_owned_thread();
+     let (parent_owned, _) = render(&composer, /*width*/ 100, /*footer*/ None);
+     assert_eq!(
+-        parent_owned.lines().rev().nth(1).map(str::trim),
++        parent_owned.lines().last().map(str::trim),
+         Some("Plan mode")
+     );
+ }
+@@ -195,7 +239,7 @@ fn shortcut_help_stays_above_the_prompt_and_bottom_status() {
+ }
+ 
+ #[test]
+-fn shortcut_help_keeps_bottom_anchored_composer_status_and_cursor_stable() {
++fn shortcut_help_restores_compact_composer_status_and_cursor_on_close() {
+     let (width, available_height) = (40, 12);
+     let mut composer = composer();
+     let mut geometry = Vec::new();
+@@ -228,7 +272,10 @@ fn shortcut_help_keeps_bottom_anchored_composer_status_and_cursor_stable() {
+             composer.cursor_pos_with_options(area, options),
+         ));
+     }
+-    assert_eq!(geometry, vec![geometry[0]; 3]);
++    assert_eq!(geometry[0], geometry[2]);
++    assert_eq!(geometry[0].2.height, 0);
++    assert_eq!(geometry[1].2.height, 1);
++    assert_eq!(geometry[1].3.map(|(x, y)| (x, y + 1)), geometry[0].3);
+ }
+ 
+ #[test]
 diff --git a/codex-rs/tui/src/bottom_pane/mod.rs b/codex-rs/tui/src/bottom_pane/mod.rs
 index ae9405e9f..8dab42d5c 100644
 --- a/codex-rs/tui/src/bottom_pane/mod.rs
@@ -4483,6 +5045,296 @@ index ae9405e9f..8dab42d5c 100644
      #[test]
      fn inline_banner_snapshot() {
          let (tx, _rx) = unbounded_channel();
+diff --git a/codex-rs/tui/src/bottom_pane/request_user_input/snapshots/codex_tui__bottom_pane__request_user_input__render__tests__request_user_input_halfwidth_sound_marks_truncation.snap b/codex-rs/tui/src/bottom_pane/request_user_input/snapshots/codex_tui__bottom_pane__request_user_input__render__tests__request_user_input_halfwidth_sound_marks_truncation.snap
+index 4dc0fc13b..1efcc1a62 100644
+--- a/codex-rs/tui/src/bottom_pane/request_user_input/snapshots/codex_tui__bottom_pane__request_user_input__render__tests__request_user_input_halfwidth_sound_marks_truncation.snap
++++ b/codex-rs/tui/src/bottom_pane/request_user_input/snapshots/codex_tui__bottom_pane__request_user_input__render__tests__request_user_input_halfwidth_sound_marks_truncation.snap
+@@ -22,12 +22,12 @@ Buffer {
+ [
+     Line::from_iter([
+         Span::from("ab").bold(),
+-        Span::from("ｶ\u{ff9e}").cyan(),
++        Span::from("ｶﾞ").cyan(),
+         Span::from("…").cyan(),
+     ]),
+     Line::from_iter([
+         Span::from("xy").bold(),
+-        Span::from("ﾊ\u{ff9f}").magenta(),
++        Span::from("ﾊﾟ").magenta(),
+         Span::from("…").magenta(),
+     ]),
+ ]
+diff --git a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__agents_navigation_enabled.snap b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__agents_navigation_enabled.snap
+index 2924342dc..5b302360c 100644
+--- a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__agents_navigation_enabled.snap
++++ b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__agents_navigation_enabled.snap
+@@ -10,4 +10,4 @@ expression: terminal.backend()
+ "                                                                                "
+ "                                                                                "
+ "                                                                                "
+-"  ← for agents · ? for shortcuts                             100% context left  "
++"                                                             100% context left  "
+diff --git a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__agents_navigation_status.snap b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__agents_navigation_status.snap
+index eddb4ae50..722e26668 100644
+--- a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__agents_navigation_status.snap
++++ b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__agents_navigation_status.snap
+@@ -10,4 +10,4 @@ expression: terminal.backend()
+ "                                                                                "
+ "                                                                                "
+ "                                                                                "
+-"  model · project · ← for agents                                                "
++"  model · project                                                               "
+diff --git a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__empty.snap b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__empty.snap
+index 47c97c74d..efb8b0ddd 100644
+--- a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__empty.snap
++++ b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__empty.snap
+@@ -11,4 +11,4 @@ expression: terminal.backend()
+ "                                                                                                    "
+ "                                                                                                    "
+ "                                                                                                    "
+-"  ? for shortcuts                                                                100% context left  "
++"                                                                                 100% context left  "
+diff --git a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_empty_full.snap b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_empty_full.snap
+index 4324d806e..98aad2789 100644
+--- a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_empty_full.snap
++++ b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_empty_full.snap
+@@ -10,4 +10,4 @@ expression: terminal.backend()
+ "                                                                                                                        "
+ "                                                                                                                        "
+ "                                                                                                                        "
+-"  ? for shortcuts                                                                                    100% context left  "
++"                                                                                                     100% context left  "
+diff --git a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_empty_mode_cycle_with_context.snap b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_empty_mode_cycle_with_context.snap
+index ecaeb5814..ce8373cf1 100644
+--- a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_empty_mode_cycle_with_context.snap
++++ b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_empty_mode_cycle_with_context.snap
+@@ -10,4 +10,4 @@ expression: terminal.backend()
+ "                                                            "
+ "                                                            "
+ "                                                            "
+-"  ? for shortcuts                        100% context left  "
++"                                         100% context left  "
+diff --git a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_empty_mode_cycle_without_context.snap b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_empty_mode_cycle_without_context.snap
+index 118ac2529..ba2c4d11f 100644
+--- a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_empty_mode_cycle_without_context.snap
++++ b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_empty_mode_cycle_without_context.snap
+@@ -10,4 +10,4 @@ expression: terminal.backend()
+ "                                            "
+ "                                            "
+ "                                            "
+-"  ? for shortcuts        100% context left  "
++"                         100% context left  "
+diff --git a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_plan_empty_full.snap b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_plan_empty_full.snap
+index ca2a96b3c..7dad54cba 100644
+--- a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_plan_empty_full.snap
++++ b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_plan_empty_full.snap
+@@ -10,4 +10,4 @@ expression: terminal.backend()
+ "                                                                                                                        "
+ "                                                                                                                        "
+ "                                                                                                                        "
+-"  ? for shortcuts · Plan mode (⇧tab to cycle)                                                        100% context left  "
++"  Plan mode (⇧tab to cycle)                                                                          100% context left  "
+diff --git a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_mode_esc_hint_from_overlay.snap b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_mode_esc_hint_from_overlay.snap
+index 66bb11a81..bf36738c4 100644
+--- a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_mode_esc_hint_from_overlay.snap
++++ b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_mode_esc_hint_from_overlay.snap
+@@ -1,6 +1,5 @@
+ ---
+ source: tui/src/bottom_pane/chat_composer.rs
+-assertion_line: 5609
+ expression: terminal.backend()
+ ---
+ "                                                                                                    "
+@@ -11,4 +10,4 @@ expression: terminal.backend()
+ "                                                                                                    "
+ "                                                                                                    "
+ "                                                                                                    "
+-"  ? for shortcuts                                                                100% context left  "
++"                                                                                 100% context left  "
+diff --git a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__light_terminal_palette_composer.snap b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__light_terminal_palette_composer.snap
+index 8ef90ddc8..55e72126b 100644
+--- a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__light_terminal_palette_composer.snap
++++ b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__light_terminal_palette_composer.snap
+@@ -10,7 +10,7 @@ Buffer {
+         "                                                ",
+         "                                                ",
+         "                                                ",
+-        "  ? for shortcuts            100% context left  ",
++        "                             100% context left  ",
+     ],
+     styles: [
+         x: 0, y: 0, fg: Reset, bg: Rgb(244, 244, 244), underline: Reset, modifier: NONE,
+@@ -19,9 +19,6 @@ Buffer {
+         x: 2, y: 1, fg: Reset, bg: Rgb(244, 244, 244), underline: Reset, modifier: DIM,
+         x: 26, y: 1, fg: Reset, bg: Rgb(244, 244, 244), underline: Reset, modifier: NONE,
+         x: 0, y: 5, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+-        x: 2, y: 5, fg: Rgb(110, 112, 108), bg: Reset, underline: Reset, modifier: BOLD,
+-        x: 3, y: 5, fg: Rgb(118, 119, 117), bg: Reset, underline: Reset, modifier: NONE,
+-        x: 17, y: 5, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+         x: 29, y: 5, fg: Rgb(118, 119, 117), bg: Reset, underline: Reset, modifier: NONE,
+         x: 46, y: 5, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
+     ]
+diff --git a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__parent_owned_thread_placeholder.snap b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__parent_owned_thread_placeholder.snap
+index bf5ec9f16..dd9eaf69b 100644
+--- a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__parent_owned_thread_placeholder.snap
++++ b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__parent_owned_thread_placeholder.snap
+@@ -10,4 +10,4 @@ expression: terminal.backend()
+ "                                                                                                    "
+ "                                                                                                    "
+ "                                                                                                    "
+-"  ? for shortcuts                                                                100% context left  "
++"                                                                                 100% context left  "
+diff --git a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__ultra_accent_upgrades_prompt_glyph.snap b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__ultra_accent_upgrades_prompt_glyph.snap
+index 1ccc97b27..4cabda45e 100644
+--- a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__ultra_accent_upgrades_prompt_glyph.snap
++++ b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__ultra_accent_upgrades_prompt_glyph.snap
+@@ -10,4 +10,4 @@ expression: terminal.backend()
+ "                                                            "
+ "                                                            "
+ "                                                            "
+-"  ? for shortcuts                        100% context left  "
++"                                         100% context left  "
+diff --git a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__vim_enter_after_expired_paste.snap b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__vim_enter_after_expired_paste.snap
+index 607cc6464..d6b2f9966 100644
+--- a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__vim_enter_after_expired_paste.snap
++++ b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__vim_enter_after_expired_paste.snap
+@@ -10,4 +10,4 @@ expression: terminal.backend()
+ "                                                            "
+ "                                                            "
+ "                                                            "
+-"  ? for shortcuts          100% context left | Vim: Insert  "
++"                           100% context left | Vim: Insert  "
+diff --git a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__backend_banner_personal_limit.snap b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__backend_banner_personal_limit.snap
+index 9c49315ad..5a597b68f 100644
+--- a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__backend_banner_personal_limit.snap
++++ b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__backend_banner_personal_limit.snap
+@@ -16,4 +16,4 @@ expression: "render_snapshot(&pane, area)"
+                                             
+ › Ask Codex to do anything                  
+                                             
+-  ? for shortcuts        100% context left
++                         100% context left
+diff --git a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__backend_banner_workspace_member_credits.snap b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__backend_banner_workspace_member_credits.snap
+index 5d13c993f..914bd4685 100644
+--- a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__backend_banner_workspace_member_credits.snap
++++ b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__backend_banner_workspace_member_credits.snap
+@@ -16,4 +16,4 @@ expression: "render_snapshot(&pane, area)"
+                                             
+ › Ask Codex to do anything                  
+                                             
+-  ? for shortcuts        100% context left
++                         100% context left
+diff --git a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__inline_banner_wrapped_and_truncated.snap b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__inline_banner_wrapped_and_truncated.snap
+index 666821024..f414fe767 100644
+--- a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__inline_banner_wrapped_and_truncated.snap
++++ b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__inline_banner_wrapped_and_truncated.snap
+@@ -20,4 +20,4 @@ expression: "render_snapshot(&pane, area)"
+                                             
+ › Ask Codex to do anything                  
+                                             
+-  ? for shortcuts        100% context left
++                         100% context left
+diff --git a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__queued_messages_visible_when_status_hidden_snapshot.snap b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__queued_messages_visible_when_status_hidden_snapshot.snap
+index e803ab161..7b8018a0e 100644
+--- a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__queued_messages_visible_when_status_hidden_snapshot.snap
++++ b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__queued_messages_visible_when_status_hidden_snapshot.snap
+@@ -8,4 +8,4 @@ expression: "render_snapshot(&pane, area)"
+                                                 
+ › Ask Codex to do anything                      
+                                                 
+-  ? for shortcuts            100% context left
++                             100% context left
+diff --git a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__status_and_queued_messages_snapshot.snap b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__status_and_queued_messages_snapshot.snap
+index cbc675a0a..433cb090f 100644
+--- a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__status_and_queued_messages_snapshot.snap
++++ b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__status_and_queued_messages_snapshot.snap
+@@ -10,4 +10,4 @@ expression: "render_snapshot(&pane, area)"
+                                                 
+ › Ask Codex to do anything                      
+                                                 
+-  ? for shortcuts            100% context left
++                             100% context left
+diff --git a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__status_only_snapshot.snap b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__status_only_snapshot.snap
+index 136c35805..e228be975 100644
+--- a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__status_only_snapshot.snap
++++ b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__status_only_snapshot.snap
+@@ -7,4 +7,4 @@ expression: "render_snapshot(&pane, area)"
+                                                 
+ › Ask Codex to do anything                      
+                                                 
+-  ? for shortcuts            100% context left
++                             100% context left
+diff --git a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__status_timer_survives_hidden_row.snap b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__status_timer_survives_hidden_row.snap
+index 13ce9387f..68af30383 100644
+--- a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__status_timer_survives_hidden_row.snap
++++ b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__status_timer_survives_hidden_row.snap
+@@ -1,6 +1,5 @@
+ ---
+ source: tui/src/bottom_pane/mod.rs
+-assertion_line: 2570
+ expression: "render_snapshot(&pane, area)"
+ ---
+ • Working (42s • esc to interrupt)      
+@@ -8,4 +7,4 @@ expression: "render_snapshot(&pane, area)"
+                                         
+ › Ask Codex to do anything              
+                                         
+-  ? for shortcuts    100% context left
++                     100% context left
+diff --git a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__status_with_details_and_queued_messages_snapshot.snap b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__status_with_details_and_queued_messages_snapshot.snap
+index 0b45f6d1c..40fc876db 100644
+--- a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__status_with_details_and_queued_messages_snapshot.snap
++++ b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__status_with_details_and_queued_messages_snapshot.snap
+@@ -12,4 +12,4 @@ expression: "render_snapshot(&pane, area)"
+                                                 
+ › Ask Codex to do anything                      
+                                                 
+-  ? for shortcuts            100% context left
++                             100% context left
+diff --git a/codex-rs/tui/src/bottom_pane/tests/snapshots/codex_tui__bottom_pane__tests__actionable_banner_tests__banner_wrapped_url.snap b/codex-rs/tui/src/bottom_pane/tests/snapshots/codex_tui__bottom_pane__tests__actionable_banner_tests__banner_wrapped_url.snap
+index 01e6540e2..c99958b8b 100644
+--- a/codex-rs/tui/src/bottom_pane/tests/snapshots/codex_tui__bottom_pane__tests__actionable_banner_tests__banner_wrapped_url.snap
++++ b/codex-rs/tui/src/bottom_pane/tests/snapshots/codex_tui__bottom_pane__tests__actionable_banner_tests__banner_wrapped_url.snap
+@@ -13,4 +13,4 @@ expression: visible
+                                         
+ › Ask Codex to do anything              
+                                         
+-  ? for shortcuts    100% context left
++                     100% context left
+diff --git a/codex-rs/tui/src/bottom_pane/tests/snapshots/codex_tui__bottom_pane__tests__actionable_banner_tests__information_banner_dismissible.snap b/codex-rs/tui/src/bottom_pane/tests/snapshots/codex_tui__bottom_pane__tests__actionable_banner_tests__information_banner_dismissible.snap
+index 9c624f046..f7c3e5ae4 100644
+--- a/codex-rs/tui/src/bottom_pane/tests/snapshots/codex_tui__bottom_pane__tests__actionable_banner_tests__information_banner_dismissible.snap
++++ b/codex-rs/tui/src/bottom_pane/tests/snapshots/codex_tui__bottom_pane__tests__actionable_banner_tests__information_banner_dismissible.snap
+@@ -1,6 +1,5 @@
+ ---
+ source: tui/src/bottom_pane/tests/actionable_banner_tests.rs
+-assertion_line: 34
+ expression: rendered
+ ---
+                                                                       
+@@ -12,4 +11,4 @@ expression: rendered
+                                                                       
+ › Ask Codex to do anything                                            
+                                                                       
+-  ? for shortcuts                                  100% context left
++                                                   100% context left
+diff --git a/codex-rs/tui/src/bottom_pane/tests/snapshots/codex_tui__bottom_pane__tests__actionable_banner_tests__information_banner_persistent.snap b/codex-rs/tui/src/bottom_pane/tests/snapshots/codex_tui__bottom_pane__tests__actionable_banner_tests__information_banner_persistent.snap
+index f717e2426..7a49ebb6a 100644
+--- a/codex-rs/tui/src/bottom_pane/tests/snapshots/codex_tui__bottom_pane__tests__actionable_banner_tests__information_banner_persistent.snap
++++ b/codex-rs/tui/src/bottom_pane/tests/snapshots/codex_tui__bottom_pane__tests__actionable_banner_tests__information_banner_persistent.snap
+@@ -1,6 +1,5 @@
+ ---
+ source: tui/src/bottom_pane/tests/actionable_banner_tests.rs
+-assertion_line: 32
+ expression: rendered
+ ---
+                                                                       
+@@ -10,4 +9,4 @@ expression: rendered
+                                                                       
+ › Ask Codex to do anything                                            
+                                                                       
+-  ? for shortcuts                                  100% context left
++                                                   100% context left
 diff --git a/codex-rs/tui/src/bottom_pane/worker_hud.rs b/codex-rs/tui/src/bottom_pane/worker_hud.rs
 new file mode 100644
 index 000000000..8273bc2aa

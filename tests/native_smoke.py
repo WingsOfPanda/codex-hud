@@ -127,6 +127,10 @@ def wait(terminals, predicate, reason, timeout=15):
     raise AssertionError(f'{reason}\n' + '\n--- terminal ---\n'.join(terminal.text for terminal in terminals))
 
 
+def composer_ready(text):
+    return any(line.lstrip().startswith('›') for line in text.splitlines())
+
+
 def worker_rows(text):
     return [line.strip() for line in text.splitlines()
             if re.fullmatch(r'[^·›>]+ \([^()·›>]*\) · '
@@ -162,11 +166,10 @@ def assert_compact_hud(text, *, rows=None, idle=True):
     assert not any(re.match(r'^Workers \d|^Shells \d', line) for line in lines), text
     assert all(' · active · ' not in line and ' · running · ' not in line and ' · job ' not in line
                for line in activities), text
+    assert 'for shortcuts' not in text and 'for agents' not in text, text
     if hud:
         composer = max(index for index, line in enumerate(lines) if line.startswith('›'))
         assert all(composer < lines.index(line) for line in hud), text
-        if 'for shortcuts' in text:
-            assert all(text.index('for shortcuts') < text.index(line) for line in hud), text
     if idle:
         assert any(line.startswith('›') for line in lines[-6:]), f'idle composer fell outside last six nonempty lines\n{text}'
     return hud
@@ -371,7 +374,8 @@ stream_max_retries=0
 
     try:
         terminal = Terminal(binary, home, workspace)
-        wait([terminal], lambda: 'for shortcuts' in terminal.text, 'private local shell TUI did not initialize', 30)
+        wait([terminal], lambda: composer_ready(terminal.text),
+             'private local shell TUI did not initialize', 30)
         # Naming the fixture root prevents an unrelated automatic title model call.
         os.write(terminal.master, b'/rename local-shell-acceptance')
         wait([terminal], lambda: '/rename local-shell-acceptance' in terminal.text,
@@ -475,7 +479,7 @@ stream_max_retries=0
         write_health(home, parents[1], 'idle')
         terminals = [Terminal(binary, home, workspace, parent=parent) for parent in parents]
         first, second = terminals
-        wait(terminals, lambda: 'for shortcuts' in first.text and 'for shortcuts' in second.text and
+        wait(terminals, lambda: all(composer_ready(t.text) for t in terminals) and
              'Watcher' not in first.text and 'Workers' not in first.text and 'Watcher' not in second.text,
              'healthy nonempty waiting health did not remain hidden', 30)
         assert 'Workers' not in first.text and 'Watcher' not in second.text, '\n'.join(t.text for t in terminals)
@@ -548,10 +552,12 @@ def advisor_hud_smoke(binary, root, evidence):
     release = workspace / 'release-shell'
     command = (f'deadline=$((SECONDS+90)); while [ ! -e {shlex.quote(str(release))} ] && '
                '(( SECONDS < deadline )); do sleep 0.1; done; echo advisor-shell-complete')
-    fixture_bin = root / 'advisor-bin'
-    fixture_bin.mkdir()
+    fixture_bin = root / 'advisor-fixture' / 'bin'
+    fixture_bin.mkdir(parents=True)
     fixture_launcher = fixture_bin / 'codex-plus'
+    fixture_calls = workspace / 'advisor-stub-calls'
     fixture_launcher.write_text('#!/bin/bash\n'
+                                f'printf "%s\\n" "$1" >> {shlex.quote(str(fixture_calls))}\n'
                                 'if [[ "$1" == run && "$2" == -- ]]; then shift 2; exec "$@"; fi\n' +
                                 command + '\n')
     fixture_launcher.chmod(0o755)
@@ -625,11 +631,15 @@ stream_max_retries=0
         wait_server(lambda: provider.count == 4, 'advisor mixed fixture shell did not yield')
         wait_server(lambda: rpc.call('thread/read', {'threadId': parents[0]})['thread']['status']['type'] == 'idle',
                     'advisor mixed fixture turn did not finish')
-        provider.command = '# codex-plus-shell: background\ncodex-plus run -- codex-plus advisor --brief task'
+        provider.command = '# codex-plus-shell: background\n' + shlex.join([
+            str(fixture_launcher), 'run', '--', str(fixture_launcher), 'advisor', '--brief', 'task'])
         provider.reset('success')
         rpc.call('turn/start', {'threadId': parents[0],
             'input': [{'type': 'text', 'text': 'Start the held advisor command fixture and finish.', 'text_elements': []}]})
         wait_server(lambda: provider.count == 6, 'advisor command fixture did not yield')
+        wait_server(lambda: fixture_calls.exists() and
+                    fixture_calls.read_text().splitlines() == ['run', 'advisor'],
+                    'advisor command escaped its private fixture launcher')
         wait_server(lambda: rpc.call('thread/read', {'threadId': parents[0]})['thread']['status']['type'] == 'idle',
                     'advisor command fixture turn did not finish')
         before = provider.count
@@ -777,6 +787,7 @@ features.unified_exec=true
 features.shell_tool=true
 features.plugins=false
 features.code_mode=true
+features.code_mode_host=true
 tui.status_line=["thread-name"]
 [projects."{workspace}"]
 trust_level="trusted"
@@ -790,7 +801,8 @@ stream_max_retries=0
 ''')
         try:
             terminal = Terminal(binary, home, workspace)
-            wait([terminal], lambda: 'for shortcuts' in terminal.text, 'transcript TUI did not initialize', 30)
+            wait([terminal], lambda: composer_ready(terminal.text),
+                 'transcript TUI did not initialize', 30)
             os.write(terminal.master, f'/rename transcript-{label}'.encode())
             wait([terminal], lambda: f'/rename transcript-{label}' in terminal.text, 'rename did not render')
             os.write(terminal.master, b'\r')
@@ -946,7 +958,7 @@ def run(binary, evidence):
         wait(terminals, lambda: len(worker_rows(terminals[0].text)) == 2 and '+4 more' in terminals[1].text,
              'distinct worker populations did not render', 30)
         for server, terminal in zip(servers, terminals):
-            assert 'for shortcuts' in terminal.text, terminal.text
+            assert 'for shortcuts' not in terminal.text and 'for agents' not in terminal.text, terminal.text
             assert_compact_hud(terminal.text, rows=min(3, len(server.workers)))
             worker_lines = worker_rows(terminal.text)
             assert len(worker_lines) == 2, terminal.text

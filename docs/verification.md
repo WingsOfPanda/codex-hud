@@ -2,9 +2,31 @@
 
 Target: Codex 0.163.0, commit
 `83086188ae0614bd882818ff1aa23f3194962012`, Linux x86_64 and ARM64,
-Rust 1.99.0. Keep the ordinary installed Codex and global configuration intact.
+Rust 1.99.1. Keep the ordinary installed Codex and global configuration intact.
 
 ## Current release acceptance
+
+For the Plus 0.3 helper migration, use the
+[Rust runtime checks](rust-runtime.md#qualification). The Python 0.2 suites below
+remain historical/oracle evidence, rather than proof of the installed runtime.
+Native client acceptance remains valid only for the identical frontend patch;
+complete 0.3 archives require their own extracted-package qualification.
+
+Implementation acceptance passed 51 Rust unit tests, 19 coordinator cases,
+16 runner cases (three Python-only mocks skipped), five upgrade cases, and five
+official stock lifecycle scenarios on each native architecture. The x86 root
+gate additionally passed 24 packaging, 11 launcher, and eight build-guard checks.
+Both architectures passed a held 65-second foreground advisor consultation with
+no polling turn or park. Python-free filesystem fixtures cover managed I/O and
+SQLite status on both targets, observer crash recovery on x86, and official
+background/advisor execution on ARM. ARM's stock/no-Python scenarios precede a
+formatting-only final rebuild; unit, coordinator, and upgrade gates were rerun.
+See [rust-runtime.json](evidence/rust-runtime.json) for exact artifact identities,
+preserved fixture failures, source provenance, and untested fault boundaries.
+Those implementation results used Rust 1.99.0. The current build pin follows
+the fleet at 1.99.1; [rust-1.99.1.json](evidence/rust-1.99.1.json) records its
+helper rebuild and qualification. Complete native-client release archives need
+fresh 1.99.1 builds before publication.
 
 The frontend patch changes TUI, CLI, and workspace lock reconciliation only;
 backend and database source must match the pinned 0.163.0 tag. The historical
@@ -23,12 +45,12 @@ From the patched upstream `codex-rs` directory, build with `--locked` and run
 the focused native tests (the environment may require `RUST_MIN_STACK=33554432`):
 
 ```sh
-cargo +1.99.0 test --locked -p codex-tui --lib worker_hud --profile dev-small -j 12
-cargo +1.99.0 test --locked -p codex-tui --lib shell_policy --profile dev-small -j 12
-cargo +1.99.0 test --locked -p codex-tui --lib chatwidget::tests::exec_flow --profile dev-small -j 12
-cargo +1.99.0 test --locked -p codex-tui --lib thread_transcript::tools::tests --profile dev-small -j 12
-cargo +1.99.0 test --locked -p codex-tui --lib daemon_menu --profile dev-small -j 12
-cargo +1.99.0 test --locked -p codex-cli --bin codex daemon_update_tests --profile dev-small -j 12
+cargo +1.99.1 test --locked -p codex-tui --lib worker_hud --profile dev-small -j 12
+cargo +1.99.1 test --locked -p codex-tui --lib shell_policy --profile dev-small -j 12
+cargo +1.99.1 test --locked -p codex-tui --lib chatwidget::tests::exec_flow --profile dev-small -j 12
+cargo +1.99.1 test --locked -p codex-tui --lib thread_transcript::tools::tests --profile dev-small -j 12
+cargo +1.99.1 test --locked -p codex-tui --lib daemon_menu --profile dev-small -j 12
+cargo +1.99.1 test --locked -p codex-cli --bin codex daemon_update_tests --profile dev-small -j 12
 ```
 
 Also exercise the affected upstream footer selection, config panel, status-line
@@ -44,6 +66,24 @@ against an official 0.163.0 daemon in private homes with loopback providers.
 The companion release note and evidence record the checks actually run and any
 remaining limits. The 0.162.1 results below are historical and do not qualify
 the 0.163.0 port.
+
+### Hidden navigation hints for Plus 0.3
+
+The automatic agents/shortcuts hint is absent and consumes no separate row.
+Left-arrow navigation and explicit `?` help still work. Status/context, shell
+mode, side conversations, warnings, search, queue, and quit controls retain their
+required space. Regression checks cover height, rendering, editable input and
+help open/close geometry with the persistent status enabled and disabled.
+
+Root acceptance checks the native status-surface, hidden-hint and HUD filters,
+terminal fixture/parser tests, all terminal smoke stages and both upstream UI
+scenarios. The smoke uses a matching private 0.163.0 code-mode host and explicitly
+enables `code_mode_host` in the transcript fixture. This is development-candidate
+qualification; complete release packages require freshly built target resources.
+An existing halfwidth-character snapshot needed two expected Debug strings
+updated for Rust 1.99.1; its rendered buffer and test assertions are unchanged.
+See [footer-hints.json](evidence/footer-hints.json) for final counts, source proof,
+preserved failures and artifact identities.
 
 ### Full model labels for Plus 0.1.1
 

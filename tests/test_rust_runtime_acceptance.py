@@ -1,0 +1,637 @@
+"""Black-box Rust coordinator gates with the unchanged Python 0.2 ledger oracle.
+
+Run: python3 tests/test_rust_runtime_acceptance.py --runtime PATH
+Only private CODEX_HOME directories and the existing Unix RPC fixture are used.
+The Python test driver is not part of the shipped runtime.
+"""
+
+import argparse
+from contextlib import contextmanager
+import fcntl
+import json
+import os
+from pathlib import Path
+import signal
+import shutil
+import subprocess
+import sys
+import tempfile
+import threading
+import time
+import unittest
+
+REPO = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO))
+from codex_plus.background import Observer, Store, register
+from codex_plus.rpc import Client
+from fixtures.native_server import AppServer
+from test_background import CHILD, PARENT, Fake, NativeFake
+
+
+RUNTIME = Path(os.environ['CODEX_PLUS_TEST_RUNTIME']).resolve() if os.environ.get('CODEX_PLUS_TEST_RUNTIME') else None
+
+
+def wait(check, reason, timeout=8):
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        value = check()
+        if value:
+            return value
+        time.sleep(.025)
+    raise AssertionError(reason)
+
+
+class RuntimeServer(AppServer):
+    """Use the existing WebSocket wire fixture and existing lifecycle fake."""
+
+    def __init__(self, home, fake):
+        self.fake = fake
+        self.drop_after_method = None
+        self.lost_ack = threading.Event()
+        self.hold_before_method = None
+        self.method_entered = threading.Event()
+        self.release_method = threading.Event()
+        self.discard_held = False
+        socket = home / 'app-server-control/app-server-control.sock'
+        socket.parent.mkdir(parents=True)
+        super().__init__(PARENT, home, 0, socket_path=socket)
+        client = Client(socket)
+        self.fake.generation = client.generation
+        client.close()
+
+    def reply(self, method, params):
+        if method == 'initialize':
+            return {'result': getattr(self.fake, 'initialize_result', {})}
+        if method == self.hold_before_method:
+            self.hold_before_method = None
+            self.method_entered.set()
+            assert self.release_method.wait(10), 'held RPC fixture timed out'
+            if self.discard_held:
+                return {'error': {'code': -32603, 'message': 'fixture discarded unexecuted mutation'}}
+        try:
+            result = self.fake.call(method, params)
+            if method == self.drop_after_method:
+                self.drop_after_method = None
+                self.disconnect()
+                self.available.set()
+                self.lost_ack.set()
+            return {'result': result}
+        except (ValueError, TimeoutError, ConnectionError) as error:
+            return {'error': {'code': -32603, 'message': str(error)}}
+
+    def close(self):
+        self.release_method.set()
+        super().close()
+
+
+class PrivateRuntime:
+    def __init__(self, fake=None):
+        self.temporary = tempfile.TemporaryDirectory(prefix='rr-')
+        self.home = Path(self.temporary.name)
+        self.runtime = self.home / 'package/bin/codex-plus-runtime'
+        self.runtime.parent.mkdir(parents=True)
+        shutil.copy2(RUNTIME, self.runtime)
+        self.fake = fake or Fake()
+        self.server = RuntimeServer(self.home, self.fake)
+        self.env = {key: value for key, value in os.environ.items()
+                    if not any(secret in key.upper() for secret in ('API_KEY', 'AUTH_TOKEN', 'BASE_URL'))}
+        self.env.update(CODEX_HOME=str(self.home), CODEX_THREAD_ID=PARENT)
+        self.logs = []
+        self.children = []
+        # Park's real launcher runs, but the fixture controls the single observer.
+        directory = self.home / 'codex-plus'
+        directory.mkdir(mode=0o700)
+        self.supervisor_lock = (directory / f'{PARENT}.supervisor.lock').open('w')
+        fcntl.flock(self.supervisor_lock, fcntl.LOCK_EX)
+
+    def cli(self, *args, ok=True):
+        result = subprocess.run([str(self.runtime), *args], cwd=REPO, env=self.env,
+                                stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=10)
+        self.logs.append({'args': list(args), 'returncode': result.returncode,
+                          'stdout': result.stdout, 'stderr': result.stderr})
+        if ok:
+            assert result.returncode == 0, self.logs[-1]
+        return result
+
+    def park(self, *selectors):
+        result = self.cli('park', '--parent', PARENT, *selectors, '--reason', 'private Rust acceptance')
+        return json.loads(result.stdout)
+
+    def state(self):
+        store = Store(self.home)
+        try:
+            return store.status(PARENT)
+        finally:
+            store.close()
+
+    def status(self):
+        return json.loads(self.cli('park', '--status', '--parent', PARENT).stdout)
+
+    def observe(self):
+        log = (self.home / f'observer-{len(self.children)}.log').open('w+')
+        child = subprocess.Popen([str(self.runtime), 'observe', '--parent', PARENT], cwd=REPO,
+                                 env=self.env, stdin=subprocess.DEVNULL, stdout=log,
+                                 stderr=log, start_new_session=True)
+        self.children.append((child, log))
+        return child
+
+    def claimed(self):
+        return any(job['observer_run'] for job in self.state()['jobs'])
+
+    def delivered(self):
+        callbacks = self.state()['callbacks']
+        return callbacks and all(row['state'] == 'delivered' for row in callbacks)
+
+    def close(self):
+        # Include detached supervisors launched by the actual park CLI.
+        owned = set(child.pid for child, _ in self.children)
+        for entry in Path('/proc').glob('[0-9]*'):
+            try:
+                env = (entry / 'environ').read_bytes().split(b'\0')
+                command = (entry / 'cmdline').read_bytes().split(b'\0')
+                if f'CODEX_HOME={self.home}'.encode() in env and any(
+                        part.endswith(b'codex-plus-runtime') or part == b'codex_plus.background'
+                        for part in command):
+                    owned.add(int(entry.name))
+            except (OSError, ProcessLookupError):
+                pass
+        for pid in owned:
+            try:
+                os.kill(pid, signal.SIGTERM)
+            except ProcessLookupError:
+                pass
+        for child, log in self.children:
+            try:
+                child.wait(timeout=3)
+            except subprocess.TimeoutExpired:
+                child.kill()
+                child.wait(timeout=3)
+            log.seek(0)
+            self.logs.append({'observer': child.pid, 'returncode': child.returncode, 'output': log.read()})
+            log.close()
+        self.supervisor_lock.close()
+        self.server.close()
+        if EVIDENCE:
+            case = EVIDENCE / CURRENT_CASE
+            case.mkdir(parents=True, exist_ok=True)
+            (case / 'cli.json').write_text(json.dumps(self.logs, indent=2))
+            (case / 'rpc.json').write_text(json.dumps(self.server.requests, indent=2))
+            (case / 'state.json').write_text(json.dumps(self.state(), indent=2))
+        self.temporary.cleanup()
+
+
+EVIDENCE = None
+CURRENT_CASE = ''
+
+
+@unittest.skipUnless(RUNTIME, 'set CODEX_PLUS_TEST_RUNTIME or pass --runtime to run the Rust product gate')
+class RuntimeAcceptance(unittest.TestCase):
+    @contextmanager
+    def fixture(self, fake=None, label=None):
+        global CURRENT_CASE
+        CURRENT_CASE = self.id().rsplit('.', 1)[-1] + (f'--{label}' if label else '')
+        fixture = PrivateRuntime(fake)
+        try:
+            yield fixture
+            self.assertFalse(fixture.server.errors)
+        finally:
+            fixture.close()
+
+    def test_exact_worker_process_ids_and_python_reopen_deduplicate(self):
+        with self.fixture() as f:
+            f.fake.running = [{'processId': '23091', 'itemId': 'command-item'}]
+            result = f.park('--worker', CHILD, '--process', '23091')
+            expected = {f'{PARENT}:worker:{CHILD}:work', f'{PARENT}:process:item:command-item'}
+            self.assertEqual(set(result['armed']), expected)
+            self.assertEqual({j['id'] for j in f.status()['jobs']}, expected)
+            store = Store(f.home)
+            try:
+                again = register(store, f.fake, PARENT, [CHILD], ['23091'], 'Python reads Rust registration')
+                self.assertEqual(again['state'], 'already_registered')
+                self.assertEqual(len(store.status(PARENT)['parks']), 1)
+            finally:
+                store.close()
+            bad = f.cli('park', '--worker', '/root/absent', '--reason', 'bad selection', ok=False)
+            self.assertNotEqual(bad.returncode, 0)
+            self.assertEqual(len(f.state()['jobs']), 2)
+
+    def test_completed_work_is_immediate_and_worker_new_turn_is_distinct(self):
+        with self.fixture() as f:
+            f.fake.complete()
+            result = f.park('--worker', CHILD)
+            self.assertEqual(result['state'], 'already_finished')
+            self.assertFalse(f.state()['parks'])
+            f.fake.child_turns = [{'id': 'next-work', 'status': 'inProgress'}, *f.fake.child_turns]
+            self.assertEqual(f.park('--worker', '/root/work')['state'], 'armed')
+            job = f.state()['jobs'][0]
+            self.assertEqual(job['turn'], 'next-work')
+            self.assertEqual(job['id'], f'{PARENT}:worker:{CHILD}:next-work')
+
+    def test_completed_process_is_immediate_and_ambiguous_process_id_is_rejected(self):
+        with self.fixture() as f:
+            f.fake.entries = [{'turnId': 'old-execution', 'item': {
+                'type': 'commandExecution', 'id': 'finished-command', 'processId': '42',
+                'status': 'completed', 'exitCode': 0}}]
+            self.assertEqual(f.park('--process', '42')['state'], 'already_finished')
+            self.assertFalse(f.state()['jobs'])
+            f.fake.entries.append({'turnId': 'other-execution', 'item': {
+                'type': 'commandExecution', 'id': 'other-command', 'processId': '42',
+                'status': 'completed', 'exitCode': 0}})
+            result = f.cli('park', '--process', '42', '--reason', 'ambiguous process', ok=False)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertFalse(f.state()['parks'])
+
+    def test_live_delivery_waits_for_idle_and_preserves_python_dedup(self):
+        with self.fixture() as f:
+            f.park('--worker', CHILD)
+            observer = f.observe()
+            wait(f.claimed, 'Rust observer never claimed registered jobs')
+            f.fake.complete()
+            wait(lambda: f.state()['callbacks'], 'Rust observer did not batch completed worker')
+            self.assertFalse(f.fake.starts, 'callback started while parent was active')
+            f.fake.idle()
+            wait(f.delivered, 'Rust callback was not delivered')
+            observer.wait(timeout=5)
+            self.assertEqual(observer.returncode, 0)
+            callback = f.state()['callbacks'][0]
+            self.assertIn('LIVE COMPLETION', callback['message'])
+            self.assertEqual(len(f.fake.starts), 1)
+            store = Store(f.home)
+            try:
+                Observer(store, PARENT, lambda: f.fake).step()
+            finally:
+                store.close()
+            self.assertEqual(len(f.fake.starts), 1, 'Python reopening delivered Rust ledger redelivered')
+
+    def test_python_frozen_uncertain_stock_callback_is_not_blindly_enqueued(self):
+        with self.fixture() as f:
+            store = Store(f.home)
+            try:
+                register(store, f.fake, PARENT, [CHILD], [], '0.2 frozen callback')
+                f.fake.complete()
+                Observer(store, PARENT, lambda: f.fake).step()
+                frozen = store.status(PARENT)['callbacks'][0]
+                frozen = store.claim_callback(frozen, native=False)
+                store.dispatch_result(frozen, starting=False, acknowledged=False)
+                before = store.status(PARENT)['callbacks'][0]
+            finally:
+                store.close()
+            f.fake.idle()
+            observer = f.observe()
+            observer.wait(timeout=5)
+            self.assertEqual(observer.returncode, 0)
+            after = f.status()['callbacks'][0]
+            self.assertEqual(after['state'], 'uncertain', 'stock ambiguity lost')
+            self.assertEqual({k: before[k] for k in ('id', 'client', 'message', 'idempotent')},
+                             {k: after[k] for k in ('id', 'client', 'message', 'idempotent')})
+            self.assertEqual(f.fake.enqueues, 0, 'stock uncertain callback was blindly retried')
+            self.assertEqual(f.status()['health']['state'], 'uncertain')
+
+    def test_python_keyed_uncertain_callback_reconciles_with_same_identity(self):
+        with self.fixture(NativeFake()) as f:
+            store = Store(f.home)
+            try:
+                register(store, f.fake, PARENT, [CHILD], [], '0.2 keyed callback')
+                f.fake.complete()
+                Observer(store, PARENT, lambda: f.fake).step()
+                frozen = store.claim_callback(store.status(PARENT)['callbacks'][0], native=True)
+                store.dispatch_result(frozen, starting=False, acknowledged=False)
+                before = store.status(PARENT)['callbacks'][0]
+            finally:
+                store.close()
+            f.fake.idle()
+            f.observe()
+            wait(f.delivered, 'Rust did not reconcile 0.2 keyed callback')
+            after = f.status()['callbacks'][0]
+            self.assertEqual({k: before[k] for k in ('id', 'client', 'message', 'idempotent')},
+                             {k: after[k] for k in ('id', 'client', 'message', 'idempotent')})
+            self.assertEqual(f.fake.enqueues, 1)
+            self.assertEqual(len(f.fake.starts), 1)
+            add = [p for method, p in f.fake.calls if method == 'thread/queue/add']
+            self.assertEqual(add[0]['idempotencyKey'], before['client'])
+
+    def test_python_cancel_provenance_survives_rust_cancel_and_reopen(self):
+        with self.fixture() as f:
+            store = Store(f.home)
+            try:
+                register(store, f.fake, PARENT, [CHILD], [], '0.2 confirmed origin')
+                store.claim_observation(PARENT, 'python-0.2-owner')
+                store.request_cancel(PARENT, 'origin', evidence={
+                    'status': 'interrupted', 'source': 'rollout', 'event': 'turn_aborted',
+                    'timestamp': '2026-10-17T00:00:00Z'})
+                before = store.status(PARENT)
+            finally:
+                store.close()
+            self.assertEqual(f.status()['parks'][0]['cancel_evidence'], before['parks'][0]['cancel_evidence'])
+            f.cli('park', '--cancel', '--parent', PARENT)
+            after = f.state()
+            for key in ('id', 'cancelled_at', 'cancel_kind', 'cancel_evidence'):
+                self.assertEqual(after['parks'][0][key], before['parks'][0][key])
+            self.assertEqual(after['parks'][0]['cancel_kind'], 'confirmed_origin')
+            self.assertEqual(json.loads(after['parks'][0]['cancel_evidence'])['observer'], 'python-0.2-owner')
+            f.fake.parent_status = 'notLoaded'
+            f.observe().wait(timeout=5)
+            self.assertFalse(any(method == 'thread/resume' for method, _ in f.fake.calls))
+
+    def test_rust_cancel_deletes_only_python_owned_pending_queue_entry(self):
+        with self.fixture() as f:
+            store = Store(f.home)
+            try:
+                register(store, f.fake, PARENT, [CHILD], [], '0.2 pending callback')
+                f.fake.complete()
+                Observer(store, PARENT, lambda: f.fake).step()
+                callback = store.claim_callback(store.status(PARENT)['callbacks'][0])
+                queued = f.fake.call('thread/queue/add', {'threadId': PARENT,
+                    'clientUserMessageId': callback['client'],
+                    'input': [{'type': 'text', 'text': callback['message']}]})['queuedSubmission']
+                store.dispatch_result(callback, queued=queued['id'])
+            finally:
+                store.close()
+            foreign = {'id': 'foreign-entry', 'clientUserMessageId': 'user-owned'}
+            f.fake.queue.append(foreign)
+            f.cli('park', '--cancel', '--parent', PARENT)
+            observer = f.observe()
+            wait(lambda: f.state()['callbacks'][0]['state'] == 'cancelled', 'owned queue cancellation not reconciled')
+            observer.wait(timeout=5)
+            self.assertEqual(observer.returncode, 0)
+            self.assertEqual(f.fake.queue, [foreign])
+            self.assertFalse(f.fake.starts)
+            store = Store(f.home)
+            try:
+                Observer(store, PARENT, lambda: f.fake).step()
+            finally:
+                store.close()
+            self.assertEqual(f.fake.queue, [foreign])
+            self.assertEqual(f.fake.enqueues, 1, 'cancelled Python callback was re-enqueued')
+
+    def test_interrupted_projection_requires_positive_terminal_evidence(self):
+        with self.fixture() as f:
+            f.park('--worker', CHILD)
+            f.observe()
+            wait(f.claimed, 'observer did not claim')
+            f.fake.parent_turns[0].update(status='interrupted', completedAt=None)
+            f.fake.parent_status = 'idle'
+            f.fake.complete()
+            wait(lambda: f.state()['parks'][0]['origin_pending'], 'projection was treated as confirmed abort')
+            self.assertEqual(f.state()['parks'][0]['state'], 'armed')
+            self.assertFalse(f.fake.starts)
+            sessions = f.home / 'sessions'
+            sessions.mkdir()
+            path = sessions / 'origin.jsonl'
+            path.write_text(json.dumps({'type': 'session_meta', 'payload': {'id': PARENT}}) + '\n' +
+                            json.dumps({'type': 'event_msg', 'timestamp': '2026-10-17T00:00:00Z',
+                                        'payload': {'type': 'turn_aborted', 'turn_id': 'origin',
+                                                    'reason': 'interrupted'}}) + '\n')
+            f.fake.paths[PARENT] = str(path)
+            wait(lambda: f.state()['parks'][0]['state'] == 'cancelled', 'durable abort did not cancel')
+            park = f.state()['parks'][0]
+            self.assertEqual(park['cancel_kind'], 'confirmed_origin')
+            self.assertEqual(json.loads(park['cancel_evidence'])['source'], 'rollout')
+            self.assertFalse(f.fake.starts)
+
+    def test_generation_change_foreign_queue_prevents_unloaded_root_resume(self):
+        with self.fixture() as f:
+            store = Store(f.home)
+            try:
+                f.fake.generation = 'old-boot:123:4'
+                register(store, f.fake, PARENT, [CHILD], [], '0.2 before daemon restart')
+                store.claim_observation(PARENT, 'previous-observer')
+            finally:
+                store.close()
+            f.fake.parent_status = 'notLoaded'
+            f.fake.queue = [{'id': 'foreign', 'clientUserMessageId': 'user-owned'}]
+            f.observe()
+            wait(f.claimed, 'new observer failed to claim')
+            wait(lambda: f.state()['parks'][0]['recovery_generation'], 'new daemon generation not observed')
+            time.sleep(.1)
+            self.assertFalse(any(method == 'thread/resume' for method, _ in f.fake.calls))
+            self.assertEqual(f.fake.enqueues, 0)
+            self.assertFalse(f.fake.starts)
+
+    def test_restarted_observer_reports_completed_old_work_once(self):
+        with self.fixture() as f:
+            store = Store(f.home)
+            try:
+                register(store, f.fake, PARENT, [CHILD], [], '0.2 interrupted observer')
+                store.claim_observation(PARENT, 'previous-observer')
+            finally:
+                store.close()
+            f.fake.idle()
+            f.fake.complete()
+            f.observe()
+            wait(f.delivered, 'restarted observer did not deliver report')
+            callback = f.state()['callbacks'][0]
+            self.assertIn('REPORT ONLY', callback['message'])
+            self.assertNotIn('LIVE COMPLETION', callback['message'])
+            self.assertEqual(f.state()['jobs'][0]['report'], 1)
+            store = Store(f.home)
+            try:
+                Observer(store, PARENT, lambda: f.fake).step()
+            finally:
+                store.close()
+            self.assertEqual(len(f.fake.starts), 1)
+
+    def test_mixed_origin_completions_keep_separate_callbacks(self):
+        with self.fixture() as f:
+            f.park('--worker', CHILD)
+            f.fake.parent_turns = [{'id': 'new-origin', 'status': 'inProgress'},
+                                   {'id': 'origin', 'status': 'completed'}]
+            f.fake.running = [{'processId': '9001', 'itemId': 'mixed-command'}]
+            f.park('--process', '9001')
+            f.observe()
+            wait(lambda: all(j['observer_run'] for j in f.state()['jobs']), 'mixed jobs not claimed')
+            f.fake.complete()
+            f.fake.running.clear()
+            f.fake.entries.append({'turnId': 'new-origin', 'item': {
+                'type': 'commandExecution', 'id': 'mixed-command', 'processId': '9001',
+                'status': 'completed', 'exitCode': 0}})
+            f.fake.parent_turns[0]['status'] = 'completed'
+            f.fake.parent_status = 'idle'
+            wait(lambda: f.delivered() and len(f.state()['callbacks']) == 2,
+                 'different registration origins were merged')
+            state = f.state()
+            self.assertEqual(len({j['callback'] for j in state['jobs']}), 2)
+            self.assertEqual(len(f.fake.starts), 2)
+            self.assertTrue(all('LIVE COMPLETION' in c['message'] for c in state['callbacks']))
+
+    def test_single_observer_owner_lock_then_takeover_reports_old_completion(self):
+        with self.fixture() as f:
+            f.park('--worker', CHILD)
+            first = f.observe()
+            wait(f.claimed, 'first observer did not claim ownership')
+            owner = f.state()['jobs'][0]['observer_run']
+            second = f.observe()
+            time.sleep(.15)
+            self.assertIsNone(second.poll(), 'second observer did not wait on owner lock')
+            self.assertEqual(f.state()['jobs'][0]['observer_run'], owner)
+            first.terminate()
+            first.wait(timeout=3)
+            wait(lambda: f.state()['jobs'][0]['observer_run'] != owner, 'lock not released after owner exit')
+            f.fake.idle()
+            f.fake.complete()
+            wait(f.delivered, 'replacement observer did not deliver exactly once')
+            self.assertEqual(len(f.fake.starts), 1)
+            self.assertEqual(len(f.state()['callbacks']), 1)
+
+    def test_generation_change_resumes_unloaded_registered_root_and_reports_loss(self):
+        with self.fixture() as f:
+            store = Store(f.home)
+            try:
+                f.fake.generation = 'old-boot:123:4'
+                register(store, f.fake, PARENT, [CHILD], [], '0.2 registered root')
+                store.claim_observation(PARENT, 'previous-observer')
+            finally:
+                store.close()
+            f.fake.parent_status = 'notLoaded'
+            f.fake.parent_turns[0]['status'] = 'completed'
+            f.fake.child_turns.clear()
+            f.observe()
+            wait(f.delivered, 'recovered unloaded root did not receive loss report')
+            self.assertEqual(f.state()['jobs'][0]['status'], 'lost')
+            self.assertEqual(len([m for m, _ in f.fake.calls if m == 'thread/resume']), 1)
+            self.assertIn('REPORT ONLY', f.state()['callbacks'][0]['message'])
+            self.assertEqual(len(f.fake.starts), 1)
+
+    def test_lost_queue_add_ack_reconciles_positive_queue_without_second_add(self):
+        for factory in (Fake, NativeFake):
+            with self.subTest(capability=factory.__name__), self.fixture(factory(), label=factory.__name__) as f:
+                f.park('--worker', CHILD)
+                f.server.drop_after_method = 'thread/queue/add'
+                observer = f.observe()
+                wait(f.claimed, 'observer did not claim before transport loss')
+                f.fake.complete()
+                f.fake.idle()
+                self.assertTrue(f.server.lost_ack.wait(8), 'queue/add response was not dropped')
+                wait(f.delivered, 'positive queue/receipt evidence did not reconcile lost add acknowledgment', timeout=15)
+                observer.wait(timeout=5)
+                self.assertEqual(observer.returncode, 0)
+                self.assertEqual(f.fake.enqueues, 1)
+                self.assertEqual(len(f.fake.starts), 1)
+                self.assertEqual(len([r for r in f.server.requests if r['method'] == 'thread/queue/add']), 1)
+                callback = f.state()['callbacks'][0]
+                self.assertEqual(f.fake.entries[0]['item']['clientId'], callback['client'])
+
+    def test_lost_queue_start_ack_reconciles_positive_history_without_second_start(self):
+        for factory in (Fake, NativeFake):
+            with self.subTest(capability=factory.__name__), self.fixture(factory(), label=factory.__name__) as f:
+                f.park('--worker', CHILD)
+                f.server.drop_after_method = 'thread/queue/start'
+                observer = f.observe()
+                wait(f.claimed, 'observer did not claim before transport loss')
+                f.fake.complete()
+                f.fake.idle()
+                self.assertTrue(f.server.lost_ack.wait(8), 'queue/start response was not dropped')
+                wait(f.delivered, 'consumed history/receipt did not settle lost start acknowledgment', timeout=15)
+                observer.wait(timeout=5)
+                self.assertEqual(observer.returncode, 0)
+                self.assertEqual(f.fake.enqueues, 1)
+                self.assertEqual(len(f.fake.starts), 1)
+                self.assertEqual(len([r for r in f.server.requests if r['method'] == 'thread/queue/start']), 1)
+                self.assertEqual(f.fake.entries[0]['item']['clientId'], f.state()['callbacks'][0]['client'])
+
+    def test_process_death_after_freeze_before_add_mutation_does_not_blindly_retry(self):
+        with self.fixture() as f:
+            f.park('--worker', CHILD)
+            f.server.hold_before_method = 'thread/queue/add'
+            f.server.discard_held = True
+            observer = f.observe()
+            wait(f.claimed, 'observer did not claim')
+            f.fake.complete()
+            f.fake.idle()
+            self.assertTrue(f.server.method_entered.wait(8), 'observer did not reach frozen before-add boundary')
+            before = f.state()['callbacks'][0]
+            self.assertEqual(before['state'], 'in_flight')
+            observer.kill()
+            observer.wait(timeout=3)
+            f.server.release_method.set()
+            recovered = f.observe()
+            recovered.wait(timeout=6)
+            self.assertEqual(recovered.returncode, 0)
+            after = f.state()['callbacks'][0]
+            self.assertEqual(after['state'], 'uncertain')
+            self.assertEqual({k: before[k] for k in ('id', 'client', 'message', 'idempotent')},
+                             {k: after[k] for k in ('id', 'client', 'message', 'idempotent')})
+            self.assertEqual(f.fake.enqueues, 0)
+            self.assertFalse(f.fake.starts)
+
+    def test_keyed_downgrade_waits_for_capability_but_accepts_positive_consumed_history(self):
+        for consumed in (False, True):
+            with self.subTest(consumed=consumed), self.fixture(NativeFake(), label=str(consumed)) as f:
+                store = Store(f.home)
+                try:
+                    register(store, f.fake, PARENT, [CHILD], [], '0.2 keyed downgrade')
+                    f.fake.complete()
+                    Observer(store, PARENT, lambda: f.fake).step()
+                    callback = store.claim_callback(store.status(PARENT)['callbacks'][0], native=True)
+                    store.dispatch_result(callback)
+                    before = store.status(PARENT)['callbacks'][0]
+                finally:
+                    store.close()
+                f.fake.initialize_result = {}
+                f.fake.idle()
+                if consumed:
+                    f.fake.entries.append({'turnId': 'historic-callback', 'item': {
+                        'type': 'userMessage', 'id': 'historic-message', 'clientId': before['client']}})
+                observer = f.observe()
+                if consumed:
+                    wait(f.delivered, 'stock history did not positively reconcile keyed callback')
+                    observer.wait(timeout=5)
+                    self.assertEqual(observer.returncode, 0)
+                else:
+                    wait(lambda: f.state()['callbacks'][0]['error'] ==
+                         'Keyed callback waits for native queue idempotency support.',
+                         'keyed downgrade did not expose capability uncertainty')
+                    self.assertEqual(f.state()['callbacks'][0]['state'], 'uncertain')
+                after = f.state()['callbacks'][0]
+                self.assertEqual({k: before[k] for k in ('id', 'client', 'message', 'idempotent')},
+                                 {k: after[k] for k in ('id', 'client', 'message', 'idempotent')})
+                self.assertEqual(f.fake.enqueues, 0)
+                self.assertFalse(f.fake.starts)
+                self.assertFalse(any(m.startswith('thread/queue/receipt') for m, _ in f.fake.calls))
+
+    def test_supervisor_preserves_inherited_final_attempt_budget_on_launch_failure(self):
+        with self.fixture() as f:
+            store = Store(f.home)
+            try:
+                register(store, f.fake, PARENT, [CHILD], [], '0.2 inherited supervisor budget')
+            finally:
+                store.close()
+            log = (f.home / 'supervisor-budget.log').open('w+')
+            supervisor = subprocess.Popen([str(f.runtime), 'supervise', '--parent', PARENT],
+                cwd=REPO, env=dict(f.env, CODEX_PLUS_SUPERVISOR_FAILURES='5'),
+                stdin=subprocess.DEVNULL, stdout=log, stderr=log, start_new_session=True)
+            f.children.append((supervisor, log))
+            expected_lock = f.home / 'codex-plus' / f'{PARENT}.supervisor.lock'
+
+            def opened_role_lock():
+                try:
+                    return any(path.readlink() == expected_lock
+                               for path in Path(f'/proc/{supervisor.pid}/fd').iterdir())
+                except (FileNotFoundError, ProcessLookupError):
+                    return False
+
+            wait(opened_role_lock, 'supervisor did not reach its held role lock')
+            f.runtime.unlink()  # The loaded supervisor survives; its observer exec must fail.
+            f.supervisor_lock.close()
+            supervisor.wait(timeout=6)
+            self.assertEqual(supervisor.returncode, 0)
+            state = f.state()
+            self.assertEqual(state['parks'][0]['error'],
+                             'Supervisor restart limit reached; observer recovery needs attention.')
+            self.assertEqual(state['health']['state'], 'error')
+            self.assertEqual(state['jobs'][0]['status'], 'armed')
+            self.assertFalse(state['callbacks'])
+            self.assertEqual(f.fake.enqueues, 0)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--runtime', type=Path, required=True)
+    parser.add_argument('--evidence', type=Path)
+    args, remaining = parser.parse_known_args()
+    RUNTIME = args.runtime.resolve(strict=True)
+    EVIDENCE = args.evidence.resolve() if args.evidence else None
+    # The direct invocation is an explicit gate, so do not permit an all-skipped run.
+    RuntimeAcceptance.__unittest_skip__ = False
+    RuntimeAcceptance.__unittest_skip_why__ = ''
+    unittest.main(argv=[sys.argv[0], *remaining])
