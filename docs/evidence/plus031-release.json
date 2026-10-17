@@ -1,0 +1,3819 @@
+{
+  "release": "0.163.0-plus.0.3.1",
+  "plus_commit": "03ec6ccb542e07874040b0726dfc1109a07a79e7",
+  "frontend_patch_sha256": "5b8d737f738a4674eb3359e43df84c7b7336e113c5de7467e5b0fc0e9dd37290",
+  "handoff": {
+    "release": "0.163.0-plus.0.3.1",
+    "plus_commit": "03ec6ccb542e07874040b0726dfc1109a07a79e7",
+    "coordinator_protocol": 2,
+    "upstream": {
+      "version": "0.163.0",
+      "tag": "rust-v0.163.0",
+      "commit": "83086188ae0614bd882818ff1aa23f3194962012"
+    },
+    "note": "docs/releases/0.163.0-plus.0.3.1.md",
+    "targets": {
+      "x86_64": {
+        "triple": "x86_64-unknown-linux-gnu",
+        "asset": "codex-plus-0.163.0-plus.0.3.1-x86_64-unknown-linux-gnu.tar.gz",
+        "sha256": "c803594a0aa1fa24dd7922bb4d69e1d266f4962c928f825820bdf60eaa46fd49",
+        "tree_sha256": "268044a6ced28d6d1748a1cc5704858f9b2da39621f21df8136c6e25b42a28a6",
+        "manifest_sha256": "f667154ec15d9b7f38e85d114c38fa6d763dca19e8ce4d3a1ab37de654b650e2"
+      },
+      "aarch64": {
+        "triple": "aarch64-unknown-linux-gnu",
+        "asset": "codex-plus-0.163.0-plus.0.3.1-aarch64-unknown-linux-gnu.tar.gz",
+        "sha256": "cce22af20607277ded03e1cf9759a08b9d52f45f976a05785e7a71cfa65c5872",
+        "tree_sha256": "6f04e6ac249f46b2087485e1672bb4f04453b23577598e87ed43ad6f65874a10",
+        "manifest_sha256": "d853a8dfe011f3ef80da62cc7f5345a5114fe517319a8bbefdd8730a41f60a56"
+      }
+    },
+    "rollout": {
+      "daemon_restart": false,
+      "quiet_checkpoint": false,
+      "session_restart": "required",
+      "agents_md": null,
+      "notes": "Compatible strictly higher protocol-2 Plus revision at the same upstream and target. Actual 0.3.0-to-0.3.1 package observers re-exec with frozen uncertain callback identity/payload preserved and fresh work delivered once on both native architectures. Installer switches current; helpers transfer after their cycle without cancellation or blind resend. Check each helper package-root after rollout. Running TUIs exit and codex resume for advisor-topic and inactive-worker polling fixes. Keep the explicit retain of Python 0.163.0-plus.0.2.0 until the user retires it after corrected Rust rollout checks and a 24-hour operational soak; this release does not retire it. All rollbacks require a quiet checkpoint. Stock CLI/shared daemon remain OpenAI 0.163.0; use codex-stock for maintenance. Wrapper dispatch and global AGENTS block are unchanged. Direct advisor calls derive topic from brief; opaque wrappers use the documented foreground advisor-topic marker. Voice remains omitted."
+    }
+  },
+  "x86_worker": {
+    "release": "0.163.0-plus.0.3.1",
+    "plus_commit": "03ec6ccb542e07874040b0726dfc1109a07a79e7",
+    "archive": "/home/liupan/Aerius/codex-plus/.build/release031/x86/packages/codex-plus-0.163.0-plus.0.3.1-x86_64-unknown-linux-gnu.tar.gz",
+    "archive_sha256": "c803594a0aa1fa24dd7922bb4d69e1d266f4962c928f825820bdf60eaa46fd49",
+    "tree_sha256": "268044a6ced28d6d1748a1cc5704858f9b2da39621f21df8136c6e25b42a28a6",
+    "manifest_sha256": "f667154ec15d9b7f38e85d114c38fa6d763dca19e8ce4d3a1ab37de654b650e2",
+    "native_binaries": {
+      "codex": {
+        "path": "/home/liupan/Aerius/codex-plus/.build/release031/x86/native/codex",
+        "sha256": "7eedce301f47ba5c835c43be00b467517275c4e0af5c0018b27057f1377ea9f3",
+        "bytes": 285879352
+      },
+      "codex-code-mode-host": {
+        "path": "/home/liupan/Aerius/codex-plus/.build/release031/x86/native/codex-code-mode-host",
+        "sha256": "8075e0f338fab829682563b3ff85d312118bbb16b24c817b47c16b87c2b2f6fc",
+        "bytes": 67734480
+      },
+      "bwrap": {
+        "path": "/home/liupan/Aerius/codex-plus/.build/release031/x86/native/bwrap",
+        "sha256": "771b2285d0e3c35cdb4173a0474e21bc5d507c56c83150468dac0dd07fa41d77",
+        "bytes": 382888
+      },
+      "codex-plus-runtime": {
+        "path": "/home/liupan/Aerius/codex-plus/.build/release031/x86/native/codex-plus-runtime",
+        "sha256": "880d766dee38c266b0f7544fd88c6ec3f8ce25fb82ec7164b0305d510edfd558",
+        "bytes": 4324784
+      }
+    },
+    "build_timings": {
+      "build bwrap with warm cache": 0.34040093421936035,
+      "build changed optimized CLI and host": 420.6415767669678,
+      "build Rust helper": 5.112098217010498
+    },
+    "build_seconds": 429.8312668800354,
+    "qualification_seconds": 404.9288008213043,
+    "per_stage": {
+      "assemble": {
+        "exit_code": 0,
+        "seconds": 45.586620569229126,
+        "log": "/home/liupan/Aerius/codex-plus/.build/release031/x86/assemble.log"
+      },
+      "extract": {
+        "exit_code": 0,
+        "seconds": 2.067380905151367,
+        "log": "/home/liupan/Aerius/codex-plus/.build/release031/x86/extract.log"
+      },
+      "verify-package": {
+        "exit_code": 0,
+        "seconds": 0.6648409366607666,
+        "log": "/home/liupan/Aerius/codex-plus/.build/release031/x86/verify-package.log"
+      },
+      "package": {
+        "exit_code": 1,
+        "seconds": 159.38450026512146,
+        "log": "/home/liupan/Aerius/codex-plus/.build/release031/x86/package.log"
+      },
+      "sandbox": {
+        "exit_code": 0,
+        "seconds": 0.9654898643493652,
+        "log": "/home/liupan/Aerius/codex-plus/.build/release031/x86/sandbox.log"
+      },
+      "runtime-acceptance": {
+        "exit_code": 0,
+        "seconds": 33.82171416282654,
+        "log": "/home/liupan/Aerius/codex-plus/.build/release031/x86/runtime-acceptance.log"
+      },
+      "runtime-runner": {
+        "exit_code": 0,
+        "seconds": 6.0238988399505615,
+        "log": "/home/liupan/Aerius/codex-plus/.build/release031/x86/runtime-runner.log"
+      },
+      "runtime-upgrade": {
+        "exit_code": 0,
+        "seconds": 12.383988857269287,
+        "log": "/home/liupan/Aerius/codex-plus/.build/release031/x86/runtime-upgrade.log"
+      },
+      "runtime-stock": {
+        "exit_code": 0,
+        "seconds": 78.25085926055908,
+        "log": "/home/liupan/Aerius/codex-plus/.build/release031/x86/runtime-stock.log"
+      },
+      "runtime-advisor": {
+        "exit_code": 0,
+        "seconds": 24.809419631958008,
+        "log": "/home/liupan/Aerius/codex-plus/.build/release031/x86/runtime-advisor.log"
+      },
+      "runtime-lifecycle": {
+        "exit_code": 0,
+        "seconds": 24.958228826522827,
+        "log": "/home/liupan/Aerius/codex-plus/.build/release031/x86/runtime-lifecycle.log"
+      },
+      "actual-stop": {
+        "exit_code": 0,
+        "seconds": 4.471886396408081,
+        "log": "/home/liupan/Aerius/codex-plus/.build/release031/x86/actual-stop.log"
+      },
+      "upstream-tui": {
+        "exit_code": 0,
+        "seconds": 9.580627679824829,
+        "log": "/home/liupan/Aerius/codex-plus/.build/release031/x86/upstream-tui.log"
+      },
+      "verify-package-after-runtime": {
+        "exit_code": 0,
+        "seconds": 0.6649348735809326,
+        "log": "/home/liupan/Aerius/codex-plus/.build/release031/x86/verify-package-after-runtime.log"
+      }
+    },
+    "package_checks": {
+      "manifest": true,
+      "public_commands": true,
+      "wrapper": true,
+      "resources": false,
+      "exec": true,
+      "stdio_code_mode": true,
+      "native_terminal": true,
+      "shell_terminal": true,
+      "manifest_after_runtime": true
+    },
+    "terminal": {
+      "binary": "/home/liupan/Aerius/codex-plus/.build/release031/x86/extracted/codex-plus-0.163.0-plus.0.3.1-x86_64-unknown-linux-gnu/bin/codex-plus",
+      "passed": [
+        "six active workers show two full-model rows plus +4 more in three total rows, with elapsed, unknown remote tokens, actual GPT-6.1-Sol high/GPT-6-Astra medium, and idle composer within last six nonempty lines",
+        "read-only /daemon shows status guidance and Close; no daemon update choices or exit",
+        "two simultaneous independent roots and editable composers",
+        "input remains editable during delayed metadata RPC",
+        "completion removes its row and promotes a hidden active worker",
+        "last completion hides the entire strip while both composers remain editable",
+        "later activity restores the compact strip without losing the draft",
+        "explicit three-member cohort reduces 3\u21922\u21921\u2192hidden without duplicate rows or shrinking dispatch elapsed; independent cohort stays separate, group resize/input preserve draft, final strip collapses",
+        "explicit approval wait survives alert plus overflow in three total rows, with idle composer within last six nonempty lines",
+        "small and normal PTY resize with preserved draft",
+        "partial metadata RPC failure marks counts stale and recovers",
+        "stale disconnect and automatic reconnect without cross-pane effect",
+        "zero turn/start or turn/steer requests and zero model calls",
+        "remote websocket roots ignore unrelated local watcher and advisor status files",
+        "33 historical children: zero inactive turn reads, one per active or waiting child per refresh, mixed group age retained, active-to-idle collapse, zero model calls",
+        "isolated tmux server: two split panes, draft editing, small/normal resize, stale/reconnect, zero turn/start or turn/steer",
+        "private local app-server: two loopback seed turns, then idle roots, healthy waiting hidden, zero jobs pending visible, stale/uncertain/report/idle health, last-six composer detection, narrow draft editing, parent isolation, zero additional model calls or turns",
+        "unregistered remote shell-only and mixed worker/shell strips; three total rows including overflow and alerts; compact background labels and observed elapsed; item identity reset; parent isolation; shell-only stale failures and recovery; Unicode/control-safe narrow drafts; successful disappearance without success claim; zero UI turn or execution requests",
+        "real private local embedded app-server: one loopback tool turn, yielded finite shell survives completed turn, row and editable idle draft without park registration, actual command completion removes row, zero extra model calls or turns",
+        "advisor explicit Astra catalog: ready zero calls, running timer, done count/duration, error, stale/malformed/mismatched/FIFO/symlink status, full reported model per pane, managed advisor shell coalesces only while reviewing and unrelated shell stays visible, warning/advisor/real-shell share three rows with narrow AP composer, zero extra model calls or turns",
+        "advisor transcript direct-done: real Code Mode exec/wait, live across initial yield, local elapsed ticks, one transcript row, resize and draft preserved, two loopback root responses only",
+        "advisor transcript wrapper-done: real Code Mode exec/wait, live across initial yield, local elapsed ticks, one transcript row, resize and draft preserved, two loopback root responses only",
+        "advisor transcript wrapper-failed: real Code Mode exec/wait, live across initial yield, local elapsed ticks, one transcript row, resize and draft preserved, two loopback root responses only"
+      ],
+      "ui_turn_start_requests": 0,
+      "ui_turn_steer_requests": 0,
+      "cursor_replies": [
+        3,
+        3
+      ],
+      "model_calls_after_fixture_setup": 0,
+      "fixture_seed_model_calls": 2,
+      "fixture_shell_model_calls": 2,
+      "fixture_advisor_seed_model_calls": 2,
+      "fixture_advisor_shell_model_calls": 4,
+      "fixture_advisor_transcript_model_calls": 6,
+      "terminal_parser": "pyte 0.8.2",
+      "tmux_required": false
+    },
+    "shell": {
+      "binary": "/home/liupan/Aerius/codex-plus/.build/release031/x86/extracted/codex-plus-0.163.0-plus.0.3.1-x86_64-unknown-linux-gnu/bin/codex-plus",
+      "remote_model_requests": 0,
+      "cases": [
+        {
+          "case": "auto_quick",
+          "exit": 0,
+          "compact": false,
+          "completion_hud_clear_ms": 5,
+          "loopback_requests": 2
+        },
+        {
+          "case": "auto_long",
+          "exit": 0,
+          "compact": true,
+          "completion_hud_clear_ms": 1007,
+          "loopback_requests": 2
+        },
+        {
+          "case": "auto_polling",
+          "exit": 0,
+          "compact": true,
+          "completion_hud_clear_ms": 1006,
+          "loopback_requests": 4
+        },
+        {
+          "case": "background_quick",
+          "exit": 0,
+          "compact": true,
+          "completion_hud_clear_ms": 4,
+          "loopback_requests": 2
+        },
+        {
+          "case": "background_long",
+          "exit": 0,
+          "compact": true,
+          "completion_hud_clear_ms": 4,
+          "loopback_requests": 2
+        },
+        {
+          "case": "unmarked_long",
+          "exit": 0,
+          "compact": false,
+          "completion_hud_clear_ms": 1013,
+          "loopback_requests": 2
+        },
+        {
+          "case": "foreground_long",
+          "exit": 0,
+          "compact": false,
+          "completion_hud_clear_ms": 1014,
+          "loopback_requests": 2
+        },
+        {
+          "case": "background_failure",
+          "exit": 17,
+          "compact": true,
+          "completion_hud_clear_ms": 4,
+          "loopback_requests": 2
+        }
+      ],
+      "parallel": {
+        "parallel_roots": 2,
+        "isolated_policies": true,
+        "editable_composers": true
+      },
+      "cancellation": {
+        "ctrl_c_preserves_tracked_processes": true,
+        "native_stop_kills_process_group": true,
+        "terminated_known_child_pids": [
+          236879,
+          236881,
+          236880
+        ],
+        "partial_log_preserved": true
+      },
+      "stock_park": {
+        "official_daemon": "/home/liupan/Aerius/codex-plus/.build/upstream-0163/official-x86/bin/codex",
+        "queueIdempotency": false,
+        "loopback_requests": 3,
+        "callbacks": 1,
+        "turns": 2,
+        "passed": true
+      },
+      "passed": true
+    },
+    "notice_native_packages": 1066,
+    "notice_helper_packages": 146,
+    "curated_packages": [
+      "debugserver-types@0.5.0",
+      "deno_core_icudata@0.77.0",
+      "eventsource-stream@0.2.3",
+      "fxhash@0.2.1",
+      "io_tee@0.1.1",
+      "linux-keyutils@0.2.4"
+    ],
+    "host_limit": "Raw bwrap uid-map denied identically for official and Plus; CLI read-only sandbox enforced for both.",
+    "skipped": [
+      "3 runner Python monkeypatch checks (recorded in runtime-runner.log)",
+      "Root-owned Rust unit gate and actual old-to-new full-package upgrade not duplicated"
+    ],
+    "remote_model_requests": 0,
+    "official_unchanged": true,
+    "warm_reuse_evidence": {
+      "previous_source_tree": "7b324b569c1479fc8ebf03593bacc643e02cea8a",
+      "changed_upstream_files": [
+        "codex-rs/tui/src/app/worker_hud.rs",
+        "codex-rs/tui/src/bottom_pane/worker_hud.rs",
+        "codex-rs/tui/src/chatwidget/shell_policy.rs",
+        "codex-rs/tui/src/chatwidget/tests/shell_policy.rs",
+        "codex-rs/tui/src/exec_cell/advisor.rs",
+        "codex-rs/tui/src/exec_cell/snapshots/codex_tui__exec_cell__advisor__tests__advisor_transcript_done.snap"
+      ],
+      "profile": "release upstream thin LTO four codegen units",
+      "target": "x86_64-unknown-linux-gnu",
+      "toolchain": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+      "cargo_fresh": {
+        "bwrap": {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release030/x86/target/x86_64-unknown-linux-gnu/release/bwrap",
+          "fresh": true
+        },
+        "codex-code-mode-host": {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release030/x86/target/x86_64-unknown-linux-gnu/release/codex-code-mode-host",
+          "fresh": true
+        },
+        "codex": {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release030/x86/target/x86_64-unknown-linux-gnu/release/codex",
+          "fresh": false
+        }
+      },
+      "resources_equal_previous": true,
+      "shipping_bwrap_and_host_hashes_equal_previous": true,
+      "previous_provenance": ".build/release030/x86/build-result.json",
+      "no_archive_bytes_reused": true,
+      "plus_snapshot_clean_after_qualification": true
+    }
+  },
+  "arm_worker": {
+    "passed": true,
+    "release": "0.163.0-plus.0.3.1",
+    "plus_commit": "03ec6ccb542e07874040b0726dfc1109a07a79e7",
+    "target": "aarch64-unknown-linux-gnu",
+    "archive": "/data/liupan/codex-plus-build/release031/packages/codex-plus-0.163.0-plus.0.3.1-aarch64-unknown-linux-gnu.tar.gz",
+    "sha256": "cce22af20607277ded03e1cf9759a08b9d52f45f976a05785e7a71cfa65c5872",
+    "tree_sha256": "6f04e6ac249f46b2087485e1672bb4f04453b23577598e87ed43ad6f65874a10",
+    "manifest_sha256": "d853a8dfe011f3ef80da62cc7f5345a5114fe517319a8bbefdd8730a41f60a56",
+    "coordinator_protocol": 2,
+    "voice": false,
+    "frontend_patch_sha256": "5b8d737f738a4674eb3359e43df84c7b7336e113c5de7467e5b0fc0e9dd37290",
+    "build": {
+      "cargo_profile": "release",
+      "glibc": "2.39",
+      "rust": "1.99.1"
+    },
+    "binary_sha256": {
+      "bin/codex": "2a9196eda2f8c56ad90b131df7425d1b40ac22ff17735475cccff7ff9fde9e55",
+      "bin/codex-plus-runtime": "8b38a72a72bb384de54d5325d8d64271e07397a0dcbc72b343bc95325de7cb0e",
+      "bin/codex-code-mode-host": "bd49c83bd37957394bf6c132d9cfd9ad9ee77e6c92fd376a67d00a477dcef110",
+      "codex-resources/bwrap": "e5fb46d965adfea34aa450624507cef71eefee9356a494c3be81d46ff10ba550",
+      "codex-path/rg": "e36d0eb52e70696bdf1781392722e05a21bb91d3b7b762ef5ec20e5df2ec687b"
+    },
+    "notice_files": {
+      "licenses/codex-native-NOTICES.txt": "c89240895fab8e00b3f234129ec6e6939dc7614f4ac81000bbff2b666aa74e94",
+      "licenses/codex-native-dependencies.json": "cfb05b8017baa1e89871ca2fe152de0b6108f9068a939557c76e9a12228ed249",
+      "licenses/codex-plus-runtime-NOTICES.txt": "9ccac605d7f9916558ffc1dd8c6092993d862d8b06624fb7348891994e308157",
+      "licenses/codex-plus-runtime-dependencies.json": "53616dd1ee00debb157888ab708ab132bcec1d522fd340725859cf24a195cf0f",
+      "licenses/codex-plus-runtime-rust-COPYRIGHT.html": "5647be074c8edf7339fd863055923a8fc80bc5610a8d4661ec3b767b9d392c27"
+    },
+    "native_dependency_packages": 1063,
+    "runtime_dependency_packages": 146,
+    "checks": {
+      "rust_units": 55,
+      "package_groups": 9,
+      "runner_total": 19,
+      "runner_skipped": 3,
+      "coordinator": 22,
+      "upgrade": 7,
+      "advisor_regressions": 13,
+      "advisor_stop_native_and_stock": 2,
+      "official_stock_groups": 3,
+      "official_lifecycle_groups": 5
+    },
+    "remote_provider_requests": 0,
+    "official_sha256": "8a96f66d059d653e68bfd5f3c79337e6f1d7d170d80bf705eb7d0249b34c0ece",
+    "official_unchanged": true,
+    "runtime_unchanged": true,
+    "source_clean": true,
+    "private_rustup_settings_unchanged": true,
+    "owned_processes_cleaned": [],
+    "owned_processes_remaining": [],
+    "previous_published_package": "/data/liupan/codex-plus-build/release030/extracted/codex-plus-0.163.0-plus.0.3.0-aarch64-unknown-linux-gnu",
+    "previous_tree_sha256": "807f75968542c02510043958c04540ca2192ee34d38707f071e5430b25df5cb0",
+    "persistent_caches": {
+      "cargo": "/data/liupan/codex-plus-build/release030/cargo",
+      "target": "/data/liupan/codex-plus-build/release030/target",
+      "v8": "/data/liupan/codex-plus-build/release030/cache/v8"
+    },
+    "stable_source_paths": {
+      "upstream": "/data/liupan/codex-plus-build/release030/upstream",
+      "plus": "/data/liupan/codex-plus-build/release030/plus-source"
+    },
+    "preserved_previous_source": [
+      "evidence/previous-plus.bundle",
+      "evidence/previous-frontend.patch",
+      "evidence/previous-upstream-tree.txt",
+      "evidence/previous-upstream-diff.patch"
+    ],
+    "unchanged_components_match_previous": [
+      "bin/codex-code-mode-host",
+      "codex-resources/bwrap",
+      "codex-path/rg"
+    ],
+    "parallelism": {
+      "jobs": 32,
+      "nice": 10,
+      "ionice": "idle",
+      "host_cpus": 192,
+      "available_memory_gib_preflight": 409,
+      "load_preflight": [
+        5.88,
+        7.68,
+        9.2
+      ]
+    },
+    "timing_seconds": {
+      "cli_code_mode_stage": 1341,
+      "runtime_build": 10,
+      "cache_fetch": 11,
+      "package": 75,
+      "qualification_initial": 384,
+      "upgrade_short_retry": 12.59
+    },
+    "timing_limit": "No apples-to-apples 24-versus-32 job benchmark; no speedup claim.",
+    "cache_gap": {
+      "error": "Offline metadata requested uncached alsa v0.11.0; voice remains omitted.",
+      "fix_command": "timeout 600 cargo +1.99.1 fetch --locked --target aarch64-unknown-linux-gnu --manifest-path /data/liupan/codex-plus-build/release030/upstream/codex-rs/Cargo.toml"
+    },
+    "preserved_qualification_failure": {
+      "case": "relative-home upgrade",
+      "cause": "120-byte lexical Unix socket path exceeded 107-byte limit",
+      "resolution": "Private temporary root /data/liupan/cp031t; all 7 upgrade cases pass",
+      "evidence": [
+        "qualification/summary.json: initial_upgrade_failure",
+        "package-qualification.log",
+        "qualification/upgrade",
+        "upgrade-short.log"
+      ]
+    },
+    "limits": [
+      "Three inherited Python-only runner monkeypatch checks skipped.",
+      "Full upstream Rust test suite not rerun on ARM; parent source gates are separate evidence.",
+      "No fleet installation, publication, live daemon/config change, or source commit by ARM worker.",
+      "Independent real 0.3.0 to 0.3.1 package upgrade gate belongs to root."
+    ]
+  },
+  "root_x86": {
+    "target": "x86_64-unknown-linux-gnu",
+    "archive_sha256": "c803594a0aa1fa24dd7922bb4d69e1d266f4962c928f825820bdf60eaa46fd49",
+    "manifest_sha256": "f667154ec15d9b7f38e85d114c38fa6d763dca19e8ce4d3a1ab37de654b650e2",
+    "tree_sha256": "268044a6ced28d6d1748a1cc5704858f9b2da39621f21df8136c6e25b42a28a6",
+    "plus_commit": "03ec6ccb542e07874040b0726dfc1109a07a79e7",
+    "runtime_sha256": "880d766dee38c266b0f7544fd88c6ec3f8ce25fb82ec7164b0305d510edfd558",
+    "native_cli_sha256": "7eedce301f47ba5c835c43be00b467517275c4e0af5c0018b27057f1377ea9f3",
+    "checks": {
+      "package": [
+        {
+          "command": [
+            "/home/liupan/Aerius/codex-plus/scripts/build-release.sh",
+            "--verify",
+            "/home/liupan/Aerius/codex-plus/.build/release031/root-x86/codex-plus-0.163.0-plus.0.3.1-x86_64-unknown-linux-gnu"
+          ],
+          "exit": 0,
+          "seconds": 0.665,
+          "log": "/home/liupan/Aerius/codex-plus/.build/release031/root-x86/package-0.log",
+          "accepted": true
+        },
+        {
+          "command": [
+            "/home/liupan/Aerius/codex-plus/.build/dual-release/acceptance/venv/bin/python",
+            "/home/liupan/Aerius/codex-plus/tests/test_release_package.py",
+            "/home/liupan/Aerius/codex-plus/.build/release031/root-x86/codex-plus-0.163.0-plus.0.3.1-x86_64-unknown-linux-gnu",
+            "--evidence",
+            "/home/liupan/Aerius/codex-plus/.build/release031/root-x86/package-report",
+            "--official-cli",
+            "/home/liupan/Aerius/codex-plus/.build/upstream-0163/official-x86/bin/codex"
+          ],
+          "exit": 1,
+          "seconds": 160.173,
+          "log": "/home/liupan/Aerius/codex-plus/.build/release031/root-x86/package-1.log",
+          "accepted_host_limit": true,
+          "accepted": true
+        }
+      ],
+      "helper": [
+        {
+          "command": [
+            "/home/liupan/Aerius/codex-plus/.build/dual-release/acceptance/venv/bin/python",
+            "/home/liupan/Aerius/codex-plus/tests/test_rust_runtime_acceptance.py",
+            "--runtime",
+            "/home/liupan/Aerius/codex-plus/.build/release031/root-x86/codex-plus-0.163.0-plus.0.3.1-x86_64-unknown-linux-gnu/bin/codex-plus-runtime",
+            "--evidence",
+            "/home/liupan/Aerius/codex-plus/.build/release031/root-x86/coordinator",
+            "-v"
+          ],
+          "exit": 0,
+          "seconds": 35.273,
+          "log": "/home/liupan/Aerius/codex-plus/.build/release031/root-x86/helper-0.log",
+          "accepted": true
+        },
+        {
+          "command": [
+            "/home/liupan/Aerius/codex-plus/.build/dual-release/acceptance/venv/bin/python",
+            "/home/liupan/Aerius/codex-plus/tests/test_rust_runtime_advisor_regressions.py",
+            "--runtime",
+            "/home/liupan/Aerius/codex-plus/.build/release031/root-x86/codex-plus-0.163.0-plus.0.3.1-x86_64-unknown-linux-gnu/bin/codex-plus-runtime",
+            "--evidence",
+            "/home/liupan/Aerius/codex-plus/.build/release031/root-x86/advisor",
+            "-v"
+          ],
+          "exit": 0,
+          "seconds": 24.8,
+          "log": "/home/liupan/Aerius/codex-plus/.build/release031/root-x86/helper-1.log",
+          "accepted": true
+        },
+        {
+          "command": [
+            "/home/liupan/Aerius/codex-plus/.build/dual-release/acceptance/venv/bin/python",
+            "/home/liupan/Aerius/codex-plus/tests/test_rust_runtime_upgrade.py",
+            "--runtime",
+            "/home/liupan/Aerius/codex-plus/.build/release031/root-x86/codex-plus-0.163.0-plus.0.3.1-x86_64-unknown-linux-gnu/bin/codex-plus-runtime",
+            "--evidence",
+            "/home/liupan/Aerius/codex-plus/.build/release031/root-x86/upgrade",
+            "-v"
+          ],
+          "exit": 0,
+          "seconds": 11.331,
+          "log": "/home/liupan/Aerius/codex-plus/.build/release031/root-x86/helper-2.log",
+          "accepted": true
+        },
+        {
+          "command": [
+            "/home/liupan/Aerius/codex-plus/.build/dual-release/acceptance/venv/bin/python",
+            "/home/liupan/Aerius/codex-plus/tests/test_advisor_stop_integration.py",
+            "--binary",
+            "/home/liupan/Aerius/codex-plus/.build/release031/root-x86/codex-plus-0.163.0-plus.0.3.1-x86_64-unknown-linux-gnu/bin/codex",
+            "--runtime",
+            "/home/liupan/Aerius/codex-plus/.build/release031/root-x86/codex-plus-0.163.0-plus.0.3.1-x86_64-unknown-linux-gnu/bin/codex-plus-runtime",
+            "--evidence",
+            "/home/liupan/Aerius/codex-plus/.build/release031/root-x86/actual-stop"
+          ],
+          "exit": 0,
+          "seconds": 3.469,
+          "log": "/home/liupan/Aerius/codex-plus/.build/release031/root-x86/helper-3.log",
+          "accepted": true
+        },
+        {
+          "command": [
+            "/home/liupan/Aerius/codex-plus/.build/dual-release/acceptance/venv/bin/python",
+            "/home/liupan/Aerius/codex-plus/tests/test_rust_runtime_stock_lifecycle.py",
+            "--runtime",
+            "/home/liupan/Aerius/codex-plus/.build/release031/root-x86/codex-plus-0.163.0-plus.0.3.1-x86_64-unknown-linux-gnu/bin/codex-plus-runtime",
+            "--stock-binary",
+            "/home/liupan/Aerius/codex-plus/.build/upstream-0163/official-x86/bin/codex",
+            "--evidence",
+            "/home/liupan/Aerius/codex-plus/.build/release031/root-x86/stock-lifecycle",
+            "--scenario",
+            "all"
+          ],
+          "exit": 0,
+          "seconds": 24.656,
+          "log": "/home/liupan/Aerius/codex-plus/.build/release031/root-x86/helper-4.log",
+          "accepted": true
+        },
+        {
+          "command": [
+            "/home/liupan/Aerius/codex-plus/.build/dual-release/acceptance/venv/bin/python",
+            "/home/liupan/Aerius/codex-plus/.build/release031/real-upgrade.py",
+            "--old",
+            "/home/liupan/Aerius/codex-plus/.build/release030/x86/extracted/codex-plus-0.163.0-plus.0.3.0-x86_64-unknown-linux-gnu",
+            "--new",
+            "/home/liupan/Aerius/codex-plus/.build/release031/root-x86/codex-plus-0.163.0-plus.0.3.1-x86_64-unknown-linux-gnu",
+            "--evidence",
+            "/home/liupan/Aerius/codex-plus/.build/release031/root-x86/actual-package-upgrade"
+          ],
+          "exit": 0,
+          "seconds": 3.419,
+          "log": "/home/liupan/Aerius/codex-plus/.build/release031/root-x86/helper-5.log",
+          "accepted": true
+        }
+      ]
+    },
+    "final_package_integrity": true,
+    "distinct_stock_host_policy_evidence": "/home/liupan/Aerius/codex-plus/.build/release031/x86/sandbox-comparison.json"
+  },
+  "root_arm": {
+    "passed": true,
+    "target": "aarch64-unknown-linux-gnu",
+    "plus_commit": "03ec6ccb542e07874040b0726dfc1109a07a79e7",
+    "archive_sha256": "cce22af20607277ded03e1cf9759a08b9d52f45f976a05785e7a71cfa65c5872",
+    "manifest_sha256": "d853a8dfe011f3ef80da62cc7f5345a5114fe517319a8bbefdd8730a41f60a56",
+    "tree_sha256": "6f04e6ac249f46b2087485e1672bb4f04453b23577598e87ed43ad6f65874a10",
+    "runtime_sha256": "8b38a72a72bb384de54d5325d8d64271e07397a0dcbc72b343bc95325de7cb0e",
+    "native_cli_sha256": "2a9196eda2f8c56ad90b131df7425d1b40ac22ff17735475cccff7ff9fde9e55",
+    "checks": [
+      {
+        "label": "initial-integrity",
+        "command": [
+          "/data/liupan/codex-plus-build/release030/plus-source/scripts/package-release.py",
+          "--verify",
+          "/data/liupan/codex-plus-build/release031/root/codex-plus-0.163.0-plus.0.3.1-aarch64-unknown-linux-gnu"
+        ],
+        "exit": 0,
+        "seconds": 0.868,
+        "log": "/data/liupan/codex-plus-build/release031/root/initial-integrity.log"
+      },
+      {
+        "label": "package",
+        "command": [
+          "/data/liupan/codex-plus-build/release030/plus-source/tests/test_release_package.py",
+          "/data/liupan/codex-plus-build/release031/root/codex-plus-0.163.0-plus.0.3.1-aarch64-unknown-linux-gnu",
+          "--evidence",
+          "/data/liupan/codex-plus-build/release031/root/package-report",
+          "--official-cli",
+          "/data/liupan/codex-plus-build/plus020/official/bin/codex"
+        ],
+        "exit": 0,
+        "seconds": 174.709,
+        "log": "/data/liupan/codex-plus-build/release031/root/package.log"
+      },
+      {
+        "label": "coordinator",
+        "command": [
+          "/data/liupan/codex-plus-build/release030/plus-source/tests/test_rust_runtime_acceptance.py",
+          "--runtime",
+          "/data/liupan/codex-plus-build/release031/root/codex-plus-0.163.0-plus.0.3.1-aarch64-unknown-linux-gnu/bin/codex-plus-runtime",
+          "--evidence",
+          "/data/liupan/codex-plus-build/release031/root/coordinator",
+          "-v"
+        ],
+        "exit": 0,
+        "seconds": 34.592,
+        "log": "/data/liupan/codex-plus-build/release031/root/coordinator.log"
+      },
+      {
+        "label": "advisor",
+        "command": [
+          "/data/liupan/codex-plus-build/release030/plus-source/tests/test_rust_runtime_advisor_regressions.py",
+          "--runtime",
+          "/data/liupan/codex-plus-build/release031/root/codex-plus-0.163.0-plus.0.3.1-aarch64-unknown-linux-gnu/bin/codex-plus-runtime",
+          "--evidence",
+          "/data/liupan/codex-plus-build/release031/root/advisor",
+          "-v"
+        ],
+        "exit": 0,
+        "seconds": 25.571,
+        "log": "/data/liupan/codex-plus-build/release031/root/advisor.log"
+      },
+      {
+        "label": "upgrade",
+        "command": [
+          "/data/liupan/codex-plus-build/release030/plus-source/tests/test_rust_runtime_upgrade.py",
+          "--runtime",
+          "/data/liupan/codex-plus-build/release031/root/codex-plus-0.163.0-plus.0.3.1-aarch64-unknown-linux-gnu/bin/codex-plus-runtime",
+          "--evidence",
+          "/data/liupan/codex-plus-build/release031/root/upgrade",
+          "-v"
+        ],
+        "exit": 0,
+        "seconds": 14.49,
+        "log": "/data/liupan/codex-plus-build/release031/root/upgrade.log"
+      },
+      {
+        "label": "actual-stop",
+        "command": [
+          "/data/liupan/codex-plus-build/release030/plus-source/tests/test_advisor_stop_integration.py",
+          "--binary",
+          "/data/liupan/codex-plus-build/release031/root/codex-plus-0.163.0-plus.0.3.1-aarch64-unknown-linux-gnu/bin/codex",
+          "--runtime",
+          "/data/liupan/codex-plus-build/release031/root/codex-plus-0.163.0-plus.0.3.1-aarch64-unknown-linux-gnu/bin/codex-plus-runtime",
+          "--evidence",
+          "/data/liupan/codex-plus-build/release031/root/actual-stop"
+        ],
+        "exit": 0,
+        "seconds": 4.873,
+        "log": "/data/liupan/codex-plus-build/release031/root/actual-stop.log"
+      },
+      {
+        "label": "stock-lifecycle",
+        "command": [
+          "/data/liupan/codex-plus-build/release030/plus-source/tests/test_rust_runtime_stock_lifecycle.py",
+          "--runtime",
+          "/data/liupan/codex-plus-build/release031/root/codex-plus-0.163.0-plus.0.3.1-aarch64-unknown-linux-gnu/bin/codex-plus-runtime",
+          "--stock-binary",
+          "/data/liupan/codex-plus-build/plus020/official/bin/codex",
+          "--evidence",
+          "/data/liupan/codex-plus-build/release031/root/stock-lifecycle",
+          "--scenario",
+          "all"
+        ],
+        "exit": 0,
+        "seconds": 30.181,
+        "log": "/data/liupan/codex-plus-build/release031/root/stock-lifecycle.log"
+      },
+      {
+        "label": "actual-package-upgrade",
+        "command": [
+          "/data/liupan/codex-plus-build/release031/real-upgrade-root.py",
+          "--old",
+          "/data/liupan/codex-plus-build/release030/extracted/codex-plus-0.163.0-plus.0.3.0-aarch64-unknown-linux-gnu",
+          "--new",
+          "/data/liupan/codex-plus-build/release031/root/codex-plus-0.163.0-plus.0.3.1-aarch64-unknown-linux-gnu",
+          "--evidence",
+          "/data/liupan/codex-plus-build/release031/root/actual-package-upgrade"
+        ],
+        "exit": 0,
+        "seconds": 3.17,
+        "log": "/data/liupan/codex-plus-build/release031/root/actual-package-upgrade.log"
+      },
+      {
+        "label": "final-integrity",
+        "command": [
+          "/data/liupan/codex-plus-build/release030/plus-source/scripts/package-release.py",
+          "--verify",
+          "/data/liupan/codex-plus-build/release031/root/codex-plus-0.163.0-plus.0.3.1-aarch64-unknown-linux-gnu"
+        ],
+        "exit": 0,
+        "seconds": 0.967,
+        "log": "/data/liupan/codex-plus-build/release031/root/final-integrity.log"
+      }
+    ],
+    "seconds": 290.255,
+    "final_package_integrity": true,
+    "remote_model_requests": 0
+  },
+  "actual_package_upgrades": {
+    "x86_64": {
+      "old_release": "0.163.0-plus.0.3.0",
+      "new_release": "0.163.0-plus.0.3.1",
+      "fixture": "Private stock RPC wire; actual immutable package copies and kernel exec",
+      "remote_model_requests": 0,
+      "passed": true,
+      "preserved_callback_identity_and_payload": true,
+      "uncertain_callback_not_resent": true,
+      "fresh_live_callback_once": true,
+      "same_pid_reexec": true,
+      "moved_cwd": true,
+      "before": {
+        "parent": "11111111-1111-4111-8111-111111111111",
+        "parks": [
+          {
+            "id": "3808b309-e3d5-42cf-a8a8-7e3481389a5d",
+            "parent": "11111111-1111-4111-8111-111111111111",
+            "origin": "origin",
+            "reason": "private Rust acceptance",
+            "state": "armed",
+            "deadline": 1792316805.0966902,
+            "error": null,
+            "generation": "7e3c9e7f-06ec-4263-b27a-bbd54d48d9d4:323794:199624972",
+            "recovery_generation": null,
+            "origin_pending": 0,
+            "cancelled_at": null,
+            "cancel_kind": null,
+            "cancel_evidence": null,
+            "pending_reason": null
+          },
+          {
+            "id": "88b2f16b-1498-4b01-bc4a-f423fbea5430",
+            "parent": "11111111-1111-4111-8111-111111111111",
+            "origin": "origin",
+            "reason": "private Rust acceptance",
+            "state": "armed",
+            "deadline": 1792316805.1224067,
+            "error": null,
+            "generation": "7e3c9e7f-06ec-4263-b27a-bbd54d48d9d4:323794:199624972",
+            "recovery_generation": null,
+            "origin_pending": 0,
+            "cancelled_at": null,
+            "cancel_kind": null,
+            "cancel_evidence": null,
+            "pending_reason": null
+          }
+        ],
+        "jobs": [
+          {
+            "id": "11111111-1111-4111-8111-111111111111:worker:22222222-2222-4222-8222-222222222222:work",
+            "park": "3808b309-e3d5-42cf-a8a8-7e3481389a5d",
+            "kind": "worker",
+            "thread": "22222222-2222-4222-8222-222222222222",
+            "turn": "work",
+            "item": null,
+            "process": null,
+            "status": "completed",
+            "exit_code": null,
+            "callback": "5a6e9a3d-3fae-4198-b72f-0520c0df8310",
+            "observer_run": null,
+            "recovery_pending": 0,
+            "report": 0,
+            "label": "/root/work",
+            "interruption_pending": 0
+          },
+          {
+            "id": "11111111-1111-4111-8111-111111111111:process:item:live-upgrade",
+            "park": "88b2f16b-1498-4b01-bc4a-f423fbea5430",
+            "kind": "process",
+            "thread": "11111111-1111-4111-8111-111111111111",
+            "turn": null,
+            "item": "live-upgrade",
+            "process": "031",
+            "status": "armed",
+            "exit_code": null,
+            "callback": null,
+            "observer_run": null,
+            "recovery_pending": 0,
+            "report": 0,
+            "label": "031",
+            "interruption_pending": 0
+          }
+        ],
+        "callbacks": [
+          {
+            "id": "5a6e9a3d-3fae-4198-b72f-0520c0df8310",
+            "parent": "11111111-1111-4111-8111-111111111111",
+            "client": "b854fc8d-0e92-4a6d-9fae-10fb5bc5179e",
+            "state": "uncertain",
+            "queue": null,
+            "error": null,
+            "reconcile_attempts": 0,
+            "idempotent": 0,
+            "message": "LIVE COMPLETION: worker /root/work status=completed. Remaining registered jobs: 0. Results: codex-plus park --status --parent 11111111-1111-4111-8111-111111111111; callback=5a6e9a3d-3fae-4198-b72f-0520c0df8310."
+          }
+        ],
+        "health": {
+          "version": 1,
+          "parent": "11111111-1111-4111-8111-111111111111",
+          "updated_at": 1792230405.130154,
+          "state": "uncertain",
+          "jobs": 1,
+          "uncertain": 1,
+          "reports": 0
+        }
+      },
+      "after": {
+        "parent": "11111111-1111-4111-8111-111111111111",
+        "parks": [
+          {
+            "id": "3808b309-e3d5-42cf-a8a8-7e3481389a5d",
+            "parent": "11111111-1111-4111-8111-111111111111",
+            "origin": "origin",
+            "reason": "private Rust acceptance",
+            "state": "armed",
+            "deadline": 1792316805.0966902,
+            "error": null,
+            "generation": "7e3c9e7f-06ec-4263-b27a-bbd54d48d9d4:323794:199624972",
+            "recovery_generation": null,
+            "origin_pending": 0,
+            "cancelled_at": null,
+            "cancel_kind": null,
+            "cancel_evidence": null,
+            "pending_reason": null
+          },
+          {
+            "id": "88b2f16b-1498-4b01-bc4a-f423fbea5430",
+            "parent": "11111111-1111-4111-8111-111111111111",
+            "origin": "origin",
+            "reason": "private Rust acceptance",
+            "state": "complete",
+            "deadline": 1792316805.1224067,
+            "error": null,
+            "generation": "7e3c9e7f-06ec-4263-b27a-bbd54d48d9d4:323794:199624972",
+            "recovery_generation": null,
+            "origin_pending": 0,
+            "cancelled_at": null,
+            "cancel_kind": null,
+            "cancel_evidence": null,
+            "pending_reason": null
+          }
+        ],
+        "jobs": [
+          {
+            "id": "11111111-1111-4111-8111-111111111111:worker:22222222-2222-4222-8222-222222222222:work",
+            "park": "3808b309-e3d5-42cf-a8a8-7e3481389a5d",
+            "kind": "worker",
+            "thread": "22222222-2222-4222-8222-222222222222",
+            "turn": "work",
+            "item": null,
+            "process": null,
+            "status": "completed",
+            "exit_code": null,
+            "callback": "5a6e9a3d-3fae-4198-b72f-0520c0df8310",
+            "observer_run": null,
+            "recovery_pending": 0,
+            "report": 0,
+            "label": "/root/work",
+            "interruption_pending": 0
+          },
+          {
+            "id": "11111111-1111-4111-8111-111111111111:process:item:live-upgrade",
+            "park": "88b2f16b-1498-4b01-bc4a-f423fbea5430",
+            "kind": "process",
+            "thread": "11111111-1111-4111-8111-111111111111",
+            "turn": "origin",
+            "item": "live-upgrade",
+            "process": "031",
+            "status": "completed",
+            "exit_code": 0,
+            "callback": "0b265f9c-c0a6-4528-b3d0-567f31da8850",
+            "observer_run": "437279b2-2e5a-476d-8d78-29a7c5103bb4",
+            "recovery_pending": 0,
+            "report": 0,
+            "label": "031",
+            "interruption_pending": 0
+          }
+        ],
+        "callbacks": [
+          {
+            "id": "5a6e9a3d-3fae-4198-b72f-0520c0df8310",
+            "parent": "11111111-1111-4111-8111-111111111111",
+            "client": "b854fc8d-0e92-4a6d-9fae-10fb5bc5179e",
+            "state": "uncertain",
+            "queue": null,
+            "error": "No positive queue or consumed-message evidence; enqueue will not be retried.",
+            "reconcile_attempts": 4,
+            "idempotent": 0,
+            "message": "LIVE COMPLETION: worker /root/work status=completed. Remaining registered jobs: 0. Results: codex-plus park --status --parent 11111111-1111-4111-8111-111111111111; callback=5a6e9a3d-3fae-4198-b72f-0520c0df8310."
+          },
+          {
+            "id": "0b265f9c-c0a6-4528-b3d0-567f31da8850",
+            "parent": "11111111-1111-4111-8111-111111111111",
+            "client": "b9d503a6-71ef-403b-83ae-d3566fd307cd",
+            "state": "delivered",
+            "queue": "4c419513-3c82-42fb-9a46-bd9715d4b403",
+            "error": null,
+            "reconcile_attempts": 0,
+            "idempotent": 0,
+            "message": "LIVE COMPLETION: process 031 status=completed exit=0. Remaining registered jobs: 0. Results: codex-plus park --status --parent 11111111-1111-4111-8111-111111111111; callback=0b265f9c-c0a6-4528-b3d0-567f31da8850."
+          }
+        ],
+        "health": {
+          "version": 1,
+          "parent": "11111111-1111-4111-8111-111111111111",
+          "updated_at": 1792230407.2533734,
+          "state": "uncertain",
+          "jobs": 0,
+          "uncertain": 1,
+          "reports": 0
+        }
+      },
+      "old_runtime_sha256": "9ad1ba3a71f1b612f2dcd7aaf25926fa9b5f9d6ce9f6ac789954ca1c88917a8c",
+      "new_runtime_sha256": "880d766dee38c266b0f7544fd88c6ec3f8ce25fb82ec7164b0305d510edfd558"
+    },
+    "aarch64": {
+      "old_release": "0.163.0-plus.0.3.0",
+      "new_release": "0.163.0-plus.0.3.1",
+      "fixture": "Private stock RPC wire; actual immutable package copies and kernel exec",
+      "remote_model_requests": 0,
+      "passed": true,
+      "preserved_callback_identity_and_payload": true,
+      "uncertain_callback_not_resent": true,
+      "fresh_live_callback_once": true,
+      "same_pid_reexec": true,
+      "moved_cwd": true,
+      "before": {
+        "parent": "11111111-1111-4111-8111-111111111111",
+        "parks": [
+          {
+            "id": "cf64a8e9-f02f-48bc-8220-1462d0a0838c",
+            "parent": "11111111-1111-4111-8111-111111111111",
+            "origin": "origin",
+            "reason": "private Rust acceptance",
+            "state": "armed",
+            "deadline": 1792318722.1839464,
+            "error": null,
+            "generation": "e8816aa2-46ec-4ed3-912c-bca63732d5c5:3132936:198956958",
+            "recovery_generation": null,
+            "origin_pending": 0,
+            "cancelled_at": null,
+            "cancel_kind": null,
+            "cancel_evidence": null,
+            "pending_reason": null
+          },
+          {
+            "id": "c24aa25e-6adf-42fc-a4fb-8393fc125666",
+            "parent": "11111111-1111-4111-8111-111111111111",
+            "origin": "origin",
+            "reason": "private Rust acceptance",
+            "state": "armed",
+            "deadline": 1792318722.2040923,
+            "error": null,
+            "generation": "e8816aa2-46ec-4ed3-912c-bca63732d5c5:3132936:198956958",
+            "recovery_generation": null,
+            "origin_pending": 0,
+            "cancelled_at": null,
+            "cancel_kind": null,
+            "cancel_evidence": null,
+            "pending_reason": null
+          }
+        ],
+        "jobs": [
+          {
+            "id": "11111111-1111-4111-8111-111111111111:worker:22222222-2222-4222-8222-222222222222:work",
+            "park": "cf64a8e9-f02f-48bc-8220-1462d0a0838c",
+            "kind": "worker",
+            "thread": "22222222-2222-4222-8222-222222222222",
+            "turn": "work",
+            "item": null,
+            "process": null,
+            "status": "completed",
+            "exit_code": null,
+            "callback": "10f21588-cc76-4b7d-b07d-af94ae2b2bac",
+            "observer_run": null,
+            "recovery_pending": 0,
+            "report": 0,
+            "label": "/root/work",
+            "interruption_pending": 0
+          },
+          {
+            "id": "11111111-1111-4111-8111-111111111111:process:item:live-upgrade",
+            "park": "c24aa25e-6adf-42fc-a4fb-8393fc125666",
+            "kind": "process",
+            "thread": "11111111-1111-4111-8111-111111111111",
+            "turn": null,
+            "item": "live-upgrade",
+            "process": "031",
+            "status": "armed",
+            "exit_code": null,
+            "callback": null,
+            "observer_run": null,
+            "recovery_pending": 0,
+            "report": 0,
+            "label": "031",
+            "interruption_pending": 0
+          }
+        ],
+        "callbacks": [
+          {
+            "id": "10f21588-cc76-4b7d-b07d-af94ae2b2bac",
+            "parent": "11111111-1111-4111-8111-111111111111",
+            "client": "9b6c5cd7-dd31-433a-8046-81ab99bab93e",
+            "state": "uncertain",
+            "queue": null,
+            "error": null,
+            "reconcile_attempts": 0,
+            "idempotent": 0,
+            "message": "LIVE COMPLETION: worker /root/work status=completed. Remaining registered jobs: 0. Results: codex-plus park --status --parent 11111111-1111-4111-8111-111111111111; callback=10f21588-cc76-4b7d-b07d-af94ae2b2bac."
+          }
+        ],
+        "health": {
+          "version": 1,
+          "parent": "11111111-1111-4111-8111-111111111111",
+          "updated_at": 1792232322.2094557,
+          "state": "uncertain",
+          "jobs": 1,
+          "uncertain": 1,
+          "reports": 0
+        }
+      },
+      "after": {
+        "parent": "11111111-1111-4111-8111-111111111111",
+        "parks": [
+          {
+            "id": "cf64a8e9-f02f-48bc-8220-1462d0a0838c",
+            "parent": "11111111-1111-4111-8111-111111111111",
+            "origin": "origin",
+            "reason": "private Rust acceptance",
+            "state": "armed",
+            "deadline": 1792318722.1839464,
+            "error": null,
+            "generation": "e8816aa2-46ec-4ed3-912c-bca63732d5c5:3132936:198956958",
+            "recovery_generation": null,
+            "origin_pending": 0,
+            "cancelled_at": null,
+            "cancel_kind": null,
+            "cancel_evidence": null,
+            "pending_reason": null
+          },
+          {
+            "id": "c24aa25e-6adf-42fc-a4fb-8393fc125666",
+            "parent": "11111111-1111-4111-8111-111111111111",
+            "origin": "origin",
+            "reason": "private Rust acceptance",
+            "state": "complete",
+            "deadline": 1792318722.2040923,
+            "error": null,
+            "generation": "e8816aa2-46ec-4ed3-912c-bca63732d5c5:3132936:198956958",
+            "recovery_generation": null,
+            "origin_pending": 0,
+            "cancelled_at": null,
+            "cancel_kind": null,
+            "cancel_evidence": null,
+            "pending_reason": null
+          }
+        ],
+        "jobs": [
+          {
+            "id": "11111111-1111-4111-8111-111111111111:worker:22222222-2222-4222-8222-222222222222:work",
+            "park": "cf64a8e9-f02f-48bc-8220-1462d0a0838c",
+            "kind": "worker",
+            "thread": "22222222-2222-4222-8222-222222222222",
+            "turn": "work",
+            "item": null,
+            "process": null,
+            "status": "completed",
+            "exit_code": null,
+            "callback": "10f21588-cc76-4b7d-b07d-af94ae2b2bac",
+            "observer_run": null,
+            "recovery_pending": 0,
+            "report": 0,
+            "label": "/root/work",
+            "interruption_pending": 0
+          },
+          {
+            "id": "11111111-1111-4111-8111-111111111111:process:item:live-upgrade",
+            "park": "c24aa25e-6adf-42fc-a4fb-8393fc125666",
+            "kind": "process",
+            "thread": "11111111-1111-4111-8111-111111111111",
+            "turn": "origin",
+            "item": "live-upgrade",
+            "process": "031",
+            "status": "completed",
+            "exit_code": 0,
+            "callback": "db1c8273-8c08-4790-a419-d19828bbe8e7",
+            "observer_run": "3dce1fe0-22ad-4cf5-9c1d-73aa3b118539",
+            "recovery_pending": 0,
+            "report": 0,
+            "label": "031",
+            "interruption_pending": 0
+          }
+        ],
+        "callbacks": [
+          {
+            "id": "10f21588-cc76-4b7d-b07d-af94ae2b2bac",
+            "parent": "11111111-1111-4111-8111-111111111111",
+            "client": "9b6c5cd7-dd31-433a-8046-81ab99bab93e",
+            "state": "uncertain",
+            "queue": null,
+            "error": "No positive queue or consumed-message evidence; enqueue will not be retried.",
+            "reconcile_attempts": 4,
+            "idempotent": 0,
+            "message": "LIVE COMPLETION: worker /root/work status=completed. Remaining registered jobs: 0. Results: codex-plus park --status --parent 11111111-1111-4111-8111-111111111111; callback=10f21588-cc76-4b7d-b07d-af94ae2b2bac."
+          },
+          {
+            "id": "db1c8273-8c08-4790-a419-d19828bbe8e7",
+            "parent": "11111111-1111-4111-8111-111111111111",
+            "client": "2561f215-dac2-4bd6-8a6b-1cbbfee6f4b6",
+            "state": "delivered",
+            "queue": "a78846ad-1741-4dd8-8a24-a7b432188df9",
+            "error": null,
+            "reconcile_attempts": 0,
+            "idempotent": 0,
+            "message": "LIVE COMPLETION: process 031 status=completed exit=0. Remaining registered jobs: 0. Results: codex-plus park --status --parent 11111111-1111-4111-8111-111111111111; callback=db1c8273-8c08-4790-a419-d19828bbe8e7."
+          }
+        ],
+        "health": {
+          "version": 1,
+          "parent": "11111111-1111-4111-8111-111111111111",
+          "updated_at": 1792232324.2913082,
+          "state": "uncertain",
+          "jobs": 0,
+          "uncertain": 1,
+          "reports": 0
+        }
+      },
+      "old_runtime_sha256": "abf3e0b3bb76c964f08e71ccf1eeaa1577b4880d9ebed9f653516f521b255ccc",
+      "new_runtime_sha256": "8b38a72a72bb384de54d5325d8d64271e07397a0dcbc72b343bc95325de7cb0e"
+    }
+  },
+  "artifact_reviews": {
+    "x86": {
+      "binary": ".build/release031/x86/extracted/codex-plus-0.163.0-plus.0.3.1-x86_64-unknown-linux-gnu/bin/codex",
+      "binary_sha256": "7eedce301f47ba5c835c43be00b467517275c4e0af5c0018b27057f1377ea9f3",
+      "matches": [
+        {
+          "offset": 12918533,
+          "address": 12918533,
+          "length": 70,
+          "match_sha256": "414102fe96e68351e395e69fdf8e3a5e114752cb8084aef6c7f96fbcba34d1d5",
+          "descriptors": [
+            {
+              "relocation_offset": 3044992,
+              "relocation_type": 8,
+              "descriptor_offset": 282989256,
+              "descriptor_address": 282997448,
+              "section": ".data.rel.ro",
+              "relative_start": -42,
+              "length": 14,
+              "slice_sha256": "5b3097c5c7bd083b180879a83160df0399af68400f6143c8dea50ec79208be32"
+            },
+            {
+              "relocation_offset": 3045016,
+              "relocation_type": 8,
+              "descriptor_offset": 282989272,
+              "descriptor_address": 282997464,
+              "section": ".data.rel.ro",
+              "relative_start": -28,
+              "length": 10,
+              "slice_sha256": "3aeb002460381c6f258e8395d3026f571f0d9a76488dcd837639b13aed316560"
+            },
+            {
+              "relocation_offset": 3045040,
+              "relocation_type": 8,
+              "descriptor_offset": 282989288,
+              "descriptor_address": 282997480,
+              "section": ".data.rel.ro",
+              "relative_start": -18,
+              "length": 18,
+              "slice_sha256": "28fbc7a1eb39dbe2fff19e18be590ffaab8e46e8fb9674bc3806e8a4c0c8f973"
+            },
+            {
+              "relocation_offset": 3045088,
+              "relocation_type": 8,
+              "descriptor_offset": 282989320,
+              "descriptor_address": 282997512,
+              "section": ".data.rel.ro",
+              "relative_start": 0,
+              "length": 11,
+              "slice_sha256": "34c770dfe85a65f0fb1818b061eeab42609d07c0b0bb3766df14bac431cdb592",
+              "source_literals": [
+                {
+                  "source": "codex-rs/network-proxy/src/credential_broker/providers/github.rs",
+                  "line": 14,
+                  "source_sha256": "830cbce2b697f972244a6fccc2b4cb4c437d751cfcc15fa63efa8165adcb2f7c",
+                  "exact_quoted_literal": true
+                }
+              ],
+              "source_file_path_literals": []
+            },
+            {
+              "relocation_offset": 3045280,
+              "relocation_type": 8,
+              "descriptor_offset": 282989448,
+              "descriptor_address": 282997640,
+              "section": ".data.rel.ro",
+              "relative_start": 11,
+              "length": 12,
+              "slice_sha256": "d29e33c33d871a2c7300b14069b14643b54b5aeeadfc1347de15404fcb3a3cd2",
+              "source_literals": [
+                {
+                  "source": "codex-rs/network-proxy/src/credential_broker/providers/github.rs",
+                  "line": 16,
+                  "source_sha256": "830cbce2b697f972244a6fccc2b4cb4c437d751cfcc15fa63efa8165adcb2f7c",
+                  "exact_quoted_literal": true
+                }
+              ],
+              "source_file_path_literals": []
+            },
+            {
+              "relocation_offset": 3045304,
+              "relocation_type": 8,
+              "descriptor_offset": 282989464,
+              "descriptor_address": 282997656,
+              "section": ".data.rel.ro",
+              "relative_start": 23,
+              "length": 19,
+              "slice_sha256": "5b213388fabfc7cd1899c9e69686306c77a918e0fa755288e394c54c980768a9",
+              "source_literals": [
+                {
+                  "source": "codex-rs/network-proxy/src/credential_broker/providers/github.rs",
+                  "line": 18,
+                  "source_sha256": "830cbce2b697f972244a6fccc2b4cb4c437d751cfcc15fa63efa8165adcb2f7c",
+                  "exact_quoted_literal": true
+                }
+              ],
+              "source_file_path_literals": []
+            },
+            {
+              "relocation_offset": 3045328,
+              "relocation_type": 8,
+              "descriptor_offset": 282989480,
+              "descriptor_address": 282997672,
+              "section": ".data.rel.ro",
+              "relative_start": 42,
+              "length": 23,
+              "slice_sha256": "8464cee6717677c20455f167ea9590aa27964ff8936f588576213c4fe8f54cfd",
+              "source_literals": [
+                {
+                  "source": "codex-rs/network-proxy/src/credential_broker/providers/github.rs",
+                  "line": 18,
+                  "source_sha256": "830cbce2b697f972244a6fccc2b4cb4c437d751cfcc15fa63efa8165adcb2f7c",
+                  "exact_quoted_literal": true
+                }
+              ],
+              "source_file_path_literals": []
+            },
+            {
+              "relocation_offset": 3045616,
+              "relocation_type": 8,
+              "descriptor_offset": 282989672,
+              "descriptor_address": 282997864,
+              "section": ".data.rel.ro",
+              "relative_start": 65,
+              "length": 41,
+              "slice_sha256": "60e50cd57985886d4f0808bc75b26d7ad9487111e3b828549a698a1eb70c2d10",
+              "source_literals": [],
+              "source_file_path_literals": [],
+              "generated_tracing_event_literal": {
+                "source": "codex-rs/network-proxy/src/http_proxy.rs",
+                "line": 548,
+                "source_sha256": "de8ac4fa9317c8440abc79fbe2c040ae85f1e665ebcbe48baa8e8fb919290101",
+                "reconstruction_matches": true,
+                "macro_invocation_sha256": "0575ff98f0d0c365d459b39ae850a40026cb680f866796f7e79570d377be3b99"
+              }
+            },
+            {
+              "relocation_offset": 3045640,
+              "relocation_type": 8,
+              "descriptor_offset": 282989688,
+              "descriptor_address": 282997880,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3045736,
+              "relocation_type": 8,
+              "descriptor_offset": 282989736,
+              "descriptor_address": 282997928,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3045760,
+              "relocation_type": 8,
+              "descriptor_offset": 282989752,
+              "descriptor_address": 282997944,
+              "section": ".data.rel.ro",
+              "relative_start": 137,
+              "length": 31,
+              "slice_sha256": "2ff79e16de46de7f2533ae05102c5cc2537c491aaff60550f7ddfdeb80040748"
+            },
+            {
+              "relocation_offset": 3045808,
+              "relocation_type": 8,
+              "descriptor_offset": 282989808,
+              "descriptor_address": 282998000,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3045904,
+              "relocation_type": 8,
+              "descriptor_offset": 282989856,
+              "descriptor_address": 282998048,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3045928,
+              "relocation_type": 8,
+              "descriptor_offset": 282989872,
+              "descriptor_address": 282998064,
+              "section": ".data.rel.ro",
+              "relative_start": 137,
+              "length": 31,
+              "slice_sha256": "2ff79e16de46de7f2533ae05102c5cc2537c491aaff60550f7ddfdeb80040748"
+            },
+            {
+              "relocation_offset": 3045976,
+              "relocation_type": 8,
+              "descriptor_offset": 282989928,
+              "descriptor_address": 282998120,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3046072,
+              "relocation_type": 8,
+              "descriptor_offset": 282989976,
+              "descriptor_address": 282998168,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3046096,
+              "relocation_type": 8,
+              "descriptor_offset": 282989992,
+              "descriptor_address": 282998184,
+              "section": ".data.rel.ro",
+              "relative_start": 137,
+              "length": 31,
+              "slice_sha256": "2ff79e16de46de7f2533ae05102c5cc2537c491aaff60550f7ddfdeb80040748"
+            },
+            {
+              "relocation_offset": 3046144,
+              "relocation_type": 8,
+              "descriptor_offset": 282990048,
+              "descriptor_address": 282998240,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3046240,
+              "relocation_type": 8,
+              "descriptor_offset": 282990096,
+              "descriptor_address": 282998288,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3046264,
+              "relocation_type": 8,
+              "descriptor_offset": 282990112,
+              "descriptor_address": 282998304,
+              "section": ".data.rel.ro",
+              "relative_start": 137,
+              "length": 31,
+              "slice_sha256": "2ff79e16de46de7f2533ae05102c5cc2537c491aaff60550f7ddfdeb80040748"
+            },
+            {
+              "relocation_offset": 3046312,
+              "relocation_type": 8,
+              "descriptor_offset": 282990168,
+              "descriptor_address": 282998360,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3046408,
+              "relocation_type": 8,
+              "descriptor_offset": 282990216,
+              "descriptor_address": 282998408,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3046432,
+              "relocation_type": 8,
+              "descriptor_offset": 282990232,
+              "descriptor_address": 282998424,
+              "section": ".data.rel.ro",
+              "relative_start": 137,
+              "length": 31,
+              "slice_sha256": "2ff79e16de46de7f2533ae05102c5cc2537c491aaff60550f7ddfdeb80040748"
+            },
+            {
+              "relocation_offset": 3046480,
+              "relocation_type": 8,
+              "descriptor_offset": 282990288,
+              "descriptor_address": 282998480,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3046576,
+              "relocation_type": 8,
+              "descriptor_offset": 282990336,
+              "descriptor_address": 282998528,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3046600,
+              "relocation_type": 8,
+              "descriptor_offset": 282990352,
+              "descriptor_address": 282998544,
+              "section": ".data.rel.ro",
+              "relative_start": 137,
+              "length": 31,
+              "slice_sha256": "2ff79e16de46de7f2533ae05102c5cc2537c491aaff60550f7ddfdeb80040748"
+            },
+            {
+              "relocation_offset": 3046648,
+              "relocation_type": 8,
+              "descriptor_offset": 282990408,
+              "descriptor_address": 282998600,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3046744,
+              "relocation_type": 8,
+              "descriptor_offset": 282990456,
+              "descriptor_address": 282998648,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3046768,
+              "relocation_type": 8,
+              "descriptor_offset": 282990472,
+              "descriptor_address": 282998664,
+              "section": ".data.rel.ro",
+              "relative_start": 137,
+              "length": 31,
+              "slice_sha256": "2ff79e16de46de7f2533ae05102c5cc2537c491aaff60550f7ddfdeb80040748"
+            },
+            {
+              "relocation_offset": 3046816,
+              "relocation_type": 8,
+              "descriptor_offset": 282990528,
+              "descriptor_address": 282998720,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3046912,
+              "relocation_type": 8,
+              "descriptor_offset": 282990576,
+              "descriptor_address": 282998768,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3046936,
+              "relocation_type": 8,
+              "descriptor_offset": 282990592,
+              "descriptor_address": 282998784,
+              "section": ".data.rel.ro",
+              "relative_start": 137,
+              "length": 31,
+              "slice_sha256": "2ff79e16de46de7f2533ae05102c5cc2537c491aaff60550f7ddfdeb80040748"
+            },
+            {
+              "relocation_offset": 3046984,
+              "relocation_type": 8,
+              "descriptor_offset": 282990648,
+              "descriptor_address": 282998840,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3047080,
+              "relocation_type": 8,
+              "descriptor_offset": 282990696,
+              "descriptor_address": 282998888,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3047104,
+              "relocation_type": 8,
+              "descriptor_offset": 282990712,
+              "descriptor_address": 282998904,
+              "section": ".data.rel.ro",
+              "relative_start": 137,
+              "length": 31,
+              "slice_sha256": "2ff79e16de46de7f2533ae05102c5cc2537c491aaff60550f7ddfdeb80040748"
+            },
+            {
+              "relocation_offset": 3047152,
+              "relocation_type": 8,
+              "descriptor_offset": 282990768,
+              "descriptor_address": 282998960,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3047248,
+              "relocation_type": 8,
+              "descriptor_offset": 282990816,
+              "descriptor_address": 282999008,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3047272,
+              "relocation_type": 8,
+              "descriptor_offset": 282990832,
+              "descriptor_address": 282999024,
+              "section": ".data.rel.ro",
+              "relative_start": 137,
+              "length": 31,
+              "slice_sha256": "2ff79e16de46de7f2533ae05102c5cc2537c491aaff60550f7ddfdeb80040748"
+            },
+            {
+              "relocation_offset": 3047320,
+              "relocation_type": 8,
+              "descriptor_offset": 282990888,
+              "descriptor_address": 282999080,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3047416,
+              "relocation_type": 8,
+              "descriptor_offset": 282990936,
+              "descriptor_address": 282999128,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3047440,
+              "relocation_type": 8,
+              "descriptor_offset": 282990952,
+              "descriptor_address": 282999144,
+              "section": ".data.rel.ro",
+              "relative_start": 137,
+              "length": 31,
+              "slice_sha256": "2ff79e16de46de7f2533ae05102c5cc2537c491aaff60550f7ddfdeb80040748"
+            },
+            {
+              "relocation_offset": 3047488,
+              "relocation_type": 8,
+              "descriptor_offset": 282991008,
+              "descriptor_address": 282999200,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3047584,
+              "relocation_type": 8,
+              "descriptor_offset": 282991056,
+              "descriptor_address": 282999248,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3047608,
+              "relocation_type": 8,
+              "descriptor_offset": 282991072,
+              "descriptor_address": 282999264,
+              "section": ".data.rel.ro",
+              "relative_start": 137,
+              "length": 31,
+              "slice_sha256": "2ff79e16de46de7f2533ae05102c5cc2537c491aaff60550f7ddfdeb80040748"
+            },
+            {
+              "relocation_offset": 3047656,
+              "relocation_type": 8,
+              "descriptor_offset": 282991128,
+              "descriptor_address": 282999320,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3047752,
+              "relocation_type": 8,
+              "descriptor_offset": 282991176,
+              "descriptor_address": 282999368,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3047776,
+              "relocation_type": 8,
+              "descriptor_offset": 282991192,
+              "descriptor_address": 282999384,
+              "section": ".data.rel.ro",
+              "relative_start": 137,
+              "length": 31,
+              "slice_sha256": "2ff79e16de46de7f2533ae05102c5cc2537c491aaff60550f7ddfdeb80040748"
+            },
+            {
+              "relocation_offset": 3047824,
+              "relocation_type": 8,
+              "descriptor_offset": 282991248,
+              "descriptor_address": 282999440,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3047920,
+              "relocation_type": 8,
+              "descriptor_offset": 282991296,
+              "descriptor_address": 282999488,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3047944,
+              "relocation_type": 8,
+              "descriptor_offset": 282991312,
+              "descriptor_address": 282999504,
+              "section": ".data.rel.ro",
+              "relative_start": 137,
+              "length": 31,
+              "slice_sha256": "2ff79e16de46de7f2533ae05102c5cc2537c491aaff60550f7ddfdeb80040748"
+            },
+            {
+              "relocation_offset": 3047992,
+              "relocation_type": 8,
+              "descriptor_offset": 282991368,
+              "descriptor_address": 282999560,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3048088,
+              "relocation_type": 8,
+              "descriptor_offset": 282991416,
+              "descriptor_address": 282999608,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3048112,
+              "relocation_type": 8,
+              "descriptor_offset": 282991432,
+              "descriptor_address": 282999624,
+              "section": ".data.rel.ro",
+              "relative_start": 137,
+              "length": 31,
+              "slice_sha256": "2ff79e16de46de7f2533ae05102c5cc2537c491aaff60550f7ddfdeb80040748"
+            },
+            {
+              "relocation_offset": 3048160,
+              "relocation_type": 8,
+              "descriptor_offset": 282991488,
+              "descriptor_address": 282999680,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3048256,
+              "relocation_type": 8,
+              "descriptor_offset": 282991536,
+              "descriptor_address": 282999728,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3048280,
+              "relocation_type": 8,
+              "descriptor_offset": 282991552,
+              "descriptor_address": 282999744,
+              "section": ".data.rel.ro",
+              "relative_start": 137,
+              "length": 31,
+              "slice_sha256": "2ff79e16de46de7f2533ae05102c5cc2537c491aaff60550f7ddfdeb80040748"
+            },
+            {
+              "relocation_offset": 3048328,
+              "relocation_type": 8,
+              "descriptor_offset": 282991608,
+              "descriptor_address": 282999800,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3048424,
+              "relocation_type": 8,
+              "descriptor_offset": 282991656,
+              "descriptor_address": 282999848,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3048448,
+              "relocation_type": 8,
+              "descriptor_offset": 282991672,
+              "descriptor_address": 282999864,
+              "section": ".data.rel.ro",
+              "relative_start": 137,
+              "length": 31,
+              "slice_sha256": "2ff79e16de46de7f2533ae05102c5cc2537c491aaff60550f7ddfdeb80040748"
+            },
+            {
+              "relocation_offset": 3048496,
+              "relocation_type": 8,
+              "descriptor_offset": 282991728,
+              "descriptor_address": 282999920,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3048592,
+              "relocation_type": 8,
+              "descriptor_offset": 282991776,
+              "descriptor_address": 282999968,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3048616,
+              "relocation_type": 8,
+              "descriptor_offset": 282991792,
+              "descriptor_address": 282999984,
+              "section": ".data.rel.ro",
+              "relative_start": 137,
+              "length": 31,
+              "slice_sha256": "2ff79e16de46de7f2533ae05102c5cc2537c491aaff60550f7ddfdeb80040748"
+            },
+            {
+              "relocation_offset": 3048664,
+              "relocation_type": 8,
+              "descriptor_offset": 282991848,
+              "descriptor_address": 283000040,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3048760,
+              "relocation_type": 8,
+              "descriptor_offset": 282991896,
+              "descriptor_address": 283000088,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3048784,
+              "relocation_type": 8,
+              "descriptor_offset": 282991912,
+              "descriptor_address": 283000104,
+              "section": ".data.rel.ro",
+              "relative_start": 137,
+              "length": 31,
+              "slice_sha256": "2ff79e16de46de7f2533ae05102c5cc2537c491aaff60550f7ddfdeb80040748"
+            },
+            {
+              "relocation_offset": 3048832,
+              "relocation_type": 8,
+              "descriptor_offset": 282991968,
+              "descriptor_address": 283000160,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3048928,
+              "relocation_type": 8,
+              "descriptor_offset": 282992016,
+              "descriptor_address": 283000208,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3048952,
+              "relocation_type": 8,
+              "descriptor_offset": 282992032,
+              "descriptor_address": 283000224,
+              "section": ".data.rel.ro",
+              "relative_start": 137,
+              "length": 31,
+              "slice_sha256": "2ff79e16de46de7f2533ae05102c5cc2537c491aaff60550f7ddfdeb80040748"
+            },
+            {
+              "relocation_offset": 3049000,
+              "relocation_type": 8,
+              "descriptor_offset": 282992088,
+              "descriptor_address": 283000280,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3049096,
+              "relocation_type": 8,
+              "descriptor_offset": 282992136,
+              "descriptor_address": 283000328,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3049120,
+              "relocation_type": 8,
+              "descriptor_offset": 282992152,
+              "descriptor_address": 283000344,
+              "section": ".data.rel.ro",
+              "relative_start": 137,
+              "length": 31,
+              "slice_sha256": "2ff79e16de46de7f2533ae05102c5cc2537c491aaff60550f7ddfdeb80040748"
+            },
+            {
+              "relocation_offset": 3049168,
+              "relocation_type": 8,
+              "descriptor_offset": 282992208,
+              "descriptor_address": 283000400,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3049264,
+              "relocation_type": 8,
+              "descriptor_offset": 282992256,
+              "descriptor_address": 283000448,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3049288,
+              "relocation_type": 8,
+              "descriptor_offset": 282992272,
+              "descriptor_address": 283000464,
+              "section": ".data.rel.ro",
+              "relative_start": 137,
+              "length": 31,
+              "slice_sha256": "2ff79e16de46de7f2533ae05102c5cc2537c491aaff60550f7ddfdeb80040748"
+            },
+            {
+              "relocation_offset": 3049336,
+              "relocation_type": 8,
+              "descriptor_offset": 282992328,
+              "descriptor_address": 283000520,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3049432,
+              "relocation_type": 8,
+              "descriptor_offset": 282992376,
+              "descriptor_address": 283000568,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3049456,
+              "relocation_type": 8,
+              "descriptor_offset": 282992392,
+              "descriptor_address": 283000584,
+              "section": ".data.rel.ro",
+              "relative_start": 137,
+              "length": 31,
+              "slice_sha256": "2ff79e16de46de7f2533ae05102c5cc2537c491aaff60550f7ddfdeb80040748"
+            },
+            {
+              "relocation_offset": 3049504,
+              "relocation_type": 8,
+              "descriptor_offset": 282992448,
+              "descriptor_address": 283000640,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3049600,
+              "relocation_type": 8,
+              "descriptor_offset": 282992496,
+              "descriptor_address": 283000688,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3049624,
+              "relocation_type": 8,
+              "descriptor_offset": 282992512,
+              "descriptor_address": 283000704,
+              "section": ".data.rel.ro",
+              "relative_start": 137,
+              "length": 31,
+              "slice_sha256": "2ff79e16de46de7f2533ae05102c5cc2537c491aaff60550f7ddfdeb80040748"
+            },
+            {
+              "relocation_offset": 3049672,
+              "relocation_type": 8,
+              "descriptor_offset": 282992568,
+              "descriptor_address": 283000760,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3049768,
+              "relocation_type": 8,
+              "descriptor_offset": 282992616,
+              "descriptor_address": 283000808,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3049792,
+              "relocation_type": 8,
+              "descriptor_offset": 282992632,
+              "descriptor_address": 283000824,
+              "section": ".data.rel.ro",
+              "relative_start": 137,
+              "length": 31,
+              "slice_sha256": "2ff79e16de46de7f2533ae05102c5cc2537c491aaff60550f7ddfdeb80040748"
+            },
+            {
+              "relocation_offset": 3049840,
+              "relocation_type": 8,
+              "descriptor_offset": 282992688,
+              "descriptor_address": 283000880,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3049936,
+              "relocation_type": 8,
+              "descriptor_offset": 282992736,
+              "descriptor_address": 283000928,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3049960,
+              "relocation_type": 8,
+              "descriptor_offset": 282992752,
+              "descriptor_address": 283000944,
+              "section": ".data.rel.ro",
+              "relative_start": 137,
+              "length": 31,
+              "slice_sha256": "2ff79e16de46de7f2533ae05102c5cc2537c491aaff60550f7ddfdeb80040748"
+            },
+            {
+              "relocation_offset": 3050008,
+              "relocation_type": 8,
+              "descriptor_offset": 282992808,
+              "descriptor_address": 283001000,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3050104,
+              "relocation_type": 8,
+              "descriptor_offset": 282992856,
+              "descriptor_address": 283001048,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3050128,
+              "relocation_type": 8,
+              "descriptor_offset": 282992872,
+              "descriptor_address": 283001064,
+              "section": ".data.rel.ro",
+              "relative_start": 137,
+              "length": 31,
+              "slice_sha256": "2ff79e16de46de7f2533ae05102c5cc2537c491aaff60550f7ddfdeb80040748"
+            },
+            {
+              "relocation_offset": 3050176,
+              "relocation_type": 8,
+              "descriptor_offset": 282992928,
+              "descriptor_address": 283001120,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3050272,
+              "relocation_type": 8,
+              "descriptor_offset": 282992976,
+              "descriptor_address": 283001168,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3050296,
+              "relocation_type": 8,
+              "descriptor_offset": 282992992,
+              "descriptor_address": 283001184,
+              "section": ".data.rel.ro",
+              "relative_start": 137,
+              "length": 31,
+              "slice_sha256": "2ff79e16de46de7f2533ae05102c5cc2537c491aaff60550f7ddfdeb80040748"
+            },
+            {
+              "relocation_offset": 3050344,
+              "relocation_type": 8,
+              "descriptor_offset": 282993048,
+              "descriptor_address": 283001240,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3050440,
+              "relocation_type": 8,
+              "descriptor_offset": 282993096,
+              "descriptor_address": 283001288,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3050464,
+              "relocation_type": 8,
+              "descriptor_offset": 282993112,
+              "descriptor_address": 283001304,
+              "section": ".data.rel.ro",
+              "relative_start": 137,
+              "length": 31,
+              "slice_sha256": "2ff79e16de46de7f2533ae05102c5cc2537c491aaff60550f7ddfdeb80040748"
+            },
+            {
+              "relocation_offset": 3050512,
+              "relocation_type": 8,
+              "descriptor_offset": 282993168,
+              "descriptor_address": 283001360,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3050608,
+              "relocation_type": 8,
+              "descriptor_offset": 282993216,
+              "descriptor_address": 283001408,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3050632,
+              "relocation_type": 8,
+              "descriptor_offset": 282993232,
+              "descriptor_address": 283001424,
+              "section": ".data.rel.ro",
+              "relative_start": 137,
+              "length": 31,
+              "slice_sha256": "2ff79e16de46de7f2533ae05102c5cc2537c491aaff60550f7ddfdeb80040748"
+            },
+            {
+              "relocation_offset": 3050680,
+              "relocation_type": 8,
+              "descriptor_offset": 282993288,
+              "descriptor_address": 283001480,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3050776,
+              "relocation_type": 8,
+              "descriptor_offset": 282993336,
+              "descriptor_address": 283001528,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3050800,
+              "relocation_type": 8,
+              "descriptor_offset": 282993352,
+              "descriptor_address": 283001544,
+              "section": ".data.rel.ro",
+              "relative_start": 137,
+              "length": 31,
+              "slice_sha256": "2ff79e16de46de7f2533ae05102c5cc2537c491aaff60550f7ddfdeb80040748"
+            },
+            {
+              "relocation_offset": 3050848,
+              "relocation_type": 8,
+              "descriptor_offset": 282993408,
+              "descriptor_address": 283001600,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3050944,
+              "relocation_type": 8,
+              "descriptor_offset": 282993456,
+              "descriptor_address": 283001648,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3050968,
+              "relocation_type": 8,
+              "descriptor_offset": 282993472,
+              "descriptor_address": 283001664,
+              "section": ".data.rel.ro",
+              "relative_start": 137,
+              "length": 31,
+              "slice_sha256": "2ff79e16de46de7f2533ae05102c5cc2537c491aaff60550f7ddfdeb80040748"
+            },
+            {
+              "relocation_offset": 3051016,
+              "relocation_type": 8,
+              "descriptor_offset": 282993528,
+              "descriptor_address": 283001720,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3051112,
+              "relocation_type": 8,
+              "descriptor_offset": 282993576,
+              "descriptor_address": 283001768,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3051136,
+              "relocation_type": 8,
+              "descriptor_offset": 282993592,
+              "descriptor_address": 283001784,
+              "section": ".data.rel.ro",
+              "relative_start": 137,
+              "length": 31,
+              "slice_sha256": "2ff79e16de46de7f2533ae05102c5cc2537c491aaff60550f7ddfdeb80040748"
+            },
+            {
+              "relocation_offset": 3051184,
+              "relocation_type": 8,
+              "descriptor_offset": 282993648,
+              "descriptor_address": 283001840,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3051280,
+              "relocation_type": 8,
+              "descriptor_offset": 282993696,
+              "descriptor_address": 283001888,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3051304,
+              "relocation_type": 8,
+              "descriptor_offset": 282993712,
+              "descriptor_address": 283001904,
+              "section": ".data.rel.ro",
+              "relative_start": 137,
+              "length": 31,
+              "slice_sha256": "2ff79e16de46de7f2533ae05102c5cc2537c491aaff60550f7ddfdeb80040748"
+            },
+            {
+              "relocation_offset": 3051352,
+              "relocation_type": 8,
+              "descriptor_offset": 282993768,
+              "descriptor_address": 283001960,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3051448,
+              "relocation_type": 8,
+              "descriptor_offset": 282993816,
+              "descriptor_address": 283002008,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3051472,
+              "relocation_type": 8,
+              "descriptor_offset": 282993832,
+              "descriptor_address": 283002024,
+              "section": ".data.rel.ro",
+              "relative_start": 137,
+              "length": 31,
+              "slice_sha256": "2ff79e16de46de7f2533ae05102c5cc2537c491aaff60550f7ddfdeb80040748"
+            },
+            {
+              "relocation_offset": 3051520,
+              "relocation_type": 8,
+              "descriptor_offset": 282993888,
+              "descriptor_address": 283002080,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3051616,
+              "relocation_type": 8,
+              "descriptor_offset": 282993936,
+              "descriptor_address": 283002128,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3051640,
+              "relocation_type": 8,
+              "descriptor_offset": 282993952,
+              "descriptor_address": 283002144,
+              "section": ".data.rel.ro",
+              "relative_start": 137,
+              "length": 31,
+              "slice_sha256": "2ff79e16de46de7f2533ae05102c5cc2537c491aaff60550f7ddfdeb80040748"
+            },
+            {
+              "relocation_offset": 3051688,
+              "relocation_type": 8,
+              "descriptor_offset": 282994008,
+              "descriptor_address": 283002200,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3051784,
+              "relocation_type": 8,
+              "descriptor_offset": 282994056,
+              "descriptor_address": 283002248,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3051808,
+              "relocation_type": 8,
+              "descriptor_offset": 282994072,
+              "descriptor_address": 283002264,
+              "section": ".data.rel.ro",
+              "relative_start": 137,
+              "length": 31,
+              "slice_sha256": "2ff79e16de46de7f2533ae05102c5cc2537c491aaff60550f7ddfdeb80040748"
+            },
+            {
+              "relocation_offset": 3051856,
+              "relocation_type": 8,
+              "descriptor_offset": 282994128,
+              "descriptor_address": 283002320,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3051952,
+              "relocation_type": 8,
+              "descriptor_offset": 282994176,
+              "descriptor_address": 283002368,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3051976,
+              "relocation_type": 8,
+              "descriptor_offset": 282994192,
+              "descriptor_address": 283002384,
+              "section": ".data.rel.ro",
+              "relative_start": 137,
+              "length": 31,
+              "slice_sha256": "2ff79e16de46de7f2533ae05102c5cc2537c491aaff60550f7ddfdeb80040748"
+            },
+            {
+              "relocation_offset": 3052024,
+              "relocation_type": 8,
+              "descriptor_offset": 282994248,
+              "descriptor_address": 283002440,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3052120,
+              "relocation_type": 8,
+              "descriptor_offset": 282994296,
+              "descriptor_address": 283002488,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3052144,
+              "relocation_type": 8,
+              "descriptor_offset": 282994312,
+              "descriptor_address": 283002504,
+              "section": ".data.rel.ro",
+              "relative_start": 137,
+              "length": 31,
+              "slice_sha256": "2ff79e16de46de7f2533ae05102c5cc2537c491aaff60550f7ddfdeb80040748"
+            },
+            {
+              "relocation_offset": 3054592,
+              "relocation_type": 8,
+              "descriptor_offset": 282996072,
+              "descriptor_address": 283004264,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3054688,
+              "relocation_type": 8,
+              "descriptor_offset": 282996120,
+              "descriptor_address": 283004312,
+              "section": ".data.rel.ro",
+              "relative_start": 106,
+              "length": 31,
+              "slice_sha256": "8b09fc910cbca1e8ac94a08055819a745e724b6b743e7300a33d3362e1d282fb"
+            },
+            {
+              "relocation_offset": 3054712,
+              "relocation_type": 8,
+              "descriptor_offset": 282996136,
+              "descriptor_address": 283004328,
+              "section": ".data.rel.ro",
+              "relative_start": 137,
+              "length": 31,
+              "slice_sha256": "2ff79e16de46de7f2533ae05102c5cc2537c491aaff60550f7ddfdeb80040748"
+            }
+          ],
+          "reviewed_slices": [
+            {
+              "relocation_offset": 3045088,
+              "relocation_type": 8,
+              "descriptor_offset": 282989320,
+              "descriptor_address": 282997512,
+              "section": ".data.rel.ro",
+              "relative_start": 0,
+              "length": 11,
+              "slice_sha256": "34c770dfe85a65f0fb1818b061eeab42609d07c0b0bb3766df14bac431cdb592",
+              "source_literals": [
+                {
+                  "source": "codex-rs/network-proxy/src/credential_broker/providers/github.rs",
+                  "line": 14,
+                  "source_sha256": "830cbce2b697f972244a6fccc2b4cb4c437d751cfcc15fa63efa8165adcb2f7c",
+                  "exact_quoted_literal": true
+                }
+              ],
+              "source_file_path_literals": []
+            },
+            {
+              "relocation_offset": 3045280,
+              "relocation_type": 8,
+              "descriptor_offset": 282989448,
+              "descriptor_address": 282997640,
+              "section": ".data.rel.ro",
+              "relative_start": 11,
+              "length": 12,
+              "slice_sha256": "d29e33c33d871a2c7300b14069b14643b54b5aeeadfc1347de15404fcb3a3cd2",
+              "source_literals": [
+                {
+                  "source": "codex-rs/network-proxy/src/credential_broker/providers/github.rs",
+                  "line": 16,
+                  "source_sha256": "830cbce2b697f972244a6fccc2b4cb4c437d751cfcc15fa63efa8165adcb2f7c",
+                  "exact_quoted_literal": true
+                }
+              ],
+              "source_file_path_literals": []
+            },
+            {
+              "relocation_offset": 3045304,
+              "relocation_type": 8,
+              "descriptor_offset": 282989464,
+              "descriptor_address": 282997656,
+              "section": ".data.rel.ro",
+              "relative_start": 23,
+              "length": 19,
+              "slice_sha256": "5b213388fabfc7cd1899c9e69686306c77a918e0fa755288e394c54c980768a9",
+              "source_literals": [
+                {
+                  "source": "codex-rs/network-proxy/src/credential_broker/providers/github.rs",
+                  "line": 18,
+                  "source_sha256": "830cbce2b697f972244a6fccc2b4cb4c437d751cfcc15fa63efa8165adcb2f7c",
+                  "exact_quoted_literal": true
+                }
+              ],
+              "source_file_path_literals": []
+            },
+            {
+              "relocation_offset": 3045328,
+              "relocation_type": 8,
+              "descriptor_offset": 282989480,
+              "descriptor_address": 282997672,
+              "section": ".data.rel.ro",
+              "relative_start": 42,
+              "length": 23,
+              "slice_sha256": "8464cee6717677c20455f167ea9590aa27964ff8936f588576213c4fe8f54cfd",
+              "source_literals": [
+                {
+                  "source": "codex-rs/network-proxy/src/credential_broker/providers/github.rs",
+                  "line": 18,
+                  "source_sha256": "830cbce2b697f972244a6fccc2b4cb4c437d751cfcc15fa63efa8165adcb2f7c",
+                  "exact_quoted_literal": true
+                }
+              ],
+              "source_file_path_literals": []
+            },
+            {
+              "relocation_offset": 3045616,
+              "relocation_type": 8,
+              "descriptor_offset": 282989672,
+              "descriptor_address": 282997864,
+              "section": ".data.rel.ro",
+              "relative_start": 65,
+              "length": 41,
+              "slice_sha256": "60e50cd57985886d4f0808bc75b26d7ad9487111e3b828549a698a1eb70c2d10",
+              "source_literals": [],
+              "source_file_path_literals": [],
+              "generated_tracing_event_literal": {
+                "source": "codex-rs/network-proxy/src/http_proxy.rs",
+                "line": 548,
+                "source_sha256": "de8ac4fa9317c8440abc79fbe2c040ae85f1e665ebcbe48baa8e8fb919290101",
+                "reconstruction_matches": true,
+                "macro_invocation_sha256": "0575ff98f0d0c365d459b39ae850a40026cb680f866796f7e79570d377be3b99"
+              }
+            }
+          ],
+          "relocated_string_descriptors_covering_full_match": []
+        },
+        {
+          "offset": 12948017,
+          "address": 12948017,
+          "length": 52,
+          "match_sha256": "5565ead01c40fa13e95a45733a2c415869f10d3d2df23cde7b9c16e70ff3c2eb",
+          "descriptors": [
+            {
+              "relocation_offset": 3068824,
+              "relocation_type": 8,
+              "descriptor_offset": 283007240,
+              "descriptor_address": 283015432,
+              "section": ".data.rel.ro",
+              "relative_start": 0,
+              "length": 11,
+              "slice_sha256": "b57f899ba0262153445d0811585b1c40e94b0f64cc5b6ca8bda4a5f227ed7ca8",
+              "source_literals": [
+                {
+                  "source": "codex-rs/network-proxy/src/credential_broker/providers/openai.rs",
+                  "line": 13,
+                  "source_sha256": "a01530a958128beaee63627be9dc00e5faed6e0c76b0b378dba07965d515a322",
+                  "exact_quoted_literal": true
+                }
+              ],
+              "source_file_path_literals": []
+            },
+            {
+              "relocation_offset": 3068848,
+              "relocation_type": 8,
+              "descriptor_offset": 283007256,
+              "descriptor_address": 283015448,
+              "section": ".data.rel.ro",
+              "relative_start": 11,
+              "length": 9,
+              "slice_sha256": "f18542b68a387e3a7ad386dc64eca60db7523409da442f08ecdfe4d8631dd067",
+              "source_literals": [
+                {
+                  "source": "codex-rs/network-proxy/src/credential_broker/providers/openai.rs",
+                  "line": 13,
+                  "source_sha256": "a01530a958128beaee63627be9dc00e5faed6e0c76b0b378dba07965d515a322",
+                  "exact_quoted_literal": true
+                }
+              ],
+              "source_file_path_literals": []
+            },
+            {
+              "relocation_offset": 3068920,
+              "relocation_type": 8,
+              "descriptor_offset": 283007304,
+              "descriptor_address": 283015496,
+              "section": ".data.rel.ro",
+              "relative_start": 20,
+              "length": 7,
+              "slice_sha256": "feb48d0281b091fce6e53df1ab3b326e7eb43609c81e99a83363de1a0dd208c5",
+              "source_literals": [
+                {
+                  "source": "codex-rs/network-proxy/src/credential_broker/providers/openai.rs",
+                  "line": 21,
+                  "source_sha256": "a01530a958128beaee63627be9dc00e5faed6e0c76b0b378dba07965d515a322",
+                  "exact_quoted_literal": true
+                }
+              ],
+              "source_file_path_literals": []
+            },
+            {
+              "relocation_offset": 3068944,
+              "relocation_type": 8,
+              "descriptor_offset": 283007320,
+              "descriptor_address": 283015512,
+              "section": ".data.rel.ro",
+              "relative_start": 27,
+              "length": 6,
+              "slice_sha256": "2321b95cb3578b946392e11e95d0e1cb5a14857245d5aea0077de023796b28af",
+              "source_literals": [
+                {
+                  "source": "codex-rs/network-proxy/src/credential_broker/providers/openai.rs",
+                  "line": 21,
+                  "source_sha256": "a01530a958128beaee63627be9dc00e5faed6e0c76b0b378dba07965d515a322",
+                  "exact_quoted_literal": true
+                }
+              ],
+              "source_file_path_literals": []
+            },
+            {
+              "relocation_offset": 3068968,
+              "relocation_type": 8,
+              "descriptor_offset": 283007336,
+              "descriptor_address": 283015528,
+              "section": ".data.rel.ro",
+              "relative_start": 33,
+              "length": 14,
+              "slice_sha256": "1bd0074c9fd82ff86b8a0f167c771b4d5a563c22cb6f364cb2980ef7608f4754",
+              "source_literals": [
+                {
+                  "source": "codex-rs/network-proxy/src/credential_broker/providers/openai.rs",
+                  "line": 12,
+                  "source_sha256": "a01530a958128beaee63627be9dc00e5faed6e0c76b0b378dba07965d515a322",
+                  "exact_quoted_literal": true
+                }
+              ],
+              "source_file_path_literals": []
+            },
+            {
+              "relocation_offset": 3069088,
+              "relocation_type": 8,
+              "descriptor_offset": 283007400,
+              "descriptor_address": 283015592,
+              "section": ".data.rel.ro",
+              "relative_start": 110,
+              "length": 7,
+              "slice_sha256": "ab530a13e45914982b79f9b7e3fba994cfd1f3fb22f71cea1afbf02b460c6d1d"
+            },
+            {
+              "relocation_offset": 3069184,
+              "relocation_type": 8,
+              "descriptor_offset": 283007480,
+              "descriptor_address": 283015672,
+              "section": ".data.rel.ro",
+              "relative_start": 47,
+              "length": 37,
+              "slice_sha256": "caef655f754298750aef9490c11d233a9b0a3c82a938354880c1c3b3e4b38227",
+              "source_literals": [],
+              "source_file_path_literals": [],
+              "generated_tracing_event_literal": {
+                "source": "codex-rs/network-proxy/src/proxy.rs",
+                "line": 1076,
+                "source_sha256": "1395e3449556cd71592aadb72dacc864674302d1f1f5336e7e2ea96971365ca9",
+                "reconstruction_matches": true,
+                "macro_invocation_sha256": "8f0ace05d0dc326670b4748c829e2526e2c33299ed75a704c91f0e842f25d53e"
+              }
+            },
+            {
+              "relocation_offset": 3069208,
+              "relocation_type": 8,
+              "descriptor_offset": 283007496,
+              "descriptor_address": 283015688,
+              "section": ".data.rel.ro",
+              "relative_start": 84,
+              "length": 26,
+              "slice_sha256": "99308a151a1447cd34b8438db5bd1b25a9e38709658018d87c623848ff0df761"
+            },
+            {
+              "relocation_offset": 3069304,
+              "relocation_type": 8,
+              "descriptor_offset": 283007544,
+              "descriptor_address": 283015736,
+              "section": ".data.rel.ro",
+              "relative_start": 84,
+              "length": 26,
+              "slice_sha256": "99308a151a1447cd34b8438db5bd1b25a9e38709658018d87c623848ff0df761"
+            },
+            {
+              "relocation_offset": 3069328,
+              "relocation_type": 8,
+              "descriptor_offset": 283007560,
+              "descriptor_address": 283015752,
+              "section": ".data.rel.ro",
+              "relative_start": 117,
+              "length": 26,
+              "slice_sha256": "4a877b0a101bbfa3ff8bc627a92bea17fd2b5e7efe897fea9c0f6b6b15a601a0"
+            },
+            {
+              "relocation_offset": 3069376,
+              "relocation_type": 8,
+              "descriptor_offset": 283007616,
+              "descriptor_address": 283015808,
+              "section": ".data.rel.ro",
+              "relative_start": 84,
+              "length": 26,
+              "slice_sha256": "99308a151a1447cd34b8438db5bd1b25a9e38709658018d87c623848ff0df761"
+            },
+            {
+              "relocation_offset": 3069472,
+              "relocation_type": 8,
+              "descriptor_offset": 283007664,
+              "descriptor_address": 283015856,
+              "section": ".data.rel.ro",
+              "relative_start": 84,
+              "length": 26,
+              "slice_sha256": "99308a151a1447cd34b8438db5bd1b25a9e38709658018d87c623848ff0df761"
+            },
+            {
+              "relocation_offset": 3069496,
+              "relocation_type": 8,
+              "descriptor_offset": 283007680,
+              "descriptor_address": 283015872,
+              "section": ".data.rel.ro",
+              "relative_start": 117,
+              "length": 26,
+              "slice_sha256": "4a877b0a101bbfa3ff8bc627a92bea17fd2b5e7efe897fea9c0f6b6b15a601a0"
+            },
+            {
+              "relocation_offset": 3069688,
+              "relocation_type": 8,
+              "descriptor_offset": 283007824,
+              "descriptor_address": 283016016,
+              "section": ".data.rel.ro",
+              "relative_start": 110,
+              "length": 7,
+              "slice_sha256": "ab530a13e45914982b79f9b7e3fba994cfd1f3fb22f71cea1afbf02b460c6d1d"
+            },
+            {
+              "relocation_offset": 3069760,
+              "relocation_type": 8,
+              "descriptor_offset": 283007888,
+              "descriptor_address": 283016080,
+              "section": ".data.rel.ro",
+              "relative_start": 84,
+              "length": 26,
+              "slice_sha256": "99308a151a1447cd34b8438db5bd1b25a9e38709658018d87c623848ff0df761"
+            },
+            {
+              "relocation_offset": 3069856,
+              "relocation_type": 8,
+              "descriptor_offset": 283007936,
+              "descriptor_address": 283016128,
+              "section": ".data.rel.ro",
+              "relative_start": 84,
+              "length": 26,
+              "slice_sha256": "99308a151a1447cd34b8438db5bd1b25a9e38709658018d87c623848ff0df761"
+            },
+            {
+              "relocation_offset": 3069880,
+              "relocation_type": 8,
+              "descriptor_offset": 283007952,
+              "descriptor_address": 283016144,
+              "section": ".data.rel.ro",
+              "relative_start": 117,
+              "length": 26,
+              "slice_sha256": "4a877b0a101bbfa3ff8bc627a92bea17fd2b5e7efe897fea9c0f6b6b15a601a0"
+            },
+            {
+              "relocation_offset": 3069928,
+              "relocation_type": 8,
+              "descriptor_offset": 283008008,
+              "descriptor_address": 283016200,
+              "section": ".data.rel.ro",
+              "relative_start": 84,
+              "length": 26,
+              "slice_sha256": "99308a151a1447cd34b8438db5bd1b25a9e38709658018d87c623848ff0df761"
+            },
+            {
+              "relocation_offset": 3070024,
+              "relocation_type": 8,
+              "descriptor_offset": 283008056,
+              "descriptor_address": 283016248,
+              "section": ".data.rel.ro",
+              "relative_start": 84,
+              "length": 26,
+              "slice_sha256": "99308a151a1447cd34b8438db5bd1b25a9e38709658018d87c623848ff0df761"
+            },
+            {
+              "relocation_offset": 3070048,
+              "relocation_type": 8,
+              "descriptor_offset": 283008072,
+              "descriptor_address": 283016264,
+              "section": ".data.rel.ro",
+              "relative_start": 117,
+              "length": 26,
+              "slice_sha256": "4a877b0a101bbfa3ff8bc627a92bea17fd2b5e7efe897fea9c0f6b6b15a601a0"
+            },
+            {
+              "relocation_offset": 3070096,
+              "relocation_type": 8,
+              "descriptor_offset": 283008128,
+              "descriptor_address": 283016320,
+              "section": ".data.rel.ro",
+              "relative_start": 84,
+              "length": 26,
+              "slice_sha256": "99308a151a1447cd34b8438db5bd1b25a9e38709658018d87c623848ff0df761"
+            },
+            {
+              "relocation_offset": 3070192,
+              "relocation_type": 8,
+              "descriptor_offset": 283008176,
+              "descriptor_address": 283016368,
+              "section": ".data.rel.ro",
+              "relative_start": 84,
+              "length": 26,
+              "slice_sha256": "99308a151a1447cd34b8438db5bd1b25a9e38709658018d87c623848ff0df761"
+            },
+            {
+              "relocation_offset": 3070216,
+              "relocation_type": 8,
+              "descriptor_offset": 283008192,
+              "descriptor_address": 283016384,
+              "section": ".data.rel.ro",
+              "relative_start": 117,
+              "length": 26,
+              "slice_sha256": "4a877b0a101bbfa3ff8bc627a92bea17fd2b5e7efe897fea9c0f6b6b15a601a0"
+            }
+          ],
+          "reviewed_slices": [
+            {
+              "relocation_offset": 3068824,
+              "relocation_type": 8,
+              "descriptor_offset": 283007240,
+              "descriptor_address": 283015432,
+              "section": ".data.rel.ro",
+              "relative_start": 0,
+              "length": 11,
+              "slice_sha256": "b57f899ba0262153445d0811585b1c40e94b0f64cc5b6ca8bda4a5f227ed7ca8",
+              "source_literals": [
+                {
+                  "source": "codex-rs/network-proxy/src/credential_broker/providers/openai.rs",
+                  "line": 13,
+                  "source_sha256": "a01530a958128beaee63627be9dc00e5faed6e0c76b0b378dba07965d515a322",
+                  "exact_quoted_literal": true
+                }
+              ],
+              "source_file_path_literals": []
+            },
+            {
+              "relocation_offset": 3068848,
+              "relocation_type": 8,
+              "descriptor_offset": 283007256,
+              "descriptor_address": 283015448,
+              "section": ".data.rel.ro",
+              "relative_start": 11,
+              "length": 9,
+              "slice_sha256": "f18542b68a387e3a7ad386dc64eca60db7523409da442f08ecdfe4d8631dd067",
+              "source_literals": [
+                {
+                  "source": "codex-rs/network-proxy/src/credential_broker/providers/openai.rs",
+                  "line": 13,
+                  "source_sha256": "a01530a958128beaee63627be9dc00e5faed6e0c76b0b378dba07965d515a322",
+                  "exact_quoted_literal": true
+                }
+              ],
+              "source_file_path_literals": []
+            },
+            {
+              "relocation_offset": 3068920,
+              "relocation_type": 8,
+              "descriptor_offset": 283007304,
+              "descriptor_address": 283015496,
+              "section": ".data.rel.ro",
+              "relative_start": 20,
+              "length": 7,
+              "slice_sha256": "feb48d0281b091fce6e53df1ab3b326e7eb43609c81e99a83363de1a0dd208c5",
+              "source_literals": [
+                {
+                  "source": "codex-rs/network-proxy/src/credential_broker/providers/openai.rs",
+                  "line": 21,
+                  "source_sha256": "a01530a958128beaee63627be9dc00e5faed6e0c76b0b378dba07965d515a322",
+                  "exact_quoted_literal": true
+                }
+              ],
+              "source_file_path_literals": []
+            },
+            {
+              "relocation_offset": 3068944,
+              "relocation_type": 8,
+              "descriptor_offset": 283007320,
+              "descriptor_address": 283015512,
+              "section": ".data.rel.ro",
+              "relative_start": 27,
+              "length": 6,
+              "slice_sha256": "2321b95cb3578b946392e11e95d0e1cb5a14857245d5aea0077de023796b28af",
+              "source_literals": [
+                {
+                  "source": "codex-rs/network-proxy/src/credential_broker/providers/openai.rs",
+                  "line": 21,
+                  "source_sha256": "a01530a958128beaee63627be9dc00e5faed6e0c76b0b378dba07965d515a322",
+                  "exact_quoted_literal": true
+                }
+              ],
+              "source_file_path_literals": []
+            },
+            {
+              "relocation_offset": 3068968,
+              "relocation_type": 8,
+              "descriptor_offset": 283007336,
+              "descriptor_address": 283015528,
+              "section": ".data.rel.ro",
+              "relative_start": 33,
+              "length": 14,
+              "slice_sha256": "1bd0074c9fd82ff86b8a0f167c771b4d5a563c22cb6f364cb2980ef7608f4754",
+              "source_literals": [
+                {
+                  "source": "codex-rs/network-proxy/src/credential_broker/providers/openai.rs",
+                  "line": 12,
+                  "source_sha256": "a01530a958128beaee63627be9dc00e5faed6e0c76b0b378dba07965d515a322",
+                  "exact_quoted_literal": true
+                }
+              ],
+              "source_file_path_literals": []
+            },
+            {
+              "relocation_offset": 3069184,
+              "relocation_type": 8,
+              "descriptor_offset": 283007480,
+              "descriptor_address": 283015672,
+              "section": ".data.rel.ro",
+              "relative_start": 47,
+              "length": 37,
+              "slice_sha256": "caef655f754298750aef9490c11d233a9b0a3c82a938354880c1c3b3e4b38227",
+              "source_literals": [],
+              "source_file_path_literals": [],
+              "generated_tracing_event_literal": {
+                "source": "codex-rs/network-proxy/src/proxy.rs",
+                "line": 1076,
+                "source_sha256": "1395e3449556cd71592aadb72dacc864674302d1f1f5336e7e2ea96971365ca9",
+                "reconstruction_matches": true,
+                "macro_invocation_sha256": "8f0ace05d0dc326670b4748c829e2526e2c33299ed75a704c91f0e842f25d53e"
+              }
+            }
+          ],
+          "relocated_string_descriptors_covering_full_match": []
+        }
+      ],
+      "provider_symbols": [
+        {
+          "symbol": "codex_network_proxy::credential_broker::providers::github::PROVIDER",
+          "address": 283010952,
+          "size": 128,
+          "relocated_fields": [
+            {
+              "field_offset": 0,
+              "pointer": 282997608,
+              "following_word": 1
+            },
+            {
+              "field_offset": 16,
+              "pointer": 282997512,
+              "following_word": 6
+            },
+            {
+              "field_offset": 48,
+              "pointer": 282997688,
+              "following_word": 2
+            },
+            {
+              "field_offset": 64,
+              "pointer": 211986416,
+              "following_word": 0
+            },
+            {
+              "field_offset": 72,
+              "pointer": 211988592,
+              "following_word": 0
+            },
+            {
+              "field_offset": 80,
+              "pointer": 211988160,
+              "following_word": 0
+            },
+            {
+              "field_offset": 88,
+              "pointer": 211988480,
+              "following_word": 0
+            }
+          ],
+          "prefix_table_address": 282997512,
+          "prefix_count": 6,
+          "entire_prefix_table_matches_source": true
+        },
+        {
+          "symbol": "codex_network_proxy::credential_broker::providers::openai::PROVIDER",
+          "address": 283020000,
+          "size": 128,
+          "relocated_fields": [
+            {
+              "field_offset": 0,
+              "pointer": 283015480,
+              "following_word": 1
+            },
+            {
+              "field_offset": 16,
+              "pointer": 283015416,
+              "following_word": 4
+            },
+            {
+              "field_offset": 32,
+              "pointer": 283015496,
+              "following_word": 2
+            },
+            {
+              "field_offset": 48,
+              "pointer": 283015544,
+              "following_word": 1
+            },
+            {
+              "field_offset": 64,
+              "pointer": 212927424,
+              "following_word": 0
+            },
+            {
+              "field_offset": 72,
+              "pointer": 212929296,
+              "following_word": 0
+            },
+            {
+              "field_offset": 80,
+              "pointer": 212928832,
+              "following_word": 0
+            },
+            {
+              "field_offset": 88,
+              "pointer": 212929184,
+              "following_word": 0
+            },
+            {
+              "field_offset": 96,
+              "pointer": 8002000,
+              "following_word": 8
+            }
+          ],
+          "prefix_table_address": 283015416,
+          "prefix_count": 4,
+          "entire_prefix_table_matches_source": true
+        }
+      ],
+      "tracing_generated_name_primary_source": {
+        "archive": "/home/liupan/.cargo/registry/cache/index.crates.io-1949cf8c6b5b557f/tracing-0.1.44.crate",
+        "member": "tracing-0.1.44/src/macros.rs",
+        "line": 725,
+        "source_sha256": "4c367e39d560ae169afcf1b15c618011f5a8c198cab1504a86b4576d5c3fdb30",
+        "construction": "concat of static event label, source file path, colon, and source line number"
+      },
+      "shipping_unstripped_section_comparison": [
+        {
+          "section": ".rodata",
+          "shipping_size": 14014184,
+          "unstripped_size": 14014184,
+          "shipping_sha256": "549314b19b7e3d512bc761884629387d0d2457551c052d9b13f171c0b7f07636",
+          "unstripped_sha256": "549314b19b7e3d512bc761884629387d0d2457551c052d9b13f171c0b7f07636",
+          "identical": true
+        },
+        {
+          "section": ".text",
+          "shipping_size": 224034032,
+          "unstripped_size": 224034032,
+          "shipping_sha256": "a01fc12b27889497db090b450f2ba0bd3e7768650cd3a4dc9e886c0959ffe369",
+          "unstripped_sha256": "a01fc12b27889497db090b450f2ba0bd3e7768650cd3a4dc9e886c0959ffe369",
+          "identical": true
+        },
+        {
+          "section": ".data.rel.ro",
+          "shipping_size": 4836360,
+          "unstripped_size": 4836360,
+          "shipping_sha256": "2b0923585b30d185da62e64be64303309666492b3508254215103c1c53b522b7",
+          "unstripped_sha256": "2b0923585b30d185da62e64be64303309666492b3508254215103c1c53b522b7",
+          "identical": true
+        },
+        {
+          "section": ".rela.dyn",
+          "shipping_size": 7090056,
+          "unstripped_size": 7090056,
+          "shipping_sha256": "74c741fd6ba811f0bf4251a605265ea607b797abdc2afb96e2bf9b6a0e24a2ad",
+          "unstripped_sha256": "74c741fd6ba811f0bf4251a605265ea607b797abdc2afb96e2bf9b6a0e24a2ad",
+          "identical": true
+        }
+      ],
+      "archive_review": {
+        "archive": ".build/release031/x86/packages/codex-plus-0.163.0-plus.0.3.1-x86_64-unknown-linux-gnu.tar.gz",
+        "archive_sha256": "c803594a0aa1fa24dd7922bb4d69e1d266f4962c928f825820bdf60eaa46fd49",
+        "regular_files": 38,
+        "suspicious_paths": [],
+        "python_magic_files": [],
+        "sqlite_magic_files": [],
+        "credential_pattern_matches": [
+          {
+            "file": "codex-plus-0.163.0-plus.0.3.1-x86_64-unknown-linux-gnu/bin/codex",
+            "offset": 12948028,
+            "length": 41,
+            "match_sha256": "34ac49eb60110897a49f35e0a9dfcd5cd38344eb72cb272082cb5895cd958b20",
+            "covered_by_reviewed_raw_match": true
+          }
+        ],
+        "nonregular_members": [],
+        "codex_binary_sha256": "7eedce301f47ba5c835c43be00b467517275c4e0af5c0018b27057f1377ea9f3"
+      },
+      "root_raw_scan_report": ".build/release031/x86/root-artifact-scan.json",
+      "accepted_after_source_review": true,
+      "reason": "Two byte-regex hits cross independently length-bounded Rust prefix and environment-name literals, followed by a generated tracing event name. All bytes within both matches are accounted for by pinned upstream source. No relocated pointer/length candidate spans either full match.",
+      "upstream_commit": "83086188ae0614bd882818ff1aa23f3194962012",
+      "frozen_repo_commit": "03ec6ccb542e07874040b0726dfc1109a07a79e7",
+      "secrets_or_match_bytes_printed": false,
+      "provider_network_validation_attempted": false,
+      "scope_limitations": [
+        "ARM 0.3.1 archive not yet present; not reviewed by this worker.",
+        "Pattern scanning cannot prove absence of every possible secret."
+      ]
+    },
+    "arm": {
+      "accepted_after_source_review": true,
+      "archive": ".build/release031/arm/codex-plus-0.163.0-plus.0.3.1-aarch64-unknown-linux-gnu.tar.gz",
+      "archive_sha256": "cce22af20607277ded03e1cf9759a08b9d52f45f976a05785e7a71cfa65c5872",
+      "binary_sha256": "2a9196eda2f8c56ad90b131df7425d1b40ac22ff17735475cccff7ff9fde9e55",
+      "raw_scan_report": ".build/release031/artifact-review/arm-raw-scan.json",
+      "raw_scan_passed": false,
+      "regular_files": 38,
+      "private_auth_database_or_python_files": false,
+      "private_key_or_aws_pattern_matches": false,
+      "upstream_commit": "83086188ae0614bd882818ff1aa23f3194962012",
+      "source_checks": [
+        {
+          "source": "codex-rs/network-proxy/src/credential_broker/providers/github.rs",
+          "local_and_remote_sha256": "830cbce2b697f972244a6fccc2b4cb4c437d751cfcc15fa63efa8165adcb2f7c",
+          "identical": true
+        },
+        {
+          "source": "codex-rs/network-proxy/src/credential_broker/providers/openai.rs",
+          "local_and_remote_sha256": "a01530a958128beaee63627be9dc00e5faed6e0c76b0b378dba07965d515a322",
+          "identical": true
+        },
+        {
+          "source": "codex-rs/network-proxy/src/http_proxy.rs",
+          "local_and_remote_sha256": "de8ac4fa9317c8440abc79fbe2c040ae85f1e665ebcbe48baa8e8fb919290101",
+          "identical": true
+        },
+        {
+          "source": "codex-rs/network-proxy/src/proxy.rs",
+          "local_and_remote_sha256": "1395e3449556cd71592aadb72dacc864674302d1f1f5336e7e2ea96971365ca9",
+          "identical": true
+        }
+      ],
+      "shipping_remote_unstripped_sections": [
+        {
+          "section": ".rela.dyn",
+          "size": 6712440,
+          "shipping_and_remote_unstripped_sha256": "930b9ccc2fd67b4dc3dce9a22fec6ef1ec87392d7501d950b79180368f20711d",
+          "identical": true
+        },
+        {
+          "section": ".text",
+          "size": 191968232,
+          "shipping_and_remote_unstripped_sha256": "8041f70c2bd791521eaf65dead7e999b3d990c60c902ef972013672843f1e610",
+          "identical": true
+        },
+        {
+          "section": ".rodata",
+          "size": 12216672,
+          "shipping_and_remote_unstripped_sha256": "2bd6160223edb7b8b933e2c0d0b2f09c3a896c625f4bda8274aaa161b638e862",
+          "identical": true
+        },
+        {
+          "section": ".data.rel.ro",
+          "size": 4832728,
+          "shipping_and_remote_unstripped_sha256": "37ecde5fe15b73982c71aab8a69eab35fb16ea15075b768714cc797ce2601924",
+          "identical": true
+        }
+      ],
+      "provider_tables": [
+        {
+          "name": "github",
+          "symbol": "000000000ef1c4e8 0000000000000080 D codex_network_proxy::credential_broker::providers::github::PROVIDER",
+          "source": "codex-rs/network-proxy/src/credential_broker/providers/github.rs",
+          "line": 14,
+          "source_sha256": "830cbce2b697f972244a6fccc2b4cb4c437d751cfcc15fa63efa8165adcb2f7c",
+          "complete_compiled_prefix_table_matches_source": true,
+          "field_address": 250725624,
+          "table_address": 250712168,
+          "count": 6,
+          "descriptors": [
+            {
+              "address": 203052261,
+              "length": 11,
+              "slice_sha256": "34c770dfe85a65f0fb1818b061eeab42609d07c0b0bb3766df14bac431cdb592"
+            },
+            {
+              "address": 203043756,
+              "length": 4,
+              "slice_sha256": "b670eb5d70a65acdaf86aeb336aaa69b850a09ca28fc3d3cf7bb6e4fda9ce2a8"
+            },
+            {
+              "address": 203043760,
+              "length": 4,
+              "slice_sha256": "1caf8e22a84dd7453643b7842d4adaab91482e5a12ea7b5061e868aa38f51734"
+            },
+            {
+              "address": 203043764,
+              "length": 4,
+              "slice_sha256": "727d6f5a12e5edba0c9908edd35c9a7796f9f585b786ec8e6a4d045c23ad7fc6"
+            },
+            {
+              "address": 203043768,
+              "length": 4,
+              "slice_sha256": "9d8e3c88df4791b9ce2a8f1e23e3eff917de5a13ab6a7e516e299ab8ccf4392c"
+            },
+            {
+              "address": 203043772,
+              "length": 4,
+              "slice_sha256": "e8bd540a9453ecc7f3200a587f197058a5902ccd6ad306c5e7a02b1a8e082519"
+            }
+          ]
+        },
+        {
+          "name": "openai",
+          "symbol": "000000000ef15fe0 0000000000000080 D codex_network_proxy::credential_broker::providers::openai::PROVIDER",
+          "source": "codex-rs/network-proxy/src/credential_broker/providers/openai.rs",
+          "line": 13,
+          "source_sha256": "a01530a958128beaee63627be9dc00e5faed6e0c76b0b378dba07965d515a322",
+          "complete_compiled_prefix_table_matches_source": true,
+          "field_address": 250699760,
+          "table_address": 250695160,
+          "count": 4,
+          "descriptors": [
+            {
+              "address": 199527592,
+              "length": 8,
+              "slice_sha256": "fa0711ddc31e9c34d754f8326fb7e11847690b1ea680cb1f8ee312ba55b1c220"
+            },
+            {
+              "address": 203039179,
+              "length": 11,
+              "slice_sha256": "b57f899ba0262153445d0811585b1c40e94b0f64cc5b6ca8bda4a5f227ed7ca8"
+            },
+            {
+              "address": 203039190,
+              "length": 9,
+              "slice_sha256": "f18542b68a387e3a7ad386dc64eca60db7523409da442f08ecdfe4d8631dd067"
+            },
+            {
+              "address": 203037516,
+              "length": 3,
+              "slice_sha256": "449b11820b0f65268bca74c8c9153fa9bebd2a9ee8b3e6ec479d768b46242c2a"
+            }
+          ]
+        }
+      ],
+      "reviewed_matches": [
+        {
+          "pattern": "github",
+          "file": "codex-plus-0.163.0-plus.0.3.1-aarch64-unknown-linux-gnu/bin/codex",
+          "offset": 203043756,
+          "length": 140,
+          "match_sha256": "b397111bee1acac9ce7b5df9877740413f7adb52e2c4ae1b391fd3631f49a4f3",
+          "address": 203043756,
+          "section": ".rodata",
+          "independently_bounded_slices": [
+            {
+              "descriptor_address": 250712184,
+              "descriptor_offset": 250712184,
+              "section": ".data.rel.ro",
+              "relocation_type": 1027,
+              "relative_start": 0,
+              "length": 4,
+              "slice_sha256": "b670eb5d70a65acdaf86aeb336aaa69b850a09ca28fc3d3cf7bb6e4fda9ce2a8"
+            },
+            {
+              "descriptor_address": 250712200,
+              "descriptor_offset": 250712200,
+              "section": ".data.rel.ro",
+              "relocation_type": 1027,
+              "relative_start": 4,
+              "length": 4,
+              "slice_sha256": "1caf8e22a84dd7453643b7842d4adaab91482e5a12ea7b5061e868aa38f51734"
+            },
+            {
+              "descriptor_address": 250712216,
+              "descriptor_offset": 250712216,
+              "section": ".data.rel.ro",
+              "relocation_type": 1027,
+              "relative_start": 8,
+              "length": 4,
+              "slice_sha256": "727d6f5a12e5edba0c9908edd35c9a7796f9f585b786ec8e6a4d045c23ad7fc6"
+            },
+            {
+              "descriptor_address": 250712232,
+              "descriptor_offset": 250712232,
+              "section": ".data.rel.ro",
+              "relocation_type": 1027,
+              "relative_start": 12,
+              "length": 4,
+              "slice_sha256": "9d8e3c88df4791b9ce2a8f1e23e3eff917de5a13ab6a7e516e299ab8ccf4392c"
+            },
+            {
+              "descriptor_address": 250712248,
+              "descriptor_offset": 250712248,
+              "section": ".data.rel.ro",
+              "relocation_type": 1027,
+              "relative_start": 16,
+              "length": 4,
+              "slice_sha256": "e8bd540a9453ecc7f3200a587f197058a5902ccd6ad306c5e7a02b1a8e082519"
+            },
+            {
+              "descriptor_address": 250719024,
+              "descriptor_offset": 250719024,
+              "section": ".data.rel.ro",
+              "relocation_type": 1027,
+              "relative_start": 20,
+              "length": 4,
+              "slice_sha256": "a0af9f865bf637e6736817f4ce552e4cdf7b8c36ea75bc254c1d1f0af744b5bf"
+            }
+          ],
+          "full_match_pointer_length_references": [],
+          "accepted_false_positive": true,
+          "proof": {
+            "reason": "Regex concatenates five separate four-byte credential-prefix literals from the verified GitHub prefix array, then an independently addressed unrelated four-byte literal and subsequent string-pool data. The provider references each prefix with length four; it contains no 140-byte credential string.",
+            "source": "codex-rs/network-proxy/src/credential_broker/providers/github.rs",
+            "line": 14,
+            "source_sha256": "830cbce2b697f972244a6fccc2b4cb4c437d751cfcc15fa63efa8165adcb2f7c",
+            "prefix_table_address": 250712168,
+            "first_five_descriptors_match_source": true,
+            "unrelated_following_literal_descriptor": {
+              "descriptor_address": 250719024,
+              "descriptor_offset": 250719024,
+              "section": ".data.rel.ro",
+              "relocation_type": 1027,
+              "relative_start": 20,
+              "length": 4,
+              "slice_sha256": "a0af9f865bf637e6736817f4ce552e4cdf7b8c36ea75bc254c1d1f0af744b5bf"
+            }
+          }
+        },
+        {
+          "pattern": "github",
+          "file": "codex-plus-0.163.0-plus.0.3.1-aarch64-unknown-linux-gnu/bin/codex",
+          "offset": 203052261,
+          "length": 70,
+          "match_sha256": "414102fe96e68351e395e69fdf8e3a5e114752cb8084aef6c7f96fbcba34d1d5",
+          "address": 203052261,
+          "section": ".rodata",
+          "independently_bounded_slices": [
+            {
+              "descriptor_address": 250712168,
+              "descriptor_offset": 250712168,
+              "section": ".data.rel.ro",
+              "relocation_type": 1027,
+              "relative_start": 0,
+              "length": 11,
+              "slice_sha256": "34c770dfe85a65f0fb1818b061eeab42609d07c0b0bb3766df14bac431cdb592"
+            },
+            {
+              "descriptor_address": 250712296,
+              "descriptor_offset": 250712296,
+              "section": ".data.rel.ro",
+              "relocation_type": 1027,
+              "relative_start": 11,
+              "length": 12,
+              "slice_sha256": "d29e33c33d871a2c7300b14069b14643b54b5aeeadfc1347de15404fcb3a3cd2"
+            },
+            {
+              "descriptor_address": 250712312,
+              "descriptor_offset": 250712312,
+              "section": ".data.rel.ro",
+              "relocation_type": 1027,
+              "relative_start": 23,
+              "length": 19,
+              "slice_sha256": "5b213388fabfc7cd1899c9e69686306c77a918e0fa755288e394c54c980768a9"
+            },
+            {
+              "descriptor_address": 250712328,
+              "descriptor_offset": 250712328,
+              "section": ".data.rel.ro",
+              "relocation_type": 1027,
+              "relative_start": 42,
+              "length": 23,
+              "slice_sha256": "8464cee6717677c20455f167ea9590aa27964ff8936f588576213c4fe8f54cfd"
+            },
+            {
+              "descriptor_address": 250712520,
+              "descriptor_offset": 250712520,
+              "section": ".data.rel.ro",
+              "relocation_type": 1027,
+              "relative_start": 65,
+              "length": 41,
+              "slice_sha256": "60e50cd57985886d4f0808bc75b26d7ad9487111e3b828549a698a1eb70c2d10"
+            }
+          ],
+          "full_match_pointer_length_references": [],
+          "accepted_false_positive": true,
+          "proof": {
+            "reason": "Current ARM bytes and independently bounded slices equal the currently reviewed x86 literal stream; upstream prefix/env constants followed by a generated tracing event name.",
+            "source_slices": [
+              {
+                "relocation_offset": 3045088,
+                "relocation_type": 8,
+                "descriptor_offset": 282989320,
+                "descriptor_address": 282997512,
+                "section": ".data.rel.ro",
+                "relative_start": 0,
+                "length": 11,
+                "slice_sha256": "34c770dfe85a65f0fb1818b061eeab42609d07c0b0bb3766df14bac431cdb592",
+                "source_literals": [
+                  {
+                    "source": "codex-rs/network-proxy/src/credential_broker/providers/github.rs",
+                    "line": 14,
+                    "source_sha256": "830cbce2b697f972244a6fccc2b4cb4c437d751cfcc15fa63efa8165adcb2f7c",
+                    "exact_quoted_literal": true
+                  }
+                ],
+                "source_file_path_literals": []
+              },
+              {
+                "relocation_offset": 3045280,
+                "relocation_type": 8,
+                "descriptor_offset": 282989448,
+                "descriptor_address": 282997640,
+                "section": ".data.rel.ro",
+                "relative_start": 11,
+                "length": 12,
+                "slice_sha256": "d29e33c33d871a2c7300b14069b14643b54b5aeeadfc1347de15404fcb3a3cd2",
+                "source_literals": [
+                  {
+                    "source": "codex-rs/network-proxy/src/credential_broker/providers/github.rs",
+                    "line": 16,
+                    "source_sha256": "830cbce2b697f972244a6fccc2b4cb4c437d751cfcc15fa63efa8165adcb2f7c",
+                    "exact_quoted_literal": true
+                  }
+                ],
+                "source_file_path_literals": []
+              },
+              {
+                "relocation_offset": 3045304,
+                "relocation_type": 8,
+                "descriptor_offset": 282989464,
+                "descriptor_address": 282997656,
+                "section": ".data.rel.ro",
+                "relative_start": 23,
+                "length": 19,
+                "slice_sha256": "5b213388fabfc7cd1899c9e69686306c77a918e0fa755288e394c54c980768a9",
+                "source_literals": [
+                  {
+                    "source": "codex-rs/network-proxy/src/credential_broker/providers/github.rs",
+                    "line": 18,
+                    "source_sha256": "830cbce2b697f972244a6fccc2b4cb4c437d751cfcc15fa63efa8165adcb2f7c",
+                    "exact_quoted_literal": true
+                  }
+                ],
+                "source_file_path_literals": []
+              },
+              {
+                "relocation_offset": 3045328,
+                "relocation_type": 8,
+                "descriptor_offset": 282989480,
+                "descriptor_address": 282997672,
+                "section": ".data.rel.ro",
+                "relative_start": 42,
+                "length": 23,
+                "slice_sha256": "8464cee6717677c20455f167ea9590aa27964ff8936f588576213c4fe8f54cfd",
+                "source_literals": [
+                  {
+                    "source": "codex-rs/network-proxy/src/credential_broker/providers/github.rs",
+                    "line": 18,
+                    "source_sha256": "830cbce2b697f972244a6fccc2b4cb4c437d751cfcc15fa63efa8165adcb2f7c",
+                    "exact_quoted_literal": true
+                  }
+                ],
+                "source_file_path_literals": []
+              },
+              {
+                "relocation_offset": 3045616,
+                "relocation_type": 8,
+                "descriptor_offset": 282989672,
+                "descriptor_address": 282997864,
+                "section": ".data.rel.ro",
+                "relative_start": 65,
+                "length": 41,
+                "slice_sha256": "60e50cd57985886d4f0808bc75b26d7ad9487111e3b828549a698a1eb70c2d10",
+                "source_literals": [],
+                "source_file_path_literals": [],
+                "generated_tracing_event_literal": {
+                  "source": "codex-rs/network-proxy/src/http_proxy.rs",
+                  "line": 548,
+                  "source_sha256": "de8ac4fa9317c8440abc79fbe2c040ae85f1e665ebcbe48baa8e8fb919290101",
+                  "reconstruction_matches": true,
+                  "macro_invocation_sha256": "0575ff98f0d0c365d459b39ae850a40026cb680f866796f7e79570d377be3b99"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "pattern": "openai",
+          "file": "codex-plus-0.163.0-plus.0.3.1-aarch64-unknown-linux-gnu/bin/codex",
+          "offset": 199527592,
+          "length": 32,
+          "match_sha256": "67429ab321fe5824918753bb1516130dd06ae1a7eb50ee0de819f376bb943ff8",
+          "address": 199527592,
+          "section": ".rodata",
+          "independently_bounded_slices": [
+            {
+              "descriptor_address": 250695160,
+              "descriptor_offset": 250695160,
+              "section": ".data.rel.ro",
+              "relocation_type": 1027,
+              "relative_start": 0,
+              "length": 8,
+              "slice_sha256": "fa0711ddc31e9c34d754f8326fb7e11847690b1ea680cb1f8ee312ba55b1c220"
+            },
+            {
+              "descriptor_address": 250699840,
+              "descriptor_offset": 250699840,
+              "section": ".data.rel.ro",
+              "relocation_type": 1027,
+              "relative_start": 8,
+              "length": 8,
+              "slice_sha256": "277d8ce2a2b4eb5884105af2001c6583d5b64306023761e4b8f7147049d0c8b8"
+            }
+          ],
+          "full_match_pointer_length_references": [],
+          "accepted_false_positive": true,
+          "proof": {
+            "reason": "Regex concatenates the independently bounded eight-byte OpenAI prefix and separate eight-byte credential-watermark constant, then subsequent string-pool data. Both constants are separate fields referenced by the verified OpenAI provider, not one 32-byte credential string.",
+            "source": "codex-rs/network-proxy/src/credential_broker/providers/openai.rs",
+            "prefix_line": 13,
+            "watermark_line": 22,
+            "source_sha256": "a01530a958128beaee63627be9dc00e5faed6e0c76b0b378dba07965d515a322",
+            "prefix_table_address": 250695160,
+            "separate_provider_watermark_reference_verified": true,
+            "watermark_descriptor": {
+              "descriptor_address": 250699840,
+              "descriptor_offset": 250699840,
+              "section": ".data.rel.ro",
+              "relocation_type": 1027,
+              "relative_start": 8,
+              "length": 8,
+              "slice_sha256": "277d8ce2a2b4eb5884105af2001c6583d5b64306023761e4b8f7147049d0c8b8"
+            }
+          }
+        },
+        {
+          "pattern": "openai",
+          "file": "codex-plus-0.163.0-plus.0.3.1-aarch64-unknown-linux-gnu/bin/codex",
+          "offset": 203039179,
+          "length": 52,
+          "match_sha256": "5565ead01c40fa13e95a45733a2c415869f10d3d2df23cde7b9c16e70ff3c2eb",
+          "address": 203039179,
+          "section": ".rodata",
+          "independently_bounded_slices": [
+            {
+              "descriptor_address": 250695176,
+              "descriptor_offset": 250695176,
+              "section": ".data.rel.ro",
+              "relocation_type": 1027,
+              "relative_start": 0,
+              "length": 11,
+              "slice_sha256": "b57f899ba0262153445d0811585b1c40e94b0f64cc5b6ca8bda4a5f227ed7ca8"
+            },
+            {
+              "descriptor_address": 250695192,
+              "descriptor_offset": 250695192,
+              "section": ".data.rel.ro",
+              "relocation_type": 1027,
+              "relative_start": 11,
+              "length": 9,
+              "slice_sha256": "f18542b68a387e3a7ad386dc64eca60db7523409da442f08ecdfe4d8631dd067"
+            },
+            {
+              "descriptor_address": 250695240,
+              "descriptor_offset": 250695240,
+              "section": ".data.rel.ro",
+              "relocation_type": 1027,
+              "relative_start": 20,
+              "length": 7,
+              "slice_sha256": "feb48d0281b091fce6e53df1ab3b326e7eb43609c81e99a83363de1a0dd208c5"
+            },
+            {
+              "descriptor_address": 250695256,
+              "descriptor_offset": 250695256,
+              "section": ".data.rel.ro",
+              "relocation_type": 1027,
+              "relative_start": 27,
+              "length": 6,
+              "slice_sha256": "2321b95cb3578b946392e11e95d0e1cb5a14857245d5aea0077de023796b28af"
+            },
+            {
+              "descriptor_address": 250695272,
+              "descriptor_offset": 250695272,
+              "section": ".data.rel.ro",
+              "relocation_type": 1027,
+              "relative_start": 33,
+              "length": 14,
+              "slice_sha256": "1bd0074c9fd82ff86b8a0f167c771b4d5a563c22cb6f364cb2980ef7608f4754"
+            },
+            {
+              "descriptor_address": 250695416,
+              "descriptor_offset": 250695416,
+              "section": ".data.rel.ro",
+              "relocation_type": 1027,
+              "relative_start": 47,
+              "length": 37,
+              "slice_sha256": "caef655f754298750aef9490c11d233a9b0a3c82a938354880c1c3b3e4b38227"
+            }
+          ],
+          "full_match_pointer_length_references": [],
+          "accepted_false_positive": true,
+          "proof": {
+            "reason": "Current ARM bytes and independently bounded slices equal the currently reviewed x86 literal stream; upstream prefix/env constants followed by a generated tracing event name.",
+            "source_slices": [
+              {
+                "relocation_offset": 3068824,
+                "relocation_type": 8,
+                "descriptor_offset": 283007240,
+                "descriptor_address": 283015432,
+                "section": ".data.rel.ro",
+                "relative_start": 0,
+                "length": 11,
+                "slice_sha256": "b57f899ba0262153445d0811585b1c40e94b0f64cc5b6ca8bda4a5f227ed7ca8",
+                "source_literals": [
+                  {
+                    "source": "codex-rs/network-proxy/src/credential_broker/providers/openai.rs",
+                    "line": 13,
+                    "source_sha256": "a01530a958128beaee63627be9dc00e5faed6e0c76b0b378dba07965d515a322",
+                    "exact_quoted_literal": true
+                  }
+                ],
+                "source_file_path_literals": []
+              },
+              {
+                "relocation_offset": 3068848,
+                "relocation_type": 8,
+                "descriptor_offset": 283007256,
+                "descriptor_address": 283015448,
+                "section": ".data.rel.ro",
+                "relative_start": 11,
+                "length": 9,
+                "slice_sha256": "f18542b68a387e3a7ad386dc64eca60db7523409da442f08ecdfe4d8631dd067",
+                "source_literals": [
+                  {
+                    "source": "codex-rs/network-proxy/src/credential_broker/providers/openai.rs",
+                    "line": 13,
+                    "source_sha256": "a01530a958128beaee63627be9dc00e5faed6e0c76b0b378dba07965d515a322",
+                    "exact_quoted_literal": true
+                  }
+                ],
+                "source_file_path_literals": []
+              },
+              {
+                "relocation_offset": 3068920,
+                "relocation_type": 8,
+                "descriptor_offset": 283007304,
+                "descriptor_address": 283015496,
+                "section": ".data.rel.ro",
+                "relative_start": 20,
+                "length": 7,
+                "slice_sha256": "feb48d0281b091fce6e53df1ab3b326e7eb43609c81e99a83363de1a0dd208c5",
+                "source_literals": [
+                  {
+                    "source": "codex-rs/network-proxy/src/credential_broker/providers/openai.rs",
+                    "line": 21,
+                    "source_sha256": "a01530a958128beaee63627be9dc00e5faed6e0c76b0b378dba07965d515a322",
+                    "exact_quoted_literal": true
+                  }
+                ],
+                "source_file_path_literals": []
+              },
+              {
+                "relocation_offset": 3068944,
+                "relocation_type": 8,
+                "descriptor_offset": 283007320,
+                "descriptor_address": 283015512,
+                "section": ".data.rel.ro",
+                "relative_start": 27,
+                "length": 6,
+                "slice_sha256": "2321b95cb3578b946392e11e95d0e1cb5a14857245d5aea0077de023796b28af",
+                "source_literals": [
+                  {
+                    "source": "codex-rs/network-proxy/src/credential_broker/providers/openai.rs",
+                    "line": 21,
+                    "source_sha256": "a01530a958128beaee63627be9dc00e5faed6e0c76b0b378dba07965d515a322",
+                    "exact_quoted_literal": true
+                  }
+                ],
+                "source_file_path_literals": []
+              },
+              {
+                "relocation_offset": 3068968,
+                "relocation_type": 8,
+                "descriptor_offset": 283007336,
+                "descriptor_address": 283015528,
+                "section": ".data.rel.ro",
+                "relative_start": 33,
+                "length": 14,
+                "slice_sha256": "1bd0074c9fd82ff86b8a0f167c771b4d5a563c22cb6f364cb2980ef7608f4754",
+                "source_literals": [
+                  {
+                    "source": "codex-rs/network-proxy/src/credential_broker/providers/openai.rs",
+                    "line": 12,
+                    "source_sha256": "a01530a958128beaee63627be9dc00e5faed6e0c76b0b378dba07965d515a322",
+                    "exact_quoted_literal": true
+                  }
+                ],
+                "source_file_path_literals": []
+              },
+              {
+                "relocation_offset": 3069184,
+                "relocation_type": 8,
+                "descriptor_offset": 283007480,
+                "descriptor_address": 283015672,
+                "section": ".data.rel.ro",
+                "relative_start": 47,
+                "length": 37,
+                "slice_sha256": "caef655f754298750aef9490c11d233a9b0a3c82a938354880c1c3b3e4b38227",
+                "source_literals": [],
+                "source_file_path_literals": [],
+                "generated_tracing_event_literal": {
+                  "source": "codex-rs/network-proxy/src/proxy.rs",
+                  "line": 1076,
+                  "source_sha256": "1395e3449556cd71592aadb72dacc864674302d1f1f5336e7e2ea96971365ca9",
+                  "reconstruction_matches": true,
+                  "macro_invocation_sha256": "8f0ace05d0dc326670b4748c829e2526e2c33299ed75a704c91f0e842f25d53e"
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "tracing_generated_name_primary_source": {
+        "archive": "/home/liupan/.cargo/registry/cache/index.crates.io-1949cf8c6b5b557f/tracing-0.1.44.crate",
+        "member": "tracing-0.1.44/src/macros.rs",
+        "line": 725,
+        "source_sha256": "4c367e39d560ae169afcf1b15c618011f5a8c198cab1504a86b4576d5c3fdb30",
+        "construction": "concat of static event label, source file path, colon, and source line number"
+      },
+      "match_bytes_or_secrets_printed": false,
+      "provider_network_validation_attempted": false,
+      "limitations": [
+        "Pattern scanning cannot establish absence of every possible secret.",
+        "No archive repackaging, installation, source edits, or provider credential validation performed."
+      ]
+    }
+  },
+  "installation_performed": false,
+  "merge_performed": false
+}

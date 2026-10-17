@@ -1,0 +1,34 @@
+{
+  "release": "0.163.0-plus.0.3.1",
+  "plus_commit": "03ec6ccb542e07874040b0726dfc1109a07a79e7",
+  "coordinator_protocol": 2,
+  "upstream": {
+    "version": "0.163.0",
+    "tag": "rust-v0.163.0",
+    "commit": "83086188ae0614bd882818ff1aa23f3194962012"
+  },
+  "note": "docs/releases/0.163.0-plus.0.3.1.md",
+  "targets": {
+    "x86_64": {
+      "triple": "x86_64-unknown-linux-gnu",
+      "asset": "codex-plus-0.163.0-plus.0.3.1-x86_64-unknown-linux-gnu.tar.gz",
+      "sha256": "c803594a0aa1fa24dd7922bb4d69e1d266f4962c928f825820bdf60eaa46fd49",
+      "tree_sha256": "268044a6ced28d6d1748a1cc5704858f9b2da39621f21df8136c6e25b42a28a6",
+      "manifest_sha256": "f667154ec15d9b7f38e85d114c38fa6d763dca19e8ce4d3a1ab37de654b650e2"
+    },
+    "aarch64": {
+      "triple": "aarch64-unknown-linux-gnu",
+      "asset": "codex-plus-0.163.0-plus.0.3.1-aarch64-unknown-linux-gnu.tar.gz",
+      "sha256": "cce22af20607277ded03e1cf9759a08b9d52f45f976a05785e7a71cfa65c5872",
+      "tree_sha256": "6f04e6ac249f46b2087485e1672bb4f04453b23577598e87ed43ad6f65874a10",
+      "manifest_sha256": "d853a8dfe011f3ef80da62cc7f5345a5114fe517319a8bbefdd8730a41f60a56"
+    }
+  },
+  "rollout": {
+    "daemon_restart": false,
+    "quiet_checkpoint": false,
+    "session_restart": "required",
+    "agents_md": null,
+    "notes": "Compatible strictly higher protocol-2 Plus revision at the same upstream and target. Actual 0.3.0-to-0.3.1 package observers re-exec with frozen uncertain callback identity/payload preserved and fresh work delivered once on both native architectures. Installer switches current; helpers transfer after their cycle without cancellation or blind resend. Check each helper package-root after rollout. Running TUIs exit and codex resume for advisor-topic and inactive-worker polling fixes. Keep the explicit retain of Python 0.163.0-plus.0.2.0 until the user retires it after corrected Rust rollout checks and a 24-hour operational soak; this release does not retire it. All rollbacks require a quiet checkpoint. Stock CLI/shared daemon remain OpenAI 0.163.0; use codex-stock for maintenance. Wrapper dispatch and global AGENTS block are unchanged. Direct advisor calls derive topic from brief; opaque wrappers use the documented foreground advisor-topic marker. Voice remains omitted."
+  }
+}
