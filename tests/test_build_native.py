@@ -1,7 +1,10 @@
 """The release build accepts only pinned upstream or its exact frontend patch."""
+import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -113,6 +116,49 @@ class BuildNativeSourceGuardTests(unittest.TestCase):
         (target / 'cache').write_text('build artifact\n')
         result = self.build()
         self.assertEqual(result.returncode, 73, result.stderr)
+
+
+class BuildRuntimeTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name) / 'checkout with spaces'
+        scripts = self.root / 'scripts'
+        scripts.mkdir(parents=True)
+        shutil.copyfile(ROOT / 'scripts/build-runtime.sh', scripts / 'build-runtime.sh')
+        tools = self.root / 'tools'
+        tools.mkdir()
+        cargo = tools / 'cargo'
+        cargo.write_text('#!' + sys.executable + '\nimport json,os,pathlib,sys\n'
+            'pathlib.Path(os.environ["CARGO_ARGS"]).write_text(json.dumps(sys.argv[1:]))\n'
+            'if os.environ.get("CARGO_FAIL"): sys.exit(73)\n'
+            'target=pathlib.Path(sys.argv[sys.argv.index("--target-dir")+1])/"release"\n'
+            'target.mkdir(parents=True)\n'
+            '(target/"codex-plus-runtime").write_bytes(b"runtime artifact")\n')
+        cargo.chmod(0o755)
+        self.arguments = self.root / 'cargo-args.json'
+        self.env = os.environ | {'PATH': str(tools) + os.pathsep + os.environ['PATH'],
+                                 'CARGO_ARGS': str(self.arguments)}
+
+    def build(self):
+        return subprocess.run(['bash', str(self.root / 'scripts/build-runtime.sh')],
+                              env=self.env, text=True, capture_output=True, cwd='/tmp')
+
+    def test_helper_only_build_uses_locked_pinned_toolchain_and_atomic_output(self):
+        result = self.build()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(self.arguments.read_text()), [
+            '+1.99.0', 'build', '--locked', '--release', '--manifest-path',
+            str(self.root / 'rust-runtime/Cargo.toml'), '--target-dir',
+            str(self.root / '.build/runtime-target')])
+        runtime = self.root / '.build/codex-plus-runtime'
+        self.assertEqual(runtime.read_bytes(), b'runtime artifact')
+        self.assertEqual(runtime.stat().st_mode & 0o777, 0o755)
+        self.assertFalse((self.root / '.build/codex').exists())
+        self.env['CARGO_FAIL'] = '1'
+        self.assertEqual(self.build().returncode, 73)
+        self.assertEqual(runtime.read_bytes(), b'runtime artifact')
+        self.assertFalse(runtime.with_suffix('.new').exists())
 
 
 if __name__ == '__main__':

@@ -4,7 +4,7 @@ Codex Plus combines the native Codex CLI, a worker HUD below its shortcuts
 footer, and a `park` helper for background completion callbacks. Each client
 tracks its own parent thread in ordinary terminals and split tmux panes.
 Release builds patch the frontend and keep upstream daemon code unchanged.
-The HUD and Python completion coordinator work with the official stock daemon.
+The HUD and Rust completion coordinator work with the official stock daemon.
 
 The patch targets **Codex 0.163.0**, upstream commit
 `83086188ae0614bd882818ff1aa23f3194962012`.
@@ -32,7 +32,8 @@ rustup toolchain install 1.99.0
 ```
 
 The script fetches the pinned upstream source into `.build/source`, applies
-`patches/codex-0.163.0-worker-hud.patch`, and builds `.build/codex`. It refuses an
+`patches/codex-0.163.0-worker-hud.patch`, and builds `.build/codex` and
+`.build/codex-plus-runtime`. It refuses an
 unexpected source revision or a checkout that differs from the exact release
 patch, including old daemon modifications. The patch also reconciles the
 release tag's workspace versions in `Cargo.lock`; external dependency versions
@@ -54,9 +55,17 @@ measure 0.163.0, UI, or model-response speed.
 
 For complete distributable packages, follow [release building](docs/releasing.md).
 The packager stages native x86_64 and ARM64 outputs with upstream runtime resources,
-the Python helper, workflow docs, license notices, and integrity manifests. This
+the native Rust helper, workflow docs, license notices, and integrity manifests. This
 is separate from the developer binary above. Codex voice is intentionally omitted;
 see the [release notes](docs/release-notes.md).
+
+For helper-only development, run `./scripts/build-runtime.sh`. Helper source is
+in `rust-runtime/`; `codex_plus/` remains the Python 0.2 reference for migration
+tests and is excluded from packages. Installed commands use Bash and native
+executables, with bundled SQLite and no Python interpreter or `libpython`.
+Python 3.11+ remains a build/test dependency for packaging and fixtures.
+The one-time Python-to-Rust rollout needs a
+[quiet checkpoint](docs/background-work.md#cooperative-package-upgrades).
 
 ## Display behavior
 

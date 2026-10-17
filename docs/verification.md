@@ -6,6 +6,24 @@ Rust 1.99.0. Keep the ordinary installed Codex and global configuration intact.
 
 ## Current release acceptance
 
+For the Plus 0.3 helper migration, use the
+[Rust runtime checks](rust-runtime.md#qualification). The Python 0.2 suites below
+remain historical/oracle evidence, rather than proof of the installed runtime.
+Native client acceptance remains valid only for the identical frontend patch;
+complete 0.3 archives require their own extracted-package qualification.
+
+Implementation acceptance passed 51 Rust unit tests, 19 coordinator cases,
+16 runner cases (three Python-only mocks skipped), five upgrade cases, and five
+official stock lifecycle scenarios on each native architecture. The x86 root
+gate additionally passed 24 packaging, 11 launcher, and eight build-guard checks.
+Both architectures passed a held 65-second foreground advisor consultation with
+no polling turn or park. Python-free filesystem fixtures cover managed I/O and
+SQLite status on both targets, observer crash recovery on x86, and official
+background/advisor execution on ARM. ARM's stock/no-Python scenarios precede a
+formatting-only final rebuild; unit, coordinator, and upgrade gates were rerun.
+See [rust-runtime.json](evidence/rust-runtime.json) for exact artifact identities,
+preserved fixture failures, source provenance, and untested fault boundaries.
+
 The frontend patch changes TUI, CLI, and workspace lock reconciliation only;
 backend and database source must match the pinned 0.163.0 tag. The historical
 0.162.1 receipt extension is not part of this release and has not been ported.

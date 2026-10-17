@@ -80,8 +80,7 @@ def manifest_check(package):
     upstream = json.loads((package / 'codex-package.json').read_text())
     assert manifest['schema_version'] == 1 and manifest['voice'] is False, manifest
     protocol = manifest.get('coordinator_protocol')
-    if protocol is not None:
-        assert type(protocol) is int and protocol == 1, 'unsupported coordinator protocol'
+    assert type(protocol) is int and protocol == 2, 'unsupported coordinator protocol'
     assert manifest['upstream'] == {'version': '0.163.0', 'tag': 'rust-v0.163.0',
         'commit': '83086188ae0614bd882818ff1aa23f3194962012'}, manifest['upstream']
     assert manifest['build']['rust'] == '1.99.0' and manifest['build']['cargo_profile'] == 'release'
@@ -90,20 +89,21 @@ def manifest_check(package):
     assert upstream == {'layoutVersion': 1, 'version': manifest['upstream']['version'],
         'target': manifest['target'], 'variant': 'codex', 'entrypoint': 'bin/codex',
         'resourcesDir': 'codex-resources', 'pathDir': 'codex-path'}, upstream
-    required = ['bin/codex', 'bin/codex-plus', 'bin/codex-code-mode-host', 'codex-path/rg',
+    required = ['bin/codex', 'bin/codex-plus', 'bin/codex-plus-runtime', 'bin/codex-code-mode-host', 'codex-path/rg',
         'codex-resources/bwrap', 'codex-package.json',
-        'codex_plus/runner.py', 'codex_plus/background.py', 'codex_plus/rpc.py',
-        'docs/shell-workflow.md', 'docs/background-work.md', 'LICENSE', 'NOTICE',
+        'docs/shell-workflow.md', 'docs/background-work.md', 'docs/rust-runtime.md', 'LICENSE', 'NOTICE',
         'licenses/bubblewrap-COPYING', 'licenses/ripgrep-LICENSE-MIT',
         'licenses/ripgrep-LICENSE-UNLICENSE',
         'licenses/rusty-v8-LICENSE', 'licenses/v8-LICENSE', 'licenses/v8-LICENSE.v8',
         'licenses/codex-plus-LICENSE', 'licenses/provenance.json',
+        'licenses/codex-plus-runtime-NOTICES.txt', 'licenses/codex-plus-runtime-dependencies.json',
+        'licenses/codex-plus-runtime-rust-COPYRIGHT.html',
         'licenses/rusty-v8-release-manifests.sha256', 'README.md', 'GLOSSARY.md',
         'docs/verification.md', 'docs/release-notes.md']
-    if protocol == 1:
-        required.append('codex_plus/upgrade.py')
     assert all((package / path).is_file() for path in required), 'missing canonical package file'
     paths = list(package.rglob('*'))
+    assert not (package / 'codex_plus').exists(), 'legacy Python helper package shipped'
+    assert not any(path.suffix in ('.py', '.pyc') for path in paths), 'Python runtime file shipped'
     assert not any(path.is_symlink() for path in paths), 'package has unmanifested symlinks'
     assert not any(any(part.startswith('voice') for part in path.relative_to(package).parts)
                    for path in paths), 'voice subtree shipped'
@@ -114,7 +114,13 @@ def manifest_check(package):
     tree = hashlib.sha256(json.dumps(actual, sort_keys=True, separators=(',', ':'),
                                      ensure_ascii=True).encode('ascii')).hexdigest()
     assert tree == manifest['tree_sha256'], 'tree digest mismatch'
-    for path in required[:5]:
+    runtime = manifest['runtime']
+    assert all(actual[name]['sha256'] == value for name, value in runtime['files'].items()), runtime
+    dependencies = json.loads((package / 'licenses/codex-plus-runtime-dependencies.json').read_text())
+    assert dependencies['target'] == manifest['target'] and dependencies['toolchain']['rust'] == '1.99.0'
+    assert runtime['cargo_lock_sha256'] == dependencies['cargo_lock_sha256'], runtime
+    assert runtime['source_sha256'] == dependencies['source_sha256'], runtime
+    for path in required[:6]:
         assert os.access(package / path, os.X_OK), f'{path} is not executable'
     with (package / 'bin/codex').open('rb') as stream:
         with mmap.mmap(stream.fileno(), 0, access=mmap.ACCESS_READ) as binary:
@@ -136,7 +142,7 @@ def public_commands(package, root):
     link.symlink_to(package / 'bin/codex-plus')
     assert command([link, '--version'], cwd, env).strip() == plus
     assert 'Usage:' in command([link, '--help'], cwd, env)
-    runner = command([link, 'run', '--', sys.executable, '-c', 'print("PACKAGE_RUN")'], cwd, env)
+    runner = command([link, 'run', '--', '/bin/echo', 'PACKAGE_RUN'], cwd, env)
     assert 'PACKAGE_RUN' in runner and 'exit=0' in runner, runner
     logs = list((Path(env['CODEX_HOME']) / 'codex-plus/logs').glob('*'))
     assert len(logs) == 1 and 'PACKAGE_RUN' in logs[0].read_text(), logs
@@ -181,7 +187,7 @@ def wrapper_check(package, root):
 def resources_check(package, root, evidence):
     env, cwd = private_env(root)
     results = {}
-    for relative in ('bin/codex', 'bin/codex-code-mode-host', 'codex-path/rg',
+    for relative in ('bin/codex', 'bin/codex-plus-runtime', 'bin/codex-code-mode-host', 'codex-path/rg',
                      'codex-resources/bwrap'):
         path = package / relative
         with path.open('rb') as stream:
@@ -191,6 +197,8 @@ def resources_check(package, root, evidence):
         assert 'not found' not in output, f'{relative}: {output}'
         assert loaded.returncode == 0 or any(text in output for text in
             ('not a dynamic executable', 'statically linked')), output
+        if relative == 'bin/codex-plus-runtime':
+            assert not any(name in output for name in ('libsqlite3', 'libssl', 'libcrypto')), output
         results[relative] = {'sha256': digest(path), 'ldd': output}
     assert 'ripgrep' in command([package / 'codex-path/rg', '--version'], cwd, env)
     (evidence / 'resource-dependencies.json').write_text(json.dumps(results, indent=2) + '\n')
@@ -313,8 +321,6 @@ def stdio_check(package, root, evidence):
 
 
 def native_terminal_check(package, evidence):
-    sys.path.insert(0, str(package))
-    __import__('codex_plus.rpc')
     import native_smoke
     native_smoke.REPO = package
     native_smoke.run(package / 'bin/codex-plus', evidence / 'native-smoke')

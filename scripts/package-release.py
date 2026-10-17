@@ -30,19 +30,35 @@ from urllib.request import urlopen
 ROOT = Path(__file__).resolve().parents[1]
 UPSTREAM_COMMIT = '83086188ae0614bd882818ff1aa23f3194962012'
 UPSTREAM_VERSION = '0.163.0'
-PLUS_VERSION = '0.2.0'
+PLUS_VERSION = '0.3.0'
 RELEASE = f'{UPSTREAM_VERSION}-plus.{PLUS_VERSION}'
-COORDINATOR_PROTOCOL = 1
+COORDINATOR_PROTOCOL = 2
 PATCH = 'patches/codex-0.163.0-worker-hud.patch'
 TARGETS = {'x86_64-unknown-linux-gnu': 62, 'aarch64-unknown-linux-gnu': 183}
-HELPERS = tuple('codex_plus/' + name for name in
-                ('__init__.py', 'advisor.py', 'background.py', 'evidence.py', 'ledger.py', 'rpc.py', 'runner.py', 'upgrade.py'))
 DOCS = ('README.md', 'GLOSSARY.md', 'docs/background-work.md',
         'docs/shell-workflow.md', 'docs/verification.md', 'docs/release-notes.md',
-        'docs/releasing.md', 'docs/advisor.md')
-SOURCE_FILES = HELPERS + DOCS + ('bin/codex-plus', 'LICENSE', PATCH,
-                               'scripts/package-release.py', 'scripts/build-release.sh')
-EXECUTABLES = ('bin/codex', 'bin/codex-code-mode-host', 'codex-resources/bwrap',
+        'docs/releasing.md', 'docs/advisor.md', 'docs/rust-runtime.md')
+
+
+def runtime_source_files(root):
+    files = []
+    directory = root / 'rust-runtime/src'
+    if directory.is_symlink():
+        raise ValueError('Rust source directory must not be a symlink')
+    for index, path in enumerate(directory.rglob('*')):
+        if index >= 256 or path.is_symlink() or not (path.is_dir() or path.is_file()):
+            raise ValueError('Unsupported or excessive Rust source inventory')
+        if path.is_file() and path.suffix == '.rs':
+            files.append(path.relative_to(root).as_posix())
+    return tuple(sorted(files))
+
+
+RUNTIME_SOURCES = runtime_source_files(ROOT)
+SOURCE_FILES = RUNTIME_SOURCES + DOCS + ('bin/codex-plus', 'LICENSE', PATCH,
+    'rust-runtime/Cargo.toml', 'rust-runtime/Cargo.lock', 'scripts/build-runtime.sh',
+    'scripts/build-native.sh', 'scripts/package-release.py', 'scripts/build-release.sh',
+    'scripts/runtime-notices.py')
+EXECUTABLES = ('bin/codex', 'bin/codex-plus-runtime', 'bin/codex-code-mode-host', 'codex-resources/bwrap',
                'codex-path/rg')
 # Licenses are pinned independently because the binary archives omit them.
 LICENSE_DOWNLOADS = {
@@ -57,7 +73,10 @@ LICENSE_DOWNLOADS = {
     'v8-LICENSE.v8': ('v8/v8/15.0.245.2/LICENSE.v8',
                       '4af93c12062c58058378de2397dc1c92bbff9ddfb1d583a01c84127557ce97ca'),
 }
-LICENSE_FILES = tuple('licenses/' + name for name in LICENSE_DOWNLOADS) + (
+RUNTIME_LICENSE_FILES = ('licenses/codex-plus-runtime-NOTICES.txt',
+                        'licenses/codex-plus-runtime-dependencies.json',
+                        'licenses/codex-plus-runtime-rust-COPYRIGHT.html')
+LICENSE_FILES = RUNTIME_LICENSE_FILES + tuple('licenses/' + name for name in LICENSE_DOWNLOADS) + (
     'LICENSE', 'NOTICE', 'licenses/bubblewrap-COPYING',
     'licenses/codex-plus-LICENSE', 'licenses/provenance.json',
     'licenses/rusty-v8-release-manifests.sha256')
@@ -94,12 +113,44 @@ def tree_sha256(files):
                                      ensure_ascii=True).encode('ascii')).hexdigest()
 
 
+def runtime_provenance(package, target):
+    metadata = json.loads((package / RUNTIME_LICENSE_FILES[1]).read_text())
+    sources = metadata.get('source_files')
+    if (metadata.get('schema_version') != 1 or metadata.get('target') != target or
+            metadata.get('toolchain', {}).get('rust') != '1.99.0' or
+            not isinstance(sources, dict) or
+            not {'rust-runtime/Cargo.toml', 'rust-runtime/Cargo.lock',
+                 'rust-runtime/src/main.rs'} <= sources.keys() or
+            any(not re.fullmatch(r'[0-9a-f]{64}', value) for value in sources.values()) or
+            metadata.get('cargo_lock_sha256') != sources['rust-runtime/Cargo.lock'] or
+            metadata.get('source_sha256') != tree_sha256(sources) or
+            metadata['toolchain'].get('library_notices_sha256') != sha256(package / RUNTIME_LICENSE_FILES[2]) or
+            not metadata.get('packages')):
+        raise ValueError('Invalid native runtime dependency provenance')
+    files = ('bin/codex-plus-runtime',) + RUNTIME_LICENSE_FILES
+    return {'files': {name: sha256(package / name) for name in files},
+            'cargo_lock_sha256': metadata['cargo_lock_sha256'],
+            'source_sha256': metadata['source_sha256'], 'rust': metadata['toolchain']['rust']}
+
+
 def validate_elf(path, target):
     with path.open('rb') as stream:
         header = stream.read(20)
     if (len(header) < 20 or header[:6] != b'\x7fELF\x02\x01' or
             int.from_bytes(header[18:20], 'little') != TARGETS[target]):
         raise ValueError(f'Wrong architecture or invalid ELF for {target}: {path.name}')
+
+
+def validate_runtime_dependencies(path):
+    # Inspect without executing, so assembly also works for the other architecture.
+    result = subprocess.run(['readelf', '--dynamic', '--wide', str(path)],
+                            check=True, capture_output=True, text=True)
+    needed = re.findall(r'\(NEEDED\).*\[([^]]+)\]', result.stdout)
+    allowed = {'libc.so.6', 'libgcc_s.so.1', 'libm.so.6', 'libpthread.so.0',
+               'libdl.so.2', 'librt.so.1', 'ld-linux-x86-64.so.2', 'ld-linux-aarch64.so.1'}
+    unexpected = set(needed) - allowed
+    if unexpected:
+        raise ValueError('Unsupported native runtime dependencies: ' + ', '.join(sorted(unexpected)))
 
 
 def validate_layout(package, target):
@@ -109,7 +160,7 @@ def validate_layout(package, target):
                 'resourcesDir': 'codex-resources', 'pathDir': 'codex-path'}
     if metadata != expected:
         raise ValueError('Invalid canonical codex-package.json')
-    for name in EXECUTABLES + ('bin/codex-plus',) + HELPERS + DOCS + LICENSE_FILES:
+    for name in EXECUTABLES + ('bin/codex-plus',) + DOCS + LICENSE_FILES:
         path = package / name
         if not path.is_file() or path.is_symlink():
             raise ValueError(f'Missing regular package file: {name}')
@@ -118,6 +169,10 @@ def validate_layout(package, target):
             raise ValueError(f'Wrong executable mode: {name}')
     for name in EXECUTABLES:
         validate_elf(package / name, target)
+    validate_runtime_dependencies(package / 'bin/codex-plus-runtime')
+    if (package / 'codex_plus').exists() or any(path.suffix in ('.py', '.pyc')
+                                               for path in package.rglob('*')):
+        raise ValueError('Python runtime files must not be packaged')
     if any(any(part.startswith('voice') for part in path.relative_to(package).parts)
            for path in package.rglob('*')):
         raise ValueError('Voice must be omitted from this release')
@@ -157,6 +212,8 @@ def verify_package(package):
     if tree_sha256(actual) != manifest.get('tree_sha256'):
         raise ValueError('Package tree SHA-256 mismatch')
     validate_layout(package, manifest['target'])
+    if manifest.get('runtime') != runtime_provenance(package, manifest['target']):
+        raise ValueError('Invalid native runtime provenance')
     return manifest
 
 
@@ -171,11 +228,17 @@ def verify_sources(source, plus_commit):
     commit = git(ROOT, 'rev-parse', '--verify', plus_commit + '^{commit}').decode().strip()
     if commit != plus_commit:
         raise ValueError('--plus-commit must be the full source snapshot SHA')
-    for name in SOURCE_FILES:
+    rust_sources = runtime_source_files(ROOT)
+    committed_rust = set(name for name in git(ROOT, 'ls-tree', '-r', '--name-only', commit,
+                             '--', 'rust-runtime/src').decode().splitlines() if name.endswith('.rs'))
+    if committed_rust != set(rust_sources):
+        raise ValueError('Rust source inventory differs from Plus snapshot')
+    source_files = tuple(name for name in SOURCE_FILES if name not in RUNTIME_SOURCES) + rust_sources
+    for name in source_files:
         if (ROOT / name).read_bytes() != git(ROOT, 'show', f'{commit}:{name}'):
             raise ValueError(f'Source differs from Plus snapshot: {name}')
     try:
-        git(ROOT, 'diff', '--quiet', commit, '--', *SOURCE_FILES)
+        git(ROOT, 'diff', '--quiet', commit, '--', *source_files)
     except subprocess.CalledProcessError as exc:
         raise ValueError('Source modes differ from Plus snapshot') from exc
     if git(source, 'rev-parse', 'HEAD').decode().strip() != UPSTREAM_COMMIT:
@@ -272,8 +335,9 @@ def build(args):
     verify_sources(source, args.plus_commit)
     if not re.fullmatch(r'\d+\.\d+', args.build_glibc):
         raise ValueError('--build-glibc must record the builder version, e.g. 2.39')
-    for name in ('codex', 'codex-code-mode-host', 'bwrap'):
+    for name in ('codex', 'codex-plus-runtime', 'codex-code-mode-host', 'bwrap'):
         validate_elf(native / name, args.target)
+    validate_runtime_dependencies(native / 'codex-plus-runtime')
     output = args.output_dir.resolve()
     output.mkdir(parents=True, exist_ok=True)
     package = output / f'codex-plus-{RELEASE}-{args.target}'
@@ -290,10 +354,13 @@ def build(args):
                         '--code-mode-host-bin', str(native / 'codex-code-mode-host'),
                         '--bwrap-bin', str(native / 'bwrap'), '--package-dir', str(stage)],
                        check=True, env=os.environ | {'CODEX_REPO_ROOT': str(source)})
-        for name in HELPERS + DOCS:
+        for name in DOCS:
             copy_file(ROOT / name, stage / name)
         copy_file(ROOT / 'bin/codex-plus', stage / 'bin/codex-plus', 0o755)
+        copy_file(native / 'codex-plus-runtime', stage / 'bin/codex-plus-runtime', 0o755)
         add_licenses(source, stage, output / 'license-cache')
+        subprocess.run([sys.executable, str(ROOT / 'scripts/runtime-notices.py'),
+                        '--target', args.target, '--output-dir', str(stage / 'licenses')], check=True)
         (stage / 'codex-package.json').chmod(0o644)
         for name in EXECUTABLES:
             (stage / name).chmod(0o755)
@@ -305,6 +372,7 @@ def build(args):
             'frontend_patch_sha256': sha256(ROOT / PATCH), 'target': args.target,
             'build': {'glibc': args.build_glibc, 'rust': '1.99.0', 'cargo_profile': 'release'},
             'voice': False, 'resources': resource_provenance(source, args.target),
+            'runtime': runtime_provenance(stage, args.target),
             'files': tree_files(stage),
         }
         manifest['tree_sha256'] = tree_sha256(manifest['files'])

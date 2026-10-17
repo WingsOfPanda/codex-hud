@@ -1,139 +1,72 @@
-# Codex Plus 0.163.0-plus.0.2.0
+# Codex Plus 0.163.0-plus.0.3.0
 
-Advisor and bounded worker-wait feature release based on OpenAI Codex `rust-v0.163.0`
-(`83086188ae0614bd882818ff1aa23f3194962012`). The package manifest records the
-exact Plus source revision, frontend patch hash, target, and artifact hashes.
+The installed Plus helper is now Rust. `advisor`, `run`, `park`, `observe`, and
+`supervise` use the native `bin/codex-plus-runtime` behind the existing Bash
+launcher. Runtime packages contain no Python source, bytecode, interpreter, or
+`libpython` dependency. System Python is left installed; packaging and test
+fixtures still use Python 3.11+. The source `codex_plus/` tree remains the Python
+0.2 reference oracle and is excluded from packages.
 
-Plus has an independent version, `0.2.0`. The combined release name is
-`<upstream>-plus.<Plus version>`; an upstream-only update retains the Plus
-version, for example `0.164.0-plus.0.2.0`. Earlier published names are unchanged.
+This candidate retains OpenAI Codex 0.163.0, commit
+`83086188ae0614bd882818ff1aa23f3194962012`, and the frontend patch from merged
+main. No daemon source, native protocol, or upstream database migration changes.
+The combined release uses independent Plus version `0.3.0`; an upstream-only
+update preserves that Plus version.
 
-This release supersedes `0.163.0-plus.0.1.1` and retains the full
-reported model identifier, for example:
+## Preserved behavior
 
-```text
-GPT-6.1-Sol (high) · glm upstream contribution · 2:53 · 175M tok
-```
+Commands, exit codes, closed runner stdin, raw arguments, logging, cancellation,
+root-only Astra advisor selection at xhigh, and read-only advisor isolation keep
+their existing contracts. Child launches use kernel execution without an implicit
+shell fallback. SQLite is bundled in the helper; only ordinary GNU runtime
+libraries are required. Each target must pass native dependency checks.
 
-The redundant worker/workers word is removed. Versions and snapshot suffixes
-are preserved, custom/provider identifiers stay intact, and mixed-model groups
-remain mixed. The display uses Codex's thread model metadata; it is not proof of
-per-turn server-side routing. Group counts, effort, timing, tokens and the
-three-row cap retain their existing behavior.
+The ledger path, schema version 1, status JSON version 1, callback identities,
+frozen messages, cancellation provenance, and live/report-only recovery policy
+remain unchanged. Stock-daemon enqueue acknowledgment ambiguity remains visible
+and is not blindly resent. This migration does not promise exactly-once model
+or tool execution, reboot persistence, or automatic job reruns.
 
-The root session can request an independent read-only review with
-`codex-plus advisor --brief TEXT`. The advisor selects the newest available
-numeric-version Astra model supporting `xhigh`, uses a self-contained brief and
-repository change pointers, and returns structured findings. It does not receive
-the main conversation. A verdict is advice; the main session owns the decision.
+The existing three-row activity limit remains shared by workers, background
+commands, advisor status, alerts, and overflow. Healthy watcher waiting adds no
+row. The merged foreground advisor UI is included: a locally timed conversation
+row becomes completed or failed after the consult, while the footer retains
+model, effort, count, and duration. No UI refresh invokes a model. Native client
+sessions must restart to adopt that client display when upgrading from 0.2.0.
 
-The native footer shows the advisor model/effort, running time, and consult count
-or last duration. The advisor shares the existing three-row total budget with
-workers, shells, alerts and overflow. Status refresh makes no model calls.
-The command and native display must ship together; fleet-config must route the
-new `advisor` helper command through its installed `codex-plus` wrapper.
+## Cutover and rollback
 
-Native workers can wait for finite shell jobs inside one bounded Code Mode cell.
-The local code waits for the command and returns its real exit status and log;
-the model makes no interim status requests while that cell remains pending.
-The outer yield must cover the chosen wait budget. A worker keeps its turn open
-until it has reviewed the result; this is not durable child parking and does not
-survive interruption or daemon restart. Expired budgets report the native session
-as still pending. See [worker shell waits](shell-workflow.md#native-subagent-waits).
+Rust coordinators advertise protocol 2. The first Python-to-Rust rollout requires
+a quiet checkpoint: hold new parks and wait for no Python or Rust helpers, armed
+parks, or open callbacks. Preserve the ledger; switch the package only after
+that check. A TUI restart does not settle pending work or move old observers.
+Fleet helper scans must recognize the new `codex-plus-runtime` process roles.
+Public wrapper routing remains unchanged.
 
-The Python park/wake coordinator is unchanged. This release retains coordinator protocol 1:
-observers finish their current cycle before transferring to a validated,
-strictly newer Plus package selected by the installer's `current` link. Watched
-jobs continue and frozen callback identities and messages survive for compatible
-helper updates. Protocol, upstream identity and target must match.
-Lower, equal or invalid targets are refused with a stable watcher warning;
-rollbacks require a quiet checkpoint. Failed exec keeps the old observer working.
+Compatible, strictly newer protocol-2 packages at the same upstream and target
+can subsequently transfer cooperatively. Invalid targets and failed execution
+leave the current observer running with a warning. Lower versions are refused.
+All rollbacks require a quiet checkpoint. Retain the last qualified Python
+package and its interpreter until the Python rollback is retired; ordinary
+`previous` retention alone is insufficient after multiple upgrades.
 
-Helpers pin their source directory in an internal `--package-root` argument,
-preserving the installer's cleanup protection while cwd changes during exec.
-The normal `codex`, `codex-plus park` and `codex-plus run` interfaces remain the
-same. Transfer uses local checks and no model polling or release downloads.
+With an existing stock 0.163.0 daemon, this Plus-only update needs no daemon
+restart. Fleet-config owns installation, version pins, wrappers, global policy,
+retention, and rollback. This source implementation does not install or restart
+anything on the fleet. Build, publish, merge, and rollout remain separate gates.
 
-**Deployment:** restart native TUI sessions to see the advisor footer. Update the
-fleet wrapper to route `advisor` and install the advisor/worker-wait instructions.
-This update
-does not require a daemon change when stock Codex 0.163.0 and protocol-1 helpers
-are already installed. Boxes still on 0.162.1 must complete the paired upstream
-upgrade with a quiet checkpoint and official-daemon restart through fleet-config.
-Even protocol-1 helpers cannot transfer across different upstream identities.
-Older 0.0.4 observers lack the cooperative protocol; do not use the historical
-force-stop sidecar.
+## Package contents and qualification
 
-The wake reliability fixes remain: the Python coordinator preserves parks
-and watched workers when the stock daemon briefly projects a normal completion
-as an interruption. Durable uncertainty gates prevent premature cancellation or
-delivery; bounded exact-turn evidence resolves the hold. Verified daemon loss
-still produces an UNKNOWN report without rerunning work. Cancellation records
-its time, cause, and evidence. Existing cancelled jobs remain cancelled.
+Both GNU targets preserve upstream layout: native Codex, code-mode host,
+digest-matched bubblewrap, ripgrep, metadata, and applicable licenses, plus the
+Rust helper and launcher. Codex voice remains excluded. The helper has its own
+locked dependency notices, standard-library notices, and source provenance,
+covered by the file inventory and manifest. The recorded build glibc is a build
+baseline, not a measured minimum supported version.
 
-The compact footer from plus.3 remains intact. Worker rows start with model and
-effort; root shell commands use the `Background` label. Redundant count headers
-and healthy watcher-waiting rows are hidden. Approval/input waits, stale data,
-and wake-delivery problems remain visible. Advisor status, all activity, alerts, and overflow
-share three total rows, keeping the idle composer within AP's last six nonempty
-lines. Group counts and metrics retain their existing meaning.
-
-The daemon-boundary fixes from plus.2 remain intact. The launcher preserves
-the caller's PATH, so commands inside `codex-plus run` use the fleet's `codex`
-wrapper. The `/daemon` menu is read-only; both update choices and the new
-in-process restart action are blocked. The CLI also rejects any daemon-update
-action handed off by the TUI before spawning a process. Fleet-config owns the
-official-daemon upgrade to 0.163.0.
-
-The release retains the per-session worker/shell HUD, local watcher health, explicit
-park/wake coordination, and managed shell logging with a two-second foreground
-display budget. Long managed commands retain compact results on resume. The
-frontend patch leaves upstream daemon, protocol, and database implementations
-unchanged; the experimental receipt extension is excluded.
-
-## Runtime contents
-
-Packages preserve upstream's canonical runtime layout: the native CLI, code-mode
-host, digest-matched bubblewrap helper, bundled ripgrep, and package
-metadata. They also contain the Python helper, `codex-plus` launcher, workflow
-documentation, license notices, and a per-file integrity manifest.
-Upstream 0.163.0 removes bundled zsh and the zsh-fork execution path.
-
-**Codex voice is intentionally excluded.** There is no voice host, voice runtime,
-voice subtree, or voice-license bundle. Voice functionality is not supported by
-this release. Other runtime resources and their applicable notices remain included.
-
-Targets are `x86_64-unknown-linux-gnu` and `aarch64-unknown-linux-gnu`. The build
-glibc recorded in each manifest is a build baseline, not a measured minimum
-runtime version. Qualification must run on both native architectures; the
-companion release note records actual results and limits. Installers must check
-dependencies on the destination host.
-
-## Installation and behavior
-
-Fleet-config owns installation, version pins, PATH wrappers, global workflow
-instructions, and rollback. Building or extracting this package does not replace
-the system's `codex` command or install/restart a shared daemon. The intended fleet
-entry point remains `codex`; `codex-plus` exposes the helper and Plus release
-identity, and official daemon maintenance uses a preserved stock CLI.
-
-The Python helper needs Python 3. Native background commands are identified by
-their Codex session/item IDs, not arbitrary operating-system PIDs. Agents must
-register finite remaining work and end their turn to become idle. Stock delivery
-ambiguity remains visible and is not blindly retried. Log retention is manual.
-Ctrl-C interrupts the turn; `/stop` terminates its background terminals.
-
-The Plus ledger schema and callback states are unchanged from 0.0.4. The upstream
-upgrade requires the official-daemon restart and quiet checkpoint described above.
-A newly selected observer retains the existing recovery policy: reconfirmed
-running work can later produce LIVE
-COMPLETION; completion discovered during the transfer gap produces REPORT ONLY.
-Unavailable terminal evidence and ambiguous delivery remain unresolved rather
-than triggering a blind resend. Previously cancelled callbacks stay cancelled.
-
-The release handoff must include source and runtime acceptance evidence.
-The native client is rebuilt against 0.163.0. Existing TUI sessions must exit and
-resume through the new package to adopt the updated client; new parks use the
-installed wrapper's current package.
-Keep previous installations while any process still references them. Fleet-config
-owns the package switch, compatibility checks, and bootstrap/rollback coordination.
+Tests use private Codex homes and loopback providers. Python may drive tests
+outside a Python-free product filesystem. Native x86_64 and aarch64 results,
+actual binaries, preserved fixture failures, and explicit limits belong in the
+companion note/evidence; a source test does not qualify a complete release
+archive. Full release archives and a publishable handoff require their own
+per-target build and extracted-package acceptance.

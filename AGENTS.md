@@ -1,6 +1,6 @@
 # Codex Plus
 
-Native Codex client patches and a detached Python park/wake coordinator. Keep
+Native Codex client patches and a detached Rust park/wake coordinator. Keep
 client features compatible with the official stock daemon. Release builds apply
 only the frontend patch. The daemon receipt extension is preserved separately in
 `patches/experimental/`; its tests do not establish stock-daemon compatibility.
@@ -12,14 +12,14 @@ version pins, update policy, and global configuration belong to `fleet-config`.
 
 - Before changing park or callback behavior, read the domain terms in
   [GLOSSARY.md](GLOSSARY.md).
-- Before changing native code, read [Build](README.md#build). Native source is
-  delivered through `patches/`; regenerate the patch, including new files, after
-  editing the pinned upstream checkout. Changes left only in an ignored build
-  checkout or binary are not a source deliverable.
+- Before changing the Codex client, read [Build](README.md#build). Client source
+  is delivered through `patches/`; regenerate the patch, including new files,
+  after editing the pinned upstream checkout. The helper source lives in
+  `rust-runtime/`; `codex_plus/` is the preserved Python 0.2 test oracle.
 - Keep HUD refresh read-only, scoped to its session, and free of model calls.
-  Completion delivery belongs in `codex_plus/`, separate from display. Preserve
+  Completion delivery belongs in `rust-runtime/`, separate from display. Preserve
   ordinary-terminal operation, pane isolation, and composer input while refreshing.
-- For native changes, run the focused Rust HUD tests, terminal smoke checks, and
+- For client changes, run the focused Rust HUD tests, terminal smoke checks, and
   clean patch-application check in [verification](docs/verification.md). For
   coordinator changes, run lifecycle tests and affected isolated integration cases
   from [background verification](docs/background-work.md#verification). Use an

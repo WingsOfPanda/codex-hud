@@ -1,0 +1,173 @@
+{
+  "schema_version": 1,
+  "status": "implementation qualified; not a release archive",
+  "upstream": {
+    "version": "0.163.0",
+    "commit": "83086188ae0614bd882818ff1aa23f3194962012"
+  },
+  "base_plus_commit": "61f17c60746acb5c67b604a2a3beaa0b466c1e23",
+  "candidate": "0.163.0-plus.0.3.0",
+  "coordinator_protocol": 2,
+  "ledger_schema": 1,
+  "status_schema": 1,
+  "daemon_modified": false,
+  "runtime_source_sha256": "62c26b4441e16c4365406dcc6c2cb5e2b2d20caeb7ab3502d2300b0a9cc94e5e",
+  "cargo_lock_sha256": "70c1e7a18f9e8d46af054efe6497383f5b1d52ef86af857aacc99e8203c36269",
+  "x86_64": {
+    "runtime_sha256": "c32753d864790926aa6bd58ab2aafd80b442eb2ccdab0f924de0334c37cf00a5",
+    "rust_unit": {
+      "passed": 51
+    },
+    "coordinator": {
+      "passed": 19
+    },
+    "runner": {
+      "passed": 16,
+      "skipped": 3
+    },
+    "upgrade": {
+      "passed": 5
+    },
+    "packaging": {
+      "passed": 24
+    },
+    "launcher": {
+      "passed": 11
+    },
+    "build_guard": {
+      "passed": 8
+    },
+    "stock_scenarios": [
+      "background",
+      "advisor",
+      "foreground"
+    ],
+    "stock_lifecycle": [
+      "observer-completed",
+      "observer-running",
+      "daemon-restart",
+      "origin-abort",
+      "worker-reuse"
+    ],
+    "foreground": {
+      "passed": true,
+      "held_seconds": 65.12928563402966,
+      "root_requests": 2,
+      "advisor_requests": 1,
+      "parks": 0,
+      "callbacks": 0,
+      "remote_provider_requests": 0
+    },
+    "python_free": {
+      "runner_status": true,
+      "observer_crash_recovery": true,
+      "enqueues": 1,
+      "starts": 1,
+      "tool": "PRoot 5.5.0 with PROOT_NO_SECCOMP=1; functional filesystem fixture only",
+      "tool_sha256": "db185300a9daabbce86aca7632d8c7fdc4249f6f153171954013b70c5f491ec0"
+    },
+    "native_dependency_notices": {
+      "packages": 150,
+      "source_provenance": true,
+      "standard_library_notices": true,
+      "staged_helper_tree_immutable": true
+    },
+    "evidence_directory": ".build/rust-runtime-030/.build/root-rust-final"
+  },
+  "coverage": [
+    "Python 0.2 ledger fixtures reopened by Rust with preserved identity and frozen text",
+    "positive completion versus unresolved interruption, reused and unloaded native workers",
+    "lost add/start acknowledgments over Unix transport; no duplicate queue mutations",
+    "cold observer death before add mutation retains uncertain callback without blind resend",
+    "restart classification, daemon generation, exact-turn cancellation provenance",
+    "strictly higher compatible upgrade, invalid manifest or ELF, same-PID failed exec fallback",
+    "raw argv and output, closed stdin, cancellation and descendant cleanup, private files",
+    "official stock advisor isolation and 65-second foreground wait without polling turns"
+  ],
+  "preserved_failures": [
+    "ENOEXEC shell fallback reproduced in runner and corrupt upgrade; fixed through exact execve with regression tests",
+    "old PRoot 5.1 lacked required syscall handling; temporary 5.5 fixture used instead",
+    "PRoot seccomp acceleration returned ENOSYS for sleep; disabled in test environment only",
+    "release-package CLI was mistakenly invoked as a unittest module: exit 5, zero tests; not counted as archive qualification",
+    "initial staging fixture copied source mode 0775; normalized shipping launcher mode 0755 before verification",
+    "ARM foreground fixture initially exceeded Unix socket path length; fixture shortened without product path-limit change"
+  ],
+  "not_checked": [
+    "disk-full filesystem fault injection",
+    "complete six-attempt supervisor wall-clock backoff; inherited final-attempt budget is tested",
+    "combined process kill after accepted add/start followed by cold restart; transport ACK-loss and pre-add cold crash are tested separately",
+    "three Python monkeypatch runner tests; native short-write unit and black-box I/O checks run",
+    "full 0.3 native-client release builds and extracted complete archive/TUI/AP acceptance",
+    "publishing, merge, fleet installation, or global configuration changes"
+  ],
+  "rollout_contract": {
+    "daemon_restart": false,
+    "quiet_checkpoint": true,
+    "coordinator_protocol_change": "Python 1 to Rust 2",
+    "session_restart": "required for merged advisor transcript UI",
+    "helpers": "recognize Python legacy and native runtime supervise/observe roles",
+    "rollback": "quiet; retain qualified Python package and interpreter explicitly",
+    "agents_md": null
+  },
+  "remote_provider_requests": 0,
+  "aarch64": {
+    "runtime_sha256": "304e324920a2a15529ce4769b050f0e997f585e51213a6405b30f46fb4fd2ebb",
+    "rust_unit": {
+      "passed": 51
+    },
+    "coordinator": {
+      "passed": 19
+    },
+    "upgrade": {
+      "passed": 5
+    },
+    "root_gate": {
+      "passed": true,
+      "runtime_sha256": "304e324920a2a15529ce4769b050f0e997f585e51213a6405b30f46fb4fd2ebb",
+      "runtime_source_sha256": "62c26b4441e16c4365406dcc6c2cb5e2b2d20caeb7ab3502d2300b0a9cc94e5e",
+      "elf": "aarch64",
+      "runner_exit": 23,
+      "native_status": true,
+      "private_ledger_mode": "0600",
+      "remote_provider_requests": 0
+    },
+    "preformat_qualification": {
+      "runtime_sha256": "6ccfb934ca20d19795c6bb978c15f5bcb7bef12bb7b2a250a1ccf511c3f68f76",
+      "only_subsequent_source_change": "rustfmt of ledger.rs; final helper rebuilt and unit/coordinator/upgrade gates repeated",
+      "runner": {
+        "passed": 16,
+        "skipped": 3
+      },
+      "stock_lifecycle": [
+        "observer-completed",
+        "observer-running",
+        "daemon-restart",
+        "origin-abort",
+        "worker-reuse"
+      ],
+      "foreground": {
+        "passed": true,
+        "held_seconds": 65.172587699024,
+        "root_requests": 2,
+        "advisor_requests": 1,
+        "parks": 0,
+        "callbacks": 0,
+        "remote_provider_requests": 0
+      },
+      "python_free": {
+        "runner_status": true,
+        "official_stock_background": true,
+        "official_stock_advisor": 7,
+        "interpreter_or_libpython_present": false,
+        "container": "nonroot, cap-drop ALL, host PID/network only for private fixtures; seccomp/AppArmor unconfined for advisor sandbox test",
+        "security_limit": "default Docker and seccomp-only fixtures denied bubblewrap namespaces; no host security policy modified"
+      }
+    },
+    "native_dependency_notices": {
+      "packages": 150,
+      "source_sha256": "62c26b4441e16c4365406dcc6c2cb5e2b2d20caeb7ab3502d2300b0a9cc94e5e"
+    },
+    "evidence_directory": ".build/arm-runtime/final",
+    "owned_helpers_left": []
+  }
+}

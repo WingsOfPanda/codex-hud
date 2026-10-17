@@ -1,0 +1,26 @@
+[package]
+name = "codex-plus-runtime"
+version = "0.3.0"
+edition = "2024"
+rust-version = "1.99.0"
+license = "MIT"
+publish = false
+
+[dependencies]
+anyhow = "=1.0.103"
+clap = { version = "=4.5.58", features = ["derive"] }
+libc = "=0.2.186"
+serde = { version = "=1.0.228", features = ["derive"] }
+serde_json = "=1.0.149"
+sha2 = "=0.10.9"
+signal-hook = "=0.3.18"
+sqlx = { version = "=0.9.0", default-features = false, features = ["runtime-tokio", "sqlite-bundled"] }
+tempfile = "=3.27.0"
+tokio = { version = "=1.52.3", features = ["rt", "time", "net"] }
+tungstenite = { git = "https://github.com/openai-oss-forks/tungstenite-rs", rev = "4fffad30fe373adbdcffab9545e9e9bf4f2fc19f", default-features = false, features = ["handshake"] }
+uuid = { version = "=1.20.0", features = ["v4"] }
+
+[profile.release]
+lto = "thin"
+codegen-units = 4
+strip = "symbols"
