@@ -1,0 +1,351 @@
+{
+  "release": "0.163.0-plus.0.3.0",
+  "plus_commit": "fc9595c3e26a75cda46b839244978c556a0d19f4",
+  "upstream": {
+    "version": "0.163.0",
+    "tag": "rust-v0.163.0",
+    "commit": "83086188ae0614bd882818ff1aa23f3194962012"
+  },
+  "frontend_patch_sha256": "1a346eded04a7a57537c6e341ab825ea8a6841dcb7b92d55f55db8d6c78614af",
+  "rust": "1.99.1",
+  "targets": {
+    "x86_64": {
+      "triple": "x86_64-unknown-linux-gnu",
+      "asset": "codex-plus-0.163.0-plus.0.3.0-x86_64-unknown-linux-gnu.tar.gz",
+      "sha256": "ddb2b9836689225fe8a2366ca3e9fad10e3fc566c147ee95b9674fb1da32f2db",
+      "tree_sha256": "243cbf24b4871caf84690c9968e0145b6cadfc2f17ada98cc9b0f982ac305f2d",
+      "manifest_sha256": "f9fc5c0861cfaa251aeed736b0bc7d203ef4cb74e3dd727a05812c2dd10b3a58"
+    },
+    "aarch64": {
+      "triple": "aarch64-unknown-linux-gnu",
+      "asset": "codex-plus-0.163.0-plus.0.3.0-aarch64-unknown-linux-gnu.tar.gz",
+      "sha256": "d4b4641af0eba957629f83dffc4398518b1f741b5200fb621f0f890dd260ced4",
+      "tree_sha256": "807f75968542c02510043958c04540ca2192ee34d38707f071e5430b25df5cb0",
+      "manifest_sha256": "bc6f4dc09e1d4fe049a4ee999cb805aab8af40dfffc3bea9adc73b49323f5ead"
+    }
+  },
+  "x86_worker": {
+    "status": "complete with host limitation",
+    "release": "0.163.0-plus.0.3.0",
+    "target": "x86_64-unknown-linux-gnu",
+    "plus_commit": "fc9595c3e26a75cda46b839244978c556a0d19f4",
+    "upstream_commit": "83086188ae0614bd882818ff1aa23f3194962012",
+    "archive": "/home/liupan/Aerius/codex-plus/.build/release030/x86/packages/codex-plus-0.163.0-plus.0.3.0-x86_64-unknown-linux-gnu.tar.gz",
+    "archive_bytes": 135534289,
+    "archive_sha256": "ddb2b9836689225fe8a2366ca3e9fad10e3fc566c147ee95b9674fb1da32f2db",
+    "tree_sha256": "243cbf24b4871caf84690c9968e0145b6cadfc2f17ada98cc9b0f982ac305f2d",
+    "manifest_sha256": "f9fc5c0861cfaa251aeed736b0bc7d203ef4cb74e3dd727a05812c2dd10b3a58",
+    "native_binaries": {
+      "codex": {
+        "path": "/home/liupan/Aerius/codex-plus/.build/release030/x86/native/codex",
+        "sha256": "fb4f8020bf199c3404b76661314acfba3a3b12e5e3e85befb8da32cf0a05f887",
+        "bytes": 285916216
+      },
+      "codex-code-mode-host": {
+        "path": "/home/liupan/Aerius/codex-plus/.build/release030/x86/native/codex-code-mode-host",
+        "sha256": "8075e0f338fab829682563b3ff85d312118bbb16b24c817b47c16b87c2b2f6fc",
+        "bytes": 67734480
+      },
+      "bwrap": {
+        "path": "/home/liupan/Aerius/codex-plus/.build/release030/x86/native/bwrap",
+        "sha256": "771b2285d0e3c35cdb4173a0474e21bc5d507c56c83150468dac0dd07fa41d77",
+        "bytes": 382888
+      },
+      "codex-plus-runtime": {
+        "path": "/home/liupan/Aerius/codex-plus/.build/release030/x86/native/codex-plus-runtime",
+        "sha256": "9ad1ba3a71f1b612f2dcd7aaf25926fa9b5f9d6ce9f6ac789954ca1c88917a8c",
+        "bytes": 4309616
+      }
+    },
+    "host_limit": "Raw bwrap uid-map denied identically for official and Plus; CLI read-only sandbox enforced for both.",
+    "frontend_patch_sha256": "1a346eded04a7a57537c6e341ab825ea8a6841dcb7b92d55f55db8d6c78614af",
+    "coordinator_protocol": 2,
+    "package_gates": {
+      "manifest": true,
+      "public_commands": true,
+      "wrapper": true,
+      "resources": false,
+      "exec": true,
+      "stdio_code_mode": true,
+      "native_terminal": true,
+      "shell_terminal": true,
+      "manifest_after_runtime": true
+    },
+    "package_terminal_skips": [],
+    "native_terminal_stages": 21,
+    "shell_cases": 8,
+    "shell_stock_park": {
+      "official_daemon": "/home/liupan/Aerius/codex-plus/.build/upstream-0163/official-x86/bin/codex",
+      "queueIdempotency": false,
+      "loopback_requests": 3,
+      "callbacks": 1,
+      "turns": 2,
+      "passed": true
+    },
+    "runtime_coordinator": {
+      "passed": 19
+    },
+    "runtime_runner": {
+      "passed": 16,
+      "skipped": 3
+    },
+    "runtime_upgrade": {
+      "passed": 5
+    },
+    "runtime_stock": {
+      "background_passed": true,
+      "advisor_passed": 7,
+      "foreground_passed": true,
+      "foreground_held_seconds": 65.12400910118595
+    },
+    "upstream_ap_tui_cases": 2,
+    "runtime_dependency_packages": 150,
+    "raw_bwrap_same_failure": true,
+    "cli_sandbox_both_passed": true,
+    "package_python_files": [],
+    "immutable_after_tests": true,
+    "official_unchanged": true,
+    "remote_model_requests": 0,
+    "full_upstream_suite_run": false,
+    "source_acceptance_reused": [
+      "docs/evidence/footer-hints.json",
+      "docs/evidence/rust-1.99.1.json"
+    ],
+    "source_snapshot_clean": true,
+    "source_tree": "7b324b569c1479fc8ebf03593bacc643e02cea8a",
+    "logs": {
+      "full_compile": "/home/liupan/Aerius/codex-plus/.build/release030/x86/build-initial.log",
+      "final_build": "/home/liupan/Aerius/codex-plus/.build/release030/x86/build.log",
+      "qualification": "/home/liupan/Aerius/codex-plus/.build/release030/x86/qualification-summary.json",
+      "package": "/home/liupan/Aerius/codex-plus/.build/release030/x86/package.log",
+      "resource_failure": "/home/liupan/Aerius/codex-plus/.build/release030/x86/qualification/resources.failure.txt",
+      "dependency_resolution": "/home/liupan/Aerius/codex-plus/.build/release030/x86/qualification/resource-dependencies.json",
+      "sandbox": "/home/liupan/Aerius/codex-plus/.build/release030/x86/sandbox-comparison.json",
+      "build_commands": "/home/liupan/Aerius/codex-plus/.build/release030/x86/commands-initial.jsonl",
+      "qa_commands": "/home/liupan/Aerius/codex-plus/.build/release030/x86/qualification-commands.jsonl"
+    }
+  },
+  "arm_worker": {
+    "release": "0.163.0-plus.0.3.0",
+    "plus_commit": "fc9595c3e26a75cda46b839244978c556a0d19f4",
+    "target": "aarch64-unknown-linux-gnu",
+    "archive": "codex-plus-0.163.0-plus.0.3.0-aarch64-unknown-linux-gnu.tar.gz",
+    "sha256": "d4b4641af0eba957629f83dffc4398518b1f741b5200fb621f0f890dd260ced4",
+    "tree_sha256": "807f75968542c02510043958c04540ca2192ee34d38707f071e5430b25df5cb0",
+    "manifest_sha256": "bc6f4dc09e1d4fe049a4ee999cb805aab8af40dfffc3bea9adc73b49323f5ead",
+    "coordinator_protocol": 2,
+    "voice": false,
+    "frontend_patch_sha256": "1a346eded04a7a57537c6e341ab825ea8a6841dcb7b92d55f55db8d6c78614af",
+    "build": {
+      "cargo_profile": "release",
+      "glibc": "2.39",
+      "rust": "1.99.1"
+    },
+    "binary_sha256": {
+      "bin/codex": "f880b725375aeab97c8f24612feebee4f1b33ee5e8dfe629275c694fbebd0b97",
+      "bin/codex-plus-runtime": "abf3e0b3bb76c964f08e71ccf1eeaa1577b4880d9ebed9f653516f521b255ccc",
+      "bin/codex-code-mode-host": "bd49c83bd37957394bf6c132d9cfd9ad9ee77e6c92fd376a67d00a477dcef110",
+      "codex-resources/bwrap": "e5fb46d965adfea34aa450624507cef71eefee9356a494c3be81d46ff10ba550",
+      "codex-path/rg": "e36d0eb52e70696bdf1781392722e05a21bb91d3b7b762ef5ec20e5df2ec687b"
+    },
+    "package_checks": {
+      "manifest": true,
+      "public_commands": true,
+      "wrapper": true,
+      "resources": true,
+      "exec": true,
+      "stdio_code_mode": true,
+      "native_terminal": true,
+      "shell_terminal": true,
+      "manifest_after_runtime": true
+    },
+    "runtime_checks": {
+      "runner": true,
+      "acceptance": true,
+      "upgrade": true,
+      "stock-background": true,
+      "stock-advisor": true,
+      "stock-foreground": true,
+      "lifecycle-observer-completed": true,
+      "lifecycle-observer-running": true,
+      "lifecycle-daemon-restart": true,
+      "lifecycle-origin-abort": true,
+      "lifecycle-worker-reuse": true
+    },
+    "runner": {
+      "passed": 16,
+      "skipped": 3
+    },
+    "coordinator_passed": 19,
+    "upgrades_passed": 5,
+    "private_driver_pyte": "0.8.2",
+    "notices_locked_dependencies": 150,
+    "official_sha256": "8a96f66d059d653e68bfd5f3c79337e6f1d7d170d80bf705eb7d0249b34c0ece",
+    "official_unchanged": true,
+    "owned_processes_cleaned": [],
+    "owned_processes_remaining": [],
+    "remote_provider_requests": 0,
+    "source_clean": true,
+    "private_rustup_settings_unchanged": true,
+    "limits": [
+      "Three inherited Python monkeypatch runner tests skipped; native behavior covered by black-box tests",
+      "Full upstream Rust suite not rerun; existing frontend source evidence retained",
+      "No fleet installation, daemon modification, global policy change or publication by ARM worker"
+    ],
+    "preserved_initial_driver_failures": [
+      "qualification-before-extract-finished.log: driver raced archive extraction; no product executed",
+      "qualification.log + /data/liupan/cp030qa/package: pyte absent from system driver; resolved using existing private pyte0.8.2"
+    ]
+  },
+  "x86_root": {
+    "accepted": true,
+    "host_limit": "raw bwrap UID mapping denied identically to stock; supported read-only sandbox passes",
+    "archive": "/home/liupan/Aerius/codex-plus/.build/release030/x86/packages/codex-plus-0.163.0-plus.0.3.0-x86_64-unknown-linux-gnu.tar.gz",
+    "archive_sha256": "ddb2b9836689225fe8a2366ca3e9fad10e3fc566c147ee95b9674fb1da32f2db",
+    "manifest_sha256": "f9fc5c0861cfaa251aeed736b0bc7d203ef4cb74e3dd727a05812c2dd10b3a58",
+    "tree_sha256": "243cbf24b4871caf84690c9968e0145b6cadfc2f17ada98cc9b0f982ac305f2d",
+    "plus_commit": "fc9595c3e26a75cda46b839244978c556a0d19f4",
+    "runtime_sha256": "9ad1ba3a71f1b612f2dcd7aaf25926fa9b5f9d6ce9f6ac789954ca1c88917a8c",
+    "package_exit": 1,
+    "failed_package_gates": [
+      "resources"
+    ],
+    "native_terminal_stages": 21,
+    "source": "/home/liupan/Aerius/codex-plus/.build/release030/x86/plus-source",
+    "extracted": "/home/liupan/Aerius/codex-plus/.build/release030/root-x86/extracted/codex-plus-0.163.0-plus.0.3.0-x86_64-unknown-linux-gnu",
+    "commands": {
+      "package": {
+        "exit": 1,
+        "seconds": 127.58,
+        "args": [
+          "/home/liupan/Aerius/codex-plus/.build/dual-release/acceptance/venv/bin/python",
+          "/home/liupan/Aerius/codex-plus/.build/release030/x86/plus-source/tests/test_release_package.py",
+          "/home/liupan/Aerius/codex-plus/.build/release030/root-x86/extracted/codex-plus-0.163.0-plus.0.3.0-x86_64-unknown-linux-gnu",
+          "--evidence",
+          "/home/liupan/Aerius/codex-plus/.build/release030/root-x86/package",
+          "--official-cli",
+          "/home/liupan/Aerius/codex-plus/.build/upstream-0163/official-x86/bin/codex"
+        ]
+      },
+      "coordinator": {
+        "exit": 0,
+        "seconds": 32.97,
+        "args": [
+          "/home/liupan/Aerius/codex-plus/.build/dual-release/acceptance/venv/bin/python",
+          "/home/liupan/Aerius/codex-plus/.build/release030/x86/plus-source/tests/test_rust_runtime_acceptance.py",
+          "--runtime",
+          "/home/liupan/Aerius/codex-plus/.build/release030/root-x86/extracted/codex-plus-0.163.0-plus.0.3.0-x86_64-unknown-linux-gnu/bin/codex-plus-runtime",
+          "--evidence",
+          "/home/liupan/Aerius/codex-plus/.build/release030/root-x86/coordinator",
+          "-v"
+        ]
+      },
+      "upgrade": {
+        "exit": 0,
+        "seconds": 9.18,
+        "args": [
+          "/home/liupan/Aerius/codex-plus/.build/dual-release/acceptance/venv/bin/python",
+          "/home/liupan/Aerius/codex-plus/.build/release030/x86/plus-source/tests/test_rust_runtime_upgrade.py",
+          "--runtime",
+          "/home/liupan/Aerius/codex-plus/.build/release030/root-x86/extracted/codex-plus-0.163.0-plus.0.3.0-x86_64-unknown-linux-gnu/bin/codex-plus-runtime",
+          "--evidence",
+          "/home/liupan/Aerius/codex-plus/.build/release030/root-x86/upgrade",
+          "-v"
+        ]
+      },
+      "stock-foreground": {
+        "exit": 0,
+        "seconds": 67.36,
+        "args": [
+          "/home/liupan/Aerius/codex-plus/.build/dual-release/acceptance/venv/bin/python",
+          "/home/liupan/Aerius/codex-plus/.build/release030/x86/plus-source/tests/test_rust_runtime_stock_integration.py",
+          "--runtime",
+          "/home/liupan/Aerius/codex-plus/.build/release030/root-x86/extracted/codex-plus-0.163.0-plus.0.3.0-x86_64-unknown-linux-gnu/bin/codex-plus-runtime",
+          "--stock-binary",
+          "/home/liupan/Aerius/codex-plus/.build/upstream-0163/official-x86/bin/codex",
+          "--evidence",
+          "/home/liupan/Aerius/codex-plus/.build/release030/root-x86/stock",
+          "--scenario",
+          "foreground"
+        ]
+      },
+      "sandbox": {
+        "exit": 0,
+        "seconds": 0.97,
+        "args": [
+          "/home/liupan/Aerius/codex-plus/.build/dual-release/acceptance/venv/bin/python",
+          "/home/liupan/Aerius/codex-plus/.build/release030/root-x86/check-sandbox.py"
+        ]
+      }
+    },
+    "remote_provider_requests": 0
+  },
+  "arm_root": {
+    "accepted": true,
+    "archive_sha256": "d4b4641af0eba957629f83dffc4398518b1f741b5200fb621f0f890dd260ced4",
+    "manifest_sha256": "bc6f4dc09e1d4fe049a4ee999cb805aab8af40dfffc3bea9adc73b49323f5ead",
+    "runtime_sha256": "abf3e0b3bb76c964f08e71ccf1eeaa1577b4880d9ebed9f653516f521b255ccc",
+    "package_gates": 9,
+    "native_terminal_stages": 21,
+    "coordinator_passed": 19,
+    "upgrade_passed": 5,
+    "foreground_passed": true,
+    "official_unchanged": true,
+    "remote_provider_requests_final_run": 0,
+    "initial_package_report": "/data/liupan/cp030root/package/report.json",
+    "resolved_initial_failure": "Test fixture pinned to absolute stub paths with invocation trace; archive unchanged",
+    "failed_attempt_egress": "unknown; temporary child logs were removed by original fixture cleanup",
+    "all_other_initial_package_gates_passed": true,
+    "preserved_initial_failures": true
+  },
+  "artifact_scan_x86": {
+    "archive_sha256": "ddb2b9836689225fe8a2366ca3e9fad10e3fc566c147ee95b9674fb1da32f2db",
+    "regular_files": 31,
+    "credential_pattern_matches": [],
+    "no_python_or_private_state_files": true,
+    "passed": true
+  },
+  "artifact_scan_arm_review": {
+    "accepted_after_source_review": true,
+    "raw_scan_report": "artifact-scan.json",
+    "raw_scan_passed": false,
+    "reason": "Regex crosses adjacent ELF string boundaries; recognized credential prefix is a four-byte Rust string, not a full token",
+    "archive_sha256": "d4b4641af0eba957629f83dffc4398518b1f741b5200fb621f0f890dd260ced4",
+    "binary_sha256": "f880b725375aeab97c8f24612feebee4f1b33ee5e8dfe629275c694fbebd0b97",
+    "match_offset": 203109372,
+    "match_bytes": 124,
+    "match_sha256": "e08e7ea0f931401572f5c7e4297847b6081c24a5512250aaa8baf7b78ba5ee36",
+    "upstream_commit": "83086188ae0614bd882818ff1aa23f3194962012",
+    "source_definition": "codex-rs/network-proxy/src/credential_broker/providers/github.rs:14",
+    "constant_prefix_table": [
+      "github_pat_",
+      "ghp_",
+      "gho_",
+      "ghu_",
+      "ghs_",
+      "ghr_"
+    ],
+    "prefix_slice_bytes": 4,
+    "adjacent_literal": "path",
+    "adjacent_slice_bytes": 4,
+    "whole_match_string_reference_found": false,
+    "token_value_not_printed": true,
+    "no_python_or_private_state_files": true
+  },
+  "fixture_isolation_regression": {
+    "passed": true,
+    "stages": [
+      "advisor explicit Astra catalog: ready zero calls, running timer, done count/duration, error, stale/malformed/mismatched/FIFO/symlink status, full reported model per pane, managed advisor shell coalesces only while reviewing and unrelated shell stays visible, warning/advisor/real-shell share three rows with narrow AP composer, zero extra model calls or turns"
+    ],
+    "host_path_collision_invoked": false,
+    "explicit_fixture_call_trace": true
+  },
+  "payload_unchanged_by_test_fix": true,
+  "rollout": {
+    "daemon_restart": false,
+    "quiet_checkpoint": true,
+    "session_restart": "required",
+    "agents_md": null,
+    "notes": "Protocol-1 Python to protocol-2 Rust bootstrap: pause new parks and reach zero Python/native helpers, armed parks and open callbacks without cancelling or resending pending work to force a checkpoint. Fleet quiet/helpers scans must recognize native codex-plus-runtime roles and launcher prefix --package-root as reviewed. Preserve ledger and explicitly retain the last qualified Python 0.163.0-plus.0.2.0 package and interpreter beyond ordinary previous retention until rollback is retired. Rollbacks always require quiet checkpoints. Native sessions exit and codex resume for advisor transcript UI and removed passive navigation hints; shortcuts remain active and the activity strip stays at most three rows. Existing stock CLI/shared daemon remain 0.163.0; use codex-stock for maintenance. Wrapper dispatch and global park/shell/advisor syntax are unchanged. No system Python removal or automatic updates."
+  }
+}
