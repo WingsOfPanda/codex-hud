@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "candidate": "0.163.0-plus.0.3.0",
+  "qualification": "helper compiler alignment; not complete release archive",
+  "rust": "1.99.1",
+  "fleet_pin": {
+    "repository": "fleet-config",
+    "file": "lsp/rust.json",
+    "commit": "40bf7a2"
+  },
+  "previous_implementation_commit": "18f05a3a42f641c55bfe0b6fa876add619c66497",
+  "runtime_source_sha256": "c51c4c848a32971205f633332fdbf961a0ca6302020b16fd1e216efdd5f95a09",
+  "cargo_lock_sha256": "70c1e7a18f9e8d46af054efe6497383f5b1d52ef86af857aacc99e8203c36269",
+  "coordinator_protocol": 2,
+  "upstream": "0.163.0",
+  "runtime_logic_changed": false,
+  "x86_64": {
+    "runtime_sha256": "6bc9a19ce6a4297460fab5d6985f7c1e62f3cacda8bbfdd418d5293320262415",
+    "rust_unit_passed": 51,
+    "coordinator_passed": 19,
+    "runner_passed": 16,
+    "runner_skipped": 3,
+    "upgrade_passed": 5,
+    "packaging_passed": 25,
+    "launcher_passed": 11,
+    "build_guard_passed": 8,
+    "stock_scenarios_passed": 8,
+    "foreground": {
+      "passed": true,
+      "held_seconds": 65.12943140999414,
+      "root_requests": 2,
+      "advisor_requests": 1,
+      "parks": 0,
+      "callbacks": 0,
+      "remote_provider_requests": 0
+    },
+    "python_free_observer_crash_recovery": true,
+    "python_free_enqueues": 1,
+    "python_free_starts": 1,
+    "immutable_staged_helper_tree": true,
+    "evidence_directory": ".build/rust-runtime-030/.build/root-rust1991"
+  },
+  "aarch64": {
+    "runtime_sha256": "7a57bbbf3983348245d8cda75611ea54eb13e254addfdefd3d3b9e5997f46b26",
+    "rust_unit_passed": 51,
+    "coordinator_passed": 19,
+    "runner_passed": 16,
+    "runner_skipped": 3,
+    "upgrade_passed": 5,
+    "stock_scenarios_passed": 8,
+    "foreground": {
+      "passed": true,
+      "held_seconds": 65.17920187907293,
+      "root_requests": 2,
+      "advisor_requests": 1,
+      "parks": 0,
+      "callbacks": 0,
+      "remote_provider_requests": 0
+    },
+    "private_rustup_settings_unchanged": true,
+    "root_native_gate": {
+      "passed": true,
+      "runtime_sha256": "7a57bbbf3983348245d8cda75611ea54eb13e254addfdefd3d3b9e5997f46b26",
+      "runtime_source_sha256": "c51c4c848a32971205f633332fdbf961a0ca6302020b16fd1e216efdd5f95a09",
+      "elf": "aarch64",
+      "runner_exit": 23,
+      "native_status": true,
+      "private_ledger_mode": "0600",
+      "remote_provider_requests": 0
+    },
+    "evidence_directory": ".build/arm-runtime-rust1991/final"
+  },
+  "native_notices": {
+    "locked_packages": 150,
+    "rust_standard_library_notices": true,
+    "rust": "1.99.1"
+  },
+  "constraints": {
+    "fleet_default_changed": false,
+    "fleet_components_added": false,
+    "fleet_targets_added": false,
+    "self_update_changed": false,
+    "arm_toolchain_home": "private /data only",
+    "old_toolchain_removed": false,
+    "published": false,
+    "installed": false,
+    "daemon_modified": false
+  },
+  "regression_check": "Current package verification rejects old 1.99.0 build and helper-dependency provenance",
+  "limits": [
+    "Full native Codex client, native frontend tests, and complete release archives require fresh 1.99.1 builds; this evidence qualifies only helpers",
+    "ARM Python-free Docker flows were not repeated for the compiler-only change; prior Rust1.99.0 evidence is retained",
+    "Three Python monkeypatch runner cases remain skipped; inherited filesystem fault/backoff limits remain in rust-runtime.json"
+  ],
+  "historical_evidence": "docs/evidence/rust-runtime.json; its 1.99.0 artifact hashes and results are retained",
+  "remote_provider_requests": 0
+}

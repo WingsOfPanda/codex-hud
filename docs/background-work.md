@@ -321,7 +321,7 @@ queue/start acknowledgement boundaries also have focused coordinator tests.
 ## Verification
 
 ```sh
-cargo +1.99.0 test --locked --manifest-path rust-runtime/Cargo.toml --lib
+cargo +1.99.1 test --locked --manifest-path rust-runtime/Cargo.toml --lib
 python3 tests/test_rust_runtime_acceptance.py \
   --runtime .build/codex-plus-runtime --evidence .build/rust-coordinator -v
 python3 tests/test_rust_runtime_stock_integration.py \

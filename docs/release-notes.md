@@ -13,6 +13,11 @@ main. No daemon source, native protocol, or upstream database migration changes.
 The combined release uses independent Plus version `0.3.0`; an upstream-only
 update preserves that Plus version.
 
+Builds now pin Rust 1.99.1 to match the approved fleet toolchain. Earlier
+implementation evidence built with 1.99.0 is retained as history; it does not
+qualify a 1.99.1 release artifact. Complete native-client archives still require
+fresh builds and qualification with the new toolchain.
+
 ## Preserved behavior
 
 Commands, exit codes, closed runner stdin, raw arguments, logging, cancellation,

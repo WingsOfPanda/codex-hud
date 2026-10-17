@@ -9,7 +9,7 @@ packaging rejects Python source and bytecode in the product tree.
 
 ## Build and boundaries
 
-Run `./scripts/build-runtime.sh` with Rust 1.99.0. The helper uses a separate
+Run `./scripts/build-runtime.sh` with Rust 1.99.1. The helper uses a separate
 locked Cargo graph and bundled SQLite. Its runtime shared libraries are limited
 to the GNU C/runtime libraries checked by the packager. It adds no TLS or SQLite
 shared-library requirement. Python 3.11+ is used only by build/test tooling.
@@ -32,7 +32,7 @@ a malformed target therefore leaves the old observer alive with a warning.
 Build the helper, then run:
 
 ```sh
-cargo +1.99.0 test --locked --manifest-path rust-runtime/Cargo.toml --lib
+cargo +1.99.1 test --locked --manifest-path rust-runtime/Cargo.toml --lib
 python3 tests/test_rust_runtime_acceptance.py --runtime .build/codex-plus-runtime -v
 python3 tests/test_rust_runtime_runner.py --runtime .build/codex-plus-runtime -v
 python3 tests/test_rust_runtime_upgrade.py --runtime .build/codex-plus-runtime -v

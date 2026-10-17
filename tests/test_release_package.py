@@ -83,7 +83,7 @@ def manifest_check(package):
     assert type(protocol) is int and protocol == 2, 'unsupported coordinator protocol'
     assert manifest['upstream'] == {'version': '0.163.0', 'tag': 'rust-v0.163.0',
         'commit': '83086188ae0614bd882818ff1aa23f3194962012'}, manifest['upstream']
-    assert manifest['build']['rust'] == '1.99.0' and manifest['build']['cargo_profile'] == 'release'
+    assert manifest['build']['rust'] == '1.99.1' and manifest['build']['cargo_profile'] == 'release'
     assert manifest['resources'], 'resource provenance missing'
     assert manifest['target'] == f'{platform.machine()}-unknown-linux-gnu', manifest['target']
     assert upstream == {'layoutVersion': 1, 'version': manifest['upstream']['version'],
@@ -117,7 +117,7 @@ def manifest_check(package):
     runtime = manifest['runtime']
     assert all(actual[name]['sha256'] == value for name, value in runtime['files'].items()), runtime
     dependencies = json.loads((package / 'licenses/codex-plus-runtime-dependencies.json').read_text())
-    assert dependencies['target'] == manifest['target'] and dependencies['toolchain']['rust'] == '1.99.0'
+    assert dependencies['target'] == manifest['target'] and dependencies['toolchain']['rust'] == '1.99.1'
     assert runtime['cargo_lock_sha256'] == dependencies['cargo_lock_sha256'], runtime
     assert runtime['source_sha256'] == dependencies['source_sha256'], runtime
     for path in required[:6]:

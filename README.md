@@ -24,10 +24,10 @@ exited and resumed with this launcher to display the new strip.
 
 ## Build
 
-Requires Git, a native Rust build environment, and Rust 1.99.0:
+Requires Git, a native Rust build environment, and Rust 1.99.1:
 
 ```sh
-rustup toolchain install 1.99.0
+rustup toolchain install 1.99.1
 ./scripts/build-native.sh
 ```
 

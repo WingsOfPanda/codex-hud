@@ -9,7 +9,7 @@ import subprocess
 import tomllib
 
 
-RUST = '1.99.0'
+RUST = '1.99.1'
 NOTICES = 'codex-plus-runtime-NOTICES.txt'
 DEPENDENCIES = 'codex-plus-runtime-dependencies.json'
 RUST_NOTICES = 'codex-plus-runtime-rust-COPYRIGHT.html'

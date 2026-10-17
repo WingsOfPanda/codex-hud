@@ -2,7 +2,7 @@
 
 Target: Codex 0.163.0, commit
 `83086188ae0614bd882818ff1aa23f3194962012`, Linux x86_64 and ARM64,
-Rust 1.99.0. Keep the ordinary installed Codex and global configuration intact.
+Rust 1.99.1. Keep the ordinary installed Codex and global configuration intact.
 
 ## Current release acceptance
 
@@ -23,6 +23,10 @@ background/advisor execution on ARM. ARM's stock/no-Python scenarios precede a
 formatting-only final rebuild; unit, coordinator, and upgrade gates were rerun.
 See [rust-runtime.json](evidence/rust-runtime.json) for exact artifact identities,
 preserved fixture failures, source provenance, and untested fault boundaries.
+Those implementation results used Rust 1.99.0. The current build pin follows
+the fleet at 1.99.1; [rust-1.99.1.json](evidence/rust-1.99.1.json) records its
+helper rebuild and qualification. Complete native-client release archives need
+fresh 1.99.1 builds before publication.
 
 The frontend patch changes TUI, CLI, and workspace lock reconciliation only;
 backend and database source must match the pinned 0.163.0 tag. The historical
@@ -41,12 +45,12 @@ From the patched upstream `codex-rs` directory, build with `--locked` and run
 the focused native tests (the environment may require `RUST_MIN_STACK=33554432`):
 
 ```sh
-cargo +1.99.0 test --locked -p codex-tui --lib worker_hud --profile dev-small -j 12
-cargo +1.99.0 test --locked -p codex-tui --lib shell_policy --profile dev-small -j 12
-cargo +1.99.0 test --locked -p codex-tui --lib chatwidget::tests::exec_flow --profile dev-small -j 12
-cargo +1.99.0 test --locked -p codex-tui --lib thread_transcript::tools::tests --profile dev-small -j 12
-cargo +1.99.0 test --locked -p codex-tui --lib daemon_menu --profile dev-small -j 12
-cargo +1.99.0 test --locked -p codex-cli --bin codex daemon_update_tests --profile dev-small -j 12
+cargo +1.99.1 test --locked -p codex-tui --lib worker_hud --profile dev-small -j 12
+cargo +1.99.1 test --locked -p codex-tui --lib shell_policy --profile dev-small -j 12
+cargo +1.99.1 test --locked -p codex-tui --lib chatwidget::tests::exec_flow --profile dev-small -j 12
+cargo +1.99.1 test --locked -p codex-tui --lib thread_transcript::tools::tests --profile dev-small -j 12
+cargo +1.99.1 test --locked -p codex-tui --lib daemon_menu --profile dev-small -j 12
+cargo +1.99.1 test --locked -p codex-cli --bin codex daemon_update_tests --profile dev-small -j 12
 ```
 
 Also exercise the affected upstream footer selection, config panel, status-line

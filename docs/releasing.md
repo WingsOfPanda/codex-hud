@@ -15,7 +15,7 @@ Existing published `plus.N` releases retain their original identities.
 
 ## Native binaries
 
-Build natively on each target with Rust 1.99.0, the pinned upstream source and only
+Build natively on each target with Rust 1.99.1, the pinned upstream source and only
 the frontend patch. Use `--locked`, `--release`, and an explicit GNU target.
 On 910b, keep the checkout, Rust homes, Cargo target directory, downloads,
 `TMPDIR`, cache and outputs under `/data/liupan/codex-plus-build`. Install the

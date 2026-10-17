@@ -1,5 +1,7 @@
 {
   "schema_version": 1,
+  "qualification_toolchain": "1.99.0",
+  "scope": "Historical implementation qualification before the user-directed Rust 1.99.1 pin change; see rust-1.99.1.json for the current helper artifacts",
   "status": "implementation qualified; not a release archive",
   "upstream": {
     "version": "0.163.0",

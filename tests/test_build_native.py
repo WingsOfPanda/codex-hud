@@ -148,7 +148,7 @@ class BuildRuntimeTests(unittest.TestCase):
         result = self.build()
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(json.loads(self.arguments.read_text()), [
-            '+1.99.0', 'build', '--locked', '--release', '--manifest-path',
+            '+1.99.1', 'build', '--locked', '--release', '--manifest-path',
             str(self.root / 'rust-runtime/Cargo.toml'), '--target-dir',
             str(self.root / '.build/runtime-target')])
         runtime = self.root / '.build/codex-plus-runtime'

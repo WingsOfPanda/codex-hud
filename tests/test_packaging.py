@@ -57,7 +57,7 @@ class PackageIntegrityTests(unittest.TestCase):
         sources = {'rust-runtime/' + name: 'c' * 64
                    for name in ('Cargo.toml', 'Cargo.lock', 'src/main.rs')}
         dependencies = {'schema_version': 1, 'target': 'x86_64-unknown-linux-gnu',
-            'toolchain': {'rust': '1.99.0', 'library_notices_sha256':
+            'toolchain': {'rust': '1.99.1', 'library_notices_sha256':
                          package_release.sha256(self.package / package_release.RUNTIME_LICENSE_FILES[2])},
             'source_files': sources, 'cargo_lock_sha256': 'c' * 64,
             'source_sha256': package_release.tree_sha256(sources),
@@ -69,7 +69,7 @@ class PackageIntegrityTests(unittest.TestCase):
             'frontend_patch_sha256': 'b' * 64, 'target': 'x86_64-unknown-linux-gnu',
             'upstream': {'version': '0.163.0', 'tag': 'rust-v0.163.0',
                          'commit': package_release.UPSTREAM_COMMIT},
-            'build': {'glibc': '2.39', 'rust': '1.99.0', 'cargo_profile': 'release'},
+            'build': {'glibc': '2.39', 'rust': '1.99.1', 'cargo_profile': 'release'},
             'voice': False,
         }
         self.seal()
@@ -113,6 +113,19 @@ class PackageIntegrityTests(unittest.TestCase):
         self.seal()
         with self.assertRaisesRegex(ValueError, 'Missing regular package file: bin/codex-plus-runtime'):
             self.verify()
+
+    def test_previous_toolchain_provenance_is_not_accepted_for_new_packages(self):
+        self.manifest['build']['rust'] = '1.99.0'
+        self.save_manifest()
+        with self.assertRaisesRegex(ValueError, 'Invalid build provenance'):
+            self.verify()
+        self.manifest['build']['rust'] = '1.99.1'
+        metadata_path = self.package / package_release.RUNTIME_LICENSE_FILES[1]
+        metadata = json.loads(metadata_path.read_text())
+        metadata['toolchain']['rust'] = '1.99.0'
+        metadata_path.write_text(json.dumps(metadata))
+        with self.assertRaisesRegex(ValueError, 'Invalid native runtime dependency provenance'):
+            self.seal()
 
     def test_runtime_notices_required_and_provenance_cannot_disagree(self):
         self.manifest['runtime']['source_sha256'] = '0' * 64
@@ -357,7 +370,7 @@ class RuntimeNoticeTests(unittest.TestCase):
 
     def collect(self):
         return runtime_notices.collect(self.root, 'x86_64-unknown-linux-gnu', self.metadata,
-                                       'rustc 1.99.0 (fixture)', b'Rust library notices\n')
+                                       'rustc 1.99.1 (fixture)', b'Rust library notices\n')
 
     def test_only_reachable_non_dev_packages_and_no_host_paths_are_recorded(self):
         bundle, metadata = self.collect()

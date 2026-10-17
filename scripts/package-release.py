@@ -117,7 +117,7 @@ def runtime_provenance(package, target):
     metadata = json.loads((package / RUNTIME_LICENSE_FILES[1]).read_text())
     sources = metadata.get('source_files')
     if (metadata.get('schema_version') != 1 or metadata.get('target') != target or
-            metadata.get('toolchain', {}).get('rust') != '1.99.0' or
+            metadata.get('toolchain', {}).get('rust') != '1.99.1' or
             not isinstance(sources, dict) or
             not {'rust-runtime/Cargo.toml', 'rust-runtime/Cargo.lock',
                  'rust-runtime/src/main.rs'} <= sources.keys() or
@@ -203,7 +203,7 @@ def verify_package(package):
     if not re.fullmatch(r'[0-9a-f]{64}', manifest.get('frontend_patch_sha256', '')):
         raise ValueError('Invalid frontend patch hash')
     build = manifest.get('build', {})
-    if (build.get('rust') != '1.99.0' or build.get('cargo_profile') != 'release' or
+    if (build.get('rust') != '1.99.1' or build.get('cargo_profile') != 'release' or
             not re.fullmatch(r'\d+\.\d+', build.get('glibc', ''))):
         raise ValueError('Invalid build provenance')
     actual = tree_files(package)
@@ -370,7 +370,7 @@ def build(args):
             'upstream': {'version': UPSTREAM_VERSION, 'tag': 'rust-v0.163.0',
                          'commit': UPSTREAM_COMMIT},
             'frontend_patch_sha256': sha256(ROOT / PATCH), 'target': args.target,
-            'build': {'glibc': args.build_glibc, 'rust': '1.99.0', 'cargo_profile': 'release'},
+            'build': {'glibc': args.build_glibc, 'rust': '1.99.1', 'cargo_profile': 'release'},
             'voice': False, 'resources': resource_provenance(source, args.target),
             'runtime': runtime_provenance(stage, args.target),
             'files': tree_files(stage),
