@@ -80,9 +80,30 @@ The package contains a Bash launcher and native Rust helper, with no Python
 source, bytecode, interpreter, or `libpython` dependency. The build-time packager
 still requires Python 3.11+, Cargo's locked offline dependency sources, and the
 pinned toolchain's standard-library copyright file. It generates deterministic
-runtime notices and dependency/source provenance under `licenses/`, recorded in
-the manifest's `runtime` object and full file inventory. Helper use does not
-mutate the installed package.
+notices and dependency/source provenance under `licenses/` for the helper and the
+upstream CLI/Code Mode host, recorded in the manifest's `runtime` and `native`
+objects and full file inventory. Cargo selects each explicit production root
+with the shipping target and default features; dev-only and disabled optional
+dependencies are excluded. Keep these graph inputs aligned with the native build.
+Some published Cargo crates omit repository license files. The checked-in
+`scripts/native-license-sources.json` pins their exact source revisions, crate
+checksums, license URLs and text hashes. Assembly fetches those texts into the
+output directory's `license-cache`; a warm cache needs no license downloads.
+Missing cached Cargo sources or license texts fail assembly visibly. Updating
+upstream dependencies requires refreshing these pins from the corresponding
+published source and rerunning notice coverage checks.
+
+Six crates without separate publisher license files have explicit,
+checksum-bound declaration-backed resolutions. Their selected canonical SPDX
+terms are labeled separately from publisher notices; authors and template
+placeholders are not converted into invented copyright statements. Matching
+Microsoft schema grants and the complete ICU data notice bundle are independent
+required inputs. See [notice resolution](notice-resolution.md) for the source
+evidence and checks. Unknown missing licenses, changed declarations, missing
+component notices and invalid hashes still fail assembly. Existing qualified
+archives are unchanged.
+
+Helper use does not mutate the installed package.
 Its native CLI branch retains ordinary stdin, argument, signal, and exit behavior.
 `codex-plus --version` reports the Plus release and source revision; the native
 `codex --version` continues to report the upstream version.

@@ -18,6 +18,11 @@ const CLAIMABLE: &str = "park IN (SELECT id FROM parks WHERE parent=? AND state=
 const JOB_TERMINAL: &str = "jobs.status IN ('completed','failed','interrupted','lost')";
 const CALLBACK_OPEN: &str = "state IN ('ready','pending','starting','in_flight','uncertain','cancel_requested','cancel_uncertain')";
 
+#[cfg(test)]
+thread_local! {
+    static BATCH_SELECTED: std::cell::RefCell<Option<Box<dyn FnOnce()>>> = Default::default();
+}
+
 #[derive(Debug)]
 pub struct RegistrationError(pub String);
 impl std::fmt::Display for RegistrationError {
@@ -551,11 +556,15 @@ impl Store {
         self.execute("UPDATE parks SET generation=recovery_generation,recovery_generation=NULL WHERE parent=? AND state='armed' AND recovery_generation IS NOT NULL AND NOT EXISTS (SELECT 1 FROM jobs WHERE jobs.park=parks.id AND status='armed' AND interruption_pending=1)", &[json!(parent)])
     }
     pub fn batch(&mut self, parent: &str) -> Result<()> {
-        let rows = self.rows(&format!("SELECT jobs.id,jobs.report,parks.origin FROM jobs JOIN parks ON parks.id=jobs.park WHERE parks.parent=? AND parks.state='armed' AND {JOB_TERMINAL} AND jobs.callback IS NULL"), &[json!(parent)])?;
-        let Some(first) = rows.first() else {
-            return Ok(());
-        };
-        self.transaction(false, |s| {
+        self.transaction(true, |s| {
+            // Retire callbacks created by older batching races, before they can block fresh work.
+            s.execute("UPDATE callbacks SET state=CASE WHEN EXISTS (SELECT 1 FROM jobs JOIN parks ON parks.id=jobs.park WHERE jobs.callback=callbacks.id AND parks.state='cancelled') THEN 'cancelled' ELSE 'expired' END WHERE parent=? AND state='ready' AND message IS NULL AND queue IS NULL AND EXISTS (SELECT 1 FROM jobs JOIN parks ON parks.id=jobs.park WHERE jobs.callback=callbacks.id AND parks.state IN ('cancelled','expired'))", &[json!(parent)])?;
+            let rows = s.rows(&format!("SELECT jobs.id,jobs.report,parks.origin FROM jobs JOIN parks ON parks.id=jobs.park WHERE parks.parent=? AND parks.state='armed' AND {JOB_TERMINAL} AND jobs.callback IS NULL"), &[json!(parent)])?;
+            #[cfg(test)]
+            BATCH_SELECTED.with(|hook| {
+                if let Some(hook) = hook.borrow_mut().take() { hook(); }
+            });
+            let Some(first) = rows.first() else { return Ok(()); };
             let id = Uuid::new_v4().to_string();
             s.execute("INSERT INTO callbacks (id,parent,client,state,queue,error) VALUES (?,?,?,'ready',NULL,NULL)", &[json!(id),json!(parent),json!(Uuid::new_v4().to_string())])?;
             for row in rows.iter().filter(|r|r["origin"]==first["origin"] && r["report"]==first["report"]) { s.execute("UPDATE jobs SET callback=? WHERE id=? AND callback IS NULL", &[json!(id),row["id"].clone()])?; }
@@ -655,6 +664,10 @@ impl Store {
         } else {
             self.execute("UPDATE callbacks SET state=?,error=?,reconcile_attempts=reconcile_attempts+1 WHERE id=?", &[json!(if cancelling {"cancel_uncertain"}else{"uncertain"}),json!("No positive queue or consumed-message evidence; enqueue will not be retried."),callback["id"].clone()])
         }
+    }
+    pub fn reconciliation_limited(&mut self, callback: &Value, reason: &str) -> Result<()> {
+        let cancelling = self.callback_cancelling(callback)?;
+        self.execute("UPDATE callbacks SET state=?,error=?,reconcile_attempts=reconcile_attempts+1 WHERE id=?", &[json!(if cancelling {"cancel_uncertain"} else {"uncertain"}),json!(reason),callback["id"].clone()])
     }
     pub fn queue_owned(&mut self, parent: &str, queue: &[Value]) -> Result<bool> {
         let callbacks = self.rows(
@@ -912,6 +925,122 @@ mod tests {
             "Monitoring unavailable (TimeoutError); completion remains unknown."
         );
         assert_eq!(status["callbacks"][0]["state"], "cancelled");
+    }
+
+    #[test]
+    fn batching_and_cancellation_serialize_both_orders_on_real_connections() {
+        for cancel_first in [true, false] {
+            let home = tempfile::tempdir().unwrap();
+            let mut batcher = Store::open(home.path()).unwrap();
+            let mut canceller = Store::open(home.path()).unwrap();
+            register(&mut batcher, &[job("one")]);
+            batcher
+                .observe_job(
+                    &json!({"id":"one"}),
+                    Some("completed"),
+                    Some(0),
+                    None,
+                    false,
+                )
+                .unwrap();
+            let mut cancellation = None;
+            let mut release = None;
+            if cancel_first {
+                canceller.cancel(PARENT, None, None).unwrap();
+            } else {
+                canceller.execute("PRAGMA busy_timeout=0", &[]).unwrap();
+                let (selected_tx, selected_rx) = std::sync::mpsc::channel();
+                let (attempted_tx, attempted_rx) = std::sync::mpsc::channel();
+                let (release_tx, release_rx) = std::sync::mpsc::channel();
+                cancellation = Some(std::thread::spawn(move || {
+                    selected_rx.recv_timeout(Duration::from_secs(5)).unwrap();
+                    let error = canceller.cancel(PARENT, None, None).unwrap_err();
+                    assert!(error.to_string().contains("database is locked"), "{error}");
+                    attempted_tx.send(()).unwrap();
+                    release_rx.recv_timeout(Duration::from_secs(5)).unwrap();
+                    canceller.cancel(PARENT, None, None).unwrap();
+                }));
+                release = Some(release_tx);
+                BATCH_SELECTED.with(|hook| {
+                    *hook.borrow_mut() = Some(Box::new(move || {
+                        selected_tx.send(()).unwrap();
+                        attempted_rx.recv_timeout(Duration::from_secs(5)).unwrap();
+                    }))
+                });
+            }
+            batcher.batch(PARENT).unwrap();
+            let stale = batcher.next_callback(PARENT, false, false).unwrap().0;
+            if let Some(release) = release {
+                release.send(()).unwrap();
+                cancellation.unwrap().join().unwrap();
+            }
+            if let Some(stale) = stale {
+                assert!(
+                    batcher
+                        .claim_callback(&stale, false, false)
+                        .unwrap()
+                        .is_none()
+                );
+            }
+            assert!(
+                batcher
+                    .next_callback(PARENT, false, false)
+                    .unwrap()
+                    .0
+                    .is_none()
+            );
+            assert_eq!(
+                batcher.status(PARENT).unwrap()["parks"][0]["cancel_kind"],
+                "explicit"
+            );
+        }
+    }
+
+    #[test]
+    fn legacy_invalidated_unsubmitted_callbacks_retire_without_changing_provenance() {
+        for cancelled in [true, false] {
+            let home = tempfile::tempdir().unwrap();
+            let mut store = Store::open(home.path()).unwrap();
+            let old = register(&mut store, &[job("old")]);
+            complete(&mut store, "old");
+            let callback = callback(&mut store);
+            if cancelled {
+                store.cancel(PARENT, None, None).unwrap();
+            } else {
+                store
+                    .expire_registration(old["park"].as_str().unwrap())
+                    .unwrap();
+            }
+            let provenance = store.status(PARENT).unwrap()["parks"][0].clone();
+            // Old batching could assign a ready callback after cancellation had committed.
+            store
+                .execute(
+                    "UPDATE callbacks SET state='ready' WHERE id=?",
+                    &[callback["id"].clone()],
+                )
+                .unwrap();
+            register(&mut store, &[job("fresh")]);
+            complete(&mut store, "fresh");
+            let next = store
+                .next_callback(PARENT, false, false)
+                .unwrap()
+                .0
+                .unwrap();
+            assert_ne!(next["id"], callback["id"]);
+            assert!(store.claim_callback(&next, false, false).unwrap().is_some());
+            let state = store.status(PARENT).unwrap();
+            let retired = state["callbacks"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|c| c["id"] == callback["id"])
+                .unwrap();
+            assert_eq!(
+                retired["state"],
+                if cancelled { "cancelled" } else { "expired" }
+            );
+            assert_eq!(state["parks"][0], provenance);
+        }
     }
 
     #[test]

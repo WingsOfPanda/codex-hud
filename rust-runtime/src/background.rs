@@ -782,7 +782,12 @@ impl<'a> Observer<'a> {
     fn deliver(&mut self) -> Result<()> {
         let queue = pages(self, "thread/queue/list", json!({"threadId":self.parent}))?;
         for callback in self.store.callbacks_to_reconcile(self.parent)? {
-            self.reconcile(&callback, &queue)?;
+            match self.reconcile(&callback, &queue) {
+                Err(error) if error.downcast_ref::<HistoryLimitError>().is_some() => {
+                    self.store.reconciliation_limited(&callback, &format!("Consumed-message history exceeds {MAX_PAGES} pages; delivery remains unknown; enqueue will not be retried."))?;
+                }
+                result => result?,
+            }
         }
         let parent = self.call(
             "thread/read",
@@ -1228,6 +1233,11 @@ pub fn main(argv: &[OsString], package_root: &Path) -> i32 {
 
 fn run_main(args: &Arguments, argv: &[OsString], package_root: &Path, parent: &str) -> Result<i32> {
     let home = state_home();
+    let home = if home.is_absolute() {
+        home
+    } else {
+        std::env::current_dir()?.join(home)
+    };
     let mut failed_package = std::env::var_os("CODEX_PLUS_FAILED_PACKAGE")
         .filter(|value| !value.is_empty())
         .map(PathBuf::from);

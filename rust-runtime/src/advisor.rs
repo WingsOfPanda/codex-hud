@@ -6,18 +6,20 @@ use std::collections::HashSet;
 use std::ffi::OsString;
 use std::fs::{self, File, OpenOptions};
 use std::io::{Read, Seek, SeekFrom, Write};
-use std::os::fd::AsRawFd;
+use std::os::fd::{AsRawFd, FromRawFd, OwnedFd};
 use std::os::unix::{
     fs::{OpenOptionsExt, PermissionsExt},
-    process::CommandExt,
+    net::UnixStream,
+    process::{CommandExt, ExitStatusExt},
 };
 use std::path::{Path, PathBuf};
-use std::process::{Child, Command, Stdio};
+use std::process::{Child, Command, ExitStatus, Stdio};
 use std::time::{Duration, Instant};
 
 const TIMEOUT: Duration = Duration::from_secs(25 * 60);
 const HEARTBEAT: Duration = Duration::from_secs(3);
-const MAX_RESULT: usize = 65536;
+// 32,000 schema characters can require 12 bytes each as JSON surrogate escapes.
+const MAX_RESULT: usize = 512 * 1024;
 
 fn schema() -> Value {
     json!({"type":"object","additionalProperties":false,
@@ -219,14 +221,125 @@ fn native_binary(package_root: &Path) -> Result<PathBuf> {
     bail!("native_unavailable")
 }
 
-fn terminate(child: &mut Child) {
+// The detached guard owns the consultation and outlives a native terminal's SIGKILL.
+struct AdvisorChild {
+    guard: Child,
+    lifeline: Option<UnixStream>,
+}
+
+impl AdvisorChild {
+    fn spawn(command: &Command, input: File, output: File, error: File) -> Result<Self> {
+        let (reader, writer) = UnixStream::pair()?;
+        writer.set_read_timeout(Some(Duration::from_secs(5)))?;
+        let mut guard = Command::new(std::env::current_exe()?);
+        #[cfg(not(test))]
+        guard
+            .args(["advisor", "--owned-child", "--"])
+            .arg(command.get_program())
+            .args(command.get_args());
+        #[cfg(test)]
+        {
+            use std::os::unix::ffi::OsStrExt;
+            let arguments: Vec<Vec<u8>> = std::iter::once(command.get_program())
+                .chain(command.get_args())
+                .map(|argument| argument.as_bytes().to_vec())
+                .collect();
+            guard.args([
+                "--exact",
+                "advisor::tests::owned_child_entrypoint",
+                "--nocapture",
+            ]);
+            guard.env(
+                "ADVISOR_GUARD_TEST_ARGS",
+                serde_json::to_string(&arguments)?,
+            );
+        }
+        for (key, value) in command.get_envs() {
+            match value {
+                Some(value) => {
+                    guard.env(key, value);
+                }
+                None => {
+                    guard.env_remove(key);
+                }
+            }
+        }
+        if let Some(cwd) = command.get_current_dir() {
+            guard.current_dir(cwd);
+        }
+        let reader: OwnedFd = reader.into();
+        guard
+            .stdin(Stdio::from(reader))
+            .stdout(Stdio::from(output))
+            .stderr(Stdio::from(error));
+        let input_fd = input.as_raw_fd();
+        unsafe {
+            guard.pre_exec(move || {
+                if libc::setsid() < 0
+                    || libc::dup2(input_fd, 3) < 0
+                    || libc::fcntl(3, libc::F_SETFD, 0) < 0
+                {
+                    return Err(std::io::Error::last_os_error());
+                }
+                Ok(())
+            });
+        }
+        let guard = local::spawn_exact(&mut guard)?;
+        let mut child = Self {
+            guard,
+            lifeline: Some(writer),
+        };
+        let mut ready = [0];
+        child.lifeline.as_mut().unwrap().read_exact(&mut ready)?;
+        if ready != [1] {
+            bail!("owned command guard unavailable");
+        }
+        Ok(child)
+    }
+
+    fn try_wait(&mut self) -> std::io::Result<Option<ExitStatus>> {
+        self.guard.try_wait()
+    }
+
+    fn terminate(&mut self) {
+        self.lifeline.take();
+        let _ = self.guard.wait();
+    }
+}
+
+impl Drop for AdvisorChild {
+    fn drop(&mut self) {
+        self.terminate();
+    }
+}
+
+fn reap_owned_children() -> Result<bool> {
+    loop {
+        let mut status = 0;
+        let reaped = unsafe { libc::waitpid(-1, &mut status, libc::WNOHANG) };
+        if reaped == 0 {
+            return Ok(false);
+        }
+        if reaped < 0 {
+            let error = std::io::Error::last_os_error();
+            if error.raw_os_error() == Some(libc::ECHILD) {
+                return Ok(true);
+            }
+            if error.kind() != std::io::ErrorKind::Interrupted {
+                return Err(error.into());
+            }
+        }
+    }
+}
+
+fn terminate(child: &mut Child) -> Result<()> {
     unsafe {
         libc::kill(-(child.id() as i32), libc::SIGTERM);
     }
     let deadline = Instant::now() + Duration::from_secs(2);
     while Instant::now() < deadline {
-        if child.try_wait().ok().flatten().is_some() {
-            break;
+        if reap_owned_children()? {
+            return Ok(());
         }
         std::thread::sleep(Duration::from_millis(25));
     }
@@ -234,7 +347,77 @@ fn terminate(child: &mut Child) {
     unsafe {
         libc::kill(-(child.id() as i32), libc::SIGKILL);
     }
-    let _ = child.wait();
+    let deadline = Instant::now() + Duration::from_secs(3);
+    loop {
+        if reap_owned_children()? {
+            return Ok(());
+        }
+        // Native tools can create sessions; each orphan is adopted by this dedicated subreaper.
+        let children =
+            fs::read_to_string(format!("/proc/self/task/{}/children", std::process::id()))?;
+        for pid in children.split_ascii_whitespace() {
+            unsafe {
+                libc::kill(pid.parse::<i32>()?, libc::SIGKILL);
+            }
+        }
+        if Instant::now() >= deadline {
+            bail!("owned command cleanup timed out");
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    }
+}
+
+fn owned_child(arguments: &[OsString]) -> Result<i32> {
+    if arguments.is_empty() {
+        bail!("missing owned command");
+    }
+    // Arm cleanup before any target can execute; only the advisor keeps the writer.
+    if unsafe { libc::prctl(libc::PR_SET_CHILD_SUBREAPER, 1, 0, 0, 0) } != 0
+        || unsafe { libc::fcntl(3, libc::F_SETFD, libc::FD_CLOEXEC) } < 0
+    {
+        return Err(std::io::Error::last_os_error().into());
+    }
+    let input = unsafe { File::from_raw_fd(3) };
+    if unsafe { libc::write(0, [1u8].as_ptr().cast(), 1) } != 1 {
+        return Err(std::io::Error::last_os_error().into());
+    }
+    let mut command = Command::new(&arguments[0]);
+    command.args(&arguments[1..]).stdin(Stdio::from(input));
+    unsafe {
+        command.pre_exec(|| {
+            if libc::setsid() < 0 {
+                return Err(std::io::Error::last_os_error());
+            }
+            libc::signal(libc::SIGPIPE, libc::SIG_DFL);
+            Ok(())
+        });
+    }
+    let mut child = local::spawn_exact(&mut command)?;
+    let outcome = (|| -> Result<i32> {
+        loop {
+            if let Some(status) = child.try_wait()? {
+                return Ok(status
+                    .code()
+                    .unwrap_or_else(|| 128 + status.signal().unwrap_or(0)));
+            }
+            let mut lifeline = libc::pollfd {
+                fd: 0,
+                events: libc::POLLIN,
+                revents: 0,
+            };
+            let ready = unsafe { libc::poll(&mut lifeline, 1, 50) };
+            if ready > 0 {
+                return Ok(1);
+            }
+            if ready < 0
+                && std::io::Error::last_os_error().kind() != std::io::ErrorKind::Interrupted
+            {
+                return Err(std::io::Error::last_os_error().into());
+            }
+        }
+    })();
+    terminate(&mut child)?;
+    outcome
 }
 
 fn git_run(cwd: &Path, args: &[&str]) -> Result<(bool, Vec<u8>)> {
@@ -242,27 +425,22 @@ fn git_run(cwd: &Path, args: &[&str]) -> Result<(bool, Vec<u8>)> {
     let mut command = Command::new("git");
     command
         .arg("--no-optional-locks")
+        .args(["-c", "core.fsmonitor=false"])
         .args(args)
-        .current_dir(cwd)
-        .stdin(Stdio::null())
-        .stdout(Stdio::from(output.try_clone()?))
-        .stderr(Stdio::null());
-    unsafe {
-        command.pre_exec(|| {
-            if libc::setsid() < 0 {
-                return Err(std::io::Error::last_os_error());
-            }
-            Ok(())
-        });
-    }
-    let mut child = local::spawn_exact(&mut command)?;
+        .current_dir(cwd);
+    let mut child = AdvisorChild::spawn(
+        &command,
+        File::open("/dev/null")?,
+        output.try_clone()?,
+        OpenOptions::new().write(true).open("/dev/null")?,
+    )?;
     let start = Instant::now();
     let success = loop {
         if let Some(status) = child.try_wait()? {
             break status.success();
         }
         if start.elapsed() >= Duration::from_secs(5) {
-            terminate(&mut child);
+            child.terminate();
             bail!("git_timeout");
         }
         std::thread::sleep(Duration::from_millis(10));
@@ -447,20 +625,13 @@ Return the required JSON.\n\nBRIEF:\n{brief}\n\nREPOSITORY POINTER (no transcrip
             .arg("-")
             .env("CODEX_HOME", home)
             .env("CODEX_PLUS_ADVISOR_ACTIVE", "1")
-            .env_remove("CODEX_THREAD_ID")
-            .stdin(Stdio::from(stdin))
-            .stdout(Stdio::from(log.try_clone()?))
-            .stderr(Stdio::from(log.try_clone()?));
-        unsafe {
-            command.pre_exec(|| {
-                if libc::setsid() < 0 {
-                    return Err(std::io::Error::last_os_error());
-                }
-                libc::signal(libc::SIGPIPE, libc::SIG_DFL);
-                Ok(())
-            });
-        }
-        child = Some(local::spawn_exact(&mut command)?);
+            .env_remove("CODEX_THREAD_ID");
+        child = Some(AdvisorChild::spawn(
+            &command,
+            stdin,
+            log.try_clone()?,
+            log.try_clone()?,
+        )?);
         let started = Instant::now();
         let mut heartbeat = Instant::now();
         let exit = loop {
@@ -510,7 +681,7 @@ Return the required JSON.\n\nBRIEF:\n{brief}\n\nREPOSITORY POINTER (no transcrip
         }
         Err(error) => {
             if let Some(child) = child.as_mut() {
-                terminate(child);
+                child.terminate();
             }
             let code = stable_error(&error);
             status["state"] = json!("error");
@@ -548,6 +719,15 @@ fn stable_error(error: &anyhow::Error) -> &str {
 }
 
 pub fn main(args: &[OsString], package_root: &Path) -> i32 {
+    if args.len() >= 4 && args[0] == "advisor" && args[1] == "--owned-child" && args[2] == "--" {
+        return match owned_child(&args[3..]) {
+            Ok(code) => code,
+            Err(error) => {
+                eprintln!("advisor owned command failed: {error}");
+                1
+            }
+        };
+    }
     if args.len() == 2 && args[0] == "advisor" && (args[1] == "--help" || args[1] == "-h") {
         println!(
             "usage: codex-plus advisor --brief <text>\n\nAn explicit root-owned read-only Astra consultation.\n\noptions:\n  -h, --help     show this help message and exit\n  --brief TEXT   self-contained consultation brief"
@@ -587,6 +767,16 @@ pub fn main(args: &[OsString], package_root: &Path) -> i32 {
 mod tests {
     use super::*;
     const PARENT: &str = "11111111-1111-4111-8111-111111111111";
+    #[test]
+    fn owned_child_entrypoint() {
+        use std::os::unix::ffi::OsStringExt;
+        let Some(encoded) = std::env::var_os("ADVISOR_GUARD_TEST_ARGS") else {
+            return;
+        };
+        let arguments: Vec<Vec<u8>> = serde_json::from_str(encoded.to_str().unwrap()).unwrap();
+        let arguments: Vec<_> = arguments.into_iter().map(OsString::from_vec).collect();
+        std::process::exit(owned_child(&arguments).unwrap_or(1));
+    }
     fn model(name: &str) -> Value {
         json!({"model":name,"hidden":false,"supportedReasoningEfforts":[{"reasoningEffort":"xhigh"}]})
     }
@@ -769,5 +959,38 @@ time.sleep(20)"#;
         );
         std::thread::sleep(Duration::from_millis(700));
         assert!(!temporary.path().join("home/late-write").exists());
+    }
+
+    #[test]
+    fn timeout_reaps_term_ignoring_detached_descendants() {
+        let source = r#"import json,os,signal,time
+from pathlib import Path
+signal.signal(signal.SIGTERM,signal.SIG_IGN)
+leader=os.getpid()
+child=os.fork()
+if child==0:
+    os.setsid()
+    grandchild=os.fork()
+    if grandchild==0:
+        os.setsid()
+        while True: time.sleep(1)
+    Path(os.environ['CODEX_HOME']).joinpath('pids').write_text(json.dumps([leader,os.getpid(),grandchild]))
+    while True: time.sleep(1)
+while True: time.sleep(1)"#;
+        let (temporary, outcome) = fixture(source, Duration::from_millis(300));
+        assert!(
+            outcome
+                .unwrap_err()
+                .to_string()
+                .starts_with("timeout; log=")
+        );
+        let pids = read_json(&temporary.path().join("home/pids"), 1024).unwrap();
+        for pid in pids.as_array().unwrap() {
+            assert_eq!(unsafe { libc::kill(pid.as_i64().unwrap() as i32, 0) }, -1);
+            assert_eq!(
+                std::io::Error::last_os_error().raw_os_error(),
+                Some(libc::ESRCH)
+            );
+        }
     }
 }

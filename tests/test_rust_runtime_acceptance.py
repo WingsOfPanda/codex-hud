@@ -84,6 +84,23 @@ class RuntimeServer(AppServer):
         super().close()
 
 
+class PagedHistoryFake(Fake):
+    def __init__(self):
+        super().__init__()
+        self.history_error = False
+
+    def call(self, method, params):
+        if method == 'thread/items/list' and not params.get('turnId'):
+            self.calls.append((method, dict(params)))
+            if self.history_error:
+                raise ConnectionError('history transport failed')
+            start = int(params.get('cursor', '0'))
+            end = start + params['limit']
+            return {'data': self.entries[start:end],
+                    'nextCursor': str(end) if end < len(self.entries) else None}
+        return super().call(method, params)
+
+
 class PrivateRuntime:
     def __init__(self, fake=None):
         self.temporary = tempfile.TemporaryDirectory(prefix='rr-')
@@ -149,7 +166,8 @@ class PrivateRuntime:
             try:
                 env = (entry / 'environ').read_bytes().split(b'\0')
                 command = (entry / 'cmdline').read_bytes().split(b'\0')
-                if f'CODEX_HOME={self.home}'.encode() in env and any(
+                owns_executable = command and command[0].startswith(os.fsencode(self.home) + b'/')
+                if (f'CODEX_HOME={self.home}'.encode() in env or owns_executable) and any(
                         part.endswith(b'codex-plus-runtime') or part == b'codex_plus.background'
                         for part in command):
                     owned.add(int(entry.name))
@@ -286,6 +304,90 @@ class RuntimeAcceptance(unittest.TestCase):
                              {k: after[k] for k in ('id', 'client', 'message', 'idempotent')})
             self.assertEqual(f.fake.enqueues, 0, 'stock uncertain callback was blindly retried')
             self.assertEqual(f.status()['health']['state'], 'uncertain')
+
+    def seed_old_uncertain_and_fresh(self, f, *, cancelling=False):
+        store = Store(f.home)
+        try:
+            register(store, f.fake, PARENT, [CHILD], [], 'old frozen callback')
+            f.fake.complete()
+            Observer(store, PARENT, lambda: f.fake).step()
+            callback = store.claim_callback(store.status(PARENT)['callbacks'][0], native=False)
+            store.dispatch_result(callback)
+            if cancelling:
+                store.request_cancel(PARENT)
+                store.reconcile_evidence(callback)
+            frozen = store.status(PARENT)['callbacks'][0]
+            f.fake.child_turns.insert(0, {'id': 'fresh', 'status': 'inProgress'})
+            register(store, f.fake, PARENT, [CHILD], [], 'fresh callback')
+        finally:
+            store.close()
+        f.fake.entries = [{'turnId': 'old-history', 'item': {
+            'type': 'userMessage', 'id': f'history-{index}', 'clientId': f'unrelated-{index}'}}
+            for index in range(3300)]
+        f.fake.complete()
+        f.fake.idle()
+        return frozen
+
+    def test_bounded_old_callback_history_does_not_starve_fresh_completion(self):
+        for cancelling in (False, True):
+            with self.subTest(cancelling=cancelling), self.fixture(PagedHistoryFake(), label=str(cancelling)) as f:
+                frozen = self.seed_old_uncertain_and_fresh(f, cancelling=cancelling)
+                observer = f.observe()
+                wait(lambda: any(c['id'] != frozen['id'] and c['state'] == 'delivered'
+                                 for c in f.state()['callbacks']),
+                     'old bounded history blocked fresh callback')
+                observer.wait(timeout=5)
+                self.assertEqual(observer.returncode, 0)
+                after = next(c for c in f.status()['callbacks'] if c['id'] == frozen['id'])
+                self.assertEqual(after['state'], 'cancel_uncertain' if cancelling else 'uncertain')
+                self.assertIn('32 pages', after['error'])
+                self.assertEqual({k: frozen[k] for k in ('id', 'client', 'message', 'idempotent')},
+                                 {k: after[k] for k in ('id', 'client', 'message', 'idempotent')})
+                self.assertEqual(f.fake.enqueues, 1)
+                self.assertEqual(len(f.fake.starts), 1)
+                self.assertEqual(f.status()['health']['state'], 'uncertain')
+
+    def test_history_transport_failure_still_blocks_dispatch(self):
+        with self.fixture(PagedHistoryFake()) as f:
+            frozen = self.seed_old_uncertain_and_fresh(f)
+            f.fake.history_error = True
+            f.observe()
+            wait(lambda: any('Monitoring unavailable (RpcError)' in (p['error'] or '')
+                             for p in f.state()['parks']), 'history RPC failure was swallowed')
+            self.assertEqual(f.fake.enqueues, 0)
+            self.assertFalse(f.fake.starts)
+            after = next(c for c in f.state()['callbacks'] if c['id'] == frozen['id'])
+            self.assertEqual(after['state'], 'uncertain')
+            self.assertEqual(after['message'], frozen['message'])
+
+    def test_legacy_cancelled_ready_callback_does_not_block_fresh_completion(self):
+        with self.fixture() as f:
+            store = Store(f.home)
+            try:
+                register(store, f.fake, PARENT, [CHILD], [], 'old poisoned callback')
+                f.fake.complete()
+                Observer(store, PARENT, lambda: f.fake).step()
+                poisoned = store.status(PARENT)['callbacks'][0]
+                store.request_cancel(PARENT)
+                provenance = store.status(PARENT)['parks'][0]
+                with store._db:
+                    store._db.execute("UPDATE callbacks SET state='ready' WHERE id=?", (poisoned['id'],))
+                f.fake.child_turns.insert(0, {'id': 'fresh', 'status': 'inProgress'})
+                register(store, f.fake, PARENT, [CHILD], [], 'fresh callback')
+            finally:
+                store.close()
+            f.fake.complete()
+            f.fake.idle()
+            observer = f.observe()
+            wait(lambda: any(c['id'] != poisoned['id'] and c['state'] == 'delivered'
+                             for c in f.state()['callbacks']), 'poisoned callback blocked fresh wake')
+            observer.wait(timeout=5)
+            self.assertEqual(observer.returncode, 0)
+            state = f.status()
+            self.assertEqual(next(c for c in state['callbacks'] if c['id'] == poisoned['id'])['state'], 'cancelled')
+            self.assertEqual(state['parks'][0], provenance)
+            self.assertEqual(f.fake.enqueues, 1)
+            self.assertEqual(len(f.fake.starts), 1)
 
     def test_python_keyed_uncertain_callback_reconciles_with_same_identity(self):
         with self.fixture(NativeFake()) as f:

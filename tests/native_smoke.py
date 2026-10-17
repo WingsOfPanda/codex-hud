@@ -6,6 +6,7 @@ Run:   /tmp/codex-plus-native-smoke-venv/bin/python tests/native_smoke.py BINARY
 """
 
 import argparse
+from collections import Counter
 import fcntl
 import json
 import os
@@ -148,7 +149,7 @@ def advisor_rows(text):
 
 def advisor_transcript_rows(text):
     return [line.strip() for line in text.splitlines()
-            if re.fullmatch(r'● (?:(?:Advising using|Advised by) .+|Advisor failed) · \d+m\d{2}s',
+            if re.fullmatch(r'• (?:Advisor on|Advised on|Advisor failed on) .+ · \d+:\d{2}',
                             line.strip())]
 
 
@@ -733,11 +734,11 @@ stream_max_retries=0
         provider.close()
 
 
-def advisor_transcript_smoke(binary, root, evidence):
+def advisor_transcript_smoke(binary, root, evidence, cases=None):
     """A real Code Mode command stays live past its initial exec yield."""
     stages = []
-    for failed in (False, True):
-        label = 'failed' if failed else 'done'
+    for wrapper, failed in cases or ((False, False), (True, False), (True, True)):
+        label = ('wrapper-' if wrapper else 'direct-') + ('failed' if failed else 'done')
         home, workspace = root / f'transcript-{label}-home', root / f'transcript-{label}-work'
         home.mkdir(mode=0o700)
         workspace.mkdir()
@@ -771,9 +772,23 @@ while True:
     time.sleep(.2)
 ''')
         launcher.chmod(0o755)
-        command = '# codex-plus-shell: foreground\n' + shlex.join([
-            str(launcher), 'run', '--', str(launcher), 'advisor', '--brief', 'Terminal acceptance'])
+        topic = 'wake and cancellation fixes'
+        if wrapper:
+            script_path = workspace / 'consult.py'
+            script_path.write_text(launcher.read_text())
+            command = ('# codex-plus-shell: foreground\n# codex-plus-advisor: ' + topic + '\n' +
+                       shlex.join([sys.executable, str(script_path)]))
+        else:
+            command = '# codex-plus-shell: foreground\n' + shlex.join([
+                str(launcher), 'run', '--', str(launcher), 'advisor', '--brief', topic])
         script = wait_script(command, budget_ms=45000, outer_ms=50000).replace('yield_time_ms: 250', 'yield_time_ms: 1000')
+        if wrapper:
+            unrelated = 'bash -c ' + shlex.quote(
+                f'until test -e {shlex.quote(str(release))}; do sleep .1; done')
+            first_line, rest = script.split('\n', 1)
+            script = (first_line + '\nconst unrelated = await tools.exec_command(' +
+                      json.dumps(dict(cmd=unrelated, yield_time_ms=1000, max_output_tokens=1000)) +
+                      ');\n' + rest)
         provider = ForegroundAdvisorProvider(script)
         terminal = None
         (home / 'config.toml').write_text(write_model_catalog(home, astra=True) + f'''model="gpt-6.1-sol"
@@ -811,10 +826,10 @@ stream_max_retries=0
             os.write(terminal.master, b'Consult the held advisor.')
             wait([terminal], lambda: 'Consult the held advisor.' in terminal.text, 'prompt did not render')
             os.write(terminal.master, b'\r')
-            wait([terminal], lambda: any('Advising using GPT-6-Astra' in row
+            wait([terminal], lambda: any(f'• Advisor on {topic} · ' in row
                  for row in advisor_transcript_rows(terminal.text)), 'live advisor transcript did not appear', 30)
             first_row = advisor_transcript_rows(terminal.text)
-            assert len(first_row) == 1, terminal.text
+            assert len(first_row) == 1 and 'Astra' not in first_row[0], terminal.text
             status_path, = (home / 'codex-plus').glob('*.advisor.json')
             status_before = status_path.read_bytes()
             started = time.monotonic()
@@ -823,9 +838,15 @@ stream_max_retries=0
             assert provider.count == 1, 'local advisor ticks requested another model response'
             assert status_path.read_bytes() == status_before, 'fixture status changed during local timer check'
             assert len(advisor_transcript_rows(terminal.text)) == 1, terminal.text
-            assert 'Advised by ' not in terminal.text, 'initial exec yield prematurely completed advisor row'
-            assert 'Running ' not in terminal.text, 'advisor kept its ordinary running command header'
-            assert 'reviewing' in terminal.text and advisor_rows(terminal.text), terminal.text
+            assert '• Advised on ' not in terminal.text, 'initial exec yield prematurely completed advisor row'
+            if wrapper:
+                assert any('bash -c' in row for row in shell_rows(terminal.text)), \
+                    'unrelated shell was hidden or relabeled as advisor'
+                assert 'Running # codex-plus-advisor:' not in terminal.text, terminal.text
+            else:
+                assert 'Running ' not in terminal.text, 'advisor kept its ordinary running command header'
+            assert any('GPT-6-Astra (xhigh)' in row and 'reviewing' in row
+                       for row in advisor_rows(terminal.text)), terminal.text
             assert_compact_hud(terminal.text, idle=False)
             os.write(terminal.master, b'advisor-live-draft')
             wait([terminal], lambda: 'advisor-live-draft' in terminal.text, 'live advisor blocked composer')
@@ -834,11 +855,11 @@ stream_max_retries=0
                  len(advisor_transcript_rows(terminal.text)) == 1, 'resize lost live advisor or draft')
             (evidence / f'advisor-transcript-{label}-live.txt').write_text(terminal.text + '\n')
             release.touch()
-            expected = 'Advisor failed' if failed else 'Advised by GPT-6-Astra'
+            expected = ('• Advisor failed on ' if failed else '• Advised on ') + topic
             wait([terminal], lambda: expected in terminal.text and provider.count == 2,
                  f'{label} advisor transcript did not settle', 20)
             assert len(advisor_transcript_rows(terminal.text)) == 1, terminal.text
-            assert 'Advising using ' not in terminal.text and 'advisor-live-draft' in terminal.text, terminal.text
+            assert '• Advisor on ' not in terminal.text and 'advisor-live-draft' in terminal.text, terminal.text
             settled = advisor_transcript_rows(terminal.text)
             observed = time.monotonic()
             wait([terminal], lambda: time.monotonic() - observed >= 1.5, 'settled frame wait failed')
@@ -925,6 +946,74 @@ def tmux_smoke(binary, root, evidence):
         for index, server in enumerate(servers):
             server.close()
             (evidence / f'tmux-rpc-{index}.json').write_text(json.dumps(server.requests, indent=2) + '\n')
+
+
+def worker_history_smoke(binary, root, evidence):
+    """Historical children retain their rows without fetching terminal turns."""
+    home, workspace = root / 'history-home', root / 'history-workspace'
+    home.mkdir()
+    workspace.mkdir()
+    (home / 'config.toml').write_text('model="gpt-6-sol"\nmodel_provider="openai"\nsuppress_unstable_features_warning=true\nanalytics.enabled=false\nfeatures.daemon_auto_start=false\n')
+    (home / 'auth.json').write_text('{"OPENAI_API_KEY":"isolated-fixture-only"}')
+    server = AppServer('00000000-0000-0000-0008-000000000001', workspace, 33)
+    terminal = None
+    samples = {}
+    for worker in server.workers:
+        worker['status'] = {'type': 'idle'}
+        server.turns[worker['id']][0].update(status='completed', completedAt=int(time.time()))
+
+    def sample(label, expected):
+        start = len(server.requests)
+        def refreshes():
+            return [i for i in range(start, len(server.requests))
+                    if server.requests[i]['method'] == 'thread/list'
+                    and server.requests[i].get('params', {}).get('parentThreadId') == server.root]
+        wait([terminal], lambda: len(refreshes()) >= 4, f'{label}: four refreshes did not finish')
+        boundaries = refreshes()
+        counts = [Counter(request['params']['threadId']
+                          for request in server.requests[left:right]
+                          if request['method'] == 'thread/turns/list')
+                  for left, right in zip(boundaries, boundaries[1:])]
+        samples[label] = counts
+        assert all(count == Counter(expected) for count in counts), (label, counts, expected)
+        assert_compact_hud(terminal.text)
+
+    try:
+        terminal = Terminal(binary, home, workspace, server.url)
+        wait([terminal], lambda: composer_ready(terminal.text), 'history composer unavailable', 30)
+        sample('33 inactive', {})
+        assert not worker_rows(terminal.text), terminal.text
+        # Keep inactive members in an active group, including its oldest creation time.
+        for index, member in enumerate(('finished', 'error', 'active')):
+            worker = server.workers[index]
+            worker['source']['subAgent']['thread_spawn']['agent_path'] = f'/root/history__b1__{member}'
+        server.workers[1]['status'] = {'type': 'systemError'}
+        server.workers[3]['status'] = {'type': 'notLoaded'}
+        active = server.workers[2]
+        active['status'] = {'type': 'active', 'activeFlags': []}
+        server.turns[active['id']][0].update(status='inProgress', completedAt=None)
+        wait([terminal], lambda: 'history (1 agent)' in terminal.text, 'mixed history group missing')
+        sample('one active among history', {active['id']: 1})
+        line = next(line for line in worker_rows(terminal.text) if 'history (1 agent)' in line)
+        age = re.search(r' · (\d+):(\d{2}) · ', line)
+        assert int(age[1]) * 60 + int(age[2]) >= 120, line
+        for flag, label in [('waitingOnApproval', 'wait approval'), ('waitingOnUserInput', 'wait input')]:
+            active['status']['activeFlags'] = [flag]
+            wait([terminal], lambda: label in terminal.text, f'{label}: active flag disappeared')
+            sample(label, {active['id']: 1})
+        active['status'] = {'type': 'idle'}
+        wait([terminal], lambda: not worker_rows(terminal.text), 'active-to-idle history did not collapse')
+        sample('all inactive after completion', {})
+        assert not server.errors, server.errors
+        assert not any(request['method'] in ('turn/start', 'turn/steer') for request in server.requests)
+        return ['33 historical children: zero inactive turn reads, one per active or waiting child per refresh, mixed group age retained, active-to-idle collapse, zero model calls']
+    finally:
+        if terminal is not None:
+            (evidence / 'history-screen.txt').write_text(terminal.text + '\n')
+            terminal.close()
+        server.close()
+        (evidence / 'history-rpc.json').write_text(json.dumps(server.requests, indent=2) + '\n')
+        (evidence / 'history-request-counts.json').write_text(json.dumps(samples, indent=2) + '\n')
 
 
 def run(binary, evidence):
@@ -1124,6 +1213,7 @@ def run(binary, evidence):
             assert not any(request.get('method') in ('turn/start', 'turn/steer') for request in server.requests), server.requests
         stages.append('zero turn/start or turn/steer requests and zero model calls')
         stages.append('remote websocket roots ignore unrelated local watcher and advisor status files')
+        stages.extend(worker_history_smoke(binary, root, evidence))
         stages.extend(tmux_smoke(binary, root, evidence))
         stages.extend(local_health_smoke(binary, root, evidence))
         stages.extend(shell_hud_smoke(binary, root, evidence))
@@ -1144,7 +1234,7 @@ def run(binary, evidence):
             (evidence / f'rpc-{index}.json').write_text(json.dumps(server.requests, indent=2) + '\n')
             (evidence / f'fixture-errors-{index}.json').write_text(json.dumps(server.errors, indent=2) + '\n')
         temporary.cleanup()
-    report = {'binary': str(binary), 'passed': stages, 'ui_turn_start_requests': 0, 'ui_turn_steer_requests': 0, 'cursor_replies': [terminal.cursor_replies for terminal in terminals], 'model_calls_after_fixture_setup': 0, 'fixture_seed_model_calls': 2, 'fixture_shell_model_calls': 2, 'fixture_advisor_seed_model_calls': 2, 'fixture_advisor_shell_model_calls': 4, 'fixture_advisor_transcript_model_calls': 4, 'terminal_parser': 'pyte 0.8.2', 'tmux_required': False}
+    report = {'binary': str(binary), 'passed': stages, 'ui_turn_start_requests': 0, 'ui_turn_steer_requests': 0, 'cursor_replies': [terminal.cursor_replies for terminal in terminals], 'model_calls_after_fixture_setup': 0, 'fixture_seed_model_calls': 2, 'fixture_shell_model_calls': 2, 'fixture_advisor_seed_model_calls': 2, 'fixture_advisor_shell_model_calls': 4, 'fixture_advisor_transcript_model_calls': 6, 'terminal_parser': 'pyte 0.8.2', 'tmux_required': False}
     (evidence / 'report.json').write_text(json.dumps(report, indent=2) + '\n')
     print(json.dumps(report, indent=2))
 

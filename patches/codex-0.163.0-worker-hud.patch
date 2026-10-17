@@ -2848,10 +2848,10 @@ index 139c4dd43..0b996dccc 100644
 +  Workers stale · counts unavailable · Shells stale · counts unavailable
 diff --git a/codex-rs/tui/src/app/worker_hud.rs b/codex-rs/tui/src/app/worker_hud.rs
 new file mode 100644
-index 000000000..568d94556
+index 000000000..101b844c3
 --- /dev/null
 +++ b/codex-rs/tui/src/app/worker_hud.rs
-@@ -0,0 +1,1431 @@
+@@ -0,0 +1,1435 @@
 +//! Per-client worker metadata refresh. These requests never start or steer a turn.
 +
 +use super::*;
@@ -3159,6 +3159,10 @@ index 000000000..568d94556
 +                let rows = futures::stream::iter(threads.into_iter().map(|thread| {
 +                    let request_handle = request_handle.clone();
 +                    async move {
++                        if !matches!(thread.status, ThreadStatus::Active { .. }) {
++                            let row = worker_row(&thread, None, now);
++                            return Ok((thread, row));
++                        }
 +                        let turns = request_handle
 +                            .request_typed::<ThreadTurnsListResponse>(
 +                                ClientRequest::ThreadTurnsList {
@@ -5337,10 +5341,10 @@ index f717e2426..7a49ebb6a 100644
 +                                                   100% context left
 diff --git a/codex-rs/tui/src/bottom_pane/worker_hud.rs b/codex-rs/tui/src/bottom_pane/worker_hud.rs
 new file mode 100644
-index 000000000..8273bc2aa
+index 000000000..6e0bafe33
 --- /dev/null
 +++ b/codex-rs/tui/src/bottom_pane/worker_hud.rs
-@@ -0,0 +1,1279 @@
+@@ -0,0 +1,1338 @@
 +//! Read-only worker summary; clipping never takes space from the composer.
 +
 +use crate::line_truncation::truncate_line_with_ellipsis_if_overflow;
@@ -5700,20 +5704,33 @@ index 000000000..8273bc2aa
 +}
 +
 +pub(crate) fn advisor_command(command: &str) -> bool {
-+    fn invocation(args: &[String], depth: u8) -> bool {
++    advisor_topic(command).is_some()
++}
++
++pub(crate) fn advisor_topic(command: &str) -> Option<String> {
++    fn invocation(args: &[String], depth: u8) -> Option<String> {
 +        if depth > 2 {
-+            return false;
++            return None;
 +        }
-+        let Some(program) = args.first() else {
-+            return false;
-+        };
++        let program = args.first()?;
 +        let launcher = program == "codex-plus"
 +            || program == "./bin/codex-plus"
 +            || (std::path::Path::new(program).is_absolute()
 +                && program.ends_with("/bin/codex-plus"));
 +        if launcher {
 +            if args.len() == 4 && args[1] == "advisor" && args[2] == "--brief" {
-+                return true;
++                let brief: String = args[3]
++                    .chars()
++                    .map(|ch| if ch.is_control() { ' ' } else { ch })
++                    .collect();
++                return Some(
++                    brief
++                        .split_whitespace()
++                        .take(10)
++                        .collect::<Vec<_>>()
++                        .join(" "),
++                )
++                .filter(|topic| !topic.is_empty());
 +            }
 +            if args.len() > 3 && args[1] == "run" && args[2] == "--" {
 +                return invocation(&args[3..], depth + 1);
@@ -5728,11 +5745,22 @@ index 000000000..8273bc2aa
 +            )
 +            && matches!(args[1].as_str(), "-c" | "-lc")
 +        {
-+            return canonical_args(&args[2]).is_some_and(|args| invocation(&args, depth + 1));
++            return topic(&args[2], depth + 1);
 +        }
-+        false
++        None
 +    }
-+    fn canonical_args(command: &str) -> Option<Vec<String>> {
++    fn topic(command: &str, depth: u8) -> Option<String> {
++        if let Some(body) = command.strip_prefix("# codex-plus-shell: foreground\n") {
++            if let Some((marker, body)) = body.split_once('\n') {
++                if let Some(topic) = marker.strip_prefix("# codex-plus-advisor: ") {
++                    return (!topic.trim().is_empty()
++                        && topic.chars().count() <= 120
++                        && !topic.chars().any(char::is_control)
++                        && !body.trim().is_empty())
++                    .then(|| topic.trim().to_string());
++                }
++            }
++        }
 +        let command = match command.split_once('\n') {
 +            Some((
 +                "# codex-plus-shell: auto"
@@ -5744,9 +5772,12 @@ index 000000000..8273bc2aa
 +        };
 +        let args = shlex::split(command)?;
 +        // Noncanonical shell syntax may contain operators; retaining it is safer than hiding it.
-+        (shlex::try_join(args.iter().map(String::as_str)).as_deref() == Ok(command)).then_some(args)
++        if shlex::try_join(args.iter().map(String::as_str)).as_deref() != Ok(command) {
++            return None;
++        }
++        invocation(&args, depth)
 +    }
-+    canonical_args(command).is_some_and(|args| invocation(&args, 0))
++    topic(command, 0)
 +}
 +
 +fn sanitize_label(label: &str, limit: usize) -> String {
@@ -5901,8 +5932,13 @@ index 000000000..8273bc2aa
 +            ("/opt/codex-plus/bin/codex-plus advisor --brief task", true),
 +            ("codex-plus run -- codex-plus advisor --brief task", true),
 +            ("bash -lc 'codex-plus advisor --brief task'", true),
++            (
++                "# codex-plus-shell: foreground\n# codex-plus-advisor: wake and cancellation fixes\npython3 .build/audit-fixes/consult.py",
++                true,
++            ),
 +            ("echo codex-plus advisor --brief task", false),
 +            ("my-advisor --brief task", false),
++            ("python3 .build/audit-fixes/consult.py", false),
 +            ("codex-plus advisor --brief task | cat", false),
 +            ("codex-plus advisor --brief task; echo other", false),
 +            ("codex-plus advisor --brief task;", false),
@@ -5910,6 +5946,33 @@ index 000000000..8273bc2aa
 +            ("codex-plus advisor --brief task\nother", false),
 +            ("codex-plus advisor --brief task --extra", false),
 +        ];
++        let marker = "# codex-plus-shell: foreground\n# codex-plus-advisor: wake and cancellation fixes\npython3 .build/audit-fixes/consult.py";
++        for command in [
++            marker.to_string(),
++            shlex::try_join(["bash", "-lc", marker]).unwrap(),
++        ] {
++            assert_eq!(
++                advisor_topic(&command).as_deref(),
++                Some("wake and cancellation fixes")
++            );
++        }
++        assert_eq!(
++            advisor_topic("codex-plus advisor --brief 'wake and cancellation fixes'").as_deref(),
++            Some("wake and cancellation fixes")
++        );
++        assert_eq!(advisor_topic("codex-plus advisor --brief 'one two three four five six seven eight nine ten eleven'").as_deref(), Some("one two three four five six seven eight nine ten"));
++        for command in [
++            "# codex-plus-advisor: topic\npython3 consult.py".to_string(),
++            marker.replace("foreground", "background"),
++            marker.replace("foreground", "auto"),
++            marker.replace("wake and cancellation fixes", ""),
++            marker.replace("wake and cancellation fixes", "bad\u{1b}topic"),
++            marker.replace("wake and cancellation fixes", &"x".repeat(121)),
++            marker.replace("python3 .build/audit-fixes/consult.py", "  "),
++            format!("echo {}", shlex::try_quote(marker).unwrap()),
++        ] {
++            assert_eq!(advisor_topic(&command), None, "{command}");
++        }
 +        let marked =
 +            "# codex-plus-shell: background\ncodex-plus run -- codex-plus advisor --brief task";
 +        let wrapped = shlex::try_join(["bash", "-lc", marked]).unwrap();
@@ -6490,7 +6553,7 @@ index 000000000..8273bc2aa
 +                        "  GPT-6.1-Sol (high) · hud styling ({remaining} agent{suffix}) · {state} · 2:00 · 6K tok"
 +                    )
 +                );
-+                rows[3 - remaining].state = WorkerState::Done;
++                rows[3 - remaining].state = WorkerState::Idle;
 +            }
 +        }
 +    }
@@ -7068,10 +7131,10 @@ index 6077a0f9e..a969a80de 100644
          for turn in retained_turns {
 diff --git a/codex-rs/tui/src/chatwidget/shell_policy.rs b/codex-rs/tui/src/chatwidget/shell_policy.rs
 new file mode 100644
-index 000000000..5d2409fa1
+index 000000000..6521fffda
 --- /dev/null
 +++ b/codex-rs/tui/src/chatwidget/shell_policy.rs
-@@ -0,0 +1,280 @@
+@@ -0,0 +1,284 @@
 +//! Explicit presentation policy for noninteractive agent shell commands.
 +
 +use super::*;
@@ -7109,6 +7172,10 @@ index 000000000..5d2409fa1
 +            _ => None,
 +        };
 +        if let Some(policy) = policy {
++            // Keep explicit advisor identity when the managed label becomes an ExecCell command.
++            if policy == ShellVisibility::Foreground && body.starts_with("# codex-plus-advisor: ") {
++                return Some((policy, script));
++            }
 +            return Some((policy, shell_command_label(body)));
 +        }
 +        let parts = split_command_string(&script);
@@ -7366,10 +7433,10 @@ index 8534d753f..0df6d0931 100644
  mod guardian;
 diff --git a/codex-rs/tui/src/chatwidget/tests/shell_policy.rs b/codex-rs/tui/src/chatwidget/tests/shell_policy.rs
 new file mode 100644
-index 000000000..aa70594dc
+index 000000000..3c2870bf0
 --- /dev/null
 +++ b/codex-rs/tui/src/chatwidget/tests/shell_policy.rs
-@@ -0,0 +1,539 @@
+@@ -0,0 +1,540 @@
 +use super::*;
 +use crate::chatwidget::shell_policy::{
 +    SHELL_FOREGROUND_LIMIT, ShellVisibility, eligible_shell, quiet_shell, shell_directive,
@@ -7380,7 +7447,8 @@ index 000000000..aa70594dc
 +async fn shell_policy_advisor_transcript_real_foreground_wrapper_and_spaced_brief() {
 +    let (mut chat, _, _) = make_chatwidget_manual(None).await;
 +    chat.on_task_started();
-+    let command = "# codex-plus-shell: foreground\n/tmp/advisor-test/bin/codex-plus run -- /tmp/advisor-test/bin/codex-plus advisor --brief 'Terminal acceptance'";
++    let command = "# codex-plus-shell: foreground\n# codex-plus-advisor: wake and cancellation fixes\npython3 .build/audit-fixes/consult.py";
++    assert_eq!(shell_directive(command), Some((ShellVisibility::Foreground, command.into())));
 +    begin_unified_exec_startup(&mut chat, "advisor", "process", command);
 +    let cell = chat
 +        .transcript
@@ -7407,7 +7475,7 @@ index 000000000..aa70594dc
 +            .iter()
 +            .map(|line| line.line.to_string())
 +            .collect::<Vec<_>>(),
-+        vec!["● Advising using GPT-6-Astra · 0m04s"]
++        vec!["• Advisor on wake and cancellation fixes · 0:04"]
 +    );
 +    chat.set_advisor(Some(crate::bottom_pane::worker_hud::AdvisorRow {
 +        started_at_ms: Some((chrono::Utc::now().timestamp_millis() - 60_000) as u64),
@@ -7420,7 +7488,7 @@ index 000000000..aa70594dc
 +            .unwrap()
 +            .activity
 +            .iter()
-+            .any(|line| line.line.to_string().contains("Advising using"))
++            .any(|line| line.line.to_string().contains("• Advisor on"))
 +    );
 +}
 +
@@ -7459,7 +7527,7 @@ index 000000000..aa70594dc
 +            .iter()
 +            .map(|line| line.line.to_string())
 +            .collect::<Vec<_>>(),
-+        vec!["● Advising using GPT-6-Astra · 0m04s"],
++        vec!["• Advisor on Terminal acceptance · 0:04"],
 +        "status_started={status_started}, cell={:?}",
 +        chat.transcript
 +            .active_cell
@@ -7911,34 +7979,40 @@ index 000000000..aa70594dc
 +}
 diff --git a/codex-rs/tui/src/exec_cell/advisor.rs b/codex-rs/tui/src/exec_cell/advisor.rs
 new file mode 100644
-index 000000000..fe1fa0191
+index 000000000..07dc951bd
 --- /dev/null
 +++ b/codex-rs/tui/src/exec_cell/advisor.rs
-@@ -0,0 +1,225 @@
+@@ -0,0 +1,261 @@
 +//! Compact advisor presentation; execution and detailed output remain ordinary shell history.
 +
 +use super::model::ExecCell;
-+use crate::bottom_pane::worker_hud::{AdvisorRow, AdvisorState, advisor_command, model_label};
++use crate::bottom_pane::worker_hud::{AdvisorRow, AdvisorState, advisor_topic};
 +use crate::chatwidget::shell_policy::{ShellVisibility, eligible_shell, shell_directive};
 +use crate::exec_command::escape_command;
 +use crate::terminal_hyperlinks::HyperlinkLine;
++use crate::width::display_width;
 +use ratatui::text::Line;
 +
 +impl ExecCell {
 +    pub(crate) fn is_advisor(&self) -> bool {
++        self.advisor_topic().is_some()
++    }
++
++    fn advisor_topic(&self) -> Option<String> {
 +        let [call] = self.group.calls.as_slice() else {
-+            return false;
++            return None;
 +        };
 +        if !eligible_shell(call.source) {
-+            return false;
++            return None;
 +        }
 +        let command = escape_command(&call.command);
-+        let command = match shell_directive(&command) {
-+            Some((ShellVisibility::Auto | ShellVisibility::Background, _)) => return false,
-+            Some((ShellVisibility::Foreground, body)) => body,
-+            None => crate::exec_command::strip_bash_lc_and_escape(&call.command),
-+        };
-+        advisor_command(&command)
++        if matches!(
++            shell_directive(&command),
++            Some((ShellVisibility::Auto | ShellVisibility::Background, _))
++        ) {
++            return None;
++        }
++        advisor_topic(&command)
 +    }
 +
 +    pub(crate) fn set_advisor_turn_start(&mut self, started_at_ms: u64) {
@@ -7961,17 +8035,15 @@ index 000000000..fe1fa0191
 +    }
 +
 +    pub(super) fn advisor_lines(&self, width: u16) -> Option<Vec<HyperlinkLine>> {
-+        if !self.is_advisor() {
-+            return None;
-+        }
++        let topic = self.advisor_topic()?;
 +        let call = &self.group.calls[0];
 +        let (label, secs) = if let Some(duration) = call.duration {
 +            let output = call.output.as_ref()?;
 +            if output.exit_code != 0 {
-+                ("Advisor failed".to_string(), duration.as_secs())
++                ("Advisor failed on", duration.as_secs())
 +            } else {
-+                // Only this command's actual result establishes the selected model on replay.
-+                let model = output.lines().find_map(|line| {
++                // Only this command's actual advisor result establishes success on replay.
++                output.lines().find_map(|line| {
 +                    let value: serde_json::Value = serde_json::from_str(&line).ok()?;
 +                    let model = value.get("model")?.as_str()?;
 +                    (value.get("effort")?.as_str()? == "xhigh"
@@ -7982,28 +8054,30 @@ index 000000000..fe1fa0191
 +                            .all(|part| {
 +                                !part.is_empty() && part.bytes().all(|c| c.is_ascii_digit())
 +                            }))
-+                    .then(|| model.to_string())
++                    .then_some(())
 +                })?;
-+                (
-+                    format!("Advised by {}", model_label(Some(&model))),
-+                    duration.as_secs(),
-+                )
++                ("Advised on", duration.as_secs())
 +            }
 +        } else {
 +            let row = self.advisor.as_ref()?;
 +            let AdvisorState::Running(secs) = row.state else {
 +                return None;
 +            };
-+            (
-+                format!("Advising using {}", model_label(row.model.as_deref())),
-+                secs,
-+            )
++            ("Advisor on", secs)
 +        };
 +        Some(if width == 0 {
 +            Vec::new()
 +        } else {
++            let prefix = format!("• {label} ");
++            let timer = format!(" · {}:{:02}", secs / 60, secs % 60);
++            let topic_width =
++                usize::from(width).saturating_sub(display_width(&prefix) + display_width(&timer));
++            let topic = crate::line_truncation::truncate_line_with_ellipsis_if_overflow(
++                Line::from(topic),
++                topic_width,
++            );
 +            vec![crate::history_cell::activity_preview::clipped_line(
-+                Line::from(format!("● {label} · {}m{:02}s", secs / 60, secs % 60)),
++                Line::from(format!("{prefix}{topic}{timer}")),
 +                width,
 +            )]
 +        })
@@ -8051,10 +8125,10 @@ index 000000000..fe1fa0191
 +    fn advisor_transcript_updates_one_row_then_uses_actual_completion() {
 +        let mut cell = cell("codex-plus run -- codex-plus advisor --brief task");
 +        assert!(cell.set_advisor(Some(running(100_001, 59))));
-+        assert_eq!(text(&cell), "● Advising using GPT-6-Astra · 0m59s");
++        assert_eq!(text(&cell), "• Advisor on task · 0:59");
 +        assert!(!cell.set_advisor(Some(running(100_001, 59))));
 +        assert!(cell.set_advisor(Some(running(100_001, 60))));
-+        assert_eq!(text(&cell), "● Advising using GPT-6-Astra · 1m00s");
++        assert_eq!(text(&cell), "• Advisor on task · 1:00");
 +        assert_eq!(cell.compact_hyperlink_lines(18).len(), 1);
 +        assert!(cell.compact_hyperlink_lines(0).is_empty());
 +        cell.complete_call(
@@ -8065,7 +8139,7 @@ index 000000000..fe1fa0191
 +            ),
 +            Duration::from_secs(252),
 +        );
-+        assert_eq!(text(&cell), "● Advised by GPT-6.1-Astra · 4m12s");
++        assert_eq!(text(&cell), "• Advised on task · 4:12");
 +        assert!(
 +            cell.transcript_lines(100)
 +                .iter()
@@ -8084,6 +8158,9 @@ index 000000000..fe1fa0191
 +            "ADVISOR='codex-plus advisor --brief task' unrelated",
 +            "codex-plus advisor --brief task;",
 +            "# codex-plus-shell: background\ncodex-plus advisor --brief task",
++            "# codex-plus-shell: auto\n# codex-plus-advisor: task\npython3 consult.py",
++            "# codex-plus-shell: background\n# codex-plus-advisor: task\npython3 consult.py",
++            "python3 .build/audit-fixes/consult.py",
 +        ] {
 +            let mut cell = cell(command);
 +            assert!(!cell.set_advisor(Some(running(100_001, 59))), "{command}");
@@ -8095,7 +8172,7 @@ index 000000000..fe1fa0191
 +        // A delayed event uses the daemon's launch time, rather than receipt time.
 +        cell.set_advisor_turn_start(90_000);
 +        cell.set_advisor(Some(running(90_001, 59)));
-+        assert!(text(&cell).contains("Advising using"));
++        assert!(text(&cell).contains("Advisor on task"));
 +        cell.set_advisor(Some(AdvisorRow {
 +            started_at_ms: Some(90_001),
 +            model: Some("gpt-6-astra".into()),
@@ -8105,12 +8182,13 @@ index 000000000..fe1fa0191
 +            },
 +        }));
 +        assert!(cell.advisor_lines(100).is_none());
-+        assert!(!text(&cell).contains("Advised by"));
++        assert!(!text(&cell).contains("Advised on"));
 +    }
 +
 +    #[test]
 +    fn advisor_transcript_replay_and_failure_need_no_local_status() {
-+        let mut replay = cell("codex-plus advisor --brief task");
++        let command = "# codex-plus-shell: foreground\n# codex-plus-advisor: wake and cancellation fixes\npython3 .build/audit-fixes/consult.py";
++        let mut replay = cell(command);
 +        replay.complete_call(
 +            "advisor",
 +            CommandOutput::new(
@@ -8120,14 +8198,20 @@ index 000000000..fe1fa0191
 +            ),
 +            Duration::from_secs(65),
 +        );
-+        assert_eq!(text(&replay), "● Advised by GPT-6-Astra · 1m05s");
-+        let mut failure = cell("codex-plus advisor --brief task");
++        assert_eq!(
++            text(&replay),
++            "• Advised on wake and cancellation fixes · 1:05"
++        );
++        let mut failure = cell(command);
 +        failure.complete_call(
 +            "advisor",
 +            CommandOutput::new(130, "interrupted".into()),
 +            Duration::from_secs(7),
 +        );
-+        assert_eq!(text(&failure), "● Advisor failed · 0m07s");
++        assert_eq!(
++            text(&failure),
++            "• Advisor failed on wake and cancellation fixes · 0:07"
++        );
 +        let mut malformed = cell("codex-plus advisor --brief task");
 +        malformed.complete_call(
 +            "advisor",
@@ -8138,6 +8222,26 @@ index 000000000..fe1fa0191
 +            Duration::from_secs(7),
 +        );
 +        assert!(malformed.advisor_lines(100).is_none());
++    }
++
++    #[test]
++    fn advisor_wrapper_keeps_topic_and_minutes_before_timer_when_clipped() {
++        let command = "# codex-plus-shell: foreground\n# codex-plus-advisor: wake and cancellation fixes\npython3 .build/audit-fixes/consult.py";
++        let mut advisor = cell(command);
++        assert!(advisor.is_advisor());
++        assert!(!advisor.set_advisor(Some(running(99_999, 301))));
++        assert!(advisor.advisor_lines(100).is_none());
++        assert!(advisor.set_advisor(Some(running(100_001, 301))));
++        assert_eq!(
++            text(&advisor),
++            "• Advisor on wake and cancellation fixes · 5:01"
++        );
++        let short = advisor.compact_hyperlink_lines(28)[0].line.to_string();
++        assert!(short.ends_with(" · 5:01"), "{short}");
++        assert!(display_width(&short) <= 28);
++        let mut unrelated = cell("python3 unrelated.py");
++        assert!(!unrelated.set_advisor(Some(running(100_001, 301))));
++        assert!(unrelated.advisor_lines(100).is_none());
 +    }
 +}
 diff --git a/codex-rs/tui/src/exec_cell/mod.rs b/codex-rs/tui/src/exec_cell/mod.rs
@@ -8210,7 +8314,7 @@ index bae014ea1..1118f1384 100644
          } else {
 diff --git a/codex-rs/tui/src/exec_cell/snapshots/codex_tui__exec_cell__advisor__tests__advisor_transcript_done.snap b/codex-rs/tui/src/exec_cell/snapshots/codex_tui__exec_cell__advisor__tests__advisor_transcript_done.snap
 new file mode 100644
-index 000000000..70b1e5f1f
+index 000000000..47fc7f8f5
 --- /dev/null
 +++ b/codex-rs/tui/src/exec_cell/snapshots/codex_tui__exec_cell__advisor__tests__advisor_transcript_done.snap
 @@ -0,0 +1,5 @@
@@ -8218,7 +8322,7 @@ index 000000000..70b1e5f1f
 +source: tui/src/exec_cell/advisor.rs
 +expression: text(&cell)
 +---
-+● Advised by GPT-6.1-Astra · 4m12s
++• Advised on task · 4:12
 diff --git a/codex-rs/tui/src/thread_transcript/tools.rs b/codex-rs/tui/src/thread_transcript/tools.rs
 index 73e80d617..e665186e2 100644
 --- a/codex-rs/tui/src/thread_transcript/tools.rs
