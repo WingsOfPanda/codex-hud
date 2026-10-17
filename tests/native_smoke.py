@@ -19,6 +19,7 @@ import signal
 import sqlite3
 import struct
 import subprocess
+import sys
 import tempfile
 import termios
 import time
@@ -29,6 +30,8 @@ from wcwidth import wcwidth
 from fixtures.native_server import AppServer
 from fixtures.background_provider import ResponsesProvider
 from fixtures.advisor_provider import AdvisorProvider
+from fixtures.foreground_advisor_provider import ForegroundAdvisorProvider
+from fixtures.worker_shell_wait_provider import wait_script
 from test_background_integration import REPO, RecordingClient, stop, wait as wait_server
 
 
@@ -137,6 +140,12 @@ def shell_rows(text):
 
 def advisor_rows(text):
     return [line.strip() for line in text.splitlines() if line.strip().startswith('Advisor · ')]
+
+
+def advisor_transcript_rows(text):
+    return [line.strip() for line in text.splitlines()
+            if re.fullmatch(r'● (?:(?:Advising using|Advised by) .+|Advisor failed) · \d+m\d{2}s',
+                            line.strip())]
 
 
 def assert_compact_hud(text, *, rows=None, idle=True):
@@ -629,6 +638,7 @@ stream_max_retries=0
         ready = 'Advisor · GPT-6-Astra (xhigh) · ready · 0 calls'
         wait(terminals, lambda: ready in first.text and ready in second.text,
              'explicit Astra catalog did not show zero-call readiness', 30)
+        assert not any(advisor_transcript_rows(t.text) for t in terminals), 'resumed old commands invented an advisor transcript'
         for index, terminal in enumerate(terminals):
             os.write(terminal.master, f'advisor-draft-{index}'.encode())
         wait(terminals, lambda: all(f'advisor-draft-{index}' in terminal.text
@@ -693,6 +703,7 @@ stream_max_retries=0
              'advisor warning combination lost narrow composer')
         assert_compact_hud(first.text)
         capture('warning-small')
+        assert not any(advisor_transcript_rows(t.text) for t in terminals), 'status refresh invented an advisor transcript'
         assert provider.count == before, 'advisor footer called a model: ' + repr(provider.requests)
         for index, parent in enumerate(parents):
             assert len(rpc.call('thread/read', {'threadId': parent, 'includeTurns': True})['thread']['turns']) == (3 if index == 0 else 1)
@@ -710,6 +721,134 @@ stream_max_retries=0
         native_log.close()
         (evidence / 'advisor-provider-requests.json').write_text(json.dumps(provider.requests, indent=2) + '\n')
         provider.close()
+
+
+def advisor_transcript_smoke(binary, root, evidence):
+    """A real Code Mode command stays live past its initial exec yield."""
+    stages = []
+    for failed in (False, True):
+        label = 'failed' if failed else 'done'
+        home, workspace = root / f'transcript-{label}-home', root / f'transcript-{label}-work'
+        home.mkdir(mode=0o700)
+        workspace.mkdir()
+        release = workspace / 'release'
+        launcher = workspace / 'bin' / 'codex-plus'
+        launcher.parent.mkdir()
+        # Only the advisor is simulated: the TUI, Code Mode and shell lifecycle are real.
+        launcher.write_text('#!' + sys.executable + '\n' + f'''
+import json, os, pathlib, sys, time
+if sys.argv[1:3] == ['run', '--']:
+    os.execv(sys.argv[3], sys.argv[3:])
+home = pathlib.Path(os.environ['CODEX_HOME']) / 'codex-plus'
+home.mkdir(exist_ok=True)
+parent = os.environ['CODEX_THREAD_ID']
+path = home / (parent + '.advisor.json')
+value = dict(version=1, parent=parent, model='gpt-6-astra', effort='xhigh',
+    state='running', started_at=time.time(), updated_at=time.time(), finished_at=None,
+    calls=1, last_duration_secs=None, error=None)
+while True:
+    now = time.time()
+    if pathlib.Path({str(release)!r}).exists():
+        value.update(state={'error' if failed else 'done'!r}, finished_at=now,
+            updated_at=now, last_duration_secs=now-value['started_at'], error={'exec_failed' if failed else None!r})
+    if not path.exists() or value['state'] != 'running':
+        temporary = path.with_suffix('.tmp')
+        temporary.write_text(json.dumps(value))
+        temporary.replace(path)
+    if value['state'] != 'running':
+        print(json.dumps(dict(model='gpt-6-astra', effort='xhigh', verdict='approve')))
+        sys.exit({1 if failed else 0})
+    time.sleep(.2)
+''')
+        launcher.chmod(0o755)
+        command = '# codex-plus-shell: foreground\n' + shlex.join([
+            str(launcher), 'run', '--', str(launcher), 'advisor', '--brief', 'Terminal acceptance'])
+        script = wait_script(command, budget_ms=45000, outer_ms=50000).replace('yield_time_ms: 250', 'yield_time_ms: 1000')
+        provider = ForegroundAdvisorProvider(script)
+        terminal = None
+        (home / 'config.toml').write_text(write_model_catalog(home, astra=True) + f'''model="gpt-6.1-sol"
+model_provider="isolated"
+model_reasoning_effort="high"
+suppress_unstable_features_warning=true
+check_for_update_on_startup=false
+analytics.enabled=false
+features.daemon_auto_start=false
+features.unified_exec=true
+features.shell_tool=true
+features.plugins=false
+features.code_mode=true
+tui.status_line=["thread-name"]
+[projects."{workspace}"]
+trust_level="trusted"
+[model_providers.isolated]
+name="loopback advisor transcript acceptance"
+base_url="{provider.url}"
+wire_api="responses"
+requires_openai_auth=false
+request_max_retries=0
+stream_max_retries=0
+''')
+        try:
+            terminal = Terminal(binary, home, workspace)
+            wait([terminal], lambda: 'for shortcuts' in terminal.text, 'transcript TUI did not initialize', 30)
+            os.write(terminal.master, f'/rename transcript-{label}'.encode())
+            wait([terminal], lambda: f'/rename transcript-{label}' in terminal.text, 'rename did not render')
+            os.write(terminal.master, b'\r')
+            wait([terminal], lambda: f'transcript-{label}' in terminal.text and '/rename' not in terminal.text,
+                 'transcript root was not named')
+            os.write(terminal.master, b'Consult the held advisor.')
+            wait([terminal], lambda: 'Consult the held advisor.' in terminal.text, 'prompt did not render')
+            os.write(terminal.master, b'\r')
+            wait([terminal], lambda: any('Advising using GPT-6-Astra' in row
+                 for row in advisor_transcript_rows(terminal.text)), 'live advisor transcript did not appear', 30)
+            first_row = advisor_transcript_rows(terminal.text)
+            assert len(first_row) == 1, terminal.text
+            status_path, = (home / 'codex-plus').glob('*.advisor.json')
+            status_before = status_path.read_bytes()
+            started = time.monotonic()
+            wait([terminal], lambda: time.monotonic() - started >= 2.2 and
+                 advisor_transcript_rows(terminal.text) != first_row, 'local advisor timer did not advance')
+            assert provider.count == 1, 'local advisor ticks requested another model response'
+            assert status_path.read_bytes() == status_before, 'fixture status changed during local timer check'
+            assert len(advisor_transcript_rows(terminal.text)) == 1, terminal.text
+            assert 'Advised by ' not in terminal.text, 'initial exec yield prematurely completed advisor row'
+            assert 'Running ' not in terminal.text, 'advisor kept its ordinary running command header'
+            assert 'reviewing' in terminal.text and advisor_rows(terminal.text), terminal.text
+            assert_compact_hud(terminal.text, idle=False)
+            os.write(terminal.master, b'advisor-live-draft')
+            wait([terminal], lambda: 'advisor-live-draft' in terminal.text, 'live advisor blocked composer')
+            replies = terminal.resize(16, 80)
+            wait([terminal], lambda: terminal.resized_frame(replies) and 'advisor-live-draft' in terminal.text and
+                 len(advisor_transcript_rows(terminal.text)) == 1, 'resize lost live advisor or draft')
+            (evidence / f'advisor-transcript-{label}-live.txt').write_text(terminal.text + '\n')
+            release.touch()
+            expected = 'Advisor failed' if failed else 'Advised by GPT-6-Astra'
+            wait([terminal], lambda: expected in terminal.text and provider.count == 2,
+                 f'{label} advisor transcript did not settle', 20)
+            assert len(advisor_transcript_rows(terminal.text)) == 1, terminal.text
+            assert 'Advising using ' not in terminal.text and 'advisor-live-draft' in terminal.text, terminal.text
+            settled = advisor_transcript_rows(terminal.text)
+            observed = time.monotonic()
+            wait([terminal], lambda: time.monotonic() - observed >= 1.5, 'settled frame wait failed')
+            assert advisor_transcript_rows(terminal.text) == settled and provider.count == 2, terminal.text
+            assert_compact_hud(terminal.text)
+            stages.append(f'advisor transcript {label}: real Code Mode exec/wait, live across initial yield, local elapsed ticks, one transcript row, resize and draft preserved, two loopback root responses only')
+        finally:
+            for path in (home / 'codex-plus').glob('*.advisor.json'):
+                shutil.copyfile(path, evidence / f'advisor-transcript-{label}-status.json')
+            for path in (home / 'sessions').glob('**/*.jsonl'):
+                shutil.copyfile(path, evidence / f'advisor-transcript-{label}-rollout.jsonl')
+            for path in (home / 'log').glob('*'):
+                if path.is_file():
+                    shutil.copyfile(path, evidence / f'advisor-transcript-{label}-{path.name}')
+            release.touch()
+            if terminal:
+                (evidence / f'advisor-transcript-{label}.ansi').write_bytes(terminal.output)
+                (evidence / f'advisor-transcript-{label}-screen.txt').write_text(terminal.text + '\n')
+                terminal.close()
+            (evidence / f'advisor-transcript-{label}-requests.json').write_text(json.dumps(provider.requests, indent=2) + '\n')
+            provider.close()
+    return stages
 
 
 def tmux_smoke(binary, root, evidence):
@@ -978,6 +1117,7 @@ def run(binary, evidence):
         stages.extend(shell_hud_smoke(binary, root, evidence))
         stages.extend(local_shell_smoke(binary, root, evidence))
         stages.extend(advisor_hud_smoke(binary, root, evidence))
+        stages.extend(advisor_transcript_smoke(binary, root, evidence))
     finally:
         for home in Path(temporary.name).glob('*home-*'):
             for log in home.glob('log/*'):
@@ -992,7 +1132,7 @@ def run(binary, evidence):
             (evidence / f'rpc-{index}.json').write_text(json.dumps(server.requests, indent=2) + '\n')
             (evidence / f'fixture-errors-{index}.json').write_text(json.dumps(server.errors, indent=2) + '\n')
         temporary.cleanup()
-    report = {'binary': str(binary), 'passed': stages, 'ui_turn_start_requests': 0, 'ui_turn_steer_requests': 0, 'cursor_replies': [terminal.cursor_replies for terminal in terminals], 'model_calls_after_fixture_setup': 0, 'fixture_seed_model_calls': 2, 'fixture_shell_model_calls': 2, 'fixture_advisor_seed_model_calls': 2, 'fixture_advisor_shell_model_calls': 4, 'terminal_parser': 'pyte 0.8.2', 'tmux_required': False}
+    report = {'binary': str(binary), 'passed': stages, 'ui_turn_start_requests': 0, 'ui_turn_steer_requests': 0, 'cursor_replies': [terminal.cursor_replies for terminal in terminals], 'model_calls_after_fixture_setup': 0, 'fixture_seed_model_calls': 2, 'fixture_shell_model_calls': 2, 'fixture_advisor_seed_model_calls': 2, 'fixture_advisor_shell_model_calls': 4, 'fixture_advisor_transcript_model_calls': 4, 'terminal_parser': 'pyte 0.8.2', 'tmux_required': False}
     (evidence / 'report.json').write_text(json.dumps(report, indent=2) + '\n')
     print(json.dumps(report, indent=2))
 

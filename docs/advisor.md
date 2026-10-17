@@ -28,6 +28,17 @@ native terminal (`/stop`); the helper signals its owned consultation process gro
 An interrupted turn alone does not establish that its command stopped; follow
 [shell cancellation](shell-workflow.md#after-the-initial-yield).
 
+The conversation shows the active consultation locally:
+
+```text
+● Advising using GPT-6-Astra · 0m59s
+```
+
+After the command finishes, that becomes `● Advised by GPT-6-Astra · 2m41s`
+or an advisor-failure row. The main session then reviews the returned findings.
+These are display rows, not model messages. The footer retains its model, effort,
+call count and timing within the existing three-row activity budget.
+
 Use this pattern with a self-contained brief. The 26-minute local budget and
 27-minute outer yield leave margin for the helper's deadline and cleanup:
 

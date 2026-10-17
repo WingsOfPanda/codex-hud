@@ -1,0 +1,149 @@
+{
+  "change": "Claude-style foreground advisor transcript headers using existing local status, actual command completion and native detail expansion.",
+  "source_base": "5a0d0a3",
+  "upstream": "83086188ae0614bd882818ff1aa23f3194962012",
+  "patch_sha256": "46c51af1984bebc848baaa3d255c1edada781f6afa9d6d392c62e62604d11ad8",
+  "binary_sha256": "8953f25faf9a529623579e23a9ff485686c27b9dd0ea91a2560e46ff50b2c906",
+  "binary": "/home/liupan/Aerius/codex-plus/.build/foreground-advisor/.build/native-advisor/codex",
+  "source_acceptance": {
+    "passed": true,
+    "clean_apply": true,
+    "reverse_apply": true,
+    "exact_reconstruction": true,
+    "source_whitespace": true,
+    "delta_vs_published": [
+      "codex-rs/tui/src/app/advisor.rs",
+      "codex-rs/tui/src/bottom_pane/mod.rs",
+      "codex-rs/tui/src/bottom_pane/worker_hud.rs",
+      "codex-rs/tui/src/chatwidget.rs",
+      "codex-rs/tui/src/chatwidget/command_lifecycle.rs",
+      "codex-rs/tui/src/chatwidget/tests/shell_policy.rs",
+      "codex-rs/tui/src/exec_cell/advisor.rs",
+      "codex-rs/tui/src/exec_cell/mod.rs",
+      "codex-rs/tui/src/exec_cell/model.rs",
+      "codex-rs/tui/src/exec_cell/render.rs",
+      "codex-rs/tui/src/exec_cell/snapshots/codex_tui__exec_cell__advisor__tests__advisor_transcript_done.snap"
+    ],
+    "backend_unchanged": true,
+    "external_packages_unchanged": 1314,
+    "patch_sha256": "46c51af1984bebc848baaa3d255c1edada781f6afa9d6d392c62e62604d11ad8",
+    "binary_sha256": "8953f25faf9a529623579e23a9ff485686c27b9dd0ea91a2560e46ff50b2c906",
+    "code_mode_host_sha256": "3062b09d807c146984352ceb69efb3b3b6bd7d95b784bf568bd05f0d1accd299",
+    "source": "/home/liupan/Aerius/codex-plus/.build/foreground-advisor/.build/native-advisor/source",
+    "compiled_source_base": "83086188ae0614bd882818ff1aa23f3194962012"
+  },
+  "rust_acceptance": {
+    "passed": true,
+    "counts": {
+      "advisor": 13,
+      "worker_hud": 38,
+      "shell_policy": 18,
+      "chatwidget::tests::exec_flow": 53,
+      "thread_transcript::tools::tests": 6
+    },
+    "source": "/home/liupan/Aerius/codex-plus/.build/foreground-advisor/.build/native-advisor/source",
+    "private_home": "/home/liupan/Aerius/codex-plus/.build/foreground-advisor/.build/root-rust-acceptance/private-home",
+    "initial_empty_filter": "thread_transcript__tools__tests",
+    "initial_empty_filter_log": "/home/liupan/Aerius/codex-plus/.build/foreground-advisor/.build/root-rust-acceptance/thread_transcript__tools__tests.log"
+  },
+  "rust_filters_overlap": true,
+  "terminal_fixture_tests": 17,
+  "native_terminal_stages": [
+    "six active workers show two full-model rows plus +4 more in three total rows, with elapsed, unknown remote tokens, actual GPT-6.1-Sol high/GPT-6-Astra medium, and idle composer within last six nonempty lines",
+    "read-only /daemon shows status guidance and Close; no daemon update choices or exit",
+    "two simultaneous independent roots and editable composers",
+    "input remains editable during delayed metadata RPC",
+    "completion removes its row and promotes a hidden active worker",
+    "last completion hides the entire strip while both composers remain editable",
+    "later activity restores the compact strip without losing the draft",
+    "explicit three-member cohort reduces 3\u21922\u21921\u2192hidden without duplicate rows or shrinking dispatch elapsed; independent cohort stays separate, group resize/input preserve draft, final strip collapses",
+    "explicit approval wait survives alert plus overflow in three total rows, with idle composer within last six nonempty lines",
+    "small and normal PTY resize with preserved draft",
+    "partial metadata RPC failure marks counts stale and recovers",
+    "stale disconnect and automatic reconnect without cross-pane effect",
+    "zero turn/start or turn/steer requests and zero model calls",
+    "remote websocket roots ignore unrelated local watcher and advisor status files",
+    "isolated tmux server: two split panes, draft editing, small/normal resize, stale/reconnect, zero turn/start or turn/steer",
+    "private local app-server: two loopback seed turns, then idle roots, healthy waiting hidden, zero jobs pending visible, stale/uncertain/report/idle health, last-six composer detection, narrow draft editing, parent isolation, zero additional model calls or turns",
+    "unregistered remote shell-only and mixed worker/shell strips; three total rows including overflow and alerts; compact background labels and observed elapsed; item identity reset; parent isolation; shell-only stale failures and recovery; Unicode/control-safe narrow drafts; successful disappearance without success claim; zero UI turn or execution requests",
+    "real private local embedded app-server: one loopback tool turn, yielded finite shell survives completed turn, row and editable idle draft without park registration, actual command completion removes row, zero extra model calls or turns",
+    "advisor explicit Astra catalog: ready zero calls, running timer, done count/duration, error, stale/malformed/mismatched/FIFO/symlink status, full reported model per pane, managed advisor shell coalesces only while reviewing and unrelated shell stays visible, warning/advisor/real-shell share three rows with narrow AP composer, zero extra model calls or turns",
+    "advisor transcript done: real Code Mode exec/wait, live across initial yield, local elapsed ticks, one transcript row, resize and draft preserved, two loopback root responses only",
+    "advisor transcript failed: real Code Mode exec/wait, live across initial yield, local elapsed ticks, one transcript row, resize and draft preserved, two loopback root responses only"
+  ],
+  "root_logs": {
+    "source": "/home/liupan/.codex/codex-plus/logs/1bd2471b-cb11-4bc3-8a98-14cbb36c6c74.log",
+    "rust_initial": "/home/liupan/.codex/codex-plus/logs/e99eb968-5801-4698-a545-36bab80c48d1.log",
+    "rust_final": "/home/liupan/.codex/codex-plus/logs/f9398024-89ed-4751-9b47-022bc5641610.log",
+    "terminal": "/home/liupan/.codex/codex-plus/logs/81d46b6b-7245-4297-865c-198e6f485d6a.log",
+    "terminal_fixture": "/home/liupan/.codex/codex-plus/logs/d4bb6c73-e706-4bba-bd72-5f998fa02c07.log",
+    "source_guard": "/home/liupan/.codex/codex-plus/logs/c0a5d773-af91-4ae6-a597-fd1c66677f9d.log"
+  },
+  "terminal_evidence": "/home/liupan/Aerius/codex-plus/.build/foreground-advisor/.build/root-native-acceptance",
+  "behavior": {
+    "live": "\u25cf Advising using GPT-6-Astra \u00b7 0m59s",
+    "done": "\u25cf Advised by GPT-6-Astra \u00b7 1m05s",
+    "failed": "\u25cf Advisor failed \u00b7 0m07s",
+    "one_cell_updates_in_place": true,
+    "effort_in_footer_only": true,
+    "result_expansion": "Existing native disclosure/detail output; no custom buttons or provider fallback.",
+    "local_timer_without_status_file_writes_or_extra_model_calls": true,
+    "footer_three_row_budget_unchanged": true,
+    "actual_result_model_used_on_completion_and_replay": true,
+    "ambiguous_stale_or_unrelated_status_does_not_claim_completion": true
+  },
+  "regression": {
+    "cause": "Unified exec launches process before emitting ItemStarted, so its notification timestamp is later than valid advisor started_at.",
+    "fix": "Correlate a canonical foreground advisor command with fresh status from the current turn; derive a conservative millisecond lower bound with ceiling elapsed conversion. Actual exec result determines completion.",
+    "first_red": "/home/liupan/Aerius/codex-plus/.build/foreground-advisor/.build/advisor-transcript-diagnosis",
+    "single_variable_time_probe": "/home/liupan/Aerius/codex-plus/.build/foreground-advisor/.build/advisor-transcript-time-probe",
+    "rounding_failure": "/home/liupan/Aerius/codex-plus/.build/foreground-advisor/.build/native-advisor/status-boundary-rounding-failure.log",
+    "boundary_repetition_passed": 100
+  },
+  "initial_failures": [
+    "Initial developer CLI staging lacked adjacent code-mode host; copied unchanged verified0.2.0 host. No backend/source change.",
+    "First fixture used unsupported launcher path outside bin/codex-plus; fixture corrected instead of loosening command classification.",
+    "Real PTY found timestamp ordering bug after initial unit pass; original unshifted fixture passes after fix.",
+    "A one-millisecond rounding edge was reproduced and corrected using ceiling duration conversion.",
+    "Stale command_lifecycle and misspelled transcript test filters selected zero; actual exec_flow53 and thread_transcript::tools::tests6 were run and counted.",
+    "Patch-container diff check flags blank context lines in the unified patch; applied Rust source whitespace and clean/reverse reconstruction pass."
+  ],
+  "toolchain_observation": {
+    "rustfmt_path": "/home/liupan/.rustup/toolchains/1.99.0-x86_64-unknown-linux-gnu/bin/rustfmt",
+    "installed_components": [
+      "cargo-x86_64-unknown-linux-gnu",
+      "rust-std-x86_64-unknown-linux-gnu",
+      "rustc-x86_64-unknown-linux-gnu",
+      "rustfmt-x86_64-unknown-linux-gnu"
+    ],
+    "active_toolchain": "1.99.1-x86_64-unknown-linux-gnu (default)",
+    "settings_path": "/home/liupan/.rustup/settings.toml",
+    "settings_sha256": "75c4fb0a8811d9f1209cf345d33b7645bdd9f2379b8fc7ea32f5dd222a33bf22",
+    "settings_mtime_utc": "2026-10-17T01:01:31.104804+00:00",
+    "settings_content": "version = \"12\"\ndefault_toolchain = \"1.99.1-x86_64-unknown-linux-gnu\"\nprofile = \"minimal\"\nauto_self_update = \"disable\"\n\n[overrides]\n",
+    "actions": [
+      "Initial rustfmt +1.99.0 auto-installed the absent 1.99.0 minimal toolchain.",
+      "rustup component add --toolchain 1.99.0 rustfmt"
+    ],
+    "default_setter_or_config_edit_performed": false
+  },
+  "global_foreground_policy": {
+    "local_section_matches": true,
+    "fleet_reported_all_four_synced": true,
+    "fleet_commit": "98a0903",
+    "section_sha256": "466d954eac39c0de80fe7d3425962a9638e86ec15efafa2f1c86825ff03797de",
+    "next_release_handoff_must_preserve": true
+  },
+  "runtime_code_changes": false,
+  "daemon_changes": false,
+  "remote_model_requests": 0,
+  "limits": [
+    "Advisor is simulated only in the transcript PTY fixture; real TUI, Code Mode, shell lifecycle and rendering are used. Actual stock advisor behavior is separately covered by advisor-foreground.json and advisor integration.",
+    "No paid-provider consultation was run for this UI change.",
+    "No optimized/ARM release packages were built; no native runtime was installed, published or merged.",
+    "The developer CLI needs the unchanged matching code-mode host beside it; this is not a complete distributable release package.",
+    "Ctrl-C can interrupt a turn while a native terminal remains live; use native stop for owned command cancellation. No cancellation policy change.",
+    "Completion detail uses existing native expansion, not Claude plugin fold buttons or per-prompt caps."
+  ],
+  "source_guard_tests": 7
+}

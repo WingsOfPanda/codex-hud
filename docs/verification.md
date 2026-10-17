@@ -25,7 +25,7 @@ the focused native tests (the environment may require `RUST_MIN_STACK=33554432`)
 ```sh
 cargo +1.99.0 test --locked -p codex-tui --lib worker_hud --profile dev-small -j 12
 cargo +1.99.0 test --locked -p codex-tui --lib shell_policy --profile dev-small -j 12
-cargo +1.99.0 test --locked -p codex-tui --lib command_lifecycle --profile dev-small -j 12
+cargo +1.99.0 test --locked -p codex-tui --lib chatwidget::tests::exec_flow --profile dev-small -j 12
 cargo +1.99.0 test --locked -p codex-tui --lib thread_transcript::tools::tests --profile dev-small -j 12
 cargo +1.99.0 test --locked -p codex-tui --lib daemon_menu --profile dev-small -j 12
 cargo +1.99.0 test --locked -p codex-cli --bin codex daemon_update_tests --profile dev-small -j 12
@@ -102,6 +102,25 @@ on its second request, and create no park, queued callback or surviving terminal
 Advisor status must move from running to done with the selected Astra at xhigh.
 The fixture verifies the long outer-yield request over 65 seconds; it is not a
 27-minute endurance test. See [advisor-foreground.json](evidence/advisor-foreground.json).
+
+### Advisor conversation rows
+
+The native terminal smoke includes real Code Mode exec/wait cases for a held
+advisor. A single conversation header must tick locally past the initial shell
+yield, then settle to the completed or failed header without a second row. The
+fixture holds status bytes constant while checking elapsed updates, verifies no
+extra model request, edits and resizes the composer, and retains the footer's
+three-row budget. The advisor itself is simulated; the TUI, shell and Code Mode
+lifecycle are real.
+
+Root acceptance passed 21 terminal stages, 17 fixture tests and the focused Rust
+filters: advisor 13, HUD 38, shell policy 18, exec flow 53 and historical tools 6
+(filters overlap). Clean/reverse patch application, exact reconstruction, unchanged
+backend and all 1,314 external Cargo packages passed. The timestamp regression
+covers a process publishing status before its ItemStarted notification; current-turn
+correlation replaces the incorrect notification-time cutoff. See
+[advisor-transcript.json](evidence/advisor-transcript.json) for hashes, preserved
+initial failures and limits. No native fleet runtime was installed by this work.
 
 ## Historical 0.162.1 verification
 

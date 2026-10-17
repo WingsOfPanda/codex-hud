@@ -165,11 +165,14 @@ then runs one isolated read-only consultation with the packaged native client.
 Supply a self-contained brief: the advisor receives clipped Git status and diff
 statistics, without the session transcript or diff contents. The footer shows
 readiness, the current consultation, and the completed call count and duration;
-refreshing it makes no model calls. See [advisor usage and limits](docs/advisor.md).
+refreshing it makes no model calls. Consultations needed before the next decision
+stay foreground, with a live conversation row such as
+`● Advising using GPT-6-Astra · 0m59s`, then a completed or failed summary.
+See [advisor usage and limits](docs/advisor.md) for the bounded local wait.
 
-Fleet-config owns installed wrapper routing. Its existing `codex-plus` whitelist
-routes only `park`, `run`, and `--version`; a future rollout must add `advisor`.
-Use the repository launcher above until that wrapper is updated.
+Fleet-config owns installed wrapper routing; `advisor` must reach the package's
+helper alongside `park`, `run`, and `--version`. The repository launcher above
+works without changing the installed fleet wrapper.
 
 ## Background completion
 

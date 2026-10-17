@@ -135,6 +135,12 @@ changes, otherwise `null`. Put additional rollout requirements in `notes`, and
 keep test results, failures, skipped checks, and accepted limits in the companion
 note referenced by `note`.
 
+When replacing the global block, use the current approved advisor section from
+[advisor.md](advisor.md) and compare the complete replacement with fleet-config's
+live policy. Preserve its foreground wait wording; copying an older release's
+`agents_md` would restore the superseded background default. Published handoffs
+remain immutable.
+
 For cooperative upgrades, manifests advertise `coordinator_protocol: 1`.
 Set `quiet_checkpoint: false` only when the installed observers and candidate
 support the same protocol, upstream identity and target, the candidate's Plus

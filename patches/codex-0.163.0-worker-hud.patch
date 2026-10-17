@@ -1566,10 +1566,10 @@ index 1b07e9826..9d6093c5b 100644
                          && self.transcript_view.history
 diff --git a/codex-rs/tui/src/app/advisor.rs b/codex-rs/tui/src/app/advisor.rs
 new file mode 100644
-index 000000000..445759efd
+index 000000000..b3d14e3b9
 --- /dev/null
 +++ b/codex-rs/tui/src/app/advisor.rs
-@@ -0,0 +1,287 @@
+@@ -0,0 +1,290 @@
 +//! Local advisory status only; consulting the model belongs to the explicit CLI helper.
 +
 +use super::worker_hud::read_status_bytes;
@@ -1611,6 +1611,7 @@ index 000000000..445759efd
 +
 +pub(super) fn unavailable() -> AdvisorRow {
 +    AdvisorRow {
++        started_at_ms: None,
 +        model: None,
 +        state: AdvisorState::Unavailable,
 +    }
@@ -1650,6 +1651,7 @@ index 000000000..445759efd
 +        Ok(Some(bytes)) => bytes,
 +        Ok(None) => {
 +            return ready.map(|model| AdvisorRow {
++                started_at_ms: None,
 +                model: Some(model),
 +                state: AdvisorState::Ready,
 +            });
@@ -1705,6 +1707,7 @@ index 000000000..445759efd
 +        _ => return Some(unavailable()),
 +    };
 +    Some(AdvisorRow {
++        started_at_ms: Some((status.started_at * 1000.0) as u64),
 +        model: Some(status.model),
 +        state,
 +    })
@@ -4308,7 +4311,7 @@ index a20193149..930cff629 100644
      SelectAgentThread(ThreadId),
  
 diff --git a/codex-rs/tui/src/bottom_pane/mod.rs b/codex-rs/tui/src/bottom_pane/mod.rs
-index ae9405e9f..ca9a97ff8 100644
+index ae9405e9f..8dab42d5c 100644
 --- a/codex-rs/tui/src/bottom_pane/mod.rs
 +++ b/codex-rs/tui/src/bottom_pane/mod.rs
 @@ -207,6 +207,7 @@ mod paste_burst;
@@ -4384,7 +4387,7 @@ index ae9405e9f..ca9a97ff8 100644
              RenderableItem::Owned(Box::new(flex2))
          }
      }
-@@ -2729,6 +2767,93 @@ mod tests {
+@@ -2729,6 +2767,95 @@ mod tests {
          assert_eq!(pane.composer_text(), "main draft");
      }
  
@@ -4418,6 +4421,7 @@ index ae9405e9f..ca9a97ff8 100644
 +            true,
 +        );
 +        pane.set_advisor(Some(worker_hud::AdvisorRow {
++            started_at_ms: None,
 +            model: Some("gpt-6-astra".into()),
 +            state: worker_hud::AdvisorState::Ready,
 +        }));
@@ -4445,6 +4449,7 @@ index ae9405e9f..ca9a97ff8 100644
 +        let (tx, _rx) = unbounded_channel();
 +        let mut pane = test_pane_with_disable_paste_burst(AppEventSender::new(tx), true);
 +        pane.set_advisor(Some(worker_hud::AdvisorRow {
++            started_at_ms: None,
 +            model: Some("gpt-6-astra".into()),
 +            state: worker_hud::AdvisorState::Error,
 +        }));
@@ -4480,10 +4485,10 @@ index ae9405e9f..ca9a97ff8 100644
          let (tx, _rx) = unbounded_channel();
 diff --git a/codex-rs/tui/src/bottom_pane/worker_hud.rs b/codex-rs/tui/src/bottom_pane/worker_hud.rs
 new file mode 100644
-index 000000000..d4dc51907
+index 000000000..8273bc2aa
 --- /dev/null
 +++ b/codex-rs/tui/src/bottom_pane/worker_hud.rs
-@@ -0,0 +1,1276 @@
+@@ -0,0 +1,1279 @@
 +//! Read-only worker summary; clipping never takes space from the composer.
 +
 +use crate::line_truncation::truncate_line_with_ellipsis_if_overflow;
@@ -4591,6 +4596,7 @@ index 000000000..d4dc51907
 +
 +#[derive(Clone, Debug, PartialEq, Eq)]
 +pub(crate) struct AdvisorRow {
++    pub(crate) started_at_ms: Option<u64>,
 +    pub(crate) model: Option<String>,
 +    pub(crate) state: AdvisorState,
 +}
@@ -4841,7 +4847,7 @@ index 000000000..d4dc51907
 +    }
 +}
 +
-+fn advisor_command(command: &str) -> bool {
++pub(crate) fn advisor_command(command: &str) -> bool {
 +    fn invocation(args: &[String], depth: u8) -> bool {
 +        if depth > 2 {
 +            return false;
@@ -4916,7 +4922,7 @@ index 000000000..d4dc51907
 +        .to_string()
 +}
 +
-+fn model_label(model: Option<&str>) -> String {
++pub(crate) fn model_label(model: Option<&str>) -> String {
 +    let model: String = model
 +        .unwrap_or_default()
 +        .chars()
@@ -5004,6 +5010,7 @@ index 000000000..d4dc51907
 +                        );
 +                        hud.set_shells((0..shells).map(shell_row).collect(), false, true);
 +                        hud.set_advisor(Some(AdvisorRow {
++                            started_at_ms: None,
 +                            model: Some("gpt-7.2-astra".into()),
 +                            state: advisor_state.clone(),
 +                        }));
@@ -5075,6 +5082,7 @@ index 000000000..d4dc51907
 +                AdvisorState::Unavailable,
 +            ] {
 +                hud.set_advisor(Some(AdvisorRow {
++                    started_at_ms: None,
 +                    model: Some("gpt-6-astra".into()),
 +                    state: state.clone(),
 +                }));
@@ -5761,7 +5769,7 @@ index 000000000..d4dc51907
 +    }
 +}
 diff --git a/codex-rs/tui/src/chatwidget.rs b/codex-rs/tui/src/chatwidget.rs
-index 2f74f843d..e9bfff680 100644
+index 2f74f843d..951f60112 100644
 --- a/codex-rs/tui/src/chatwidget.rs
 +++ b/codex-rs/tui/src/chatwidget.rs
 @@ -263,6 +263,7 @@ mod connectors;
@@ -5813,7 +5821,7 @@ index 2f74f843d..e9bfff680 100644
          if let Some(mut cell) = self.transcript.take_active_cell() {
              // Insert finalized cell into history and keep grouping consistent.
              if let Some(exec) = cell.as_any_mut().downcast_mut::<ExecCell>() {
-@@ -1452,6 +1459,39 @@ impl ChatWidget {
+@@ -1452,6 +1459,49 @@ impl ChatWidget {
          }
      }
  
@@ -5840,6 +5848,16 @@ index 2f74f843d..e9bfff680 100644
 +        &mut self,
 +        advisor: Option<crate::bottom_pane::worker_hud::AdvisorRow>,
 +    ) {
++        if let Some(cell) = self
++            .transcript
++            .active_cell
++            .as_mut()
++            .and_then(|cell| cell.as_any_mut().downcast_mut::<ExecCell>())
++            && cell.set_advisor(advisor.clone())
++        {
++            self.bump_active_cell_revision();
++            self.request_redraw();
++        }
 +        self.bottom_pane.set_advisor(advisor);
 +    }
 +
@@ -5853,7 +5871,7 @@ index 2f74f843d..e9bfff680 100644
      pub(crate) fn set_pending_thread_approvals(&mut self, threads: Vec<String>) {
          self.bottom_pane.set_pending_thread_approvals(threads);
      }
-@@ -1498,6 +1538,8 @@ impl ChatWidget {
+@@ -1498,6 +1548,8 @@ impl ChatWidget {
      fn clean_background_terminals(&mut self) {
          self.submit_op(AppCommand::clean_background_terminals());
          self.unified_exec_processes.clear();
@@ -5863,7 +5881,7 @@ index 2f74f843d..e9bfff680 100644
          self.add_info_message(
              "Stopping all background terminals.".to_string(),
 diff --git a/codex-rs/tui/src/chatwidget/command_lifecycle.rs b/codex-rs/tui/src/chatwidget/command_lifecycle.rs
-index a0533b315..dd4f367a3 100644
+index a0533b315..c09f77ef4 100644
 --- a/codex-rs/tui/src/chatwidget/command_lifecycle.rs
 +++ b/codex-rs/tui/src/chatwidget/command_lifecycle.rs
 @@ -3,8 +3,12 @@
@@ -6055,7 +6073,36 @@ index a0533b315..dd4f367a3 100644
          // Ensure the status indicator is visible while the command runs.
          self.bottom_pane.ensure_status_indicator();
          let parsed_cmd = self.annotate_skill_reads_in_parsed_cmd(parsed_cmd);
-@@ -333,7 +413,7 @@ impl ChatWidget {
+@@ -297,14 +377,26 @@ impl ChatWidget {
+         } else {
+             self.flush_active_cell();
+ 
+-            self.transcript.active_cell = Some(Box::new(new_active_exec_command(
++            // Unified exec reports item start after process launch; use this turn's boundary.
++            let advisor_after =
++                self.turn_lifecycle
++                    .goal_status_active_turn_started_at
++                    .map(|started| {
++                        (chrono::Utc::now().timestamp_millis().max(0) as u64)
++                            .saturating_sub(started.elapsed().as_nanos().div_ceil(1_000_000) as u64)
++                    });
++            let mut cell = new_active_exec_command(
+                 id,
+                 command,
+                 parsed_cmd,
+                 source,
+                 /*interaction_input*/ None,
+                 self.local_settings.tui.animations && self.local_settings.tui.effects.progress,
+-            )));
++            );
++            if let Some(after) = advisor_after {
++                cell.set_advisor_turn_start(after);
++            }
++            self.transcript.active_cell = Some(Box::new(cell));
+             self.bump_active_cell_revision();
+         }
+ 
+@@ -333,7 +425,7 @@ impl ChatWidget {
          let ThreadItem::CommandExecution {
              id,
              command,
@@ -6064,7 +6111,7 @@ index a0533b315..dd4f367a3 100644
              source,
              status,
              command_actions,
-@@ -345,11 +425,21 @@ impl ChatWidget {
+@@ -345,11 +437,21 @@ impl ChatWidget {
          else {
              return;
          };
@@ -6088,7 +6135,7 @@ index a0533b315..dd4f367a3 100644
          let duration = Duration::from_millis(duration_ms.unwrap_or_default().max(0) as u64);
          let exit_code = if status == codex_app_server_protocol::CommandExecutionStatus::Completed {
              exit_code.unwrap_or_default()
-@@ -358,7 +448,52 @@ impl ChatWidget {
+@@ -358,7 +460,52 @@ impl ChatWidget {
          };
          let aggregated_output = aggregated_output.unwrap_or_default();
  
@@ -6467,15 +6514,109 @@ index 8534d753f..0df6d0931 100644
  mod guardian;
 diff --git a/codex-rs/tui/src/chatwidget/tests/shell_policy.rs b/codex-rs/tui/src/chatwidget/tests/shell_policy.rs
 new file mode 100644
-index 000000000..c2a065034
+index 000000000..aa70594dc
 --- /dev/null
 +++ b/codex-rs/tui/src/chatwidget/tests/shell_policy.rs
-@@ -0,0 +1,444 @@
+@@ -0,0 +1,539 @@
 +use super::*;
 +use crate::chatwidget::shell_policy::{
 +    SHELL_FOREGROUND_LIMIT, ShellVisibility, eligible_shell, quiet_shell, shell_directive,
 +    shell_result,
 +};
++
++#[tokio::test]
++async fn shell_policy_advisor_transcript_real_foreground_wrapper_and_spaced_brief() {
++    let (mut chat, _, _) = make_chatwidget_manual(None).await;
++    chat.on_task_started();
++    let command = "# codex-plus-shell: foreground\n/tmp/advisor-test/bin/codex-plus run -- /tmp/advisor-test/bin/codex-plus advisor --brief 'Terminal acceptance'";
++    begin_unified_exec_startup(&mut chat, "advisor", "process", command);
++    let cell = chat
++        .transcript
++        .active_cell
++        .as_ref()
++        .unwrap()
++        .as_any()
++        .downcast_ref::<ExecCell>()
++        .unwrap();
++    assert!(
++        cell.is_advisor(),
++        "stored command: {:?}",
++        cell.group.calls[0].command
++    );
++    chat.set_advisor(Some(crate::bottom_pane::worker_hud::AdvisorRow {
++        started_at_ms: Some(chrono::Utc::now().timestamp_millis() as u64),
++        model: Some("gpt-6-astra".into()),
++        state: crate::bottom_pane::worker_hud::AdvisorState::Running(4),
++    }));
++    let lines = chat.active_cell_owned_transcript_lines(120, false).unwrap();
++    assert_eq!(
++        lines
++            .activity
++            .iter()
++            .map(|line| line.line.to_string())
++            .collect::<Vec<_>>(),
++        vec!["● Advising using GPT-6-Astra · 0m04s"]
++    );
++    chat.set_advisor(Some(crate::bottom_pane::worker_hud::AdvisorRow {
++        started_at_ms: Some((chrono::Utc::now().timestamp_millis() - 60_000) as u64),
++        model: Some("gpt-6-astra".into()),
++        state: crate::bottom_pane::worker_hud::AdvisorState::Running(64),
++    }));
++    assert!(
++        !chat
++            .active_cell_owned_transcript_lines(120, false)
++            .unwrap()
++            .activity
++            .iter()
++            .any(|line| line.line.to_string().contains("Advising using"))
++    );
++}
++
++#[tokio::test]
++async fn shell_policy_advisor_status_can_precede_the_item_started_notification() {
++    let (mut seed, _, _) = make_chatwidget_manual(None).await;
++    seed.on_task_started();
++    let item = begin_unified_exec_startup(
++        &mut seed,
++        "advisor",
++        "process",
++        "# codex-plus-shell: foreground\n/tmp/advisor-test/bin/codex-plus run -- /tmp/advisor-test/bin/codex-plus advisor --brief 'Terminal acceptance'",
++    );
++    let (mut chat, _, _) = make_chatwidget_manual(None).await;
++    chat.on_task_started();
++    let status_started = chrono::Utc::now().timestamp_millis();
++    // Unified exec launches the process before emitting its item-start notification.
++    chat.handle_server_notification(
++        ServerNotification::ItemStarted(ItemStartedNotification {
++            thread_id: chat.thread_id.map(|id| id.to_string()).unwrap_or_default(),
++            turn_id: "turn-1".into(),
++            started_at_ms: status_started + 100,
++            item,
++        }),
++        None,
++    );
++    chat.set_advisor(Some(crate::bottom_pane::worker_hud::AdvisorRow {
++        started_at_ms: Some(status_started as u64),
++        model: Some("gpt-6-astra".into()),
++        state: crate::bottom_pane::worker_hud::AdvisorState::Running(4),
++    }));
++    let lines = chat.active_cell_owned_transcript_lines(120, false).unwrap();
++    assert_eq!(
++        lines
++            .activity
++            .iter()
++            .map(|line| line.line.to_string())
++            .collect::<Vec<_>>(),
++        vec!["● Advising using GPT-6-Astra · 0m04s"],
++        "status_started={status_started}, cell={:?}",
++        chat.transcript
++            .active_cell
++            .as_ref()
++            .unwrap()
++            .as_any()
++            .downcast_ref::<ExecCell>()
++    );
++}
 +
 +fn completed(
 +    mut item: AppServerThreadItem,
@@ -6888,6 +7029,7 @@ index 000000000..c2a065034
 +        for local in [false, true] {
 +            let (mut chat, _, _) = make_chatwidget_manual(None).await;
 +            chat.set_advisor(Some(crate::bottom_pane::worker_hud::AdvisorRow {
++                started_at_ms: None,
 +                model: Some("gpt-6-astra".into()),
 +                state: crate::bottom_pane::worker_hud::AdvisorState::Running(1),
 +            }));
@@ -6915,6 +7057,316 @@ index 000000000..c2a065034
 +        }
 +    }
 +}
+diff --git a/codex-rs/tui/src/exec_cell/advisor.rs b/codex-rs/tui/src/exec_cell/advisor.rs
+new file mode 100644
+index 000000000..fe1fa0191
+--- /dev/null
++++ b/codex-rs/tui/src/exec_cell/advisor.rs
+@@ -0,0 +1,225 @@
++//! Compact advisor presentation; execution and detailed output remain ordinary shell history.
++
++use super::model::ExecCell;
++use crate::bottom_pane::worker_hud::{AdvisorRow, AdvisorState, advisor_command, model_label};
++use crate::chatwidget::shell_policy::{ShellVisibility, eligible_shell, shell_directive};
++use crate::exec_command::escape_command;
++use crate::terminal_hyperlinks::HyperlinkLine;
++use ratatui::text::Line;
++
++impl ExecCell {
++    pub(crate) fn is_advisor(&self) -> bool {
++        let [call] = self.group.calls.as_slice() else {
++            return false;
++        };
++        if !eligible_shell(call.source) {
++            return false;
++        }
++        let command = escape_command(&call.command);
++        let command = match shell_directive(&command) {
++            Some((ShellVisibility::Auto | ShellVisibility::Background, _)) => return false,
++            Some((ShellVisibility::Foreground, body)) => body,
++            None => crate::exec_command::strip_bash_lc_and_escape(&call.command),
++        };
++        advisor_command(&command)
++    }
++
++    pub(crate) fn set_advisor_turn_start(&mut self, started_at_ms: u64) {
++        self.advisor_after_ms = started_at_ms;
++    }
++
++    pub(crate) fn set_advisor(&mut self, row: Option<AdvisorRow>) -> bool {
++        let row = row.filter(|row| {
++            self.is_advisor()
++                && matches!(row.state, AdvisorState::Running(_))
++                && row
++                    .started_at_ms
++                    .is_some_and(|time| time >= self.advisor_after_ms)
++        });
++        if self.advisor == row {
++            return false;
++        }
++        self.advisor = row;
++        true
++    }
++
++    pub(super) fn advisor_lines(&self, width: u16) -> Option<Vec<HyperlinkLine>> {
++        if !self.is_advisor() {
++            return None;
++        }
++        let call = &self.group.calls[0];
++        let (label, secs) = if let Some(duration) = call.duration {
++            let output = call.output.as_ref()?;
++            if output.exit_code != 0 {
++                ("Advisor failed".to_string(), duration.as_secs())
++            } else {
++                // Only this command's actual result establishes the selected model on replay.
++                let model = output.lines().find_map(|line| {
++                    let value: serde_json::Value = serde_json::from_str(&line).ok()?;
++                    let model = value.get("model")?.as_str()?;
++                    (value.get("effort")?.as_str()? == "xhigh"
++                        && model
++                            .strip_prefix("gpt-")?
++                            .strip_suffix("-astra")?
++                            .split('.')
++                            .all(|part| {
++                                !part.is_empty() && part.bytes().all(|c| c.is_ascii_digit())
++                            }))
++                    .then(|| model.to_string())
++                })?;
++                (
++                    format!("Advised by {}", model_label(Some(&model))),
++                    duration.as_secs(),
++                )
++            }
++        } else {
++            let row = self.advisor.as_ref()?;
++            let AdvisorState::Running(secs) = row.state else {
++                return None;
++            };
++            (
++                format!("Advising using {}", model_label(row.model.as_deref())),
++                secs,
++            )
++        };
++        Some(if width == 0 {
++            Vec::new()
++        } else {
++            vec![crate::history_cell::activity_preview::clipped_line(
++                Line::from(format!("● {label} · {}m{:02}s", secs / 60, secs % 60)),
++                width,
++            )]
++        })
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use crate::exec_cell::{CommandOutput, new_active_exec_command};
++    use crate::history_cell::HistoryCell;
++    use codex_app_server_protocol::CommandExecutionSource;
++    use std::time::Duration;
++
++    fn cell(command: &str) -> ExecCell {
++        let mut cell = new_active_exec_command(
++            "advisor".into(),
++            vec!["bash".into(), "-lc".into(), command.into()],
++            vec![],
++            CommandExecutionSource::UnifiedExecStartup,
++            None,
++            false,
++        );
++        cell.set_advisor_turn_start(100_000);
++        cell
++    }
++
++    fn running(started_at_ms: u64, secs: u64) -> AdvisorRow {
++        AdvisorRow {
++            started_at_ms: Some(started_at_ms),
++            model: Some("gpt-6-astra".into()),
++            state: AdvisorState::Running(secs),
++        }
++    }
++
++    fn text(cell: &ExecCell) -> String {
++        cell.compact_hyperlink_lines(100)
++            .iter()
++            .map(|line| line.line.to_string())
++            .collect::<Vec<_>>()
++            .join("\n")
++    }
++
++    #[test]
++    fn advisor_transcript_updates_one_row_then_uses_actual_completion() {
++        let mut cell = cell("codex-plus run -- codex-plus advisor --brief task");
++        assert!(cell.set_advisor(Some(running(100_001, 59))));
++        assert_eq!(text(&cell), "● Advising using GPT-6-Astra · 0m59s");
++        assert!(!cell.set_advisor(Some(running(100_001, 59))));
++        assert!(cell.set_advisor(Some(running(100_001, 60))));
++        assert_eq!(text(&cell), "● Advising using GPT-6-Astra · 1m00s");
++        assert_eq!(cell.compact_hyperlink_lines(18).len(), 1);
++        assert!(cell.compact_hyperlink_lines(0).is_empty());
++        cell.complete_call(
++            "advisor",
++            CommandOutput::new(
++                0,
++                "{\"model\":\"gpt-6.1-astra\",\"effort\":\"xhigh\",\"verdict\":\"revise\"}".into(),
++            ),
++            Duration::from_secs(252),
++        );
++        assert_eq!(text(&cell), "● Advised by GPT-6.1-Astra · 4m12s");
++        assert!(
++            cell.transcript_lines(100)
++                .iter()
++                .any(|line| line.to_string().contains("verdict"))
++        );
++        insta::assert_snapshot!("advisor_transcript_done", text(&cell));
++    }
++
++    #[test]
++    fn advisor_transcript_rejects_old_unknown_and_unrelated_status() {
++        for command in [
++            "codex-plus advisor --brief task | cat",
++            "echo unrelated",
++            "echo 'codex-plus advisor --brief task'",
++            "printf '%s' 'codex-plus advisor --brief task'",
++            "ADVISOR='codex-plus advisor --brief task' unrelated",
++            "codex-plus advisor --brief task;",
++            "# codex-plus-shell: background\ncodex-plus advisor --brief task",
++        ] {
++            let mut cell = cell(command);
++            assert!(!cell.set_advisor(Some(running(100_001, 59))), "{command}");
++            assert!(cell.advisor_lines(100).is_none());
++        }
++        let mut cell = cell("codex-plus advisor --brief task");
++        assert!(!cell.set_advisor(Some(running(99_999, 59))));
++        assert!(cell.advisor_lines(100).is_none());
++        // A delayed event uses the daemon's launch time, rather than receipt time.
++        cell.set_advisor_turn_start(90_000);
++        cell.set_advisor(Some(running(90_001, 59)));
++        assert!(text(&cell).contains("Advising using"));
++        cell.set_advisor(Some(AdvisorRow {
++            started_at_ms: Some(90_001),
++            model: Some("gpt-6-astra".into()),
++            state: AdvisorState::Done {
++                calls: 1,
++                last_secs: 59,
++            },
++        }));
++        assert!(cell.advisor_lines(100).is_none());
++        assert!(!text(&cell).contains("Advised by"));
++    }
++
++    #[test]
++    fn advisor_transcript_replay_and_failure_need_no_local_status() {
++        let mut replay = cell("codex-plus advisor --brief task");
++        replay.complete_call(
++            "advisor",
++            CommandOutput::new(
++                0,
++                "codex-plus log: /tmp/log\n{\"model\":\"gpt-6-astra\",\"effort\":\"xhigh\"}\n"
++                    .into(),
++            ),
++            Duration::from_secs(65),
++        );
++        assert_eq!(text(&replay), "● Advised by GPT-6-Astra · 1m05s");
++        let mut failure = cell("codex-plus advisor --brief task");
++        failure.complete_call(
++            "advisor",
++            CommandOutput::new(130, "interrupted".into()),
++            Duration::from_secs(7),
++        );
++        assert_eq!(text(&failure), "● Advisor failed · 0m07s");
++        let mut malformed = cell("codex-plus advisor --brief task");
++        malformed.complete_call(
++            "advisor",
++            CommandOutput::new(
++                0,
++                "{\"model\":\"gpt-6-astra\\nSECRET\",\"effort\":\"xhigh\"}".into(),
++            ),
++            Duration::from_secs(7),
++        );
++        assert!(malformed.advisor_lines(100).is_none());
++    }
++}
+diff --git a/codex-rs/tui/src/exec_cell/mod.rs b/codex-rs/tui/src/exec_cell/mod.rs
+index aaa32e195..6898649f3 100644
+--- a/codex-rs/tui/src/exec_cell/mod.rs
++++ b/codex-rs/tui/src/exec_cell/mod.rs
+@@ -1,3 +1,4 @@
++mod advisor;
+ mod compact;
+ mod live_output;
+ mod model;
+diff --git a/codex-rs/tui/src/exec_cell/model.rs b/codex-rs/tui/src/exec_cell/model.rs
+index a99ea4909..8a3e8dd25 100644
+--- a/codex-rs/tui/src/exec_cell/model.rs
++++ b/codex-rs/tui/src/exec_cell/model.rs
+@@ -79,6 +79,8 @@ pub(crate) struct ExecCall {
+ pub(crate) struct ExecCell {
+     pub(crate) group: ActivityGroup<ExecCall>,
+     animations_enabled: bool,
++    pub(super) advisor: Option<crate::bottom_pane::worker_hud::AdvisorRow>,
++    pub(super) advisor_after_ms: u64,
+ }
+ 
+ impl ExecCell {
+@@ -86,6 +88,11 @@ impl ExecCell {
+         Self {
+             group: ActivityGroup::new(vec![call]),
+             animations_enabled,
++            advisor: None,
++            advisor_after_ms: std::time::SystemTime::now()
++                .duration_since(std::time::UNIX_EPOCH)
++                .unwrap_or_default()
++                .as_millis() as u64,
+         }
+     }
+ 
+diff --git a/codex-rs/tui/src/exec_cell/render.rs b/codex-rs/tui/src/exec_cell/render.rs
+index bae014ea1..1118f1384 100644
+--- a/codex-rs/tui/src/exec_cell/render.rs
++++ b/codex-rs/tui/src/exec_cell/render.rs
+@@ -220,6 +220,9 @@ impl HistoryCell for ExecCell {
+     }
+ 
+     fn activity_disclosure(&self, width: u16) -> Option<ActivityDisclosure> {
++        if self.advisor_lines(width).is_some() {
++            return Some(ActivityDisclosure::Generic);
++        }
+         if self.is_exploring_cell() {
+             return Some(ActivityDisclosure::Generic);
+         }
+@@ -235,6 +238,9 @@ impl HistoryCell for ExecCell {
+     }
+ 
+     fn compact_hyperlink_lines(&self, width: u16) -> Vec<HyperlinkLine> {
++        if let Some(lines) = self.advisor_lines(width) {
++            return lines;
++        }
+         if self.group.calls.iter().any(ExecCall::is_user_shell_command) {
+             return self.display_hyperlink_lines(width);
+         }
+@@ -272,6 +278,9 @@ impl HistoryCell for ExecCell {
+     }
+ 
+     fn display_hyperlink_lines(&self, width: u16) -> Vec<HyperlinkLine> {
++        if let Some(lines) = self.advisor_lines(width) {
++            return lines;
++        }
+         if self.is_exploring_cell() {
+             self.exploring_display_lines(width)
+         } else {
+diff --git a/codex-rs/tui/src/exec_cell/snapshots/codex_tui__exec_cell__advisor__tests__advisor_transcript_done.snap b/codex-rs/tui/src/exec_cell/snapshots/codex_tui__exec_cell__advisor__tests__advisor_transcript_done.snap
+new file mode 100644
+index 000000000..70b1e5f1f
+--- /dev/null
++++ b/codex-rs/tui/src/exec_cell/snapshots/codex_tui__exec_cell__advisor__tests__advisor_transcript_done.snap
+@@ -0,0 +1,5 @@
++---
++source: tui/src/exec_cell/advisor.rs
++expression: text(&cell)
++---
++● Advised by GPT-6.1-Astra · 4m12s
 diff --git a/codex-rs/tui/src/thread_transcript/tools.rs b/codex-rs/tui/src/thread_transcript/tools.rs
 index 73e80d617..e665186e2 100644
 --- a/codex-rs/tui/src/thread_transcript/tools.rs
