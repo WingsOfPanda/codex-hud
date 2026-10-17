@@ -2848,10 +2848,10 @@ index 139c4dd43..0b996dccc 100644
 +  Workers stale · counts unavailable · Shells stale · counts unavailable
 diff --git a/codex-rs/tui/src/app/worker_hud.rs b/codex-rs/tui/src/app/worker_hud.rs
 new file mode 100644
-index 000000000..101b844c3
+index 000000000..24cede85a
 --- /dev/null
 +++ b/codex-rs/tui/src/app/worker_hud.rs
-@@ -0,0 +1,1435 @@
+@@ -0,0 +1,1680 @@
 +//! Per-client worker metadata refresh. These requests never start or steer a turn.
 +
 +use super::*;
@@ -2886,6 +2886,8 @@ index 000000000..101b844c3
 +const WATCHER_TIMEOUT: Duration = Duration::from_millis(250);
 +const WATCHER_MAX_BYTES: u64 = 16 * 1024;
 +const WATCHER_STALE_SECS: f64 = 15.0;
++const TURN_USAGE_MAX_BYTES: u64 = 1024 * 1024;
++const TURN_USAGE_MAX_RECORDS: usize = 4096;
 +
 +#[derive(Default)]
 +pub(super) struct WorkerHudState {
@@ -3161,7 +3163,7 @@ index 000000000..101b844c3
 +                    async move {
 +                        if !matches!(thread.status, ThreadStatus::Active { .. }) {
 +                            let row = worker_row(&thread, None, now);
-+                            return Ok((thread, row));
++                            return Ok((thread, row, None));
 +                        }
 +                        let turns = request_handle
 +                            .request_typed::<ThreadTurnsListResponse>(
@@ -3180,7 +3182,7 @@ index 000000000..101b844c3
 +                            .map_err(|err| err.to_string())?;
 +                        let turn = turns.data.into_iter().next();
 +                        let row = worker_row(&thread, turn.as_ref(), now);
-+                        Ok::<_, String>((thread, row))
++                        Ok::<_, String>((thread, row, turn.map(|turn| turn.id)))
 +                    }
 +                }))
 +                .buffered(8)
@@ -3201,7 +3203,7 @@ index 000000000..101b844c3
 +                        read_worker_tokens(sqlite.as_ref(), &mut workers),
 +                    )
 +                    .await;
-+                    let mut rows: Vec<_> = workers.into_iter().map(|(_, row)| row).collect();
++                    let mut rows: Vec<_> = workers.into_iter().map(|(_, row, _)| row).collect();
 +                    rows.sort_by_key(|row| !row.state.is_active());
 +                    Ok(rows)
 +                }
@@ -3531,18 +3533,35 @@ index 000000000..101b844c3
 +
 +async fn read_worker_tokens(
 +    sqlite: Option<&codex_state::SqliteConfig>,
-+    workers: &mut [(Thread, WorkerRow)],
++    workers: &mut [(Thread, WorkerRow, Option<String>)],
 +) {
 +    let Some(sqlite) = sqlite else {
 +        return;
 +    };
++    for (thread, row, turn_id) in workers
++        .iter_mut()
++        .filter(|(_, row, _)| row.group.is_none() && row.elapsed_secs.is_some())
++    {
++        let (Some(path), Some(turn_id)) = (thread.path.clone(), turn_id.clone()) else {
++            continue;
++        };
++        let thread_id = thread.id.clone();
++        row.total_tokens =
++            tokio::task::spawn_blocking(move || read_turn_tokens(&path, &thread_id, &turn_id))
++                .await
++                .ok()
++                .flatten();
++    }
++    if !workers.iter().any(|(_, row, _)| row.group.is_some()) {
++        return;
++    }
 +    let Ok(pool) = sqlite
 +        .open_read_only_pool(&sqlite.state_db_path(), Some(Duration::from_millis(50)))
 +        .await
 +    else {
 +        return;
 +    };
-+    for (thread, row) in workers {
++    for (thread, row, _) in workers.iter_mut().filter(|(_, row, _)| row.group.is_some()) {
 +        // Forks can inherit the parent's cumulative total, so attribution is unknown.
 +        if thread.forked_from_id.is_some() {
 +            continue;
@@ -3557,6 +3576,62 @@ index 000000000..101b844c3
 +                .filter(|tokens| *tokens >= 0);
 +    }
 +    pool.close().await;
++}
++
++fn read_turn_tokens(path: &std::path::Path, thread_id: &str, turn_id: &str) -> Option<i64> {
++    use std::io::Read;
++    use std::io::Seek;
++    use std::io::SeekFrom;
++
++    let mut options = std::fs::OpenOptions::new();
++    options.read(true);
++    #[cfg(unix)]
++    {
++        use std::os::unix::fs::OpenOptionsExt;
++        options.custom_flags(libc::O_NONBLOCK | libc::O_NOFOLLOW);
++    }
++    let mut file = options.open(path).ok()?;
++    let metadata = file.metadata().ok()?;
++    if !metadata.is_file() {
++        return None;
++    }
++    // shortcut: usage outside the bounded tail stays unknown; expand only with evidence.
++    let start = metadata.len().saturating_sub(TURN_USAGE_MAX_BYTES);
++    file.seek(SeekFrom::Start(start)).ok()?;
++    let mut bytes = Vec::new();
++    file.take(metadata.len() - start)
++        .read_to_end(&mut bytes)
++        .ok()?;
++    let first = if start > 0 {
++        bytes.iter().position(|byte| *byte == b'\n')? + 1
++    } else {
++        0
++    };
++    let last = bytes.iter().rposition(|byte| *byte == b'\n')?;
++    if first > last {
++        return None;
++    }
++    for (index, line) in bytes[first..last].rsplit(|byte| *byte == b'\n').enumerate() {
++        if index >= TURN_USAGE_MAX_RECORDS {
++            return None;
++        }
++        let record: serde_json::Value = serde_json::from_slice(line).ok()?;
++        if record.get("type")?.as_str()? != "token_usage_record" {
++            continue;
++        }
++        let payload = record.get("payload")?;
++        if payload.get("thread_id")?.as_str()? != thread_id
++            || payload.get("turn_id")?.as_str()? != turn_id
++        {
++            continue;
++        }
++        return payload
++            .get("turn_token_usage")?
++            .get("total_tokens")?
++            .as_i64()
++            .filter(|tokens| *tokens >= 0);
++    }
++    None
 +}
 +
 +fn worker_state(status: &ThreadStatus, turn: Option<&Turn>) -> WorkerState {
@@ -4062,7 +4137,169 @@ index 000000000..101b844c3
 +    }
 +
 +    #[tokio::test]
-+    async fn worker_hud_reads_actual_local_tokens_without_writing_or_fork_attribution() {
++    async fn worker_hud_standalone_tokens_match_the_elapsed_turn() {
++        let home = tempfile::tempdir().unwrap();
++        let sqlite = codex_state::SqliteConfig::new_for_testing(
++            codex_utils_absolute_path::AbsolutePathBuf::try_from(home.path()).unwrap(),
++        );
++        let pool = sqlite
++            .open_read_write_pool(&sqlite.state_db_path())
++            .await
++            .unwrap();
++        sqlx::query("CREATE TABLE threads (id TEXT PRIMARY KEY, tokens_used INTEGER NOT NULL)")
++            .execute(&pool)
++            .await
++            .unwrap();
++        sqlx::query("INSERT INTO threads VALUES ('worker', 342740535)")
++            .execute(&pool)
++            .await
++            .unwrap();
++        pool.close().await;
++        let path = home.path().join("rollout.jsonl");
++        std::fs::write(&path, usage_record("worker", "turn", 679013.into())).unwrap();
++        let mut worker = thread("worker");
++        worker.path = Some(path);
++        worker.status = ThreadStatus::Active {
++            active_flags: vec![],
++        };
++        let current = turn(TurnStatus::InProgress);
++        let row = worker_row(&worker, Some(&current), 208);
++        let mut workers = vec![(worker, row, Some(current.id))];
++        read_worker_tokens(None, &mut workers).await;
++        assert_eq!(workers[0].1.total_tokens, None);
++        read_worker_tokens(Some(&sqlite), &mut workers).await;
++        assert_eq!(workers[0].1.elapsed_secs, Some(108));
++        assert_eq!(workers[0].1.total_tokens, Some(679013));
++        workers[0].0.forked_from_id = Some("parent".into());
++        workers[0].1.total_tokens = None;
++        read_worker_tokens(Some(&sqlite), &mut workers).await;
++        assert_eq!(workers[0].1.total_tokens, Some(679013));
++        workers[0].1 = worker_row(&workers[0].0, Some(&turn(TurnStatus::Completed)), 208);
++        assert_eq!(workers[0].1.elapsed_secs, None);
++        read_worker_tokens(Some(&sqlite), &mut workers).await;
++        assert_eq!(workers[0].1.total_tokens, None);
++        workers[0].1.elapsed_secs = Some(108);
++        workers[0].2 = Some("next-turn".into());
++        workers[0].1.total_tokens = None;
++        read_worker_tokens(Some(&sqlite), &mut workers).await;
++        assert_eq!(workers[0].1.total_tokens, None);
++        workers[0].2 = None;
++        read_worker_tokens(Some(&sqlite), &mut workers).await;
++        assert_eq!(workers[0].1.total_tokens, None);
++    }
++
++    fn usage_record(thread: &str, turn: &str, tokens: serde_json::Value) -> String {
++        format!(
++            "{}\n",
++            serde_json::json!({
++                "type": "token_usage_record", "payload": {
++                    "thread_id": thread, "turn_id": turn,
++                    "turn_token_usage": { "total_tokens": tokens },
++                    "thread_token_usage": { "total_tokens": 342740535 }
++                }
++            })
++        )
++    }
++
++    #[test]
++    fn worker_hud_turn_usage_uses_latest_exact_record_without_summing_checkpoints() {
++        let home = tempfile::tempdir().unwrap();
++        let path = home.path().join("rollout.jsonl");
++        let records = [
++            usage_record("worker", "old-turn", 999999.into()),
++            usage_record("worker", "turn", 100.into()),
++            "{\"type\":\"compacted\",\"payload\":{}}\n".into(),
++            usage_record("worker", "turn", 679013.into()),
++            usage_record("worker", "turn", 679013.into()),
++            usage_record("parent", "turn", 342740535.into()),
++            "{\"type\":\"token_usage_record\",\"payload\":".into(),
++        ]
++        .concat();
++        std::fs::write(&path, records).unwrap();
++        assert_eq!(read_turn_tokens(&path, "worker", "turn"), Some(679013));
++        assert_eq!(read_turn_tokens(&path, "worker", "new-turn"), None);
++        assert_eq!(read_turn_tokens(&path, "fork", "turn"), None);
++        for (tokens, expected) in [
++            (serde_json::json!(0), Some(0)),
++            (serde_json::json!(-1), None),
++            (serde_json::Value::Null, None),
++            (serde_json::json!("679013"), None),
++            (serde_json::json!(18446744073709551615_u64), None),
++        ] {
++            std::fs::write(&path, usage_record("worker", "turn", tokens)).unwrap();
++            assert_eq!(read_turn_tokens(&path, "worker", "turn"), expected);
++        }
++        for contents in [
++            "".to_string(),
++            usage_record("worker", "turn", 1.into()).trim_end().to_string(),
++            "{\"type\":\"token_usage_record\",\"payload\":{\"thread_id\":\"worker\",\"turn_id\":\"turn\"}}\n".into(),
++            format!("{}malformed\n", usage_record("worker", "turn", 1.into())),
++            format!("{}{{\n", usage_record("worker", "turn", 1.into())),
++        ] {
++            std::fs::write(&path, contents).unwrap();
++            assert_eq!(read_turn_tokens(&path, "worker", "turn"), None);
++        }
++        std::fs::remove_file(&path).unwrap();
++        assert_eq!(read_turn_tokens(&path, "worker", "turn"), None);
++        assert_eq!(read_turn_tokens(home.path(), "worker", "turn"), None);
++    }
++
++    #[test]
++    fn worker_hud_turn_usage_bounds_tail_and_record_work() {
++        use std::io::Seek;
++        use std::io::Write;
++        let home = tempfile::tempdir().unwrap();
++        let path = home.path().join("rollout.jsonl");
++        let usage = usage_record("worker", "turn", 679013.into());
++        let mut file = std::fs::File::create(&path).unwrap();
++        file.set_len(41 * 1024 * 1024).unwrap();
++        file.seek(std::io::SeekFrom::End(0)).unwrap();
++        file.write_all(format!("\n{usage}").as_bytes()).unwrap();
++        assert_eq!(read_turn_tokens(&path, "worker", "turn"), Some(679013));
++        let event = "{\"type\":\"event_msg\",\"payload\":{}}\n";
++        std::fs::write(
++            &path,
++            format!("{usage}{}", event.repeat(TURN_USAGE_MAX_RECORDS - 1)),
++        )
++        .unwrap();
++        assert_eq!(read_turn_tokens(&path, "worker", "turn"), Some(679013));
++        std::fs::write(
++            &path,
++            format!("{usage}{}", event.repeat(TURN_USAGE_MAX_RECORDS)),
++        )
++        .unwrap();
++        assert_eq!(read_turn_tokens(&path, "worker", "turn"), None);
++        std::fs::write(
++            &path,
++            format!("{usage}{}\n", "x".repeat(TURN_USAGE_MAX_BYTES as usize)),
++        )
++        .unwrap();
++        assert_eq!(read_turn_tokens(&path, "worker", "turn"), None);
++        std::fs::write(
++            &path,
++            format!("{}\n{usage}", "x".repeat(TURN_USAGE_MAX_BYTES as usize)),
++        )
++        .unwrap();
++        assert_eq!(read_turn_tokens(&path, "worker", "turn"), Some(679013));
++    }
++
++    #[cfg(unix)]
++    #[test]
++    fn worker_hud_turn_usage_rejects_symlinks_and_pipes_without_blocking() {
++        let home = tempfile::tempdir().unwrap();
++        let target = home.path().join("target");
++        let path = home.path().join("rollout.jsonl");
++        std::fs::write(&target, usage_record("worker", "turn", 1.into())).unwrap();
++        std::os::unix::fs::symlink(&target, &path).unwrap();
++        assert_eq!(read_turn_tokens(&path, "worker", "turn"), None);
++        std::fs::remove_file(&path).unwrap();
++        let fifo = std::ffi::CString::new(path.as_os_str().as_encoded_bytes()).unwrap();
++        assert_eq!(unsafe { libc::mkfifo(fifo.as_ptr(), 0o600) }, 0);
++        assert_eq!(read_turn_tokens(&path, "worker", "turn"), None);
++    }
++
++    #[tokio::test]
++    async fn worker_hud_group_tokens_keep_lifetime_totals_without_writing_or_fork_attribution() {
 +        let home = tempfile::tempdir().unwrap();
 +        let sqlite = codex_state::SqliteConfig::new_for_testing(
 +            codex_utils_absolute_path::AbsolutePathBuf::try_from(home.path()).unwrap(),
@@ -4087,18 +4324,22 @@ index 000000000..101b844c3
 +                if id == "fork" {
 +                    worker.forked_from_id = Some("parent".into());
 +                }
-+                let row = worker_row(&worker, None, 10);
-+                (worker, row)
++                let mut row = worker_row(&worker, None, 10);
++                row.group = Some(WorkerGroup {
++                    key: "batch".into(),
++                    topic: "topic".into(),
++                });
++                (worker, row, None)
 +            })
 +            .collect();
 +        // Remote backends never receive a local database configuration.
 +        read_worker_tokens(None, &mut workers).await;
-+        assert!(workers.iter().all(|(_, row)| row.total_tokens.is_none()));
++        assert!(workers.iter().all(|(_, row, _)| row.total_tokens.is_none()));
 +        read_worker_tokens(Some(&sqlite), &mut workers).await;
 +        assert_eq!(
 +            workers
 +                .iter()
-+                .map(|(_, row)| row.total_tokens)
++                .map(|(_, row, _)| row.total_tokens)
 +                .collect::<Vec<_>>(),
 +            [Some(0), Some(12345), None, None, None]
 +        );
@@ -4129,8 +4370,12 @@ index 000000000..101b844c3
 +            codex_utils_absolute_path::AbsolutePathBuf::try_from(home.path()).unwrap(),
 +        );
 +        let worker = thread("worker-id");
-+        let row = worker_row(&worker, None, 10);
-+        let mut workers = vec![(worker, row.clone())];
++        let mut row = worker_row(&worker, None, 10);
++        row.group = Some(WorkerGroup {
++            key: "batch".into(),
++            topic: "topic".into(),
++        });
++        let mut workers = vec![(worker, row.clone(), None)];
 +        tokio::time::timeout(
 +            Duration::from_millis(250),
 +            read_worker_tokens(Some(&sqlite), &mut workers),

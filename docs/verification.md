@@ -6,6 +6,23 @@ Rust 1.99.1. Keep the ordinary installed Codex and global configuration intact.
 
 ## Current release acceptance
 
+### Worker time and token scopes
+
+Standalone rows pair the latest turn's elapsed time with that exact turn's
+reported usage. Regression fixtures reuse a worker with 342,740,535 lifetime
+tokens and 679,013 current-turn tokens: the row must show `679K`, then reset
+when its turn ID changes. Reloading the TUI must recover the same reported turn
+count. Missing matching usage shows `?`; lifetime counters are not a fallback.
+Cached input remains included in input rather than being added again.
+
+Local reads are bounded, read-only, and match both thread and turn identity.
+Check incomplete/malformed records, oversized tails, zero/negative values,
+forks, and unavailable files. Remote fixtures include local rollout and SQLite
+decoys and must still show unknown usage. Explicit groups keep their batch
+elapsed time and all-member lifetime totals, including finished members.
+The terminal smoke also checks editable input, the three-row budget and zero
+model calls while these metrics refresh.
+
 ### Audit regression checks
 
 The post-0.3.0 audit fixes are source changes, not a qualified release. In

@@ -1,0 +1,241 @@
+{
+  "scope": "Unreleased standalone worker time/token alignment; explicit groups retain batch scope",
+  "candidate": {
+    "binary": "/home/liupan/Aerius/codex-plus/.build/token-alignment/codex",
+    "binary_sha256": "ca7c02ce7a1e4f0be85459415106c7951e477a9457c7156259afc5014ee3753e",
+    "code_mode_host": "/home/liupan/.local/share/skill-manager/codex-plus/codex-plus-0.163.0-plus.0.2.0-x86_64-unknown-linux-gnu/bin/codex-code-mode-host",
+    "code_mode_host_sha256": "3062b09d807c146984352ceb69efb3b3b6bd7d95b784bf568bd05f0d1accd299",
+    "profile": "dev-small",
+    "rust": "1.99.1",
+    "source_proof": {
+      "upstream": "83086188ae0614bd882818ff1aa23f3194962012",
+      "before_tree": "f2f74143e87e068158205946be097eb9207a3812",
+      "source_tree": "29e2bbcbef80277e1cf3a32b05d6c323540b3af7",
+      "changed_from_qualified_source": [
+        "codex-rs/tui/src/app/worker_hud.rs"
+      ],
+      "patch_sha256": "76c123dddfa1c26a431657d71fa0b41e50909aa8359aea161f2bab9ea3c0d99d",
+      "forward_apply": true,
+      "reverse_apply": true,
+      "exact_source_reconstruction": true,
+      "frontend_only": true,
+      "external_dependencies_unchanged": 1314
+    },
+    "prior_same_upstream_host_reused": true,
+    "production_installation": false,
+    "release_or_arm_qualification": false
+  },
+  "verification_counts": {
+    "hud": 42,
+    "shell_policy": 18,
+    "terminal_fixtures": 18,
+    "source_guards": 11,
+    "terminal_stages": 23,
+    "upstream_tui_cases": 2
+  },
+  "red_regression": {
+    "passed": false,
+    "expected_failure": "Latest turn used lifetime tokens:343M at current-turn elapsed, expected679K",
+    "log": "/home/liupan/.codex/codex-plus/logs/d05da8ec-292e-435e-985a-e39bfa404a9b.log"
+  },
+  "source_gates": [
+    {
+      "name": "root-worker_hud",
+      "command": [
+        "cargo",
+        "+1.99.1",
+        "test",
+        "--locked",
+        "-p",
+        "codex-tui",
+        "--lib",
+        "worker_hud",
+        "--profile",
+        "dev-small",
+        "-j",
+        "12"
+      ],
+      "exit": 0,
+      "seconds": 0.966,
+      "log": "/home/liupan/Aerius/codex-plus/.build/token-alignment/root-worker_hud.log"
+    },
+    {
+      "name": "root-shell_policy",
+      "command": [
+        "cargo",
+        "+1.99.1",
+        "test",
+        "--locked",
+        "-p",
+        "codex-tui",
+        "--lib",
+        "shell_policy",
+        "--profile",
+        "dev-small",
+        "-j",
+        "12"
+      ],
+      "exit": 0,
+      "seconds": 0.816,
+      "log": "/home/liupan/Aerius/codex-plus/.build/token-alignment/root-shell_policy.log"
+    },
+    {
+      "name": "root-fixtures",
+      "command": [
+        "/home/liupan/Aerius/codex-plus/.build/dual-release/acceptance/venv/bin/python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-p",
+        "test_terminal_fixture.py",
+        "-v"
+      ],
+      "exit": 0,
+      "seconds": 0.114,
+      "log": "/home/liupan/Aerius/codex-plus/.build/token-alignment/root-fixtures.log"
+    },
+    {
+      "name": "root-source-guard",
+      "command": [
+        "/home/liupan/Aerius/codex-plus/.build/dual-release/acceptance/venv/bin/python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-p",
+        "test_build_native.py",
+        "-v"
+      ],
+      "exit": 0,
+      "seconds": 1.717,
+      "log": "/home/liupan/Aerius/codex-plus/.build/token-alignment/root-source-guard.log"
+    }
+  ],
+  "terminal_smoke": {
+    "binary": "/home/liupan/Aerius/codex-plus/.build/token-alignment/codex",
+    "passed": [
+      "six active workers show two full-model rows plus +4 more in three total rows, with elapsed, unknown remote tokens, actual GPT-6.1-Sol high/GPT-6-Astra medium, and idle composer within last six nonempty lines",
+      "read-only /daemon shows status guidance and Close; no daemon update choices or exit",
+      "two simultaneous independent roots and editable composers",
+      "input remains editable during delayed metadata RPC",
+      "completion removes its row and promotes a hidden active worker",
+      "last completion hides the entire strip while both composers remain editable",
+      "later activity restores the compact strip without losing the draft",
+      "explicit three-member cohort reduces 3\u21922\u21921\u2192hidden without duplicate rows or shrinking dispatch elapsed; independent cohort stays separate, group resize/input preserve draft, final strip collapses",
+      "explicit approval wait survives alert plus overflow in three total rows, with idle composer within last six nonempty lines",
+      "small and normal PTY resize with preserved draft",
+      "partial metadata RPC failure marks counts stale and recovers",
+      "stale disconnect and automatic reconnect without cross-pane effect",
+      "zero turn/start or turn/steer requests and zero model calls",
+      "remote websocket roots ignore unrelated local watcher and advisor status files",
+      "33 local historical children: zero inactive turn reads; reused worker shows 679K current-turn tokens at 1:48 instead of 343M lifetime; follow-up resets to unknown then 1.23K and survives TUI restart; inactive group members retain 345M lifetime tokens and oldest age; active-to-idle collapse; editable last-six composer; read-only database and zero model calls",
+      "isolated tmux server: two split panes, draft editing, small/normal resize, stale/reconnect, zero turn/start or turn/steer",
+      "private local app-server: two loopback seed turns, then idle roots, healthy waiting hidden, zero jobs pending visible, stale/uncertain/report/idle health, last-six composer detection, narrow draft editing, parent isolation, zero additional model calls or turns",
+      "unregistered remote shell-only and mixed worker/shell strips; three total rows including overflow and alerts; compact background labels and observed elapsed; item identity reset; parent isolation; shell-only stale failures and recovery; Unicode/control-safe narrow drafts; successful disappearance without success claim; zero UI turn or execution requests",
+      "real private local embedded app-server: one loopback tool turn, yielded finite shell survives completed turn, row and editable idle draft without park registration, actual command completion removes row, zero extra model calls or turns",
+      "advisor explicit Astra catalog: ready zero calls, running timer, done count/duration, error, stale/malformed/mismatched/FIFO/symlink status, full reported model per pane, managed advisor shell coalesces only while reviewing and unrelated shell stays visible, warning/advisor/real-shell share three rows with narrow AP composer, zero extra model calls or turns",
+      "advisor transcript direct-done: real Code Mode exec/wait, live across initial yield, local elapsed ticks, one transcript row, resize and draft preserved, two loopback root responses only",
+      "advisor transcript wrapper-done: real Code Mode exec/wait, live across initial yield, local elapsed ticks, one transcript row, resize and draft preserved, two loopback root responses only",
+      "advisor transcript wrapper-failed: real Code Mode exec/wait, live across initial yield, local elapsed ticks, one transcript row, resize and draft preserved, two loopback root responses only"
+    ],
+    "ui_turn_start_requests": 0,
+    "ui_turn_steer_requests": 0,
+    "cursor_replies": [
+      3,
+      3
+    ],
+    "model_calls_after_fixture_setup": 0,
+    "fixture_seed_model_calls": 2,
+    "fixture_shell_model_calls": 2,
+    "fixture_advisor_seed_model_calls": 2,
+    "fixture_advisor_shell_model_calls": 4,
+    "fixture_advisor_transcript_model_calls": 6,
+    "terminal_parser": "pyte 0.8.2",
+    "tmux_required": false
+  },
+  "upstream_tui": {
+    "binary": "/home/liupan/Aerius/codex-plus/.build/token-alignment/codex",
+    "version": "codex-cli 0.163.0",
+    "passed": [
+      {
+        "case": "config_and_footer_selection",
+        "geometry": {
+          "three_rows": {
+            "row": 28,
+            "column": 2,
+            "copied": "gpt-6-sol"
+          },
+          "zero_rows": {
+            "row": 31,
+            "column": 2,
+            "copied": "gpt-6-sol"
+          },
+          "narrow_one_row": {
+            "row": 10,
+            "column": 2,
+            "copied": "gpt-6-sol"
+          }
+        },
+        "ui_started_turns": 0,
+        "model_calls": 0,
+        "passed": true
+      },
+      {
+        "case": "marked_background_program_status",
+        "statuses": [
+          "idle",
+          "working",
+          "idle"
+        ],
+        "loopback_requests": 2,
+        "turns": 1,
+        "passed": true
+      }
+    ],
+    "success": true
+  },
+  "real_incident_replay": {
+    "worker": "/root/glm_decode_host_worktree",
+    "at_current_turn_elapsed_108s": "2026-10-17T11:24:54.688000+00:00",
+    "last_usage_timestamp": "2026-10-17T11:23:49.458Z",
+    "lifetime_tokens": 342740535,
+    "formatted_millions": "343M",
+    "current_turn_tokens": 679013,
+    "current_turn_cached_input": 662016,
+    "current_turn_output": 1533,
+    "source_semantics": "HUD time=latest turn elapsed; HUD tokens=threads.tokens_used=total_token_usage.total_tokens",
+    "screenshot_time_reconstructed": true,
+    "no_product_edits": true
+  },
+  "bounded_read": {
+    "maximum_bytes": 1048576,
+    "maximum_records": 4096,
+    "local_only": true,
+    "exact_thread_and_turn_identity": true,
+    "complete_lines_only": true,
+    "unknown_instead_of_lifetime_fallback": true
+  },
+  "preserved_fixture_failure": {
+    "log": "/home/liupan/Aerius/codex-plus/.build/token-alignment/root-smoke.log",
+    "symptom": "Whole-file SQLite byte comparison captured before stock TUI startup",
+    "diagnosis": "Startup changes DELETE to WAL and adds_sqlx_migrations;33 token rows unchanged at every snapshot;all post-startup DB hashes identical",
+    "evidence": "/home/liupan/Aerius/codex-plus/.build/token-alignment/history-db-diagnosis/snapshots.json",
+    "resolution": "Capture quiescent byte baseline after initial startup;assert unchanged bytes before/after restart refreshes and seed logical counters unchanged"
+  },
+  "limits": [
+    "Development x86 dev-small candidate with matching previously qualified0.163.0 CodeMode host;not complete release package.",
+    "Usage older than bounded tail is unknown. No lifetime fallback or persistent new usage store.",
+    "ARM release qualification and full upstream suite not run;no installation,publication,merge or global instruction changes."
+  ],
+  "production_installation": false,
+  "remote_provider_requests": 0,
+  "monitoring_observation": {
+    "registration_failed": "local history exceeds32pages;selectionremainsunknown",
+    "affected_tool_session": "60257",
+    "resolution": "No parkclaimed;toolresultreadandreviewedimmediately,exit0,all23terminalstagespassed",
+    "scope": "Existing long-history registration cap;not changed by this display fix"
+  }
+}
