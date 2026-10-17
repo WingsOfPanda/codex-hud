@@ -100,15 +100,73 @@ class RustUpgradeTests(unittest.TestCase):
             store.close()
         return state
 
-    def spawn(self, label='A'):
+    def spawn(self, label='A', *, action='observe', cwd=None):
         f = self.fixture
         log = (f.home / f'upgrade-{len(f.children)}.log').open('w+')
         process = subprocess.Popen([str(self.packages[label] / 'bin/codex-plus-runtime'),
-                                    'observe', '--parent', PARENT],
-                                   cwd=self.packages[label], env=f.env, stdin=subprocess.DEVNULL,
+                                    action, '--parent', PARENT],
+                                   cwd=cwd or self.packages[label], env=f.env, stdin=subprocess.DEVNULL,
                                    stdout=log, stderr=log, start_new_session=True)
         f.children.append((process, log))
         return process
+
+    def test_relative_home_survives_packaged_roles_failed_exec_and_upgrade(self):
+        f = self.fixture
+        launch = f.home / 'launch space'
+        launch.mkdir()
+        (f.home / 'anchor space').mkdir()
+        relative = '../anchor space/..'
+        f.env['CODEX_HOME'] = relative
+        self.seed()
+        for action in ('observe', 'supervise'):
+            with self.subTest(action=action):
+                previous_owner = f.state()['jobs'][0]['observer_run']
+                if action == 'supervise':
+                    f.supervisor_lock.close()
+                process = self.spawn(action=action, cwd=launch)
+                wait(lambda: f.claimed() and f.state()['jobs'][0]['observer_run'] != previous_owner,
+                     f'packaged {action} lost relative home at startup')
+                wait(lambda: Path(f'/proc/{process.pid}/cwd').resolve() == self.packages['A'],
+                     f'{action} did not retain package cwd')
+                self.assertIn(f'CODEX_HOME={launch}/{relative}'.encode(),
+                              Path(f'/proc/{process.pid}/environ').read_bytes().split(b'\0'))
+                if action == 'observe':
+                    process.terminate()
+                    process.wait(timeout=5)
+        seal(self.packages['B'], RUNTIME, 1, broken_exec=True)
+        self.flip('B')
+        wait(lambda: any(p['error'] == 'Coordinator upgrade unavailable; continuing installed observer.'
+                         for p in f.state()['parks']), 'relative home lost after failed exec')
+        self.assertTrue(self.executing(process, 'A'))
+        self.flip('C')
+        wait(lambda: self.executing(process, 'C'), 'relative home lost during cooperative upgrade')
+        self.complete()
+        process.wait(timeout=5)
+        self.assertEqual(process.returncode, 0)
+        self.assertEqual(len(f.fake.starts), 1)
+        for package in self.packages.values():
+            self.assertFalse((package / 'codex-plus').exists(), 'created package-local ledger')
+            self.assertFalse((package / 'anchor space').exists(), 'resolved home against package cwd')
+
+    def test_relative_home_keeps_state_symlink_rejection(self):
+        f = self.fixture
+        launch = f.home / 'launch space'
+        launch.mkdir()
+        (f.home / 'anchor space').mkdir()
+        f.env['CODEX_HOME'] = '../anchor space/..'
+        f.supervisor_lock.close()
+        shutil.rmtree(f.home / 'codex-plus')
+        outside = f.home / 'outside'
+        outside.mkdir()
+        (f.home / 'codex-plus').symlink_to(outside, target_is_directory=True)
+        try:
+            process = self.spawn(cwd=launch)
+            process.wait(timeout=5)
+            self.assertNotEqual(process.returncode, 0)
+            self.assertFalse((outside / 'background.sqlite').exists())
+        finally:
+            (f.home / 'codex-plus').unlink()
+            (f.home / 'codex-plus').mkdir()
 
     def executing(self, process, label):
         path = Path(f'/proc/{process.pid}/exe')

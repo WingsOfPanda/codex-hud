@@ -1,79 +1,95 @@
-# Codex Plus 0.163.0-plus.0.3.0
+# Codex Plus 0.163.0-plus.0.3.1
 
-The installed Plus helper is now Rust. `advisor`, `run`, `park`, `observe`, and
-`supervise` use the native `bin/codex-plus-runtime` behind the existing Bash
-launcher. Runtime packages contain no Python source, bytecode, interpreter, or
-`libpython` dependency. System Python is left installed; packaging and test
-fixtures still use Python 3.11+. The source `codex_plus/` tree remains the Python
-0.2 reference oracle and is excluded from packages.
+This Plus patch release fixes completion delivery and advisor process cleanup,
+reduces inactive-worker HUD traffic, and shows the advisor's review topic in the
+main conversation. It retains OpenAI Codex 0.163.0, upstream commit
+`83086188ae0614bd882818ff1aa23f3194962012`, Rust 1.99.1 and the official stock
+daemon. No daemon source or database migration is added.
 
-This candidate retains OpenAI Codex 0.163.0, commit
-`83086188ae0614bd882818ff1aa23f3194962012`, and the frontend patch from merged
-main. No daemon source, native protocol, or upstream database migration changes.
-The combined release uses independent Plus version `0.3.0`; an upstream-only
-update preserves that Plus version.
+## Completion and cancellation fixes
 
-Builds now pin Rust 1.99.1 to match the approved fleet toolchain. Earlier
-implementation evidence built with 1.99.0 is retained as history; it does not
-qualify a 1.99.1 release artifact. Complete native-client archives still require
-fresh builds and qualification with the new toolchain.
+- Callback selection and assignment share one immediate transaction. Concurrent
+  cancellation cannot leave a new ready callback blocking later completions;
+  invalidated, never-dispatched callbacks from the older race retire locally.
+- Exhausting a consumed-message history scan preserves that callback's uncertainty
+  without blocking unrelated fresh wakes. Transport/protocol failures still
+  propagate, and uncertain callbacks are not blindly resent.
+- Relative `CODEX_HOME` paths resolve against the caller's original directory
+  before detached startup or cooperative upgrade. Symlink protections remain.
+- A detached native owner-lifetime guard cleans up advisor consultations and Git
+  metadata probes even when `/stop` immediately kills the terminal group. It
+  adopts and reaps descendants that created separate sessions, using Linux
+  subreaper support and `/proc`. Unrelated process groups are preserved.
+- Advisor pointer collection disables Git fsmonitor locally. Result files retain
+  regular-file/no-follow and schema checks, with a separate 512 KiB transport
+  bound that accommodates permitted Unicode text and JSON escaping.
 
-## Preserved behavior
+The ledger remains schema 1 and the coordinator remains protocol 2. Callback
+identities, frozen messages, cancellation provenance and LIVE/REPORT ONLY policy
+are preserved. Stock enqueue/acknowledgement ambiguity remains visible; this
+release does not promise exactly-once model/tool side effects or reboot recovery.
 
-Commands, exit codes, closed runner stdin, raw arguments, logging, cancellation,
-root-only Astra advisor selection at xhigh, and read-only advisor isolation keep
-their existing contracts. Child launches use kernel execution without an implicit
-shell fallback. SQLite is bundled in the helper; only ordinary GNU runtime
-libraries are required. Each target must pass native dependency checks.
+## Advisor and HUD
 
-The ledger path, schema version 1, status JSON version 1, callback identities,
-frozen messages, cancellation provenance, and live/report-only recovery policy
-remain unchanged. Stock-daemon enqueue acknowledgment ambiguity remains visible
-and is not blindly resent. This migration does not promise exactly-once model
-or tool execution, reboot persistence, or automatic job reruns.
+The main conversation shows the review topic and elapsed time:
 
-The existing three-row activity limit remains shared by workers, background
-commands, advisor status, alerts, and overflow. Healthy watcher waiting adds no
-row. The automatic `← for agents · ? for shortcuts` hint row is removed without
-reserving an empty line; its keyboard bindings and contextual help are retained.
-The merged foreground advisor UI is included: a locally timed conversation
-row becomes completed or failed after the consult, while the footer retains
-model, effort, count, and duration. No UI refresh invokes a model. Native client
-sessions must restart to adopt that client display when upgrading from 0.2.0.
+```text
+• Advisor on wake and cancellation fixes · 5:01
+```
 
-## Cutover and rollback
+Completion or failure updates the same row. The model, effort and call count
+remain in the footer. Direct advisor commands use a compact brief fallback.
+An opaque wrapper such as `python3 consult.py` supplies a short topic using
+`# codex-plus-advisor: TOPIC` immediately after the foreground shell directive;
+unrelated commands are not guessed to be advisor work. See [advisor.md](advisor.md).
 
-Rust coordinators advertise protocol 2. The first Python-to-Rust rollout requires
-a quiet checkpoint: hold new parks and wait for no Python or Rust helpers, armed
-parks, or open callbacks. Preserve the ledger; switch the package only after
-that check. A TUI restart does not settle pending work or move old observers.
-Fleet helper scans must recognize the new `codex-plus-runtime` process roles.
-Public wrapper routing remains unchanged.
+Only active workers require turn-history refreshes. Inactive thread rows remain
+available for grouped token/dispatch totals, while completed hidden workers no
+longer generate a turn-history request every second. UI refresh makes no model
+calls. Workers, shell jobs, advisor status, warnings and overflow still share
+three footer rows, preserving AP's prompt visibility window. Running TUIs must
+restart to use these display changes.
 
-Compatible, strictly newer protocol-2 packages at the same upstream and target
-can subsequently transfer cooperatively. Invalid targets and failed execution
-leave the current observer running with a warning. Lower versions are refused.
-All rollbacks require a quiet checkpoint. Retain the last qualified Python
-package and its interpreter until the Python rollback is retired; ordinary
-`previous` retention alone is insufficient after multiple upgrades.
+## Build and package corrections
 
-With an existing stock 0.163.0 daemon, this Plus-only update needs no daemon
-restart. Fleet-config owns installation, version pins, wrappers, global policy,
-retention, and rollback. This source implementation does not install or restart
-anything on the fleet. Build, publish, merge, and rollout remain separate gates.
+Developer builds select actual Cargo compiler-artifact paths instead of guessing
+where target/config/environment settings wrote the binaries. The CLI and its
+separate Code Mode host package are staged together, using upstream's pinned V8
+archive/bindings resolver. Existing Cargo/V8 caches remain reusable.
 
-## Package contents and qualification
+Packages contain native Codex, the Code Mode host, digest-matched bwrap, ripgrep,
+the Rust helper, launcher, workflow documents and full target-specific dependency
+notices. Codex voice and Python runtime files remain excluded. Python is still a
+build/test dependency; no system interpreter is removed.
 
-Both GNU targets preserve upstream layout: native Codex, code-mode host,
-digest-matched bubblewrap, ripgrep, metadata, and applicable licenses, plus the
-Rust helper and launcher. Codex voice remains excluded. The helper has its own
-locked dependency notices, standard-library notices, and source provenance,
-covered by the file inventory and manifest. The recorded build glibc is a build
-baseline, not a measured minimum supported version.
+Notice collection covers both the helper and CLI/host production graphs. Six
+crates without separate publisher license files have explicit checksum-bound
+declaration-backed resolutions. Canonical SPDX terms are labeled separately from
+publisher-authored notices, with no guessed authors or years. Matching ICU data
+notices, Microsoft's schema split grant and fxhash's actual Rust header remain
+independent required inputs. Unknown missing licenses and invalid hashes still
+fail assembly. See [notice resolution](notice-resolution.md).
 
-Tests use private Codex homes and loopback providers. Python may drive tests
-outside a Python-free product filesystem. Native x86_64 and aarch64 results,
-actual binaries, preserved fixture failures, and explicit limits belong in the
-companion note/evidence; a source test does not qualify a complete release
-archive. Full release archives and a publishable handoff require their own
-per-target build and extracted-package acceptance.
+## Upgrade and rollback
+
+A compatible strictly higher protocol-2 release at the same upstream and target
+can transfer observers cooperatively after their current cycle. No shared-daemon
+restart is needed. The handoff records whether qualified upgrade acceptance
+permits installation without a quiet checkpoint; every rollback still requires
+one. Keep previous/in-use packages and retain the last Python 0.2.0 package until
+fleet-config and the user explicitly retire that fallback after the corrected
+Rust rollout and operational checks.
+
+Fleet-config owns installation, pins, wrappers, global instructions and rollout.
+This release changes no global instruction block; its documented topic header
+is optional for direct commands and required for explicitly labeled wrappers.
+Restart the TUI to pick up the new frontend; restarting it does not settle a
+registration or force a helper handoff.
+
+## Qualification
+
+Complete archives are built and tested on their native GNU targets from one
+frozen Plus commit. Tests use private Codex homes and loopback providers. The
+companion note `docs/releases/0.163.0-plus.0.3.1.md` and `handoff.json` record exact
+archive/manifest/tree hashes, build/cache timings, per-target checks and limits.
+Earlier source/development evidence does not qualify these new release archives.

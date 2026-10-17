@@ -37,9 +37,6 @@ if ! source_matches_index; then
     echo "Source differs from the expected patch; preserve or remove $source_dir before rebuilding." >&2
     exit 1
 fi
-cd "$source_dir/codex-rs"
-cargo +1.99.1 build --locked -p codex-cli --bin codex --release -j 12
-install -s -m 755 target/release/codex "$root/.build/codex.new"
-mv -f "$root/.build/codex.new" "$root/.build/codex"
+python3 "$root/scripts/build-artifacts.py" native "$root" "$source_dir"
 "$root/scripts/build-runtime.sh"
 echo "Built $root/bin/codex-plus"

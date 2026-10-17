@@ -24,7 +24,11 @@ exited and resumed with this launcher to display the new strip.
 
 ## Build
 
-Requires Git, a native Rust build environment, and Rust 1.99.1:
+Requires Git, Python 3.11+, Rust 1.99.1, a C toolchain, pkg-config and OpenSSL
+development headers. Linux sandboxed commands also require a compatible system
+`bwrap` on PATH (its help must list `--as-pid-1` and `--perms`); the developer
+build does not bundle sandbox or ripgrep resources. Install ripgrep on PATH for
+search tools. Complete release packages supply these resources.
 
 ```sh
 rustup toolchain install 1.99.1
@@ -32,14 +36,23 @@ rustup toolchain install 1.99.1
 ```
 
 The script fetches the pinned upstream source into `.build/source`, applies
-`patches/codex-0.163.0-worker-hud.patch`, and builds `.build/codex` and
-`.build/codex-plus-runtime`. It refuses an
+`patches/codex-0.163.0-worker-hud.patch`, and builds `.build/codex`, the matching
+`.build/codex-code-mode-host` beside it, and `.build/codex-plus-runtime`. Code Mode
+requires that adjacent host. It uses upstream's pinned, checksum-verified V8
+archive/bindings resolver and download cache. It refuses an
 unexpected source revision or a checkout that differs from the exact release
 patch, including old daemon modifications. The patch also reconciles the
 release tag's workspace versions in `Cargo.lock`; external dependency versions
 match the 0.163.0 tag. The first build downloads and compiles Codex's dependencies.
 Preserve or move aside an existing checkout at another upstream revision before
 building; the script refuses to overwrite it.
+
+The client build explicitly targets the pinned toolchain's native host, overriding
+Cargo's configured build target so its V8 artifacts match. `CARGO_TARGET_DIR`
+is preserved, including relative paths and spaces; using an explicit native
+target may populate a new subdirectory in an existing cache. Both scripts select
+executables from successful Cargo build messages, including warm builds, instead
+of guessing output paths. The helper-only build honors Cargo's configured target.
 
 The historical receipt extension is preserved in
 `patches/experimental/codex-0.162.1-daemon-receipts.patch` and is excluded from the
@@ -178,7 +191,9 @@ statistics, without the session transcript or diff contents. The footer shows
 readiness, the current consultation, and the completed call count and duration;
 refreshing it makes no model calls. Consultations needed before the next decision
 stay foreground, with a live conversation row such as
-`● Advising using GPT-6-Astra · 0m59s`, then a completed or failed summary.
+`• Advisor on wake and cancellation fixes · 5:01`, then a completed or failed
+topic summary. The model and effort remain in the footer. An explicit topic
+header also identifies advisor wrapper scripts without relabeling unrelated jobs.
 See [advisor usage and limits](docs/advisor.md) for the bounded local wait.
 
 Fleet-config owns installed wrapper routing; `advisor` must reach the package's

@@ -35,13 +35,30 @@ An interrupted turn alone does not establish that its command stopped; follow
 The conversation shows the active consultation locally:
 
 ```text
-● Advising using GPT-6-Astra · 0m59s
+• Advisor on wake and cancellation fixes · 5:01
 ```
 
-After the command finishes, that becomes `● Advised by GPT-6-Astra · 2m41s`
-or an advisor-failure row. The main session then reviews the returned findings.
+The topic summarizes what is being reviewed. The model and effort stay in the
+footer. Completion changes the same row to `• Advised on … · M:SS`, or
+`• Advisor failed on … · M:SS`; the main session then reviews the findings.
 These are display rows, not model messages. The footer retains its model, effort,
 call count and timing within the existing three-row activity budget.
+
+Give a foreground consultation a short topic in its command header:
+
+```sh
+# codex-plus-shell: foreground
+# codex-plus-advisor: wake and cancellation fixes
+codex-plus run -- codex-plus advisor --brief 'Review the wake and cancellation fixes.'
+```
+
+The calling agent supplies this summary; it needs no extra model call. The
+topic header also identifies an opaque wrapper such as `python3 consult.py`,
+when that execution owns the consultation and returns its advisor JSON and exit
+status. It must follow the foreground directive directly. Unmarked direct
+advisor commands use a compact summary of their brief; unrelated shell jobs
+retain their ordinary command headers. Background/auto commands keep the shell
+workflow rather than the foreground advisor conversation row.
 
 Use this pattern with a self-contained brief. The 26-minute local budget and
 27-minute outer yield leave margin for the helper's deadline and cleanup:
@@ -50,7 +67,7 @@ Use this pattern with a self-contained brief. The 26-minute local budget and
 // @exec: {"yield_time_ms": 1620000, "max_output_tokens": 2000}
 const deadline = Date.now() + 1560000;
 let result = await tools.exec_command({
-  cmd: "# codex-plus-shell: foreground\ncodex-plus run -- codex-plus advisor --brief 'Question, facts, constraints, and review focus'",
+  cmd: "# codex-plus-shell: foreground\n# codex-plus-advisor: proposed approach\ncodex-plus run -- codex-plus advisor --brief 'Question, facts, constraints, and review focus'",
   yield_time_ms: 1000, max_output_tokens: 2000, login: false
 });
 let output = result.output;
@@ -97,6 +114,14 @@ user config and execpolicy rules, and uses the read-only sandbox. Explicit
 delegation even when the model catalog advertises the newer agent runtime.
 It can inspect repository files through shell/git. It has a 25-minute
 deadline; timeout or signals terminate its owned process group.
+
+A detached native guard owns the consultation and each Git metadata probe. Its
+owner lifeline closes even when `/stop` kills the terminal group immediately;
+the guard then stops and reaps its children, including adopted descendants that
+created their own sessions. This uses Linux subreaper support and `/proc`.
+Metadata probes disable repository-configured fsmonitor hooks locally.
+Result files have a separate 512 KiB transport limit; schema limits still count
+characters. Invalid, oversized, symlinked, or nonregular result files fail visibly.
 
 The footer reads private per-root status, including attempt count, timing, and
 stable error code. It does not trigger model calls. One consultation can run per

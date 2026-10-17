@@ -35,6 +35,25 @@ class BuildNativeSourceGuardTests(unittest.TestCase):
         scripts.mkdir()
         script = (ROOT / 'scripts/build-native.sh').read_text().replace(PIN, commit)
         (scripts / 'build-native.sh').write_text(script)
+        helper = ROOT / 'scripts/build-artifacts.py'
+        shutil.copyfile(helper, scripts / helper.name)
+        runtime = scripts / 'build-runtime.sh'
+        runtime.write_text('#!/bin/sh\nexit 0\n')
+        runtime.chmod(0o755)
+        package = self.source / 'scripts/codex_package'
+        package.mkdir(parents=True)
+        (package / '__init__.py').touch()
+        (package / 'targets.py').write_text('TARGET_SPECS = {"x86_64-unknown-linux-gnu": "native"}\n')
+        (package / 'v8.py').write_text(
+            'def resolve_codex_v8_cargo_env(spec):\n'
+            '    assert spec == "native"\n'
+            '    return {"RUSTY_V8_ARCHIVE": "archive with spaces", '
+            '"RUSTY_V8_SRC_BINDING_PATH": "matching bindings"}\n')
+        self.git('add', 'scripts')
+        self.git('commit', '-qm', 'pinned packaging fixture')
+        commit = self.git('rev-parse', 'HEAD').stdout.strip()
+        (scripts / 'build-native.sh').write_text(script.replace(
+            self.git('rev-parse', 'HEAD~').stdout.strip(), commit))
         (self.root / 'patches').mkdir()
         self.patch = self.root / 'patches/codex-0.163.0-worker-hud.patch'
         (self.source / 'codex-rs/tui/hud.rs').write_text('// frontend HUD\n')
@@ -48,10 +67,15 @@ class BuildNativeSourceGuardTests(unittest.TestCase):
         cargo = tools / 'cargo'
         cargo.write_text('#!/bin/sh\nprintf called > "$CARGO_CALLED"\nexit 73\n')
         cargo.chmod(0o755)
+        rustc = tools / 'rustc'
+        rustc.write_text('#!/bin/sh\nprintf "host: x86_64-unknown-linux-gnu\\n"\n')
+        rustc.chmod(0o755)
         self.env = os.environ | {
             'PATH': str(tools) + os.pathsep + os.environ['PATH'],
             'CARGO_CALLED': str(self.cargo_called),
         }
+        self.env.pop('CARGO_TARGET_DIR', None)
+        self.env.pop('CARGO_BUILD_TARGET', None)
 
     def git(self, *args):
         return subprocess.run(['git', '-C', str(self.source), *args], check=True,
@@ -117,6 +141,64 @@ class BuildNativeSourceGuardTests(unittest.TestCase):
         result = self.build()
         self.assertEqual(result.returncode, 73, result.stderr)
 
+    def artifact_cargo(self):
+        cargo = self.root / 'tools/cargo'
+        cargo.write_text('#!' + sys.executable + '\n' + '''import json, os, pathlib, shutil, sys
+args = sys.argv[1:]
+pathlib.Path(os.environ["CARGO_CALLED"]).write_text(json.dumps(args))
+assert os.environ["RUSTY_V8_ARCHIVE"] == "archive with spaces"
+assert os.environ["RUSTY_V8_SRC_BINDING_PATH"] == "matching bindings"
+target = pathlib.Path(os.environ["CARGO_TARGET_DIR"])
+target.mkdir(parents=True, exist_ok=True)
+for name in ("codex", "codex-code-mode-host"):
+    executable = target / name
+    shutil.copyfile("/bin/false", executable)
+    executable.chmod(0o755)
+    if os.environ.get("OMIT_HOST") and name.endswith("host"): continue
+    message = {"reason": "compiler-artifact", "target": {"name": name, "kind": ["bin"]},
+               "executable": str(executable), "fresh": target.exists()}
+    print(json.dumps(message))
+    if os.environ.get("AMBIGUOUS"):
+        other = target / (name + "-other")
+        shutil.copyfile(executable, other)
+        other.chmod(0o755)
+        message["executable"] = str(other)
+        print(json.dumps(message))
+sys.exit(73 if os.environ.get("CARGO_FAIL") else 0)
+''')
+        cargo.chmod(0o755)
+
+    def test_installs_reported_cli_and_matching_host_with_custom_target_paths(self):
+        self.artifact_cargo()
+        stale = self.source / 'codex-rs/target/release/codex'
+        stale.parent.mkdir(parents=True)
+        shutil.copyfile('/bin/true', stale)
+        for path in (str(self.root / 'absolute target with spaces'), '../../relative target with spaces'):
+            self.env['CARGO_TARGET_DIR'] = path
+            self.env['CARGO_BUILD_TARGET'] = 'configured-cross-target'
+            for attempt in range(2):
+                with self.subTest(path=path, attempt=attempt):
+                    result = self.build()
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    for name in ('codex', 'codex-code-mode-host'):
+                        self.assertEqual((self.root / '.build' / name).read_bytes(), Path('/bin/false').read_bytes())
+                    args = json.loads(self.cargo_called.read_text())
+                    self.assertIn('--message-format=json-render-diagnostics', args)
+                    self.assertEqual(args[args.index('--target') + 1], 'x86_64-unknown-linux-gnu')
+
+    def test_failed_or_incomplete_build_preserves_previous_pair(self):
+        self.artifact_cargo()
+        self.env['CARGO_TARGET_DIR'] = str(self.root / 'artifacts')
+        for name in ('codex', 'codex-code-mode-host'):
+            (self.root / '.build' / name).write_bytes(b'old installed artifact')
+        for failure in ('CARGO_FAIL', 'OMIT_HOST', 'AMBIGUOUS'):
+            with self.subTest(failure=failure):
+                self.env[failure] = '1'
+                self.assertNotEqual(self.build().returncode, 0)
+                for name in ('codex', 'codex-code-mode-host'):
+                    self.assertEqual((self.root / '.build' / name).read_bytes(), b'old installed artifact')
+                self.env.pop(failure)
+
 
 class BuildRuntimeTests(unittest.TestCase):
     def setUp(self):
@@ -126,6 +208,8 @@ class BuildRuntimeTests(unittest.TestCase):
         scripts = self.root / 'scripts'
         scripts.mkdir(parents=True)
         shutil.copyfile(ROOT / 'scripts/build-runtime.sh', scripts / 'build-runtime.sh')
+        helper = ROOT / 'scripts/build-artifacts.py'
+        shutil.copyfile(helper, scripts / helper.name)
         tools = self.root / 'tools'
         tools.mkdir()
         cargo = tools / 'cargo'
@@ -133,12 +217,19 @@ class BuildRuntimeTests(unittest.TestCase):
             'pathlib.Path(os.environ["CARGO_ARGS"]).write_text(json.dumps(sys.argv[1:]))\n'
             'if os.environ.get("CARGO_FAIL"): sys.exit(73)\n'
             'target=pathlib.Path(sys.argv[sys.argv.index("--target-dir")+1])/"release"\n'
-            'target.mkdir(parents=True)\n'
-            '(target/"codex-plus-runtime").write_bytes(b"runtime artifact")\n')
+            'target=target/os.environ.get("CARGO_BUILD_TARGET", "")\n'
+            'target.mkdir(parents=True,exist_ok=True)\n'
+            'artifact=target/"codex-plus-runtime"\n'
+            'artifact.write_bytes(b"runtime artifact")\n'
+            'artifact.chmod(0o755)\n'
+            'print(json.dumps({"reason":"compiler-artifact", "target":'
+            '{"name":"codex-plus-runtime","kind":["bin"]},"executable":str(artifact)}))\n')
         cargo.chmod(0o755)
         self.arguments = self.root / 'cargo-args.json'
         self.env = os.environ | {'PATH': str(tools) + os.pathsep + os.environ['PATH'],
                                  'CARGO_ARGS': str(self.arguments)}
+        self.env.pop('CARGO_TARGET_DIR', None)
+        self.env.pop('CARGO_BUILD_TARGET', None)
 
     def build(self):
         return subprocess.run(['bash', str(self.root / 'scripts/build-runtime.sh')],
@@ -150,7 +241,7 @@ class BuildRuntimeTests(unittest.TestCase):
         self.assertEqual(json.loads(self.arguments.read_text()), [
             '+1.99.1', 'build', '--locked', '--release', '--manifest-path',
             str(self.root / 'rust-runtime/Cargo.toml'), '--target-dir',
-            str(self.root / '.build/runtime-target')])
+            str(self.root / '.build/runtime-target'), '--message-format=json-render-diagnostics'])
         runtime = self.root / '.build/codex-plus-runtime'
         self.assertEqual(runtime.read_bytes(), b'runtime artifact')
         self.assertEqual(runtime.stat().st_mode & 0o777, 0o755)
@@ -159,6 +250,17 @@ class BuildRuntimeTests(unittest.TestCase):
         self.assertEqual(self.build().returncode, 73)
         self.assertEqual(runtime.read_bytes(), b'runtime artifact')
         self.assertFalse(runtime.with_suffix('.new').exists())
+
+    def test_selects_reported_target_specific_artifact_on_warm_builds(self):
+        stale = self.root / '.build/runtime-target/release/codex-plus-runtime'
+        stale.parent.mkdir(parents=True)
+        stale.write_bytes(b'stale default artifact')
+        self.env['CARGO_BUILD_TARGET'] = 'configured-target with spaces'
+        for attempt in range(2):
+            with self.subTest(attempt=attempt):
+                result = self.build()
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual((self.root / '.build/codex-plus-runtime').read_bytes(), b'runtime artifact')
 
 
 if __name__ == '__main__':

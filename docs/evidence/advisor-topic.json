@@ -1,0 +1,84 @@
+{
+  "base_commit": "be2c90f6d1f5e4251d949fba8f3a2b32033194c9",
+  "branch": "fix/audit-030",
+  "candidate": {
+    "complete_smoke_stages": 23,
+    "files": {
+      "codex": {
+        "bytes": 408939824,
+        "path": "/home/liupan/Aerius/codex-plus/.build/advisor-topic/codex",
+        "resolved": "/home/liupan/Aerius/codex-plus/.build/advisor-topic/codex",
+        "sha256": "eac7265d35daed53179ddc0455ef318df45ad61a2953e7a19c14cf07c45d678a"
+      },
+      "codex-code-mode-host": {
+        "bytes": 67726288,
+        "path": "/home/liupan/Aerius/codex-plus/.build/advisor-topic/codex-code-mode-host",
+        "resolved": "/home/liupan/.local/share/skill-manager/codex-plus/codex-plus-0.163.0-plus.0.2.0-x86_64-unknown-linux-gnu/bin/codex-code-mode-host",
+        "sha256": "3062b09d807c146984352ceb69efb3b3b6bd7d95b784bf568bd05f0d1accd299"
+      }
+    },
+    "host_provenance": "/home/liupan/Aerius/codex-plus/.build/footer-hint/host-package-provenance.json",
+    "host_reused_from_prior_pinned_package": true,
+    "patch_sha256": "5b8d737f738a4674eb3359e43df84c7b7336e113c5de7467e5b0fc0e9dd37290",
+    "profile": "dev-small",
+    "release_or_arm_qualification": false,
+    "rust": "1.99.1",
+    "smoke_binary_sha256": "eac7265d35daed53179ddc0455ef318df45ad61a2953e7a19c14cf07c45d678a",
+    "smoke_report": "/home/liupan/Aerius/codex-plus/.build/advisor-topic/smoke/report.json",
+    "source_proof": "/home/liupan/Aerius/codex-plus/.build/advisor-topic/source-proof.json",
+    "system_bwrap": "/usr/bin/bwrap"
+  },
+  "example": "\u2022 Advisor on wake and cancellation fixes \u00b7 5:01",
+  "historical_audit_snapshot": "docs/evidence/audit-fixes.json records its earlier source snapshot; topic change preserves those fixes",
+  "installed": false,
+  "launch_contract": {
+    "direct_fallback": "First ten compact brief words",
+    "first_line": "# codex-plus-shell: foreground",
+    "second_line": "# codex-plus-advisor: wake and cancellation fixes",
+    "unmarked_wrappers": "Ordinary shell; no filename guessing"
+  },
+  "limitations": [
+    "Running TUIs need rebuilt client; codex on PATH remains installed0.3.0",
+    "Dev-small candidate reuses matching pinned0.163.0 Code Mode host",
+    "No optimized release archive or ARM qualification",
+    "Opaque wrappers require explicit foreground topic marker",
+    "Six publisher notice gaps still block release assembly"
+  ],
+  "published": false,
+  "red_evidence": ".build/advisor-topic/red/",
+  "root_verification": {
+    "fixed_status_local_clock": true,
+    "model_calls_after_fixture_setup": 0,
+    "parser_tests": 18,
+    "rust_filters": {
+      "advisor": 14,
+      "shell_policy": 18,
+      "worker_hud": 38
+    },
+    "source_proof": {
+      "exact_working_tree": true,
+      "external_dependencies_unchanged": 1314,
+      "forward_apply": true,
+      "frontend_only": true,
+      "patch_sha256": "5b8d737f738a4674eb3359e43df84c7b7336e113c5de7467e5b0fc0e9dd37290",
+      "reverse_apply": true,
+      "source_tree": "f2f74143e87e068158205946be097eb9207a3812"
+    },
+    "terminal_report": ".build/advisor-topic/root-smoke/report.json",
+    "terminal_stages": 23,
+    "three_row_budget_and_draft_resize": true,
+    "ui_turn_start_requests": 0,
+    "ui_turn_steer_requests": 0,
+    "unrelated_shell_and_model_footer_preserved": true,
+    "wrapper_done_and_failure": true
+  },
+  "runtime_or_status_schema_changed": false,
+  "source_files": {
+    "README.md": "ee89ee8c61e2fe5efa89bcdc9eafd44202336060c9c34e07c59870e089f87fcd",
+    "docs/advisor.md": "c70a0e85912a0510e624922f3fdb787f6e15a99e5c6e4a17c5aff1cefdefef03",
+    "docs/verification.md": "ed6c79c3efe01fc60c65959789c30e848ae57a2b8438f2fa82ba9f111f278770",
+    "patches/codex-0.163.0-worker-hud.patch": "5b8d737f738a4674eb3359e43df84c7b7336e113c5de7467e5b0fc0e9dd37290",
+    "tests/native_smoke.py": "da0fb2bd2e82facec0f07a239ad2d53da700cd42d256061385bfbac3a748df2d",
+    "tests/test_terminal_fixture.py": "c0edc6482315f83aeb5ec2d149e7a7c7fda01a4511f51579a612de76dbc9c021"
+  }
+}

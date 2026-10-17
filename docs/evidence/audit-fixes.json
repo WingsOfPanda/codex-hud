@@ -1,0 +1,506 @@
+{
+  "additional_root_checks": {
+    "build_artifacts": {
+      "fixture": "Actual two-package Cargo workspace matching upstream CLI and host ownership",
+      "log": ".build/audit-fixes/root/build-artifacts-final.log",
+      "passed": 2
+    },
+    "build_native": {
+      "log": ".build/audit-fixes/root/build-native-final.log",
+      "passed": 11
+    },
+    "native_hud": {
+      "log": ".build/audit-fixes/root/hud-final.log",
+      "passed": 38
+    },
+    "packaging": {
+      "log": ".build/audit-fixes/root/packaging-final.log",
+      "passed": 31
+    }
+  },
+  "advisor_reviews": [
+    {
+      "effort": "xhigh",
+      "log": "/home/liupan/.codex/codex-plus/logs/3328c986-c89e-4ea6-848d-a9a4726af93e.log",
+      "model": "gpt-6-astra",
+      "outcome": "All ten findings accepted; corrections required for legacy callback repair and owner-lifetime cleanup",
+      "verdict": "revise"
+    },
+    {
+      "effort": "xhigh",
+      "log": "/home/liupan/.codex/codex-plus/logs/32f58a95-bc8e-4254-86ef-38360faee088.log",
+      "model": "gpt-6-astra",
+      "outcome": "Separate host Cargo package omission corrected afterward with two-package red/green regression; planned audit record added",
+      "verdict": "revise"
+    }
+  ],
+  "base_commit": "be2c90f6d1f5e4251d949fba8f3a2b32033194c9",
+  "branch": "fix/audit-030",
+  "committed": false,
+  "coordinator_protocol": 2,
+  "daemon_changed": false,
+  "fixed_findings": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    7,
+    8,
+    9,
+    10
+  ],
+  "installed": false,
+  "ledger_schema": 1,
+  "limits": [
+    "No new optimized native-client release archive or ARM execution",
+    "Native dev-small candidate reuses the matching previously qualified upstream Code Mode host",
+    "Full upstream test suite not run",
+    "Stock enqueue acknowledgement ambiguity remains unknown without positive evidence; no blind resend",
+    "No complete-notice or legal-sufficiency claim; assembly fails on six documented publisher gaps"
+  ],
+  "native_source_proof": {
+    "changed_paths": [
+      "codex-rs/Cargo.lock",
+      "codex-rs/cli/src/daemon_update_tests.rs",
+      "codex-rs/cli/src/main.rs",
+      "codex-rs/tui/Cargo.toml",
+      "codex-rs/tui/src/app.rs",
+      "codex-rs/tui/src/app/advisor.rs",
+      "codex-rs/tui/src/app/daemon_menu.rs",
+      "codex-rs/tui/src/app/daemon_menu_tests.rs",
+      "codex-rs/tui/src/app/event_dispatch.rs",
+      "codex-rs/tui/src/app/owned_transcript_tests.rs",
+      "codex-rs/tui/src/app/reconnect.rs",
+      "codex-rs/tui/src/app/session_lifecycle.rs",
+      "codex-rs/tui/src/app/snapshots/codex_tui__app__daemon_menu__tests__daemon_cli_confirmation.snap",
+      "codex-rs/tui/src/app/snapshots/codex_tui__app__daemon_menu__tests__daemon_disconnected.snap",
+      "codex-rs/tui/src/app/snapshots/codex_tui__app__daemon_menu__tests__daemon_menu.snap",
+      "codex-rs/tui/src/app/snapshots/codex_tui__app__daemon_menu__tests__daemon_no_cli_handoff.snap",
+      "codex-rs/tui/src/app/snapshots/codex_tui__app__daemon_menu__tests__daemon_remote_guidance.snap",
+      "codex-rs/tui/src/app/snapshots/codex_tui__app__daemon_menu__tests__daemon_restart_confirmation.snap",
+      "codex-rs/tui/src/app/snapshots/codex_tui__app__daemon_menu__tests__daemon_stable_confirmation.snap",
+      "codex-rs/tui/src/app/snapshots/codex_tui__app__daemon_menu__tests__daemon_unmanaged.snap",
+      "codex-rs/tui/src/app/snapshots/codex_tui__app__daemon_menu__tests__daemon_unpackaged_cli.snap",
+      "codex-rs/tui/src/app/startup.rs",
+      "codex-rs/tui/src/app/test_support.rs",
+      "codex-rs/tui/src/app/tests.rs",
+      "codex-rs/tui/src/app/tests/snapshots/codex_tui__app__tests__disconnect__offline_draft.snap",
+      "codex-rs/tui/src/app/worker_hud.rs",
+      "codex-rs/tui/src/app_event.rs",
+      "codex-rs/tui/src/bottom_pane/chat_composer.rs",
+      "codex-rs/tui/src/bottom_pane/chat_composer/footer_state.rs",
+      "codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__snapshot_tests__voice_composer.snap",
+      "codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__a_fresh_astra_response_waits_for_the_pending_command_to_leave.snap",
+      "codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__canceled_history_search_restores_visible_stars_only_before_the_original_deadline.snap",
+      "codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__cleared_recovered_draft_keeps_sparkle_dismissed.snap",
+      "codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__disconnected_sparkle_edits_are_tracked_between_renders.snap",
+      "codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__history_search_acceptance_and_cancellation_update_sparkles_before_rendering.snap",
+      "codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__history_search_preserves_a_held_sparkle_command_without_reclassifying_it.snap",
+      "codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__review_regression_canceling_a_held_slash_restores_sparkle_command_tracking.snap",
+      "codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__shortcut_help_hides_visible_sparkles_without_restarting_their_deadline.snap",
+      "codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__shortcut_help_preserves_an_unused_sparkle_but_literal_question_marks_do_not.snap",
+      "codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__sparkle_fades_without_adding_dots_and_finishes_by_fifteen_seconds.snap",
+      "codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__sparkle__tests__sparkle_matches_the_original_starfield_and_protects_the_placeholder_and_cursor.snap",
+      "codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__status_surface__tests__fullscreen_plan_cycle_hint.snap",
+      "codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__status_surface__tests__persistent_status_and_messages.snap",
+      "codex-rs/tui/src/bottom_pane/chat_composer/status_surface.rs",
+      "codex-rs/tui/src/bottom_pane/chat_composer/status_surface_tests.rs",
+      "codex-rs/tui/src/bottom_pane/mod.rs",
+      "codex-rs/tui/src/bottom_pane/request_user_input/snapshots/codex_tui__bottom_pane__request_user_input__render__tests__request_user_input_halfwidth_sound_marks_truncation.snap",
+      "codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__agents_navigation_enabled.snap",
+      "codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__agents_navigation_status.snap",
+      "codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__empty.snap",
+      "codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_empty_full.snap",
+      "codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_empty_mode_cycle_with_context.snap",
+      "codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_empty_mode_cycle_without_context.snap",
+      "codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_plan_empty_full.snap",
+      "codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_mode_esc_hint_from_overlay.snap",
+      "codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__light_terminal_palette_composer.snap",
+      "codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__parent_owned_thread_placeholder.snap",
+      "codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__ultra_accent_upgrades_prompt_glyph.snap",
+      "codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__vim_enter_after_expired_paste.snap",
+      "codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__backend_banner_personal_limit.snap",
+      "codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__backend_banner_workspace_member_credits.snap",
+      "codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__inline_banner_wrapped_and_truncated.snap",
+      "codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__queued_messages_visible_when_status_hidden_snapshot.snap",
+      "codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__status_and_queued_messages_snapshot.snap",
+      "codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__status_only_snapshot.snap",
+      "codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__status_timer_survives_hidden_row.snap",
+      "codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__status_with_details_and_queued_messages_snapshot.snap",
+      "codex-rs/tui/src/bottom_pane/tests/snapshots/codex_tui__bottom_pane__tests__actionable_banner_tests__banner_wrapped_url.snap",
+      "codex-rs/tui/src/bottom_pane/tests/snapshots/codex_tui__bottom_pane__tests__actionable_banner_tests__information_banner_dismissible.snap",
+      "codex-rs/tui/src/bottom_pane/tests/snapshots/codex_tui__bottom_pane__tests__actionable_banner_tests__information_banner_persistent.snap",
+      "codex-rs/tui/src/bottom_pane/worker_hud.rs",
+      "codex-rs/tui/src/chatwidget.rs",
+      "codex-rs/tui/src/chatwidget/command_lifecycle.rs",
+      "codex-rs/tui/src/chatwidget/constructor.rs",
+      "codex-rs/tui/src/chatwidget/session_flow.rs",
+      "codex-rs/tui/src/chatwidget/shell_policy.rs",
+      "codex-rs/tui/src/chatwidget/tests.rs",
+      "codex-rs/tui/src/chatwidget/tests/shell_policy.rs",
+      "codex-rs/tui/src/exec_cell/advisor.rs",
+      "codex-rs/tui/src/exec_cell/mod.rs",
+      "codex-rs/tui/src/exec_cell/model.rs",
+      "codex-rs/tui/src/exec_cell/render.rs",
+      "codex-rs/tui/src/exec_cell/snapshots/codex_tui__exec_cell__advisor__tests__advisor_transcript_done.snap",
+      "codex-rs/tui/src/thread_transcript/tools.rs",
+      "codex-rs/tui/src/thread_transcript/tools_tests.rs"
+    ],
+    "exact_reconstruction": true,
+    "external_lock_identical": true,
+    "external_lock_packages": 1314,
+    "forward_apply": true,
+    "frontend_boundary": true,
+    "patch_sha256": "7597ead1ab1bdca92ae4a477ca6c08897c9d8e9c7ea023dd316462eac4367d71",
+    "reconstructed": "/home/liupan/Aerius/codex-plus/.build/audit-fixes/native/reconstructed",
+    "reverse_apply": true,
+    "source": "/home/liupan/Aerius/codex-plus/.build/footer-hint/source",
+    "source_tree": "fcffbb10676a75e6a0487c1c87e146aa3059b0e2",
+    "upstream_commit": "83086188ae0614bd882818ff1aa23f3194962012"
+  },
+  "notice_coverage": {
+    "aarch64-unknown-linux-gnu": {
+      "available_notice_packages": 1057,
+      "available_notices_sha256": "e88295fac6616daa1775a296e7b4a456ca4f7547bb9cc80fd6612e1ca55c0068",
+      "coverage": "incomplete",
+      "missing_packages": [
+        {
+          "license": "MIT",
+          "name": "debugserver-types",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "version": "0.5.0"
+        },
+        {
+          "license": "MIT",
+          "name": "deno_core_icudata",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "version": "0.77.0"
+        },
+        {
+          "license": "MIT OR Apache-2.0",
+          "name": "eventsource-stream",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "version": "0.2.3"
+        },
+        {
+          "license": "Apache-2.0/MIT",
+          "name": "fxhash",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "version": "0.2.1"
+        },
+        {
+          "license": "MIT OR Apache-2.0",
+          "name": "io_tee",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "version": "0.1.1"
+        },
+        {
+          "license": "Apache-2.0 OR MIT",
+          "name": "linux-keyutils",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "version": "0.2.4"
+        }
+      ],
+      "production_package_count": 1063,
+      "ring": {
+        "checksum": "a4689e6c2294d81e88dc6261c768b63bc4fcdb852be6d1352498b114f61383b7",
+        "features": [
+          "alloc",
+          "default",
+          "dev_urandom_fallback",
+          "std"
+        ],
+        "license": "Apache-2.0 AND ISC",
+        "license_files": {
+          "LICENSE": "b3d734001a94efff3579978d953391aa7115f877657d25eb54037a43875d078a",
+          "LICENSE-BoringSSL": "005fc765ddc5115da796cca915baa9557abae13ff35e0a47c47affc56f6c414d",
+          "LICENSE-other-bits": "f025ccfb7dfb6bdfedc75ca0f67acc69e6fb4998143d834f7c2f38a29989680f",
+          "src/polyfill/once_cell/LICENSE-APACHE": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2",
+          "src/polyfill/once_cell/LICENSE-MIT": "6ee2ed6c77710de911761acd5fc1ad1da00f476beb1a7ef27e78c2d1858deafc",
+          "third_party/fiat/LICENSE": "9eacbcb81be660840c714a560a9d65ba07913db98dd4baf969f78dd499fdd60f"
+        },
+        "license_text_sources": {},
+        "manifest_sha256": "b81a19b27cc744410b056eb1d1195ecd41e25a163acadfca3c6457e96b797d3f",
+        "name": "ring",
+        "source": "registry+https://github.com/rust-lang/crates.io-index",
+        "version": "0.17.14"
+      },
+      "ring_all_cached_license_files_verbatim": true,
+      "target": "aarch64-unknown-linux-gnu"
+    },
+    "x86_64-unknown-linux-gnu": {
+      "available_notice_packages": 1060,
+      "available_notices_sha256": "c70b97788d153da1112573061a0ef1fb3e557bd821adbd67bff1b409b17d1ea3",
+      "coverage": "incomplete",
+      "missing_packages": [
+        {
+          "license": "MIT",
+          "name": "debugserver-types",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "version": "0.5.0"
+        },
+        {
+          "license": "MIT",
+          "name": "deno_core_icudata",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "version": "0.77.0"
+        },
+        {
+          "license": "MIT OR Apache-2.0",
+          "name": "eventsource-stream",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "version": "0.2.3"
+        },
+        {
+          "license": "Apache-2.0/MIT",
+          "name": "fxhash",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "version": "0.2.1"
+        },
+        {
+          "license": "MIT OR Apache-2.0",
+          "name": "io_tee",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "version": "0.1.1"
+        },
+        {
+          "license": "Apache-2.0 OR MIT",
+          "name": "linux-keyutils",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "version": "0.2.4"
+        }
+      ],
+      "production_package_count": 1066,
+      "ring": {
+        "checksum": "a4689e6c2294d81e88dc6261c768b63bc4fcdb852be6d1352498b114f61383b7",
+        "features": [
+          "alloc",
+          "default",
+          "dev_urandom_fallback",
+          "std"
+        ],
+        "license": "Apache-2.0 AND ISC",
+        "license_files": {
+          "LICENSE": "b3d734001a94efff3579978d953391aa7115f877657d25eb54037a43875d078a",
+          "LICENSE-BoringSSL": "005fc765ddc5115da796cca915baa9557abae13ff35e0a47c47affc56f6c414d",
+          "LICENSE-other-bits": "f025ccfb7dfb6bdfedc75ca0f67acc69e6fb4998143d834f7c2f38a29989680f",
+          "src/polyfill/once_cell/LICENSE-APACHE": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2",
+          "src/polyfill/once_cell/LICENSE-MIT": "6ee2ed6c77710de911761acd5fc1ad1da00f476beb1a7ef27e78c2d1858deafc",
+          "third_party/fiat/LICENSE": "9eacbcb81be660840c714a560a9d65ba07913db98dd4baf969f78dd499fdd60f"
+        },
+        "license_text_sources": {},
+        "manifest_sha256": "b81a19b27cc744410b056eb1d1195ecd41e25a163acadfca3c6457e96b797d3f",
+        "name": "ring",
+        "source": "registry+https://github.com/rust-lang/crates.io-index",
+        "version": "0.17.14"
+      },
+      "ring_all_cached_license_files_verbatim": true,
+      "target": "x86_64-unknown-linux-gnu"
+    }
+  },
+  "partial_findings": {
+    "6": "Full production graph notice collector and fail-closed assembly implemented; six missing publisher texts block new archives"
+  },
+  "published": false,
+  "root_acceptance": {
+    "native_sha256": "59e3f70b2c102c78e3b235ca3672053a4b163fbf83cfd0f604542b45118ae81f",
+    "results": {
+      "native": [
+        {
+          "command": [
+            "/home/liupan/Aerius/codex-plus/.build/dual-release/acceptance/venv/bin/python",
+            "tests/native_smoke.py",
+            "/home/liupan/Aerius/codex-plus/.build/audit-fixes/native/codex",
+            "--evidence",
+            "/home/liupan/Aerius/codex-plus/.build/audit-fixes/root/native"
+          ],
+          "exit": 0,
+          "log": "/home/liupan/Aerius/codex-plus/.build/audit-fixes/root/native-0.log",
+          "seconds": 105.744
+        },
+        {
+          "command": [
+            "/home/liupan/Aerius/codex-plus/.build/dual-release/acceptance/venv/bin/python",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_build_native.py",
+            "-v"
+          ],
+          "exit": 0,
+          "log": "/home/liupan/Aerius/codex-plus/.build/audit-fixes/root/native-1.log",
+          "seconds": 1.717
+        },
+        {
+          "command": [
+            "/home/liupan/Aerius/codex-plus/.build/dual-release/acceptance/venv/bin/python",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_build_artifacts.py",
+            "-v"
+          ],
+          "exit": 0,
+          "log": "/home/liupan/Aerius/codex-plus/.build/audit-fixes/root/native-2.log",
+          "seconds": 1.366
+        }
+      ],
+      "runtime": [
+        {
+          "command": [
+            "cargo",
+            "+1.99.1",
+            "test",
+            "--locked",
+            "--manifest-path",
+            "rust-runtime/Cargo.toml",
+            "--lib"
+          ],
+          "exit": 0,
+          "log": "/home/liupan/Aerius/codex-plus/.build/audit-fixes/root/runtime-0.log",
+          "seconds": 2.87
+        },
+        {
+          "command": [
+            "/home/liupan/Aerius/codex-plus/.build/dual-release/acceptance/venv/bin/python",
+            "tests/test_rust_runtime_acceptance.py",
+            "--runtime",
+            "/home/liupan/Aerius/codex-plus/.build/codex-plus-runtime",
+            "--evidence",
+            "/home/liupan/Aerius/codex-plus/.build/audit-fixes/root/coordinator",
+            "-v"
+          ],
+          "exit": 0,
+          "log": "/home/liupan/Aerius/codex-plus/.build/audit-fixes/root/runtime-1.log",
+          "seconds": 34.824
+        },
+        {
+          "command": [
+            "/home/liupan/Aerius/codex-plus/.build/dual-release/acceptance/venv/bin/python",
+            "tests/test_rust_runtime_runner.py",
+            "--runtime",
+            "/home/liupan/Aerius/codex-plus/.build/codex-plus-runtime",
+            "-v"
+          ],
+          "exit": 0,
+          "log": "/home/liupan/Aerius/codex-plus/.build/audit-fixes/root/runtime-2.log",
+          "seconds": 5.873
+        },
+        {
+          "command": [
+            "/home/liupan/Aerius/codex-plus/.build/dual-release/acceptance/venv/bin/python",
+            "tests/test_rust_runtime_advisor_regressions.py",
+            "--runtime",
+            "/home/liupan/Aerius/codex-plus/.build/codex-plus-runtime",
+            "--evidence",
+            "/home/liupan/Aerius/codex-plus/.build/audit-fixes/root/advisor",
+            "-v"
+          ],
+          "exit": 0,
+          "log": "/home/liupan/Aerius/codex-plus/.build/audit-fixes/root/runtime-3.log",
+          "seconds": 24.803
+        },
+        {
+          "command": [
+            "/home/liupan/Aerius/codex-plus/.build/dual-release/acceptance/venv/bin/python",
+            "tests/test_rust_runtime_upgrade.py",
+            "--runtime",
+            "/home/liupan/Aerius/codex-plus/.build/codex-plus-runtime",
+            "--evidence",
+            "/home/liupan/Aerius/codex-plus/.build/audit-fixes/root/upgrade",
+            "-v"
+          ],
+          "exit": 0,
+          "log": "/home/liupan/Aerius/codex-plus/.build/audit-fixes/root/runtime-4.log",
+          "seconds": 12.335
+        }
+      ],
+      "stock": [
+        {
+          "command": [
+            "/home/liupan/Aerius/codex-plus/.build/dual-release/acceptance/venv/bin/python",
+            "tests/test_advisor_stop_integration.py",
+            "--binary",
+            "/home/liupan/.codex/packages/app-server-daemon/releases/local-3b8e90edf16079c48ad36a7dbb3bea348f25e4942c0dd8633d6c7571dde4cd03-x86_64-unknown-linux-musl/bin/codex",
+            "--runtime",
+            "/home/liupan/Aerius/codex-plus/.build/codex-plus-runtime",
+            "--evidence",
+            "/home/liupan/Aerius/codex-plus/.build/audit-fixes/root/stock-stop"
+          ],
+          "exit": 0,
+          "log": "/home/liupan/Aerius/codex-plus/.build/audit-fixes/root/stock-0.log",
+          "seconds": 3.971
+        },
+        {
+          "command": [
+            "/home/liupan/Aerius/codex-plus/.build/dual-release/acceptance/venv/bin/python",
+            "tests/test_rust_runtime_stock_integration.py",
+            "--runtime",
+            "/home/liupan/Aerius/codex-plus/.build/codex-plus-runtime",
+            "--stock-binary",
+            "/home/liupan/.codex/packages/app-server-daemon/releases/local-3b8e90edf16079c48ad36a7dbb3bea348f25e4942c0dd8633d6c7571dde4cd03-x86_64-unknown-linux-musl/bin/codex",
+            "--evidence",
+            "/home/liupan/Aerius/codex-plus/.build/audit-fixes/root/stock",
+            "--scenario",
+            "all"
+          ],
+          "exit": 0,
+          "log": "/home/liupan/Aerius/codex-plus/.build/audit-fixes/root/stock-1.log",
+          "seconds": 78.141
+        },
+        {
+          "command": [
+            "/home/liupan/Aerius/codex-plus/.build/dual-release/acceptance/venv/bin/python",
+            "tests/test_rust_runtime_stock_lifecycle.py",
+            "--runtime",
+            "/home/liupan/Aerius/codex-plus/.build/codex-plus-runtime",
+            "--stock-binary",
+            "/home/liupan/.codex/packages/app-server-daemon/releases/local-3b8e90edf16079c48ad36a7dbb3bea348f25e4942c0dd8633d6c7571dde4cd03-x86_64-unknown-linux-musl/bin/codex",
+            "--evidence",
+            "/home/liupan/Aerius/codex-plus/.build/audit-fixes/root/lifecycle",
+            "--scenario",
+            "all"
+          ],
+          "exit": 0,
+          "log": "/home/liupan/Aerius/codex-plus/.build/audit-fixes/root/stock-2.log",
+          "seconds": 24.607
+        }
+      ]
+    },
+    "runtime_sha256": "7df486ab526b40d43fc1c6622aa02c8f0c8ee4d07eb9a3bb5b8cfa87ebe043b0",
+    "stock_sha256": "399ff69c431c066e40de318fba45c2b07f45a76b19939d247ee4828fc70c4215"
+  },
+  "source_files": {
+    "README.md": "c8b927c3a0510d6b298eeb4f4eea232352e6e477cf14583f2c8ee68bfa7136e4",
+    "docs/advisor.md": "1aadd4bb70beb63c9aa38d8cd525fbef44fd4cc018acbbf998a4ff46c66a823a",
+    "docs/audit-fixes.md": "96ce4febf51a2957099943f0c0e55b942651a8e4fce1a4310afff0b75aa73ce0",
+    "docs/releasing.md": "fb5335c349a28aa572785d3bf3b911a99c258d9e98bc5105ca160ce90f813f6a",
+    "docs/verification.md": "414725bccb0483252d87b58b665f35fb5f07da972b023bb87bded1ad12ea5850",
+    "patches/codex-0.163.0-worker-hud.patch": "7597ead1ab1bdca92ae4a477ca6c08897c9d8e9c7ea023dd316462eac4367d71",
+    "rust-runtime/src/advisor.rs": "4c39b67d03be92a549dc6c1eeb2e6348f256bb6976206561520bc64dc9cd26d7",
+    "rust-runtime/src/background.rs": "202cedac710dbdcfc6e7c2e73b72951b93b1bfdace9d0016a5e23cd9510f732d",
+    "rust-runtime/src/ledger.rs": "bcec8bcc4fa86a3cb75df34ebdf97f21e228d3f88165ced472517dcef76a60eb",
+    "scripts/build-artifacts.py": "ea5d17ea717b4e30fb93e4661ca290024ef112e48649439a947b5ca4072e4528",
+    "scripts/build-native.sh": "b7a5c9da397ba1a0b68d926649e8319d8b5c360c51ee2e7142e5cdb6dc4c1075",
+    "scripts/build-runtime.sh": "e4c3c8304725e9d4df69a3884841a9b23eb9d3428bc530b118465aa747650581",
+    "scripts/native-license-sources.json": "7b054263e6220b9f2ccff0435275778b4342bff58ff4e39f62a7a5dbc5b25bba",
+    "scripts/package-release.py": "12f54244275b2130c381b089da961bf65619947f9d5d6dded38b966682e08107",
+    "scripts/runtime-notices.py": "e9b9be3c9df143302c4013032406586f51cf03bb9a83179a43786e926d3672bf",
+    "tests/native_smoke.py": "9667e1b6ed126c746fb9c11d7277ff3ca935b3014dc947e1c45e985275ed15e7",
+    "tests/test_advisor_stop_integration.py": "53814ef02ed3770828425d3ab38f16436edc045770f88f7de2488492c64d1789",
+    "tests/test_build_artifacts.py": "dd0dd6c48922e2909ec3da51c00f9c5db56132f1545d9a541cfce28c2d0bafce",
+    "tests/test_build_native.py": "bb9c3630e9fcf1f263f3a07176913288ee2da50eb240c9f8cdd3f1b3f1310f47",
+    "tests/test_packaging.py": "dbcec3e52b19584f99db68f4eb166f16a8c618f3cff0919a1ffa4699567d94b3",
+    "tests/test_rust_runtime_acceptance.py": "33f7fe49e558136c9a608e6ed9a1b969b2803e673b89dc0f6a30f58a699804f8",
+    "tests/test_rust_runtime_advisor_regressions.py": "e151df1f1c68fca830072c3e675eaa73f410df00e0e955bbcf0a0e7da504bb18",
+    "tests/test_rust_runtime_upgrade.py": "184eab4a62a1da1ead51a370931c72d803164a19f79b8e04b328d4697522d5b5"
+  },
+  "tracked_diff_sha256": "8c78e7a5547219002145ccc24b864b1e910eb11da26e637729638e619a4aa1e5"
+}

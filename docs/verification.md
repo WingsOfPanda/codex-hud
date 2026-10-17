@@ -6,6 +6,34 @@ Rust 1.99.1. Keep the ordinary installed Codex and global configuration intact.
 
 ## Current release acceptance
 
+### Audit regression checks
+
+The post-0.3.0 audit fixes are source changes, not a qualified release. In
+addition to the helper checks below, run these against the rebuilt runtime:
+
+```sh
+python3 tests/test_rust_runtime_advisor_regressions.py \
+  --runtime .build/codex-plus-runtime --evidence .build/advisor-regressions -v
+# Use the native-smoke pyte interpreter and an official stock binary:
+python3 tests/test_advisor_stop_integration.py --binary /absolute/official/codex \
+  --runtime .build/codex-plus-runtime --evidence .build/advisor-stop
+python3 -m unittest discover -s tests -p test_build_artifacts.py -v
+```
+
+These cover native group/owner kills, detached descendants, Git hook isolation,
+bounded multilingual results, and Cargo's actual artifact locations. Coordinator
+and upgrade suites include batching/cancellation on real Rust connections,
+legacy stranded callbacks, bounded-history uncertainty, transport failure, and
+relative homes across packaged startup and upgrade. The terminal smoke checks
+zero inactive-worker turn reads while retaining completed group metrics.
+See [the audit fix record](audit-fixes.md) for executed checks and remaining
+release checks. [Notice resolution](notice-resolution.md) records the subsequent
+40 packaging tests, complete x86/ARM production graphs, source bindings and
+independent component-notice requirements. This does not replace target-specific
+release checks.
+
+### Release 0.3.0 baseline
+
 For the Plus 0.3 helper migration, use the
 [Rust runtime checks](rust-runtime.md#qualification). The Python 0.2 suites below
 remain historical/oracle evidence, rather than proof of the installed runtime.
@@ -152,6 +180,15 @@ fixture holds status bytes constant while checking elapsed updates, verifies no
 extra model request, edits and resizes the composer, and retains the footer's
 three-row budget. The advisor itself is simulated; the TUI, shell and Code Mode
 lifecycle are real.
+
+The topic-row follow-up also covers an explicitly labeled Python wrapper:
+`• Advisor on wake and cancellation fixes · 5:01`. Its marker follows the
+foreground directive; the model and effort remain in the footer. Canonical
+direct commands retain a compact brief fallback. Unrelated commands, malformed
+labels, background/auto work and stale status must not acquire this row. The
+same cell retains the topic on completion/failure, and narrow widths shorten the
+topic before the elapsed time. See [advisor-topic.json](evidence/advisor-topic.json)
+for the follow-up candidate, executed checks and deployment limits.
 
 Root acceptance passed 21 terminal stages, 17 fixture tests and the focused Rust
 filters: advisor 13, HUD 38, shell policy 18, exec flow 53 and historical tools 6

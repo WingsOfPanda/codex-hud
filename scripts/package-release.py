@@ -30,14 +30,17 @@ from urllib.request import urlopen
 ROOT = Path(__file__).resolve().parents[1]
 UPSTREAM_COMMIT = '83086188ae0614bd882818ff1aa23f3194962012'
 UPSTREAM_VERSION = '0.163.0'
-PLUS_VERSION = '0.3.0'
+PLUS_VERSION = '0.3.1'
 RELEASE = f'{UPSTREAM_VERSION}-plus.{PLUS_VERSION}'
 COORDINATOR_PROTOCOL = 2
 PATCH = 'patches/codex-0.163.0-worker-hud.patch'
 TARGETS = {'x86_64-unknown-linux-gnu': 62, 'aarch64-unknown-linux-gnu': 183}
 DOCS = ('README.md', 'GLOSSARY.md', 'docs/background-work.md',
         'docs/shell-workflow.md', 'docs/verification.md', 'docs/release-notes.md',
-        'docs/releasing.md', 'docs/advisor.md', 'docs/rust-runtime.md')
+        'docs/releasing.md', 'docs/advisor.md', 'docs/rust-runtime.md',
+        'docs/audit-fixes.md', 'docs/notice-resolution.md',
+        'docs/evidence/audit-fixes.json', 'docs/evidence/advisor-topic.json',
+        'docs/evidence/notice-resolution.json')
 
 
 def runtime_source_files(root):
@@ -57,7 +60,8 @@ RUNTIME_SOURCES = runtime_source_files(ROOT)
 SOURCE_FILES = RUNTIME_SOURCES + DOCS + ('bin/codex-plus', 'LICENSE', PATCH,
     'rust-runtime/Cargo.toml', 'rust-runtime/Cargo.lock', 'scripts/build-runtime.sh',
     'scripts/build-native.sh', 'scripts/package-release.py', 'scripts/build-release.sh',
-    'scripts/runtime-notices.py')
+    'scripts/runtime-notices.py', 'scripts/native-license-sources.json',
+    'scripts/build-artifacts.py')
 EXECUTABLES = ('bin/codex', 'bin/codex-plus-runtime', 'bin/codex-code-mode-host', 'codex-resources/bwrap',
                'codex-path/rg')
 # Licenses are pinned independently because the binary archives omit them.
@@ -76,7 +80,9 @@ LICENSE_DOWNLOADS = {
 RUNTIME_LICENSE_FILES = ('licenses/codex-plus-runtime-NOTICES.txt',
                         'licenses/codex-plus-runtime-dependencies.json',
                         'licenses/codex-plus-runtime-rust-COPYRIGHT.html')
-LICENSE_FILES = RUNTIME_LICENSE_FILES + tuple('licenses/' + name for name in LICENSE_DOWNLOADS) + (
+NATIVE_LICENSE_FILES = ('licenses/codex-native-NOTICES.txt',
+                        'licenses/codex-native-dependencies.json')
+LICENSE_FILES = RUNTIME_LICENSE_FILES + NATIVE_LICENSE_FILES + tuple('licenses/' + name for name in LICENSE_DOWNLOADS) + (
     'LICENSE', 'NOTICE', 'licenses/bubblewrap-COPYING',
     'licenses/codex-plus-LICENSE', 'licenses/provenance.json',
     'licenses/rusty-v8-release-manifests.sha256')
@@ -128,6 +134,29 @@ def runtime_provenance(package, target):
             not metadata.get('packages')):
         raise ValueError('Invalid native runtime dependency provenance')
     files = ('bin/codex-plus-runtime',) + RUNTIME_LICENSE_FILES
+    return {'files': {name: sha256(package / name) for name in files},
+            'cargo_lock_sha256': metadata['cargo_lock_sha256'],
+            'source_sha256': metadata['source_sha256'], 'rust': metadata['toolchain']['rust']}
+
+
+def native_provenance(package, target):
+    metadata = json.loads((package / NATIVE_LICENSE_FILES[1]).read_text())
+    sources = metadata.get('source_files')
+    if (metadata.get('schema_version') != 1 or metadata.get('target') != target or
+            metadata.get('roots') != ['codex-cli', 'codex-code-mode-host'] or
+            metadata.get('build_features') != {'default_features': True, 'features': []} or
+            metadata.get('toolchain', {}).get('rust') != '1.99.1' or
+            not isinstance(sources, dict) or
+            not {'codex-rs/Cargo.toml', 'codex-rs/Cargo.lock', 'codex-rs/cli/Cargo.toml',
+                 'codex-rs/code-mode-host/Cargo.toml'} <= sources.keys() or
+            any(not re.fullmatch(r'[0-9a-f]{64}', value) for value in sources.values()) or
+            metadata.get('cargo_lock_sha256') != sources['codex-rs/Cargo.lock'] or
+            metadata.get('source_sha256') != tree_sha256(sources) or
+            metadata['toolchain'].get('library_notices_sha256') != sha256(package / RUNTIME_LICENSE_FILES[2]) or
+            not {'codex-cli', 'codex-code-mode-host'} <=
+                {p['name'] for p in metadata.get('packages', [])}):
+        raise ValueError('Invalid native CLI/host dependency provenance')
+    files = ('bin/codex', 'bin/codex-code-mode-host') + NATIVE_LICENSE_FILES
     return {'files': {name: sha256(package / name) for name in files},
             'cargo_lock_sha256': metadata['cargo_lock_sha256'],
             'source_sha256': metadata['source_sha256'], 'rust': metadata['toolchain']['rust']}
@@ -214,6 +243,8 @@ def verify_package(package):
     validate_layout(package, manifest['target'])
     if manifest.get('runtime') != runtime_provenance(package, manifest['target']):
         raise ValueError('Invalid native runtime provenance')
+    if manifest.get('native') != native_provenance(package, manifest['target']):
+        raise ValueError('Invalid native CLI/host provenance')
     return manifest
 
 
@@ -360,7 +391,9 @@ def build(args):
         copy_file(native / 'codex-plus-runtime', stage / 'bin/codex-plus-runtime', 0o755)
         add_licenses(source, stage, output / 'license-cache')
         subprocess.run([sys.executable, str(ROOT / 'scripts/runtime-notices.py'),
-                        '--target', args.target, '--output-dir', str(stage / 'licenses')], check=True)
+                        '--target', args.target, '--output-dir', str(stage / 'licenses'),
+                        '--upstream-source', str(source), '--license-cache',
+                        str(output / 'license-cache')], check=True)
         (stage / 'codex-package.json').chmod(0o644)
         for name in EXECUTABLES:
             (stage / name).chmod(0o755)
@@ -373,6 +406,7 @@ def build(args):
             'build': {'glibc': args.build_glibc, 'rust': '1.99.1', 'cargo_profile': 'release'},
             'voice': False, 'resources': resource_provenance(source, args.target),
             'runtime': runtime_provenance(stage, args.target),
+            'native': native_provenance(stage, args.target),
             'files': tree_files(stage),
         }
         manifest['tree_sha256'] = tree_sha256(manifest['files'])

@@ -66,9 +66,9 @@ class CompactHudAssertionTests(unittest.TestCase):
             assert_compact_hud(text + '\n+2 more')
 
     def test_advisor_transcript_is_separate_from_three_row_footer(self):
-        transcript = ['● Advising using GPT-6-Astra · 0m59s',
-                      '● Advised by GPT-6-Astra · 1m05s',
-                      '● Advisor failed · 1m05s']
+        transcript = ['• Advisor on wake and cancellation fixes · 5:01',
+                      '• Advised on wake and cancellation fixes · 1:05',
+                      '• Advisor failed on wake and cancellation fixes · 1:05']
         footer = ['Advisor · GPT-6-Astra (xhigh) · reviewing · 1:23',
                   'GPT-6.1-Sol (high) · task · 0:12 · ? tok',
                   'Background · python train.py · seen 0:12']
@@ -81,10 +81,10 @@ class CompactHudAssertionTests(unittest.TestCase):
     def test_advisor_transcript_recognition_excludes_draft_and_footer(self):
         self.assertEqual(advisor_transcript_rows('\n'.join([
             'Advisor · GPT-6-Astra (xhigh) · reviewing · 1:23',
-            '› ● Advising using GPT-6-Astra · 0m59s',
-            '> ● Advised by GPT-6-Astra · 1m05s',
-            '● Advising using GPT-6-Astra · ?m??s',
-            '● Advising using GPT-6-Astra · 0m59s extra',
+            '› • Advisor on wake and cancellation fixes · 5:01',
+            '> • Advised on wake and cancellation fixes · 1:05',
+            '• Advisor on wake and cancellation fixes · ?:??',
+            '• Advisor on wake and cancellation fixes · 5:01 extra',
         ])), [])
 
     def test_typed_draft_does_not_require_shortcuts_footer(self):
