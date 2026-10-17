@@ -88,16 +88,25 @@ class PagedHistoryFake(Fake):
     def __init__(self):
         super().__init__()
         self.history_error = False
+        self.item_replies = {}
 
     def call(self, method, params):
-        if method == 'thread/items/list' and not params.get('turnId'):
+        if method == 'thread/items/list':
             self.calls.append((method, dict(params)))
-            if self.history_error:
+            turn = params.get('turnId')
+            if self.history_error and not turn:
                 raise ConnectionError('history transport failed')
+            key = (turn, params.get('cursor'))
+            if key in self.item_replies:
+                reply = self.item_replies[key]
+                if isinstance(reply, Exception):
+                    raise reply
+                return reply
+            entries = [entry for entry in self.entries if not turn or entry['turnId'] == turn]
             start = int(params.get('cursor', '0'))
             end = start + params['limit']
-            return {'data': self.entries[start:end],
-                    'nextCursor': str(end) if end < len(self.entries) else None}
+            return {'data': entries[start:end],
+                    'nextCursor': str(end) if end < len(entries) else None}
         return super().call(method, params)
 
 
@@ -258,6 +267,128 @@ class RuntimeAcceptance(unittest.TestCase):
             result = f.cli('park', '--process', '42', '--reason', 'ambiguous process', ok=False)
             self.assertNotEqual(result.returncode, 0)
             self.assertFalse(f.state()['parks'])
+
+    def test_current_completed_process_ignores_long_older_history(self):
+        with self.fixture(PagedHistoryFake()) as f:
+            f.fake.entries = [{'turnId': 'old-history', 'item': {
+                'type': 'userMessage', 'id': f'old-{index}'}} for index in range(3300)]
+            f.fake.entries.append({'turnId': 'origin', 'item': {
+                'type': 'commandExecution', 'id': 'finished-current', 'processId': '60257',
+                'status': 'completed', 'exitCode': 0}})
+            self.assertEqual(f.park('--process', '60257')['state'], 'already_finished')
+            self.assertFalse(f.state()['parks'])
+            self.assertFalse(f.state()['jobs'])
+            self.assertFalse(f.state()['callbacks'])
+            items = [params for method, params in f.fake.calls if method == 'thread/items/list']
+            self.assertEqual(len(items), 1)
+            self.assertEqual(items[0]['turnId'], 'origin')
+            self.assertEqual(f.fake.enqueues, 0)
+
+    def test_current_process_match_scans_pages_and_wins_over_historical_id_reuse(self):
+        for duplicate in (False, True):
+            with self.subTest(duplicate=duplicate), self.fixture(PagedHistoryFake(), label=str(duplicate)) as f:
+                command = {'turnId': 'origin', 'item': {
+                    'type': 'commandExecution', 'id': 'finished-current', 'processId': '42',
+                    'status': 'completed', 'exitCode': 0}}
+                f.fake.entries = [{'turnId': 'old-turn', 'item': {
+                    **command['item'], 'id': 'reused-old'}}]
+                f.fake.entries.extend({'turnId': 'origin', 'item': {
+                    'type': 'userMessage', 'id': f'prefix-{index}'}} for index in range(100))
+                f.fake.entries.extend([command, {'turnId': 'origin', 'item': {
+                    'type': 'userMessage', 'id': 'wrong-type', 'processId': '42'}},
+                    {'turnId': 'origin', 'item': {**command['item'], 'id': 'wrong-process',
+                                               'processId': '420'}}])
+                f.fake.entries.extend({'turnId': 'origin', 'item': {
+                    'type': 'userMessage', 'id': f'suffix-{index}'}} for index in range(100))
+                if duplicate:
+                    f.fake.entries.append({'turnId': 'origin', 'item': {
+                        **command['item'], 'id': 'duplicate-current'}})
+                    result = f.cli('park', '--process', '42', '--reason', 'duplicate current', ok=False)
+                    self.assertNotEqual(result.returncode, 0)
+                else:
+                    self.assertEqual(f.park('--process', '42')['state'], 'already_finished')
+                items = [params for method, params in f.fake.calls if method == 'thread/items/list']
+                self.assertEqual(len(items), 3)
+                self.assertTrue(all(params.get('turnId') == 'origin' for params in items))
+                self.assertFalse(f.state()['parks'])
+                self.assertFalse(f.state()['jobs'])
+                self.assertFalse(f.state()['callbacks'])
+
+    def test_process_batch_reuses_current_snapshot_and_falls_back_for_older_job(self):
+        with self.fixture(PagedHistoryFake()) as f:
+            f.fake.running = [{'processId': '11', 'itemId': 'running-command'}]
+            f.fake.entries = [{'turnId': turn, 'item': {
+                'type': 'commandExecution', 'id': item, 'processId': process,
+                'status': 'completed', 'exitCode': 0}}
+                for turn, item, process in [('origin', 'current-command', '42'),
+                                            ('old-turn', 'older-command', '43')]]
+            result = f.park('--process', '11', '--process', '42', '--process', '43')
+            self.assertEqual(result['state'], 'armed')
+            self.assertEqual({job['item']: job['status'] for job in f.state()['jobs']}, {
+                'running-command': 'armed'})
+            self.assertEqual({job['id']: job['status'] for job in result['already_finished']}, {
+                f'{PARENT}:process:item:current-command': 'completed',
+                f'{PARENT}:process:item:older-command': 'completed'})
+            items = [params for method, params in f.fake.calls if method == 'thread/items/list']
+            self.assertEqual([params.get('turnId') for params in items], ['origin', None])
+            self.assertFalse(f.state()['callbacks'])
+            self.assertEqual(f.fake.enqueues, 0)
+
+    def test_old_process_beyond_history_bound_does_not_partially_register_batch(self):
+        with self.fixture(PagedHistoryFake()) as f:
+            f.fake.running = [{'processId': '11', 'itemId': 'running-command'}]
+            f.fake.entries = [{'turnId': 'old-history', 'item': {
+                'type': 'userMessage', 'id': f'old-{index}'}} for index in range(3300)]
+            f.fake.entries.append({'turnId': 'old-turn', 'item': {
+                'type': 'commandExecution', 'id': 'older-command', 'processId': '42',
+                'status': 'completed', 'exitCode': 0}})
+            result = f.cli('park', '--worker', CHILD, '--process', '11', '--process', '42',
+                           '--reason', 'bounded old selection', ok=False)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn('32 pages', result.stderr)
+            items = [params for method, params in f.fake.calls if method == 'thread/items/list']
+            self.assertEqual(sum(params.get('turnId') == 'origin' for params in items), 1)
+            self.assertEqual(sum(not params.get('turnId') for params in items), 32)
+            self.assertFalse(f.state()['parks'])
+            self.assertFalse(f.state()['jobs'])
+            self.assertFalse(f.state()['callbacks'])
+            self.assertEqual(f.fake.enqueues, 0)
+
+    def test_current_process_lookup_errors_do_not_accept_partial_or_unowned_evidence(self):
+        command = {'turnId': 'origin', 'item': {
+            'type': 'commandExecution', 'id': 'current-command', 'processId': '42',
+            'status': 'completed', 'exitCode': 0}}
+        faults = {
+            'repeated-cursor': {'data': [], 'nextCursor': 'fault'},
+            'malformed-data': {'data': {}},
+            'malformed-cursor': {'data': [], 'nextCursor': 42},
+            'transport': ConnectionError('current history transport failed'),
+            'wrong-turn': {'data': [{**command, 'turnId': 'other-turn'}], 'nextCursor': None},
+            'missing-turn': {'data': [{'item': command['item']}], 'nextCursor': None},
+            'bounded-current': None,
+        }
+        for label, reply in faults.items():
+            with self.subTest(fault=label), self.fixture(PagedHistoryFake(), label=label) as f:
+                f.fake.running = [{'processId': '11', 'itemId': 'running-command'}]
+                f.fake.entries = [command]
+                if label == 'bounded-current':
+                    f.fake.entries.extend({'turnId': 'origin', 'item': {
+                        'type': 'userMessage', 'id': f'current-{index}'}} for index in range(3300))
+                else:
+                    f.fake.item_replies = {
+                        ('origin', None): {'data': [command], 'nextCursor': 'fault'},
+                        ('origin', 'fault'): reply,
+                    }
+                result = f.cli('park', '--process', '11', '--process', '42',
+                               '--reason', 'unverified current selection', ok=False)
+                self.assertNotEqual(result.returncode, 0)
+                items = [params for method, params in f.fake.calls if method == 'thread/items/list']
+                self.assertEqual(len(items), 32 if label == 'bounded-current' else 2)
+                self.assertTrue(all(params.get('turnId') == 'origin' for params in items))
+                self.assertFalse(f.state()['parks'])
+                self.assertFalse(f.state()['jobs'])
+                self.assertFalse(f.state()['callbacks'])
+                self.assertEqual(f.fake.enqueues, 0)
 
     def test_live_delivery_waits_for_idle_and_preserves_python_dedup(self):
         with self.fixture() as f:

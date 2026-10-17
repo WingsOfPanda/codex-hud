@@ -1,0 +1,154 @@
+{
+  "scope": "Unreleased current-turn-first park process selection; no change to callbacks/ledger schema/protocol or daemon",
+  "root_cause": "Completed process absent from live background list caused full parent history enumeration, requiring32pages even for current-turn work",
+  "selection_order": [
+    "positive live process-to-item mapping",
+    "complete unique current-turn command match with exact turn/process/type",
+    "existing bounded historical unique-item fallback for older work"
+  ],
+  "current_turn_reused_process_id_precedence": true,
+  "pagination_guard_unchanged": {
+    "maximum_pages": 32,
+    "page_size": 100,
+    "incomplete_or_ambiguous_selection": "unknown/no partial batch"
+  },
+  "red_installed_runtime_sha256": "880d766dee38c266b0f7544fd88c6ec3f8ce25fb82ec7164b0305d510edfd558",
+  "red_log": "/home/liupan/Aerius/codex-plus/.build/park-history/blackbox-red.log",
+  "root_gates": [
+    {
+      "name": "root-unit",
+      "command": [
+        "cargo",
+        "+1.99.1",
+        "test",
+        "--locked",
+        "--manifest-path",
+        "rust-runtime/Cargo.toml",
+        "--target-dir",
+        ".build/runtime-target",
+        "--lib"
+      ],
+      "exit": 0,
+      "seconds": 2.869,
+      "log": "/home/liupan/Aerius/codex-plus/.build/park-history/root-unit.log"
+    },
+    {
+      "name": "root-coordinator",
+      "command": [
+        "/home/liupan/Aerius/codex-plus/.build/dual-release/acceptance/venv/bin/python",
+        "tests/test_rust_runtime_acceptance.py",
+        "--runtime",
+        "/home/liupan/Aerius/codex-plus/.build/park-history/codex-plus-runtime",
+        "--evidence",
+        "/home/liupan/Aerius/codex-plus/.build/park-history/root-coordinator",
+        "-v"
+      ],
+      "exit": 0,
+      "seconds": 40.13,
+      "log": "/home/liupan/Aerius/codex-plus/.build/park-history/root-coordinator.log"
+    },
+    {
+      "name": "root-stock-lifecycle",
+      "command": [
+        "/home/liupan/Aerius/codex-plus/.build/dual-release/acceptance/venv/bin/python",
+        "tests/test_rust_runtime_stock_lifecycle.py",
+        "--runtime",
+        "/home/liupan/Aerius/codex-plus/.build/park-history/codex-plus-runtime",
+        "--stock-binary",
+        "/home/liupan/Aerius/codex-plus/.build/upstream-0163/official-x86/bin/codex",
+        "--evidence",
+        "/home/liupan/Aerius/codex-plus/.build/park-history/root-stock-lifecycle",
+        "--scenario",
+        "all"
+      ],
+      "exit": 0,
+      "seconds": 27.06,
+      "log": "/home/liupan/Aerius/codex-plus/.build/park-history/root-stock-lifecycle.log"
+    },
+    {
+      "name": "root-upgrade",
+      "command": [
+        "/home/liupan/Aerius/codex-plus/.build/dual-release/acceptance/venv/bin/python",
+        "tests/test_rust_runtime_upgrade.py",
+        "--runtime",
+        "/home/liupan/Aerius/codex-plus/.build/park-history/codex-plus-runtime",
+        "--evidence",
+        "/home/liupan/Aerius/codex-plus/.build/park-history/root-upgrade",
+        "-v"
+      ],
+      "exit": 0,
+      "seconds": 12.334,
+      "log": "/home/liupan/Aerius/codex-plus/.build/park-history/root-upgrade.log"
+    }
+  ],
+  "verification_counts": {
+    "rust_units": 58,
+    "coordinator": 27,
+    "upgrade": 7,
+    "official_stock_lifecycle_scenarios": 6
+  },
+  "stock_scenarios": [
+    {
+      "scenario": "daemon-restart",
+      "passed": true
+    },
+    {
+      "scenario": "observer-completed",
+      "passed": true
+    },
+    {
+      "scenario": "observer-running",
+      "passed": true
+    },
+    {
+      "scenario": "origin-abort",
+      "passed": true
+    },
+    {
+      "scenario": "registration-completed",
+      "passed": true
+    },
+    {
+      "scenario": "worker-reuse",
+      "passed": true
+    }
+  ],
+  "identities": {
+    "runtime_sha256": "10f9847459b8b7c0396e3772e91f88222c84d0ce9f099c00f4930369024ac709",
+    "stock_binary_sha256": "399ff69c431c066e40de318fba45c2b07f45a76b19939d247ee4828fc70c4215",
+    "unchanged_by_tests": true,
+    "remote_provider_requests": 0
+  },
+  "read_only_live_api_probe": {
+    "read_only": true,
+    "thread_id": "01a1332f-c083-7573-8386-9a9357a23e18",
+    "origin_turn": "01a149ed-5228-7793-b68f-38a005068769",
+    "returned_items": 45,
+    "has_next_page": false,
+    "exact_turn_ownership_verified": true
+  },
+  "source_sha256": {
+    "rust-runtime/src/background.rs": "91d6c0b3c3aad4089380333f40df75e4c0f2082fa441535b54ed7b817bb934bb",
+    "tests/test_rust_runtime_acceptance.py": "6b5d0df46f41bafe3ce9f48ef1615fc00938c9f60fc3bd5c586ba8d31f45a962",
+    "tests/test_rust_runtime_stock_lifecycle.py": "acc7caccafc7484273799003c2d0ee1d9512a444983c861a346a873f1415476d",
+    "docs/background-work.md": "e027d234c30a4f0998c5fb4999658c53be40555730673e82869536d9e85c7043"
+  },
+  "prior_hud_patch_unchanged_sha256": "76c123dddfa1c26a431657d71fa0b41e50909aa8359aea161f2bab9ea3c0d99d",
+  "limits": [
+    "Current-turn and historical selection remain bounded; genuinely over-limit or ambiguous work is not guessed.",
+    "X86 helper development qualification only; ARM release archives and full upstream Rust suite not built.",
+    "No installation/publication/merge, callback resends, or changes to active GLM work."
+  ],
+  "production_installation": false,
+  "remote_provider_requests": 0,
+  "live_workflow_observation": {
+    "process": "83084",
+    "parent": "01a1332f-c083-7573-8386-9a9357a23e18",
+    "origin": "01a149ed-5228-7793-b68f-38a005068769",
+    "observed_result": "already_finished",
+    "park": null,
+    "armed": [],
+    "callbacks_created": false,
+    "source": "Root tool invocation after launching root-gates.py;returned completed command item exec-b37646ab-e14b-481c-8fb8-4703f4552155 in current turn"
+  }
+}

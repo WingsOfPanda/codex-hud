@@ -183,6 +183,59 @@ fn command_status(item: &Value) -> &'static str {
     }
 }
 
+fn process_item(
+    client: &mut impl Calls,
+    parent: &str,
+    origin: &str,
+    process: &str,
+    current: &mut Option<Vec<Value>>,
+    history: &mut Option<Vec<Value>>,
+) -> Result<Value> {
+    if current.is_none() {
+        let entries = pages(
+            client,
+            "thread/items/list",
+            json!({"threadId":parent,"turnId":origin,"sortDirection":"desc"}),
+        )?;
+        if entries.iter().any(|entry| entry["turnId"] != origin) {
+            bail!("thread/items/list: mismatched current turn");
+        }
+        *current = Some(entries);
+    }
+    let matches_process = |entry: &&Value| {
+        entry["item"]["type"] == "commandExecution" && entry["item"]["processId"] == process
+    };
+    // Current-turn identity wins even when an older turn reused the process ID.
+    let mut matches: Vec<_> = current
+        .as_ref()
+        .unwrap()
+        .iter()
+        .filter(matches_process)
+        .collect();
+    if matches.is_empty() {
+        if history.is_none() {
+            *history = Some(pages(
+                client,
+                "thread/items/list",
+                json!({"threadId":parent,"sortDirection":"desc"}),
+            )?);
+        }
+        matches = history
+            .as_ref()
+            .unwrap()
+            .iter()
+            .filter(matches_process)
+            .collect();
+    }
+    if matches.len() != 1 {
+        return Err(RegistrationError(format!(
+            "process {process:?} must uniquely match a parent command item"
+        ))
+        .into());
+    }
+    Ok(matches[0].clone())
+}
+
 fn exit_code(value: &Value) -> Option<i64> {
     value.as_i64().or_else(|| value.as_bool().map(i64::from))
 }
@@ -348,6 +401,7 @@ fn register(
                 text(&row, "itemId")?.to_owned(),
             );
         }
+        let mut current = None;
         let mut history = None;
         let mut seen = HashSet::new();
         for process in processes
@@ -367,36 +421,21 @@ fn register(
                 });
                 continue;
             }
-            if history.is_none() {
-                history = Some(pages(
-                    client,
-                    "thread/items/list",
-                    json!({"threadId":parent,"sortDirection":"desc"}),
-                )?);
-            }
-            let matches: Vec<_> = history
-                .as_ref()
-                .unwrap()
-                .iter()
-                .filter(|entry| {
-                    entry["item"]["type"] == "commandExecution"
-                        && entry["item"]["processId"] == process.as_str()
-                })
-                .collect();
-            if matches.len() != 1 {
-                return Err(RegistrationError(format!(
-                    "process {process:?} must uniquely match a parent command item"
-                ))
-                .into());
-            }
-            let entry = matches[0];
+            let entry = process_item(
+                client,
+                parent,
+                text(&origin, "id")?,
+                process,
+                &mut current,
+                &mut history,
+            )?;
             let item = &entry["item"];
             let id = text(item, "id")?;
             resolved.push(ResolvedJob {
                 id: format!("{parent}:process:item:{id}"),
                 kind: "process".into(),
                 thread: parent.into(),
-                turn: Some(text(entry, "turnId")?.into()),
+                turn: Some(text(&entry, "turnId")?.into()),
                 item: Some(id.into()),
                 process: Some(process.clone()),
                 status: command_status(item).into(),
@@ -1341,6 +1380,68 @@ mod tests {
         Fake {
             responses: responses.into(),
             calls: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn current_turn_process_does_not_scan_long_parent_history() {
+        let item = json!({"turnId":"origin","item":{"type":"commandExecution","id":"recent","processId":"42","status":"completed","exitCode":0}});
+        let mut responses = vec![json!({"data":[item]})];
+        responses
+            .extend((0..MAX_PAGES).map(|index| json!({"data":[],"nextCursor":index.to_string()})));
+        let mut client = fake(responses);
+        let result =
+            process_item(&mut client, "root", "origin", "42", &mut None, &mut None).unwrap();
+        assert_eq!(result["item"]["id"], "recent");
+        assert_eq!(client.calls.len(), 1);
+        assert_eq!(client.calls[0].1["turnId"], "origin");
+    }
+
+    #[test]
+    fn process_selection_caches_current_turn_and_falls_back_only_for_older_jobs() {
+        let current = json!({"turnId":"origin","item":{"type":"commandExecution","id":"recent","processId":"42"}});
+        let old = json!({"turnId":"older","item":{"type":"commandExecution","id":"old","processId":"43"}});
+        let mut client = fake(vec![json!({"data":[current]}), json!({"data":[old]})]);
+        let (mut current, mut history) = (None, None);
+        for (process, expected) in [("42", "recent"), ("43", "old"), ("42", "recent")] {
+            let item = process_item(
+                &mut client,
+                "root",
+                "origin",
+                process,
+                &mut current,
+                &mut history,
+            )
+            .unwrap();
+            assert_eq!(item["item"]["id"], expected);
+        }
+        assert_eq!(client.calls.len(), 2);
+        assert_eq!(client.calls[0].1["turnId"], "origin");
+        assert!(client.calls[1].1.get("turnId").is_none());
+    }
+
+    #[test]
+    fn process_selection_rejects_duplicate_current_matches_and_foreign_turns() {
+        let item = json!({"turnId":"origin","item":{"type":"commandExecution","id":"recent","processId":"42"}});
+        let mut client = fake(vec![
+            json!({"data":[item.clone()],"nextCursor":"more"}),
+            json!({"data":[item.clone()]}),
+        ]);
+        assert!(
+            process_item(&mut client, "root", "origin", "42", &mut None, &mut None)
+                .unwrap_err()
+                .downcast_ref::<RegistrationError>()
+                .is_some()
+        );
+        assert_eq!(client.calls.len(), 2);
+        for turn in [json!("other"), Value::Null] {
+            let mut foreign = item.clone();
+            foreign["turnId"] = turn;
+            let mut client = fake(vec![json!({"data":[foreign]})]);
+            assert!(
+                process_item(&mut client, "root", "origin", "42", &mut None, &mut None).is_err()
+            );
+            assert_eq!(client.calls.len(), 1);
         }
     }
 
