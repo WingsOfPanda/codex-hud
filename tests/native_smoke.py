@@ -552,10 +552,12 @@ def advisor_hud_smoke(binary, root, evidence):
     release = workspace / 'release-shell'
     command = (f'deadline=$((SECONDS+90)); while [ ! -e {shlex.quote(str(release))} ] && '
                '(( SECONDS < deadline )); do sleep 0.1; done; echo advisor-shell-complete')
-    fixture_bin = root / 'advisor-bin'
-    fixture_bin.mkdir()
+    fixture_bin = root / 'advisor-fixture' / 'bin'
+    fixture_bin.mkdir(parents=True)
     fixture_launcher = fixture_bin / 'codex-plus'
+    fixture_calls = workspace / 'advisor-stub-calls'
     fixture_launcher.write_text('#!/bin/bash\n'
+                                f'printf "%s\\n" "$1" >> {shlex.quote(str(fixture_calls))}\n'
                                 'if [[ "$1" == run && "$2" == -- ]]; then shift 2; exec "$@"; fi\n' +
                                 command + '\n')
     fixture_launcher.chmod(0o755)
@@ -629,11 +631,15 @@ stream_max_retries=0
         wait_server(lambda: provider.count == 4, 'advisor mixed fixture shell did not yield')
         wait_server(lambda: rpc.call('thread/read', {'threadId': parents[0]})['thread']['status']['type'] == 'idle',
                     'advisor mixed fixture turn did not finish')
-        provider.command = '# codex-plus-shell: background\ncodex-plus run -- codex-plus advisor --brief task'
+        provider.command = '# codex-plus-shell: background\n' + shlex.join([
+            str(fixture_launcher), 'run', '--', str(fixture_launcher), 'advisor', '--brief', 'task'])
         provider.reset('success')
         rpc.call('turn/start', {'threadId': parents[0],
             'input': [{'type': 'text', 'text': 'Start the held advisor command fixture and finish.', 'text_elements': []}]})
         wait_server(lambda: provider.count == 6, 'advisor command fixture did not yield')
+        wait_server(lambda: fixture_calls.exists() and
+                    fixture_calls.read_text().splitlines() == ['run', 'advisor'],
+                    'advisor command escaped its private fixture launcher')
         wait_server(lambda: rpc.call('thread/read', {'threadId': parents[0]})['thread']['status']['type'] == 'idle',
                     'advisor command fixture turn did not finish')
         before = provider.count
