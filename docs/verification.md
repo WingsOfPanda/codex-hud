@@ -6,6 +6,28 @@ Rust 1.99.1. Keep the ordinary installed Codex and global configuration intact.
 
 ## Current release acceptance
 
+### Short background topics
+
+[Source evidence](evidence/shell-topics.json) records 127 passing native filter
+invocations (overlapping coverage), five topic PTY stages plus a real native
+shell, all 23 terminal smoke stages and eight detached-HUD stages. The original
+long-label reproduction failed before the change. Full commands remain in
+history; display refresh adds no model requests. This frontend is not installed.
+
+Use `tests/test_shell_topics_tui.py` with the smoke-test Python environment and
+a complete private candidate (matching Code Mode host and Rust helper beside
+the client). The test covers explicit labels, narrow editable input, reconnect,
+legacy script-name fallback and row disappearance. A real native shell verifies
+that its label survives transport while the full command remains in history.
+Display refresh must add no model requests.
+
+Run native `shell_policy`, `worker_hud`, `chatwidget::tests::exec_flow` and
+`thread_transcript::tools::tests` filters, the full terminal smoke suite and the
+detached HUD cases. Raw command controls must remain safe after label shortening;
+an unrelated background shell must remain separate from an active advisor.
+Regenerate and reconstruct the complete frontend patch before recording the
+new candidate identity. These frontend checks do not require a helper rebuild.
+
 ### Reviewed detached jobs (development candidate)
 
 The [job handoff workflow](detached-jobs.md) uses an independent execution store,

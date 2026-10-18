@@ -41,12 +41,21 @@ The command sent to the native shell tool starts with an exact marker line:
 
 ```sh
 # codex-plus-shell: auto
+# codex-plus-task: Verify runtime tests
 /home/liupan/Aerius/codex-plus/bin/codex-plus run -- bash -lc 'your command here'
 ```
 
 Set the tool's `yield_time_ms` to `2000` for `auto`. Replace the marker mode with
 `background` for a known long command, or `foreground` to retain visible progress.
 The marker is a frontend convention, not a shell option or a daemon feature.
+Give each managed shell a short purpose using `# codex-plus-task: TOPIC` directly
+after the mode line. Use three to six useful words, such as `x86 qualification`
+or `Download model weights`; keep it printable and within 120 characters.
+The HUD uses that topic; native command history and execution keep the full
+command. Older unlabelled jobs use a compact command/script name, or `Shell task`
+for an opaque shell script. This summary uses no extra model request.
+Use the existing advisor topic header for consultations instead of combining
+the two headers. Detached `job` executions already carry their manifest's topic.
 Only explicitly marked agent commands are eligible for quiet display. Unmarked
 commands and manual user shell commands keep their ordinary display.
 
@@ -123,7 +132,7 @@ seconds, with a 120-second outer yield:
 // @exec: {"yield_time_ms": 120000, "max_output_tokens": 1000}
 const deadline = Date.now() + 110000;
 let result = await tools.exec_command({
-  cmd: "# codex-plus-shell: background\n/absolute/path/to/codex-plus run -- PROGRAM ARGUMENTS",
+  cmd: "# codex-plus-shell: background\n# codex-plus-task: Verify assigned checks\n/absolute/path/to/codex-plus run -- PROGRAM ARGUMENTS",
   yield_time_ms: 250, max_output_tokens: 1000, login: false
 });
 let log = result.output.match(/codex-plus log: (.+)/)?.[1];
@@ -170,3 +179,9 @@ and the launcher must make `codex-plus` available in worker environments. Apply
 that policy through fleet-config, which owns the four-box installation and global
 instructions. Repository implementation alone does not update existing sessions,
 stock CLI launches, or other hosts.
+
+Include the topic header in `rollout.agents_md` when this frontend is deployed:
+add `# codex-plus-task: Verify runtime tests` after the example's mode line, and
+instruct the main agent to supply a three-to-six-word purpose, at most 120 printable
+characters. This is a frontend addition; the installed global policy changes
+with the release rather than during source development.

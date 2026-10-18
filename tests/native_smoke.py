@@ -314,10 +314,16 @@ def shell_hud_smoke(binary, root, evidence):
         (evidence / 'shell-alert-overflow-screen.txt').write_text(first.text + '\n')
         servers[0].shell_next_cursor = None
         wait(terminals, lambda: '+2 more' in first.text and 'stale' not in first.text, 'cyclic pagination did not recover')
-        servers[0].shells = [servers[0].shell(730, 'printf 界界界 \x1b[31mcontrol\x1b[0m\nnext\r\ttab\x1b]0;shell-control-title\x07')]
-        wait(terminals, lambda: len(rows(first)) == 1 and '界' in first.text, 'Unicode shell command did not render')
+        unsafe_command = 'printf 界界界 \x1b[31mcontrol\x1b[0m\nnext\r\ttab\x1b]0;shell-control-title\x07'
+        servers[0].shells = [servers[0].shell(730, unsafe_command)]
+        wait(terminals, lambda: len(rows(first)) == 1 and 'Background · Shell task ·' in first.text,
+             'opaque shell command did not use a compact fallback')
         assert '\x1b' not in first.text and not any(line.strip() in ('next', 'tab') for line in first.screen.display), first.text
         assert b'\x1b[31mcontrol' not in first.output and b'\x1b]0;shell-control-title\x07' not in first.output, 'shell command injected terminal controls'
+        servers[0].shells = [servers[0].shell(731,
+            '# codex-plus-shell: background\n# codex-plus-task: 检查界界界\n' + unsafe_command)]
+        wait(terminals, lambda: len(rows(first)) == 1 and '检查界界界' in first.text,
+             'Unicode task topic did not render')
         replies = first.resize(10, 50)
         wait(terminals, lambda: first.resized_frame(replies) and rows(first) and 'shell-draft-0' in first.text, 'narrow shell row lost header or draft')
         os.write(first.master, b'-narrow')
@@ -350,7 +356,7 @@ def shell_hud_smoke(binary, root, evidence):
             (evidence / f'shell-fixture-errors-{index}.json').write_text(json.dumps(server.errors, indent=2) + '\n')
 
 
-def local_shell_smoke(binary, root, evidence):
+def local_shell_smoke(binary, root, evidence, task_topic=None):
     """The real embedded app-server retains a yielded command after its turn ends."""
     home, workspace = root / 'local-shell-home', root / 'local-shell-workspace'
     home.mkdir(mode=0o700)
@@ -360,6 +366,8 @@ def local_shell_smoke(binary, root, evidence):
                f'(( SECONDS < deadline )); do sleep 0.1; done; '
                f'test -e {shlex.quote(str(release))} || exit 124; '
                f'printf canonical-shell-completion > {shlex.quote(str(finished))}')
+    if task_topic:
+        command = f'# codex-plus-shell: background\n# codex-plus-task: {task_topic}\n{command}'
     provider = ResponsesProvider(command)
     terminal = None
     (home / 'config.toml').write_text(write_model_catalog(home) + f'''model="gpt-6.1-sol"
@@ -414,6 +422,9 @@ stream_max_retries=0
         wait([terminal], lambda: completed_turns() == 1 and shell_rows(terminal.text) and 'seen ' in terminal.text,
              'real idle local root did not show its still-running background shell', 30)
         assert_no_park_records(home)
+        if task_topic:
+            assert any(row.startswith(f'Background · {task_topic} · seen ')
+                       for row in shell_rows(terminal.text)), terminal.text
         assert provider.count == 2, f'expected two fixture model calls, got {provider.count}; see local-shell-provider-requests.json'
         assert not finished.exists(), 'command stopped before editable idle interval'
         assert_compact_hud(terminal.text, rows=1)
@@ -432,6 +443,11 @@ stream_max_retries=0
         assert finished.read_text() == 'canonical-shell-completion'
         assert 'local-shell-idle-draft' in terminal.text and provider.count == requests_before == 2
         assert completed_turns() == 1, 'shell polling or completion started an extra turn'
+        if task_topic:
+            commands = [json.loads(event['payload']['arguments']).get('cmd')
+                        for event in events() if event.get('payload', {}).get('type') == 'function_call'
+                        and event['payload'].get('name') == 'exec_command']
+            assert command in commands, 'HUD topic replaced the stored full command'
         (evidence / 'local-shell-complete-screen.txt').write_text(terminal.text + '\n')
         (evidence / 'local-shell-rollout.json').write_text(json.dumps(events(), indent=2) + '\n')
         return ['real private local embedded app-server: one loopback tool turn, yielded finite shell survives completed turn, row and editable idle draft without park registration, actual command completion removes row, zero extra model calls or turns']
@@ -859,7 +875,8 @@ stream_max_retries=0
             assert len(advisor_transcript_rows(terminal.text)) == 1, terminal.text
             assert '• Advised on ' not in terminal.text, 'initial exec yield prematurely completed advisor row'
             if wrapper:
-                assert any('bash -c' in row for row in shell_rows(terminal.text)), \
+                assert any(row.startswith('Background · Shell task · seen ')
+                           for row in shell_rows(terminal.text)), \
                     'unrelated shell was hidden or relabeled as advisor'
                 assert 'Running # codex-plus-advisor:' not in terminal.text, terminal.text
             else:

@@ -44,7 +44,8 @@ DOCS = ('README.md', 'GLOSSARY.md', 'docs/background-work.md',
         'docs/evidence/notice-resolution.json', 'docs/goals.md',
         'docs/custom-goals.md', 'docs/evidence/custom-goals.json',
         'docs/detached-jobs.md', 'docs/detached-jobs-fleet.md',
-        'docs/evidence/parallel-tool-rows.json', 'docs/evidence/detached-jobs.json')
+        'docs/evidence/parallel-tool-rows.json', 'docs/evidence/detached-jobs.json',
+        'docs/evidence/shell-topics.json')
 
 
 def runtime_source_files(root):

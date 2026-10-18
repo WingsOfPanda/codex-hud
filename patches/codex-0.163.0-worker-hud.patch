@@ -8641,10 +8641,10 @@ index f717e2426..7a49ebb6a 100644
 +                                                   100% context left
 diff --git a/codex-rs/tui/src/bottom_pane/worker_hud.rs b/codex-rs/tui/src/bottom_pane/worker_hud.rs
 new file mode 100644
-index 000000000..9b0ec3c8a
+index 000000000..5919069c4
 --- /dev/null
 +++ b/codex-rs/tui/src/bottom_pane/worker_hud.rs
-@@ -0,0 +1,1515 @@
+@@ -0,0 +1,1573 @@
 +//! Read-only worker summary; clipping never takes space from the composer.
 +
 +use crate::line_truncation::truncate_line_with_ellipsis_if_overflow;
@@ -9020,9 +9020,7 @@ index 000000000..9b0ec3c8a
 +                .saturating_sub(display_width(prefix) + display_width(&metrics))
 +                .max(12.min(usize::from(width).saturating_sub(display_width(prefix))));
 +            // Keep raw syntax for coalescing; shorten managed commands for display only.
-+            let label = crate::chatwidget::shell_policy::shell_directive(&shell.command)
-+                .map(|(_, label)| label)
-+                .unwrap_or_else(|| shell.command.clone());
++            let label = crate::chatwidget::shell_policy::shell_hud_label(&shell.command);
 +            let command = truncate_line_with_ellipsis_if_overflow(
 +                Line::from(sanitize_label(&label, 160)),
 +                command_width,
@@ -9106,7 +9104,20 @@ index 000000000..9b0ec3c8a
 +        None
 +    }
 +    fn topic(command: &str, depth: u8) -> Option<String> {
-+        if let Some(body) = command.strip_prefix("# codex-plus-shell: foreground\n") {
++        let (policy, command) = match command.split_once('\n') {
++            Some((
++                marker @ ("# codex-plus-shell: auto"
++                | "# codex-plus-shell: background"
++                | "# codex-plus-shell: foreground"),
++                body,
++            )) => (
++                Some(marker),
++                crate::chatwidget::shell_policy::strip_task_metadata(body).0,
++            ),
++            _ => (None, command),
++        };
++        if policy == Some("# codex-plus-shell: foreground") {
++            let body = command;
 +            if let Some((marker, body)) = body.split_once('\n') {
 +                if let Some(topic) = marker.strip_prefix("# codex-plus-advisor: ") {
 +                    return (!topic.trim().is_empty()
@@ -9117,15 +9128,6 @@ index 000000000..9b0ec3c8a
 +                }
 +            }
 +        }
-+        let command = match command.split_once('\n') {
-+            Some((
-+                "# codex-plus-shell: auto"
-+                | "# codex-plus-shell: background"
-+                | "# codex-plus-shell: foreground",
-+                body,
-+            )) => body,
-+            _ => command,
-+        };
 +        let args = shlex::split(command)?;
 +        // Noncanonical shell syntax may contain operators; retaining it is safer than hiding it.
 +        if shlex::try_join(args.iter().map(String::as_str)).as_deref() != Ok(command) {
@@ -9337,6 +9339,56 @@ index 000000000..9b0ec3c8a
 +mod tests {
 +    use super::*;
 +    use ratatui::style::Modifier;
++
++    #[test]
++    fn shell_task_topics_compact_the_reported_long_commands() {
++        for (command, expected) in [
++            (
++                "# codex-plus-shell: background\ncodex-plus run -- bash -c 'set -e; CARGO_TARGET_DIR=/home/build/target cargo +1.99.1 test --release --locked'",
++                "Shell task",
++            ),
++            (
++                "# codex-plus-shell: background\ncodex-plus run -- python3 .build/detached-jobs/run-arm-final.py --target aarch64-unknown-linux-gnu",
++                "python3 run-arm-final.py",
++            ),
++        ] {
++            let mut hud = WorkerHud::default();
++            hud.set_shells(
++                vec![ShellRow {
++                    command: command.into(),
++                    job_id: "native-42".into(),
++                    seen_secs: Some(65),
++                }],
++                false,
++                true,
++            );
++            assert_eq!(
++                hud.lines(120)[0].to_string(),
++                format!("  Background · {expected} · seen 1:05")
++            );
++            assert_eq!(hud.shells[0].command, command);
++            assert_eq!(hud.shells[0].job_id, "native-42");
++        }
++    }
++
++    #[test]
++    fn shell_task_topics_use_only_the_explicit_hud_label() {
++        let command = "# codex-plus-shell: background\n# codex-plus-task: x86 qualification\ncodex-plus run -- bash -c 'set -e; cargo test --release'";
++        let mut hud = WorkerHud::default();
++        hud.set_shells(
++            vec![ShellRow {
++                command: command.into(),
++                job_id: "native-42".into(),
++                seen_secs: Some(65),
++            }],
++            false,
++            true,
++        );
++        assert_eq!(
++            hud.lines(120)[0].to_string(),
++            "  Background · x86 qualification · seen 1:05"
++        );
++    }
 +
 +    #[test]
 +    fn advisor_rows_keep_warnings_priority_and_three_total_rows() {
@@ -9623,6 +9675,12 @@ index 000000000..9b0ec3c8a
 +            }],
 +            false,
 +            true,
++        );
++        let line = hud.lines(100)[0].to_string();
++        assert_eq!(line, "  Background · Shell task · seen 0:00");
++        hud.shells[0].command = format!(
++            "# codex-plus-shell: background\n# codex-plus-task: 测试👩‍💻 e\u{301} {}\necho actual",
++            "long task ".repeat(10)
 +        );
 +        let line = hud.lines(100)[0].to_string();
 +        assert!(line.starts_with("  Background · 测试"));
@@ -10792,10 +10850,10 @@ index b0b9674c6..a0095018b 100644
      /// Cycle to the next collaboration mode variant (Plan -> Default -> Plan).
 diff --git a/codex-rs/tui/src/chatwidget/shell_policy.rs b/codex-rs/tui/src/chatwidget/shell_policy.rs
 new file mode 100644
-index 000000000..6521fffda
+index 000000000..94210ced0
 --- /dev/null
 +++ b/codex-rs/tui/src/chatwidget/shell_policy.rs
-@@ -0,0 +1,284 @@
+@@ -0,0 +1,352 @@
 +//! Explicit presentation policy for noninteractive agent shell commands.
 +
 +use super::*;
@@ -10821,7 +10879,7 @@ index 000000000..6521fffda
 +}
 +
 +/// Recognize only a complete first directive line, after shell wrappers.
-+pub(crate) fn shell_directive(command: &str) -> Option<(ShellVisibility, String)> {
++fn managed_shell_body(command: &str) -> Option<(ShellVisibility, String)> {
 +    let mut script = command.to_string();
 +    // Each unwrap removes a shell invocation; repeated scripts cannot make progress.
 +    for _ in 0..16 {
@@ -10833,11 +10891,7 @@ index 000000000..6521fffda
 +            _ => None,
 +        };
 +        if let Some(policy) = policy {
-+            // Keep explicit advisor identity when the managed label becomes an ExecCell command.
-+            if policy == ShellVisibility::Foreground && body.starts_with("# codex-plus-advisor: ") {
-+                return Some((policy, script));
-+            }
-+            return Some((policy, shell_command_label(body)));
++            return Some((policy, body.to_string()));
 +        }
 +        let parts = split_command_string(&script);
 +        let (_, inner) = extract_shell_command(&parts)?;
@@ -10847,6 +10901,78 @@ index 000000000..6521fffda
 +        script = inner.to_string();
 +    }
 +    None
++}
++
++pub(crate) fn strip_task_metadata(body: &str) -> (&str, Option<&str>) {
++    let (first, rest) = body.split_once('\n').unwrap_or((body, ""));
++    if !first.starts_with("# codex-plus-task:") {
++        return (body, None);
++    }
++    let topic = first.strip_prefix("# codex-plus-task: ").filter(|topic| {
++        !topic.trim().is_empty()
++            && topic.chars().count() <= 120
++            && !topic.chars().any(char::is_control)
++    });
++    (rest, topic.map(str::trim))
++}
++
++pub(crate) fn shell_directive(command: &str) -> Option<(ShellVisibility, String)> {
++    let (policy, body) = managed_shell_body(command)?;
++    let (body, _) = strip_task_metadata(&body);
++    // Advisor identity survives the display metadata being removed from an ExecCell command.
++    if policy == ShellVisibility::Foreground && body.starts_with("# codex-plus-advisor: ") {
++        return Some((policy, format!("# codex-plus-shell: foreground\n{body}")));
++    }
++    Some((policy, shell_command_label(body)))
++}
++
++pub(crate) fn shell_hud_label(command: &str) -> String {
++    let mut label = if let Some((_, body)) = managed_shell_body(command) {
++        let (body, topic) = strip_task_metadata(&body);
++        if let Some(topic) = topic {
++            return topic.to_string();
++        }
++        body.to_string()
++    } else {
++        command.to_string()
++    };
++    for _ in 0..16 {
++        let parts = split_command_string(&label);
++        if let Some((_, inner)) = extract_shell_command(&parts) {
++            label = inner.to_string();
++            continue;
++        }
++        let unwrapped = shell_command_label(&label);
++        if unwrapped == label {
++            break;
++        }
++        label = unwrapped;
++    }
++    let compound = label.contains(['\n', ';', '|', '&', '<', '>', '`', '$']);
++    let Some(parts) = shlex::split(&label).filter(|parts| !parts.is_empty()) else {
++        return "Shell task".into();
++    };
++    if !compound && label.chars().count() <= 48 && !parts.iter().any(|part| part.contains('/')) {
++        return label;
++    }
++    if compound || parts[0].contains('=') {
++        return "Shell task".into();
++    }
++    let program = std::path::Path::new(&parts[0])
++        .file_name()
++        .and_then(|name| name.to_str())
++        .unwrap_or("Shell task");
++    if matches!(program, "python" | "python3" | "bash" | "sh" | "zsh") {
++        let Some(script) = parts.get(1).filter(|arg| !arg.starts_with('-')) else {
++            return "Shell task".into();
++        };
++        let script = std::path::Path::new(script)
++            .file_name()
++            .and_then(|name| name.to_str())
++            .unwrap_or("script");
++        return format!("{program} {script}");
++    }
++    program.to_string()
 +}
 +
 +fn shell_command_label(body: &str) -> String {
@@ -11264,10 +11390,10 @@ index 8534d753f..0df6d0931 100644
  mod guardian;
 diff --git a/codex-rs/tui/src/chatwidget/tests/shell_policy.rs b/codex-rs/tui/src/chatwidget/tests/shell_policy.rs
 new file mode 100644
-index 000000000..3c2870bf0
+index 000000000..374da3b50
 --- /dev/null
 +++ b/codex-rs/tui/src/chatwidget/tests/shell_policy.rs
-@@ -0,0 +1,540 @@
+@@ -0,0 +1,588 @@
 +use super::*;
 +use crate::chatwidget::shell_policy::{
 +    SHELL_FOREGROUND_LIMIT, ShellVisibility, eligible_shell, quiet_shell, shell_directive,
@@ -11419,6 +11545,54 @@ index 000000000..3c2870bf0
 +    }
 +    assert!(!eligible_shell(ExecCommandSource::UserShell));
 +    assert!(!eligible_shell(ExecCommandSource::UnifiedExecInteraction));
++}
++
++#[test]
++fn shell_policy_task_metadata_is_hud_only_after_wrappers() {
++    use crate::chatwidget::shell_policy::shell_hud_label;
++    for (marker, policy) in [("auto", ShellVisibility::Auto), ("background", ShellVisibility::Background), ("foreground", ShellVisibility::Foreground)] {
++        let command = "bash -c 'set -e; cargo test --locked --release'";
++        let script = format!("# codex-plus-shell: {marker}\n# codex-plus-task:  x86 qualification 模型  \ncodex-plus run -- {command}");
++        let wrapped = shlex::try_join(["bash", "-lc", &script]).unwrap();
++        let outer = shlex::try_join(["/bin/zsh", "-lc", &wrapped]).unwrap();
++        assert_eq!(shell_hud_label(&outer), "x86 qualification 模型");
++        assert_eq!(shell_directive(&outer), Some((policy, command.into())));
++    }
++    for topic in ["".to_string(), " ".into(), "bad\ttopic".into(), "bad\u{1b}topic".into(), "x".repeat(121)] {
++        let command = format!("# codex-plus-shell: background\n# codex-plus-task: {topic}\ncodex-plus run -- python3 /long/path/run-arm-final.py --release");
++        assert_eq!(shell_hud_label(&command), "python3 run-arm-final.py", "{topic:?}");
++        assert_eq!(shell_directive(&command), Some((ShellVisibility::Background, "python3 /long/path/run-arm-final.py --release".into())));
++    }
++    let command = format!("# codex-plus-shell: background\n# codex-plus-task: {}\necho actual", "测".repeat(120));
++    assert_eq!(shell_hud_label(&command), "测".repeat(120));
++    assert_eq!(shell_directive(&command), Some((ShellVisibility::Background, "echo actual".into())));
++    assert_eq!(shell_hud_label("echo actual\n# codex-plus-task: misplaced"), "Shell task");
++}
++
++#[test]
++fn shell_policy_task_fallback_keeps_short_commands_and_discards_long_arguments() {
++    use crate::chatwidget::shell_policy::shell_hud_label;
++    for (command, expected) in [
++        ("sleep 5", "sleep 5"), ("cargo test 0", "cargo test 0"),
++        ("python train.py", "python train.py"),
++        ("bash /very/long/path/qualify-arm.sh --lots-of-configuration", "bash qualify-arm.sh"),
++        ("/usr/bin/cargo test --manifest-path /long/project/Cargo.toml", "cargo"),
++        ("bash -c 'set -e; CARGO_TARGET_DIR=/long/path cargo test'", "Shell task"),
++        ("python3 -c 'import sys; print(sys.version)'", "Shell task"),
++    ] {
++        assert_eq!(shell_hud_label(command), expected, "{command}");
++    }
++}
++
++#[test]
++fn shell_policy_task_metadata_preserves_explicit_advisor_identity() {
++    let raw = "# codex-plus-shell: foreground\n# codex-plus-task: review qualification\n# codex-plus-advisor: cancellation races\npython3 /long/path/consult.py";
++    let (_, command) = shell_directive(raw).unwrap();
++    assert_eq!(command, "# codex-plus-shell: foreground\n# codex-plus-advisor: cancellation races\npython3 /long/path/consult.py");
++    for candidate in [raw, &command] {
++        assert_eq!(crate::bottom_pane::worker_hud::advisor_topic(candidate).as_deref(), Some("cancellation races"));
++    }
++    assert_eq!(crate::chatwidget::shell_policy::shell_hud_label(raw), "review qualification");
 +}
 +
 +#[test]

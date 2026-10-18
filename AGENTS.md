@@ -33,6 +33,7 @@ working directory; do not assume the command is installed on PATH.
 
 Before launching shell work, follow [the shell workflow](docs/shell-workflow.md):
 classify noninteractive work explicitly, capture logs with the managed runner,
+give the HUD a short purpose with `# codex-plus-task: TOPIC` after the mode line,
 and request a two-second foreground yield. Keep interactive and unclassified
 commands visible. Use background display for long work that remains on the
 native-shell path, including independent AP sessions.

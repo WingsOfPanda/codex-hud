@@ -44,6 +44,11 @@ three-row HUD budget with optional explicit stage text; refresh remains local,
 read-only and free of model calls. Plus-owned goals and prior shell/worker/advisor
 behavior are retained.
 
+Native background shells also accept a short `# codex-plus-task: TOPIC` header
+after their mode marker. The HUD shows this purpose rather than long command
+arguments; unlabelled jobs use a compact fallback. Full commands remain in native
+history. The topic is supplied at launch and needs no extra model request.
+
 ## Cutover and qualification
 
 The first protocol-3 to protocol-4 rollout requires a quiet checkpoint.
