@@ -36,6 +36,13 @@ instructions entered existing context. No shared-daemon modification or automati
 restart is involved. External clients bypassing Plus admission are outside this
 effective-mode guarantee.
 
+After a submission is accepted, Plus confirms its exact turn before settling the
+input record. A fresh daemon thread can briefly return `list_turns is not supported
+yet` while its history metadata becomes available. The helper retries only that
+specific read error, with a short bounded delay. It never resubmits the message or
+accepts a different turn. If confirmation still fails, the admission warning and
+unresolved input remain for review.
+
 Plus stores the complete original startup developer instructions privately and
 restores them on qualified cold loads. This preserves both the bootstrap and
 existing custom instructions through later compaction. Status and HUD projections

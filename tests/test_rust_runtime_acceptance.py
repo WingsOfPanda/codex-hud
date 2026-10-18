@@ -19,6 +19,7 @@ import tempfile
 import threading
 import time
 import unittest
+import uuid
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
@@ -223,6 +224,74 @@ class RuntimeAcceptance(unittest.TestCase):
             self.assertFalse(fixture.server.errors)
         finally:
             fixture.close()
+
+    def test_input_settle_retries_only_temporary_turn_history_unavailability(self):
+        unsupported = {'code': -32601, 'message': 'list_turns is not supported yet'}
+        origin, other = str(uuid.uuid4()), str(uuid.uuid4())
+        cases = [
+            ('recovers', unsupported, 2, origin, True),
+            ('persistent', unsupported, 100, origin, False),
+            ('wrong_code', dict(unsupported, code=-32603), 1, origin, False),
+            ('other_error', dict(unsupported, message='permission denied'), 1, origin, False),
+            ('wrong_turn', unsupported, 2, other, False),
+            ('unknown_turn', unsupported, 0, other, False),
+        ]
+        for label, error, failures, known_turn, accepted in cases:
+            with self.subTest(label=label), self.fixture(label=label) as f:
+                f.env.pop('CODEX_THREAD_ID')
+                f.fake.parent_turns = []
+                result = subprocess.run([
+                    str(f.runtime), 'ultracode', 'provenance', '--thread', PARENT,
+                    '--load-kind', 'fresh', '--developer-instructions-stdin', '--json',
+                ], env=f.env, input=(REPO / 'docs/ultracode-bootstrap.txt').read_text(),
+                    capture_output=True, text=True, timeout=10)
+                self.assertEqual(result.returncode, 0, (result.stdout, result.stderr))
+                f.cli('ultracode', 'on', '--thread', PARENT, '--json')
+                submission = str(uuid.uuid4())
+                f.cli('goal', 'input', '--thread', PARENT, '--submission-id', submission, '--json')
+                f.fake.parent_turns = [{'id': known_turn, 'status': 'inProgress'}]
+                f.fake.entries = [{'turnId': known_turn, 'item': {
+                    'type': 'userMessage', 'clientId': submission,
+                }}]
+                original_reply = f.server.reply
+                reads = []
+
+                def reply(method, params):
+                    if method == 'thread/turns/list':
+                        reads.append(dict(params))
+                        if len(reads) <= failures:
+                            return {'error': error}
+                    return original_reply(method, params)
+
+                f.server.reply = reply
+                before = len(f.server.requests)
+                started = time.monotonic()
+                result = f.cli('goal', 'input-settle', '--thread', PARENT,
+                    '--submission-id', submission, '--turn', origin, '--accepted', '--json', ok=False)
+                elapsed = time.monotonic() - started
+                self.assertEqual(result.returncode == 0, accepted, (result.stdout, result.stderr))
+                self.assertLess(elapsed, 3, 'readiness retries exceeded the short admission budget')
+                self.assertTrue(all(p['threadId'] == PARENT for p in reads))
+                if label == 'persistent':
+                    self.assertGreater(len(reads), 1)
+                    self.assertLessEqual(len(reads), 6)
+                    self.assertIn(unsupported['message'], result.stdout)
+                else:
+                    self.assertEqual(len(reads), 3 if label in ('recovers', 'wrong_turn') else 1)
+                self.assertTrue(all(r.get('method') in (
+                    'initialize', 'initialized', 'thread/turns/list', 'thread/items/list',
+                ) for r in f.server.requests[before:]), 'settlement replayed a mutation')
+                status = json.loads(f.cli('goal', 'history', '--thread', PARENT, '--json').stdout)
+                projection = json.loads((f.home / 'codex-plus/ultracode' / f'{PARENT}.json').read_text())
+                if accepted:
+                    self.assertEqual(result.stderr, '')
+                    self.assertIsNone(status['pending_input'])
+                    self.assertEqual(projection['effective']['submission'], submission)
+                    self.assertEqual(projection['effective']['turn'], origin)
+                    self.assertTrue(projection['effective']['enabled'])
+                else:
+                    self.assertEqual(status['pending_input']['submission_id'], submission)
+                    self.assertIsNone(projection['effective'])
 
     def test_exact_worker_process_ids_and_python_reopen_deduplicate(self):
         with self.fixture() as f:
