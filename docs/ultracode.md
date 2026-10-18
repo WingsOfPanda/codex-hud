@@ -12,8 +12,11 @@ Plus root TUI. Remote workspaces, side conversations and unqualified forks are
 outside this first version. The existing status line shows effective, pending or unavailable mode;
 the activity strip keeps its three-row limit. Turning mode off preserves workers,
 jobs and their result delivery. Native Ultra effort retains its upstream meaning.
-The badge is mode-controlled within a nonempty status line; an explicitly disabled
-status line stays disabled.
+The mode appears beside the model and effort, for example
+`GPT-6-Astra high ultracode`. It prefers the model-with-reasoning item, falls back
+to the model item, and appears only once when both are selected. A status line
+without either model item gets a standalone mode label; an explicitly disabled
+status line stays disabled. Pending and unavailable states remain explicit.
 
 For operators, the corresponding helper is `codex-plus ultracode` with `on`,
 `off`, or `status`, `--thread ROOT_UUID`, and optional `--json`. Models inspect

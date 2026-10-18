@@ -38,6 +38,10 @@ class LocalServer(AppServer):
             config = result["result"]["config"]
             config["developer_instructions"] = self.developer_instructions
             config["tui"] = {"status_line": self.status_line}
+            if "model-with-reasoning" in self.status_line:
+                config["model_reasoning_effort"] = "high"
+        if method in ("thread/start", "thread/resume") and "model-with-reasoning" in self.status_line:
+            result["result"]["reasoningEffort"] = "high"
         return result
 
 
@@ -106,13 +110,13 @@ def footer(terminal):
     return [line for line in lines[composer + 1:] if line.strip()]
 
 
-def run_case(binary, root_directory, evidence, bootstrap, *, empty=False, unqualified=False):
+def run_case(binary, root_directory, evidence, bootstrap, *, empty=False, unqualified=False, model_line=False):
     evidence.mkdir(parents=True, exist_ok=True)
     home, workspace = root_directory / "home", root_directory / "workspace"
     home.mkdir(mode=0o700)
     workspace.mkdir()
     root = "00000000-0000-0000-0009-000000000001"
-    status_line = [] if empty else ["thread-id"]
+    status_line = [] if empty else (["model-with-reasoning", "thread-id"] if model_line else ["thread-id"])
     config = (f'model="gpt-6-sol"\nmodel_provider="openai"\n'
         f'developer_instructions={json.dumps(EXISTING)}\n'
         'suppress_unstable_features_warning=true\ncheck_for_update_on_startup=false\n'
@@ -164,16 +168,19 @@ def run_case(binary, root_directory, evidence, bootstrap, *, empty=False, unqual
                  "on command falsely confirmed activation or lost pending acknowledgement")
             project_effective(home, root, True)
             if not empty:
-                wait([terminal], lambda: any(root in line and "Ultracode" in line
+                wait([terminal], lambda: any(root in line and "ultracode" in line.lower()
                     and "pending" not in line for line in footer(terminal)), "active mode was not on configured status line")
         os.write(terminal.master, b"ultracode-editable-draft")
         wait([terminal], lambda: "ultracode-editable-draft" in terminal.text, "mode refresh blocked composer")
         assert_compact_hud(terminal.text)
         if empty:
-            assert not any("Ultracode" in line for line in footer(terminal)), "explicit empty status line rendered badge"
+            assert not any(root in line and "ultracode" in line.lower() for line in footer(terminal)), "explicit empty status line rendered badge"
         else:
-            badge = [line for line in footer(terminal) if "Ultracode" in line]
+            badge = [line for line in footer(terminal) if root in line and "ultracode" in line.lower()]
             assert len(badge) == 1 and root in badge[0], "mode added a separate activity row"
+            if model_line:
+                assert " high ultracode · " in badge[0], badge[0]
+                assert badge[0].lower().count("ultracode") == 1, badge[0]
         (evidence / "on-draft-screen.txt").write_text(terminal.text + "\n")
         command("status")
         command("off")
@@ -181,7 +188,7 @@ def run_case(binary, root_directory, evidence, bootstrap, *, empty=False, unqual
             wait([terminal], lambda: "Ultracode off pending" in terminal.text, "off request lost pending acknowledgement")
             project_effective(home, root, False)
             if not empty:
-                wait([terminal], lambda: not any("Ultracode" in line for line in footer(terminal)), "effective off retained active badge")
+                wait([terminal], lambda: not any(root in line and "ultracode" in line.lower() for line in footer(terminal)), "effective off retained active badge")
         os.write(terminal.master, b"after-off-draft")
         wait([terminal], lambda: "after-off-draft" in terminal.text, "off command blocked composer")
         assert_compact_hud(terminal.text)
@@ -226,7 +233,7 @@ def run(binary, evidence, native_source):
         helper = package / "codex-plus-runtime"
         helper.write_text(helper_script(bootstrap))
         helper.chmod(0o700)
-        for name, options in (("custom", {}), ("empty", {"empty": True}),
+        for name, options in (("custom", {}), ("model", {"model_line": True}), ("empty", {"empty": True}),
                               ("unqualified", {"unqualified": True})):
             directory = root / name
             directory.mkdir()
@@ -235,7 +242,7 @@ def run(binary, evidence, native_source):
         bootstrap_sha256=hashlib.sha256(bootstrap.encode()).hexdigest(),
         binary_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
         source_equals_docs=True, binary_contains_complete_bootstrap=True,
-        cases=["custom", "empty", "unqualified"], model_turn_requests=0, evidence=str(evidence))
+        cases=["custom", "model", "empty", "unqualified"], model_turn_requests=0, evidence=str(evidence))
     (evidence / "report.json").write_text(json.dumps(summary, indent=2) + "\n")
     print(json.dumps(summary))
 

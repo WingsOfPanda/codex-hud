@@ -52,8 +52,9 @@ approval policy or native-goal configuration. In particular, upstream effort
 `ultra` keeps its own upstream meaning when Plus mode is off. Off is not a promise
 of single-agent operation: normal Codex/user/AGENTS delegation still applies.
 
-Show `Ultracode` in the existing configurable status line when active, with pending
-or unavailable state when synchronization is not established. Add no activity row.
+Show `ultracode` beside the selected model and effort in the existing status line
+when active, with pending or unavailable state when synchronization is not
+established. If no model item is selected, use a standalone label. Add no activity row.
 Keep the current three-row worker/background/advisor budget, editable composer and
 existing Plus goal indicator. `/ultracode status` can explain state and the active
 phase's artifact location; a full run browser is deferred.

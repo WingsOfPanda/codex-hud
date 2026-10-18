@@ -47,7 +47,7 @@ DOCS = ('README.md', 'GLOSSARY.md', 'docs/background-work.md',
         'docs/evidence/parallel-tool-rows.json', 'docs/evidence/detached-jobs.json',
         'docs/evidence/shell-topics.json', 'docs/ultracode.md',
         'docs/ultracode-bootstrap.txt', 'docs/ultracode-policy.md',
-        'docs/evidence/ultracode.json')
+        'docs/evidence/ultracode.json', 'docs/evidence/weekly-reset.json')
 
 
 def runtime_source_files(root):

@@ -8735,6 +8735,117 @@ index 0b45f6d1c..40fc876db 100644
                                                  
 -  ? for shortcuts            100% context left
 +                             100% context left
+diff --git a/codex-rs/tui/src/bottom_pane/status_line_setup.rs b/codex-rs/tui/src/bottom_pane/status_line_setup.rs
+index 9567424fb..f78b754eb 100644
+--- a/codex-rs/tui/src/bottom_pane/status_line_setup.rs
++++ b/codex-rs/tui/src/bottom_pane/status_line_setup.rs
+@@ -113,6 +113,9 @@ pub(crate) enum StatusLineItem {
+     /// Remaining usage on the secondary rate limit.
+     WeeklyLimit,
+ 
++    /// Time until the weekly usage window resets.
++    WeeklyReset,
++
+     /// Codex application version.
+     CodexVersion,
+ 
+@@ -192,6 +195,7 @@ impl StatusLineItem {
+             StatusLineItem::WeeklyLimit => {
+                 "Remaining usage on the secondary usage limit (omitted when unavailable)"
+             }
++            StatusLineItem::WeeklyReset => "Time until the weekly usage limit resets",
+             StatusLineItem::CodexVersion => "Codex application version",
+             StatusLineItem::ContextWindowSize => {
+                 "Total context window size in tokens (omitted when unknown)"
+@@ -240,6 +244,7 @@ impl StatusLineItem {
+             StatusLineItem::ContextUsed => StatusSurfacePreviewItem::ContextUsed,
+             StatusLineItem::FiveHourLimit => StatusSurfacePreviewItem::FiveHourLimit,
+             StatusLineItem::WeeklyLimit => StatusSurfacePreviewItem::WeeklyLimit,
++            StatusLineItem::WeeklyReset => StatusSurfacePreviewItem::WeeklyReset,
+             StatusLineItem::CodexVersion => StatusSurfacePreviewItem::CodexVersion,
+             StatusLineItem::ContextWindowSize => StatusSurfacePreviewItem::ContextWindowSize,
+             StatusLineItem::UsedTokens => StatusSurfacePreviewItem::UsedTokens,
+@@ -382,6 +387,7 @@ impl StatusLineSetupView {
+         let default_name = item.to_string();
+         let default_description = item.description();
+         let (name, description) = match item {
++            StatusLineItem::WeeklyReset => ("Weekly reset".into(), default_description.into()),
+             StatusLineItem::FiveHourLimit | StatusLineItem::WeeklyLimit => (
+                 preview_data.rate_limit_item_name(item.preview_item(), &default_name),
+                 preview_data.rate_limit_item_description(item.preview_item(), default_description),
+@@ -483,6 +489,29 @@ mod tests {
+         );
+     }
+ 
++    #[test]
++    fn weekly_reset_is_selectable_with_a_readable_name() {
++        assert_eq!(
++            "weekly-reset".parse::<StatusLineItem>(),
++            Ok(StatusLineItem::WeeklyReset)
++        );
++        let item = StatusLineSetupView::status_line_select_item(
++            StatusLineItem::WeeklyReset,
++            false,
++            &StatusSurfacePreviewData::default(),
++        );
++        assert_eq!(item.id, "weekly-reset");
++        assert_eq!(item.name, "Weekly reset");
++        assert!(!item.enabled);
++        assert_eq!(
++            StatusSurfacePreviewData::default()
++                .status_line_for_items([StatusLineItem::WeeklyReset], false,)
++                .unwrap()
++                .to_string(),
++            "resets in 2d 5h",
++        );
++    }
++
+     #[test]
+     fn project_name_is_canonical_and_accepts_legacy_ids() {
+         assert_eq!(StatusLineItem::ProjectRoot.to_string(), "project-name");
+diff --git a/codex-rs/tui/src/bottom_pane/status_line_style.rs b/codex-rs/tui/src/bottom_pane/status_line_style.rs
+index 6ef9003c5..bcb40ecef 100644
+--- a/codex-rs/tui/src/bottom_pane/status_line_style.rs
++++ b/codex-rs/tui/src/bottom_pane/status_line_style.rs
+@@ -52,7 +52,9 @@ impl StatusLineAccent {
+             | StatusLineItem::TotalOutputTokens
+             | StatusLineItem::ThreadCredits
+             | StatusLineItem::EstimatedThreadCost => Self::Usage,
+-            StatusLineItem::FiveHourLimit | StatusLineItem::WeeklyLimit => Self::Limit,
++            StatusLineItem::FiveHourLimit
++            | StatusLineItem::WeeklyLimit
++            | StatusLineItem::WeeklyReset => Self::Limit,
+             StatusLineItem::CodexVersion | StatusLineItem::Hostname | StatusLineItem::SessionId => {
+                 Self::Metadata
+             }
+diff --git a/codex-rs/tui/src/bottom_pane/status_surface_preview.rs b/codex-rs/tui/src/bottom_pane/status_surface_preview.rs
+index 7389236c0..3fbed4438 100644
+--- a/codex-rs/tui/src/bottom_pane/status_surface_preview.rs
++++ b/codex-rs/tui/src/bottom_pane/status_surface_preview.rs
+@@ -25,6 +25,7 @@ pub(crate) enum StatusSurfacePreviewItem {
+     ContextUsed,
+     FiveHourLimit,
+     WeeklyLimit,
++    WeeklyReset,
+     CodexVersion,
+     ContextWindowSize,
+     UsedTokens,
+@@ -63,6 +64,7 @@ impl StatusSurfacePreviewItem {
+             StatusSurfacePreviewItem::ContextUsed => "Context 0% used",
+             StatusSurfacePreviewItem::FiveHourLimit => "primary 0%",
+             StatusSurfacePreviewItem::WeeklyLimit => "secondary 0%",
++            StatusSurfacePreviewItem::WeeklyReset => "resets in 2d 5h",
+             StatusSurfacePreviewItem::CodexVersion => "0.0.0",
+             StatusSurfacePreviewItem::ContextWindowSize => "0 window",
+             StatusSurfacePreviewItem::UsedTokens => "0 used",
+@@ -101,6 +103,7 @@ impl StatusSurfacePreviewItem {
+             Self::ContextUsed,
+             Self::FiveHourLimit,
+             Self::WeeklyLimit,
++            Self::WeeklyReset,
+             Self::CodexVersion,
+             Self::ContextWindowSize,
+             Self::UsedTokens,
 diff --git a/codex-rs/tui/src/bottom_pane/tests/snapshots/codex_tui__bottom_pane__tests__actionable_banner_tests__banner_wrapped_url.snap b/codex-rs/tui/src/bottom_pane/tests/snapshots/codex_tui__bottom_pane__tests__actionable_banner_tests__banner_wrapped_url.snap
 index 01e6540e2..c99958b8b 100644
 --- a/codex-rs/tui/src/bottom_pane/tests/snapshots/codex_tui__bottom_pane__tests__actionable_banner_tests__banner_wrapped_url.snap
@@ -11588,20 +11699,33 @@ index 10e1d6409..4c1e4e202 100644
 -"  GPT-5.5                                           Goal achieved (2d 23h 42m)  "
 +"  GPT-5.5                                                        Goal complete  "
 diff --git a/codex-rs/tui/src/chatwidget/status_surfaces.rs b/codex-rs/tui/src/chatwidget/status_surfaces.rs
-index a3946abd1..d6b8f8fc9 100644
+index a3946abd1..976eb1f11 100644
 --- a/codex-rs/tui/src/chatwidget/status_surfaces.rs
 +++ b/codex-rs/tui/src/chatwidget/status_surfaces.rs
-@@ -216,6 +216,9 @@ impl ChatWidget {
+@@ -216,6 +216,22 @@ impl ChatWidget {
              }
          }
  
 +        if let Some(label) = self.ultracode_status_label() {
-+            segments.push((StatusLineItem::Status, label));
++            let model_segment = segments
++                .iter()
++                .position(|(item, _)| *item == StatusLineItem::ModelWithReasoning)
++                .or_else(|| {
++                    segments
++                        .iter()
++                        .position(|(item, _)| *item == StatusLineItem::ModelName)
++                });
++            if let Some(index) = model_segment {
++                segments[index].1.push(' ');
++                segments[index].1.push_str(&label.to_ascii_lowercase());
++            } else {
++                segments.push((StatusLineItem::Status, label));
++            }
 +        }
          self.set_status_line(status_line_from_segments(
              segments,
              self.local_settings.tui.status_line_use_colors,
-@@ -293,6 +296,22 @@ impl ChatWidget {
+@@ -293,6 +309,22 @@ impl ChatWidget {
          }
      }
  
@@ -11624,6 +11748,106 @@ index a3946abd1..d6b8f8fc9 100644
      /// Recomputes both status surfaces from one shared config snapshot.
      ///
      /// This is the common refresh entrypoint for the footer status line and the
+@@ -790,6 +822,10 @@ impl ChatWidget {
+                 let label = limit_label_for_window(window.window_minutes, is_secondary);
+                 self.status_line_limit_display(Some(window), &label)
+             }
++            StatusLineItem::WeeklyReset => Some(weekly_reset_display(
++                self.rate_limit_snapshots_by_limit_id.get("codex"),
++                chrono::Utc::now(),
++            )),
+             StatusLineItem::CodexVersion => Some(CODEX_CLI_VERSION.to_string()),
+             StatusLineItem::ContextWindowSize => self
+                 .status_line_context_window_size()
+@@ -883,6 +919,7 @@ impl ChatWidget {
+             StatusSurfacePreviewItem::ContextUsed => StatusLineItem::ContextUsed,
+             StatusSurfacePreviewItem::FiveHourLimit => StatusLineItem::FiveHourLimit,
+             StatusSurfacePreviewItem::WeeklyLimit => StatusLineItem::WeeklyLimit,
++            StatusSurfacePreviewItem::WeeklyReset => StatusLineItem::WeeklyReset,
+             StatusSurfacePreviewItem::CodexVersion => StatusLineItem::CodexVersion,
+             StatusSurfacePreviewItem::ContextWindowSize => StatusLineItem::ContextWindowSize,
+             StatusSurfacePreviewItem::UsedTokens => StatusLineItem::UsedTokens,
+@@ -1149,6 +1186,80 @@ fn weekly_status_window(
+         .or_else(|| snapshot.secondary.as_ref().map(|window| (window, true)))
+ }
+ 
++fn weekly_reset_display(
++    snapshot: Option<&RateLimitSnapshotDisplay>,
++    now: chrono::DateTime<chrono::Utc>,
++) -> String {
++    let reset = snapshot
++        .and_then(weekly_status_window)
++        .filter(|(window, _)| matches_window_label(window, "weekly"))
++        .and_then(|(window, _)| window.reset_timestamp)
++        .and_then(|seconds| chrono::DateTime::from_timestamp(seconds, 0));
++    let Some(reset) = reset else {
++        return "reset unknown".into();
++    };
++    if reset <= now {
++        return "reset due".into();
++    }
++    let millis = (reset - now).num_milliseconds();
++    if millis < 60_000 {
++        return "resets in <1m".into();
++    }
++    let minutes = (millis + 59_999) / 60_000;
++    if minutes >= 24 * 60 {
++        format!("resets in {}d {}h", minutes / (24 * 60), minutes / 60 % 24)
++    } else if minutes >= 60 {
++        format!("resets in {}h {}m", minutes / 60, minutes % 60)
++    } else {
++        format!("resets in {minutes}m")
++    }
++}
++
++#[cfg(test)]
++mod weekly_reset_tests {
++    use super::*;
++
++    #[test]
++    fn weekly_reset_countdown_rounds_remaining_minutes_and_marks_expiry() {
++        let now = chrono::DateTime::from_timestamp(1_800_000_000, 0).unwrap();
++        let mut snapshot = RateLimitSnapshotDisplay {
++            limit_name: "codex".into(),
++            normal_model_slug: None,
++            captured_at: now.with_timezone(&chrono::Local),
++            primary: None,
++            secondary: Some(RateLimitWindowDisplay {
++                used_percent: 50.0,
++                resets_at: Some("unrelated formatted clock time".into()),
++                reset_timestamp: None,
++                window_minutes: Some(7 * 24 * 60),
++            }),
++            credits: None,
++            individual_limit: None,
++        };
++        assert_eq!(weekly_reset_display(None, now), "reset unknown");
++        assert_eq!(weekly_reset_display(Some(&snapshot), now), "reset unknown");
++        for (seconds, expected) in [
++            (-1, "reset due"),
++            (0, "reset due"),
++            (1, "resets in <1m"),
++            (59, "resets in <1m"),
++            (60, "resets in 1m"),
++            (61, "resets in 2m"),
++            (3599, "resets in 1h 0m"),
++            (3600, "resets in 1h 0m"),
++            (3601, "resets in 1h 1m"),
++            (86399, "resets in 1d 0h"),
++            (86400, "resets in 1d 0h"),
++            (2 * 86400 + 5 * 3600, "resets in 2d 5h"),
++        ] {
++            snapshot.secondary.as_mut().unwrap().reset_timestamp = Some(now.timestamp() + seconds);
++            assert_eq!(weekly_reset_display(Some(&snapshot), now), expected);
++        }
++        snapshot.secondary.as_mut().unwrap().reset_timestamp = Some(i64::MAX);
++        assert_eq!(weekly_reset_display(Some(&snapshot), now), "reset unknown");
++    }
++}
++
+ fn find_codex_window<'a>(
+     snapshot: &'a RateLimitSnapshotDisplay,
+     label: &str,
 diff --git a/codex-rs/tui/src/chatwidget/tests.rs b/codex-rs/tui/src/chatwidget/tests.rs
 index 8534d753f..0df6d0931 100644
 --- a/codex-rs/tui/src/chatwidget/tests.rs
@@ -12564,10 +12788,95 @@ index 25210e0ac..08c79bad7 100644
  
    GPT-5.5 default · /tmp/project
 diff --git a/codex-rs/tui/src/chatwidget/tests/status_and_layout.rs b/codex-rs/tui/src/chatwidget/tests/status_and_layout.rs
-index 301b55c2c..1e518ee33 100644
+index 301b55c2c..0ddda4000 100644
 --- a/codex-rs/tui/src/chatwidget/tests/status_and_layout.rs
 +++ b/codex-rs/tui/src/chatwidget/tests/status_and_layout.rs
-@@ -2253,18 +2253,18 @@ async fn answer_phase_controls_working_status_snapshot() {
+@@ -817,6 +817,84 @@ async fn status_line_uses_secondary_fallback_for_unsupported_window() {
+     );
+ }
+ 
++#[tokio::test]
++async fn weekly_reset_uses_matching_cached_window_and_live_clock_without_changing_selection() {
++    use crate::bottom_pane::StatusLineItem;
++    let (mut chat, mut rx, mut ops) = make_chatwidget_manual(None).await;
++    let now = chrono::Utc::now().timestamp();
++    let weekly = RateLimitWindow {
++        used_percent: 50,
++        window_duration_mins: Some(7 * 24 * 60),
++        resets_at: Some(now + 2 * 86400 + 5 * 3600),
++    };
++    let other = RateLimitWindow {
++        used_percent: 20,
++        window_duration_mins: Some(5 * 60),
++        resets_at: Some(now + 3600),
++    };
++    let mut snapshot = RateLimitSnapshot {
++        limit_id: None,
++        limit_name: None,
++        normal_model_slug: None,
++        primary: Some(other.clone()),
++        secondary: Some(weekly),
++        credits: None,
++        individual_limit: None,
++        plan_type: None,
++        spend_control_reached: None,
++        rate_limit_reached_type: None,
++    };
++    assert!(
++        !chat
++            .configured_status_line_items()
++            .contains(&"weekly-reset".to_string())
++    );
++    for _ in 0..2 {
++        chat.on_rate_limit_snapshot(Some(snapshot.clone()));
++        assert_eq!(
++            chat.status_line_value_for_item(StatusLineItem::WeeklyReset),
++            Some("resets in 2d 5h".into())
++        );
++        std::mem::swap(&mut snapshot.primary, &mut snapshot.secondary);
++    }
++    chat.local_settings.tui.status_line = Some(vec!["weekly-reset".into(), "model".into()]);
++    let selection = chat.local_settings.tui.status_line.clone();
++    let cached = chat
++        .rate_limit_snapshots_by_limit_id
++        .get_mut("codex")
++        .unwrap();
++    cached.captured_at -= chrono::Duration::days(10);
++    chat.refresh_ultracode_status();
++    assert!(status_line_text(&chat).unwrap().contains("resets in 2d 5h"));
++    chat.rate_limit_snapshots_by_limit_id
++        .get_mut("codex")
++        .unwrap()
++        .primary
++        .as_mut()
++        .unwrap()
++        .reset_timestamp = Some(now - 1);
++    chat.refresh_ultracode_status();
++    assert!(status_line_text(&chat).unwrap().contains("reset due"));
++    assert_eq!(chat.local_settings.tui.status_line, selection);
++    assert_no_submit_op(&mut ops);
++    assert!(
++        !std::iter::from_fn(|| rx.try_recv().ok())
++            .any(|event| matches!(event, AppEvent::CodexOp(_)))
++    );
++    snapshot.primary = None;
++    snapshot.secondary = Some(other);
++    chat.on_rate_limit_snapshot(Some(snapshot));
++    assert_eq!(
++        chat.status_line_value_for_item(StatusLineItem::WeeklyReset),
++        Some("reset unknown".into())
++    );
++    chat.on_rate_limit_snapshot(None);
++    assert_eq!(
++        chat.status_line_value_for_item(StatusLineItem::WeeklyReset),
++        Some("reset unknown".into())
++    );
++}
++
+ #[tokio::test]
+ async fn status_line_legacy_limit_items_prefer_matching_windows() {
+     let (mut chat, _rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
+@@ -2253,18 +2331,18 @@ async fn answer_phase_controls_working_status_snapshot() {
  }
  
  #[tokio::test]
@@ -12589,7 +12898,7 @@ index 301b55c2c..1e518ee33 100644
      let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
      chat.show_welcome_banner = false;
      let thread_id = start_active_goal_turn(&mut chat);
-@@ -2272,26 +2272,16 @@ async fn esc_interrupt_pauses_active_goal_turn() {
+@@ -2272,26 +2350,16 @@ async fn esc_interrupt_pauses_active_goal_turn() {
      chat.handle_key_event(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
  
      assert_matches!(rx.try_recv(), Ok(AppEvent::CodexOp(Op::Interrupt)));
@@ -12622,7 +12931,7 @@ index 301b55c2c..1e518ee33 100644
      for key_event in [
          KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE),
          KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL),
-@@ -2310,50 +2300,29 @@ async fn request_user_input_interrupt_pauses_active_goal_turn() {
+@@ -2310,50 +2378,29 @@ async fn request_user_input_interrupt_pauses_active_goal_turn() {
          chat.handle_key_event(key_event);
  
          assert_matches!(rx.try_recv(), Ok(AppEvent::CodexOp(Op::Interrupt)));
@@ -12684,7 +12993,7 @@ index 301b55c2c..1e518ee33 100644
  }
  
  #[tokio::test]
-@@ -4282,6 +4251,7 @@ async fn status_line_goal_active_token_budget_footer_snapshot() {
+@@ -4282,6 +4329,7 @@ async fn status_line_goal_active_token_budget_footer_snapshot() {
      chat.show_welcome_banner = false;
      chat.local_settings.tui.status_line = Some(vec!["model-name".to_string()]);
      chat.refresh_status_line();
@@ -12692,7 +13001,7 @@ index 301b55c2c..1e518ee33 100644
      chat.handle_server_notification(
          ServerNotification::ThreadGoalUpdated(
              codex_app_server_protocol::ThreadGoalUpdatedNotification {
-@@ -4325,6 +4295,7 @@ async fn status_line_goal_complete_elapsed_footer_snapshot() {
+@@ -4325,6 +4373,7 @@ async fn status_line_goal_complete_elapsed_footer_snapshot() {
          /*tokens_used*/ 40_000,
      );
      goal.time_used_seconds = 2 * 24 * 60 * 60 + 23 * 60 * 60 + 42 * 60;
@@ -12700,7 +13009,7 @@ index 301b55c2c..1e518ee33 100644
      chat.handle_server_notification(
          ServerNotification::ThreadGoalUpdated(
              codex_app_server_protocol::ThreadGoalUpdatedNotification {
-@@ -4352,6 +4323,7 @@ async fn status_line_goal_complete_elapsed_footer_snapshot() {
+@@ -4352,6 +4401,7 @@ async fn status_line_goal_complete_elapsed_footer_snapshot() {
  async fn session_configured_clears_goal_status_footer() {
      let (mut chat, _rx, _op_rx) = make_chatwidget_manual(Some("gpt-5.4")).await;
      chat.set_feature_enabled(Feature::Goals, /*enabled*/ true);
@@ -12708,7 +13017,7 @@ index 301b55c2c..1e518ee33 100644
      chat.handle_server_notification(
          ServerNotification::ThreadGoalUpdated(
              codex_app_server_protocol::ThreadGoalUpdatedNotification {
-@@ -4368,9 +4340,7 @@ async fn session_configured_clears_goal_status_footer() {
+@@ -4368,9 +4418,7 @@ async fn session_configured_clears_goal_status_footer() {
      );
      assert_eq!(
          chat.current_goal_status_indicator,
@@ -12719,7 +13028,7 @@ index 301b55c2c..1e518ee33 100644
      );
      chat.turn_lifecycle
          .budget_limited_turn_ids
-@@ -5883,3 +5853,61 @@ async fn chatwidget_tall() {
+@@ -5883,3 +5931,90 @@ async fn chatwidget_tall() {
          normalize_snapshot_paths(term.backend().vt100().screen().contents())
      );
  }
@@ -12746,9 +13055,9 @@ index 301b55c2c..1e518ee33 100644
 +        "availability":"available","pending":[]
 +    });
 +    for (availability, revision, expected) in [
-+        ("available", 1, "Ultracode"),
-+        ("available", 2, "Ultracode on pending"),
-+        ("unavailable", 2, "Ultracode unavailable"),
++        ("available", 1, "ultracode"),
++        ("available", 2, "ultracode on pending"),
++        ("unavailable", 2, "ultracode unavailable"),
 +    ] {
 +        projection["availability"] = availability.into();
 +        projection["requested"]["revision"] = revision.into();
@@ -12756,6 +13065,11 @@ index 301b55c2c..1e518ee33 100644
 +        let before = std::fs::read(&path).unwrap();
 +        chat.refresh_ultracode_status();
 +        assert!(status_line_text(&chat).unwrap().contains(expected));
++        assert!(
++            status_line_text(&chat)
++                .unwrap()
++                .contains(&format!("{} {expected}", chat.model_display_name()))
++        );
 +        assert_eq!(std::fs::read(&path).unwrap(), before);
 +        assert_eq!(chat.desired_height(100), height);
 +        let mut terminal = Terminal::new(TestBackend::new(100, height)).unwrap();
@@ -12777,6 +13091,30 @@ index 301b55c2c..1e518ee33 100644
 +                .any(|event| matches!(event, AppEvent::CodexOp(_)))
 +        );
 +    }
++    projection["availability"] = "available".into();
++    projection["requested"]["revision"] = 1.into();
++    std::fs::write(&path, projection.to_string()).unwrap();
++    for items in [
++        vec!["weekly-reset", "model-with-reasoning", "model"],
++        vec!["model", "model-with-reasoning", "weekly-reset"],
++    ] {
++        chat.local_settings.tui.status_line =
++            Some(items.iter().map(|item| (*item).into()).collect());
++        let model = chat
++            .status_line_value_for_item(crate::bottom_pane::StatusLineItem::ModelWithReasoning)
++            .unwrap();
++        chat.refresh_ultracode_status();
++        let text = status_line_text(&chat).unwrap();
++        assert!(text.contains(&format!("{model} ultracode")), "{text}");
++        assert_eq!(text.matches("ultracode").count(), 1);
++        assert_eq!(chat.configured_status_line_items(), items);
++    }
++    chat.local_settings.tui.status_line = Some(vec!["weekly-reset".into()]);
++    chat.refresh_ultracode_status();
++    assert_eq!(
++        status_line_text(&chat).unwrap(),
++        "reset unknown · Ultracode"
++    );
 +    chat.local_settings.tui.status_line = Some(vec![]);
 +    chat.refresh_ultracode_status();
 +    assert!(chat.configured_status_line_items().is_empty());
@@ -14662,6 +15000,75 @@ index 1aacd04c3..213e51a33 100644
 +      2. Cancel
  
        enter select · esc back
+diff --git a/codex-rs/tui/src/status/rate_limits.rs b/codex-rs/tui/src/status/rate_limits.rs
+index c22868b62..f8d748390 100644
+--- a/codex-rs/tui/src/status/rate_limits.rs
++++ b/codex-rs/tui/src/status/rate_limits.rs
+@@ -72,6 +72,8 @@ pub(crate) struct RateLimitWindowDisplay {
+     pub used_percent: f64,
+     /// Human-readable local reset time.
+     pub resets_at: Option<String>,
++    /// Original reset timestamp for countdown displays.
++    pub reset_timestamp: Option<i64>,
+     /// Window length in minutes when provided by the server.
+     pub window_minutes: Option<i64>,
+ }
+@@ -92,6 +94,7 @@ impl RateLimitWindowDisplay {
+         Self {
+             used_percent: f64::from(window.used_percent),
+             resets_at,
++            reset_timestamp: window.resets_at,
+             window_minutes: window.window_duration_mins,
+         }
+     }
+@@ -460,6 +463,7 @@ mod tests {
+         RateLimitWindowDisplay {
+             used_percent,
+             resets_at: Some("soon".to_string()),
++            reset_timestamp: None,
+             window_minutes: Some(300),
+         }
+     }
+@@ -522,11 +526,13 @@ mod tests {
+             primary: Some(RateLimitWindowDisplay {
+                 used_percent: 20.0,
+                 resets_at: Some("soon".to_string()),
++                reset_timestamp: None,
+                 window_minutes: Some(60),
+             }),
+             secondary: Some(RateLimitWindowDisplay {
+                 used_percent: 40.0,
+                 resets_at: Some("later".to_string()),
++                reset_timestamp: None,
+                 window_minutes: Some(2 * 60),
+             }),
+             credits: None,
+diff --git a/codex-rs/tui/src/status/tests.rs b/codex-rs/tui/src/status/tests.rs
+index d84b3d373..b0746c2ef 100644
+--- a/codex-rs/tui/src/status/tests.rs
++++ b/codex-rs/tui/src/status/tests.rs
+@@ -70,6 +70,7 @@ fn stale_monthly_limit_marks_fresh_rolling_snapshot_stale() {
+         primary: Some(RateLimitWindowDisplay {
+             used_percent: 20.0,
+             resets_at: Some("soon".to_string()),
++            reset_timestamp: None,
+             window_minutes: Some(300),
+         }),
+         secondary: None,
+@@ -1882,11 +1883,13 @@ async fn transcript_overlay_remeasures_status_after_rate_limit_refresh() {
+             primary: Some(RateLimitWindowDisplay {
+                 used_percent: 45.0,
+                 resets_at: Some("soon".to_string()),
++                reset_timestamp: None,
+                 window_minutes: Some(300),
+             }),
+             secondary: Some(RateLimitWindowDisplay {
+                 used_percent: 30.0,
+                 resets_at: Some("later".to_string()),
++                reset_timestamp: None,
+                 window_minutes: Some(10_080),
+             }),
+             credits: None,
 diff --git a/codex-rs/tui/src/terminal_visualization_instructions.rs b/codex-rs/tui/src/terminal_visualization_instructions.rs
 index eb59f2d15..842173db0 100644
 --- a/codex-rs/tui/src/terminal_visualization_instructions.rs
