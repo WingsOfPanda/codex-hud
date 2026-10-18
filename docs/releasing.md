@@ -132,7 +132,7 @@ fleet-config's `codex-plus/RELEASING.md`, section 2, step 3:
 {
   "release": "<tag>",
   "plus_commit": "<the manifest's plus_commit>",
-  "coordinator_protocol": 2,
+  "coordinator_protocol": 3,
   "upstream": {"version": "<X>", "tag": "rust-v<X>", "commit": "<sha>"},
   "note": "docs/releases/<release>.md",
   "targets": {
@@ -170,7 +170,7 @@ live policy. Preserve its foreground wait wording; copying an older release's
 `agents_md` would restore the superseded background default. Published handoffs
 remain immutable.
 
-For cooperative Rust upgrades, manifests advertise `coordinator_protocol: 2`.
+For goal-aware Rust upgrades, manifests advertise `coordinator_protocol: 3`.
 Set `quiet_checkpoint: false` only when the installed observers and candidate
 support the same protocol, upstream identity and target, the candidate's Plus
 `M.m.p` version is strictly higher, and cooperative upgrade/recovery acceptance
@@ -184,6 +184,19 @@ directories while any process still references them. The installer switches
 `current`; it does not signal observers. A compatible helper upgrade follows the
 link independently of the TUI. Set `session_restart` according to the actual
 client change, rather than using a restart as an observer-handoff command.
+
+The custom-goal cutover requires a quiet protocol-2 to protocol-3 transition,
+`daemon_restart: true` and `session_restart: required`, even though the upstream
+version remains 0.163.0. Follow the [goal isolation/rollback contract](goals.md#stock-daemon-isolation-and-rollout-contract):
+native goals must be effectively disabled at stock daemon startup, and the fleet
+wrapper must dispatch `goal` to the helper. The reviewed native objective must
+be captured before native goal APIs are disabled. Include these requirements
+and explicit rollback package retention in the handoff's rollout notes. Preserve
+the existing updater-disable setting, shared daemon identity and live ledger.
+No automatic native-goal conversion or re-enabling on rollback is permitted.
+Fleet quiet checks must recognize settled goal callback markers and open goal
+dispatches as specified in the linked contract; the pre-goal callback-only query
+does not qualify a goal-aware cutover or rollback.
 
 For the Python-to-Rust cutover, fleet helper scans must include native
 `codex-plus-runtime supervise|observe` and legacy Python processes. Preserve

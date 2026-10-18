@@ -3,7 +3,7 @@ set -euo pipefail
 launcher=$(readlink -f -- "${BASH_SOURCE[0]}")
 root=$(cd -- "$(dirname -- "$launcher")/.." && pwd)
 case "${1:-}" in
-    run|park|advisor|observe|supervise|--version)
+    run|park|goal|advisor|observe|supervise|--version)
         if [[ "$1" != --version || ( "$#" == 1 && -f "$root/codex-plus.json" ) ]]; then
             runtime="$root/bin/codex-plus-runtime"
             if [[ ! -x "$runtime" ]]; then

@@ -829,23 +829,17 @@ class RuntimeAcceptance(unittest.TestCase):
                 register(store, f.fake, PARENT, [CHILD], [], '0.2 inherited supervisor budget')
             finally:
                 store.close()
+            # The supervisor now exits if its role is owned; test the inherited
+            # final attempt using a loaded copy and a missing observer executable.
+            supervisor_binary = f.runtime.with_name('supervisor-budget-fixture')
+            shutil.copy2(f.runtime, supervisor_binary)
+            f.runtime.unlink()
+            f.supervisor_lock.close()
             log = (f.home / 'supervisor-budget.log').open('w+')
-            supervisor = subprocess.Popen([str(f.runtime), 'supervise', '--parent', PARENT],
+            supervisor = subprocess.Popen([str(supervisor_binary), 'supervise', '--parent', PARENT],
                 cwd=REPO, env=dict(f.env, CODEX_PLUS_SUPERVISOR_FAILURES='5'),
                 stdin=subprocess.DEVNULL, stdout=log, stderr=log, start_new_session=True)
             f.children.append((supervisor, log))
-            expected_lock = f.home / 'codex-plus' / f'{PARENT}.supervisor.lock'
-
-            def opened_role_lock():
-                try:
-                    return any(path.readlink() == expected_lock
-                               for path in Path(f'/proc/{supervisor.pid}/fd').iterdir())
-                except (FileNotFoundError, ProcessLookupError):
-                    return False
-
-            wait(opened_role_lock, 'supervisor did not reach its held role lock')
-            f.runtime.unlink()  # The loaded supervisor survives; its observer exec must fail.
-            f.supervisor_lock.close()
             supervisor.wait(timeout=6)
             self.assertEqual(supervisor.returncode, 0)
             state = f.state()

@@ -6,7 +6,7 @@ use std::{
     io::{self, Read, Write},
     os::{
         fd::{AsRawFd, FromRawFd},
-        unix::{ffi::OsStrExt, net::UnixStream},
+        unix::{ffi::OsStrExt, fs::MetadataExt, net::UnixStream},
     },
     path::Path,
     time::{Duration, Instant},
@@ -190,6 +190,29 @@ pub struct Client {
     pub initialize_result: Value,
 }
 impl Client {
+    /// A disabled goal RPC does not establish effective thread isolation.
+    pub fn native_goals_disabled(&mut self, cwd: &str) -> Result<Value> {
+        let pid = self
+            .generation
+            .split(':')
+            .nth(1)
+            .context("missing daemon pid")?
+            .to_owned();
+        let command = fs::read(format!("/proc/{pid}/cmdline"))?;
+        if !daemon_disables_goals(&command) {
+            bail!(
+                "native goal isolation requires a controlled daemon restart with -c features.goals=false"
+            );
+        }
+        let mut config = self.call("config/read", json!({"cwd":cwd,"includeLayers":true}))?;
+        if config["config"]["features"]["goals"] != false {
+            bail!("native goals are not disabled in the effective root configuration");
+        }
+        let executable = fs::read_link(format!("/proc/{pid}/exe"))?;
+        let metadata = fs::metadata(format!("/proc/{pid}/exe"))?;
+        config["daemonIdentity"] = json!({"generation":self.generation,"executable":executable,"device":metadata.dev(),"inode":metadata.ino(),"size":metadata.len()});
+        Ok(config)
+    }
     pub fn connect(path: &Path, timeout: Duration) -> Result<Self> {
         let deadline = Instant::now() + timeout;
         let socket = connect_socket(path, deadline)?;
@@ -269,10 +292,47 @@ impl Client {
     }
 }
 
+fn daemon_disables_goals(command: &[u8]) -> bool {
+    let args: Vec<_> = command.split(|byte| *byte == 0).collect();
+    let mut setting = None;
+    for (index, arg) in args.iter().enumerate() {
+        let value = if *arg == b"-c" || *arg == b"--config" {
+            args.get(index + 1).copied()
+        } else {
+            arg.strip_prefix(b"--config=")
+        };
+        if let Some(value) = value {
+            let value = String::from_utf8_lossy(value);
+            if let Some((key, value)) = value.split_once('=') {
+                if key.trim() == "features.goals" {
+                    setting = Some(value.trim() == "false");
+                }
+            }
+        }
+    }
+    setting == Some(true)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::{os::unix::net::UnixListener, thread};
+    #[test]
+    fn daemon_goal_provenance_requires_explicit_last_override_false() {
+        assert!(daemon_disables_goals(
+            b"codex\0-c\0features.goals=false\0app-server\0"
+        ));
+        assert!(daemon_disables_goals(
+            b"codex\0--config=features.goals=false\0"
+        ));
+        assert!(!daemon_disables_goals(b"codex\0app-server\0"));
+        assert!(!daemon_disables_goals(
+            b"codex\0-c\0features.goals=false\0-c\0features.goals=true\0"
+        ));
+        assert!(!daemon_disables_goals(
+            b"codex\0--config\0features.goals=false-ish\0"
+        ));
+    }
     fn raw_response(send: impl FnOnce(&mut UnixStream) + Send + 'static) -> String {
         let temp = tempfile::tempdir().unwrap();
         let path = temp.path().join("sock");

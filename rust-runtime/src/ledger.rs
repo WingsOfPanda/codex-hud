@@ -94,7 +94,7 @@ fn label(value: &Value) -> String {
 }
 fn unsettled(final_states: &str) -> String {
     format!(
-        "(jobs.status='armed' OR ({JOB_TERMINAL} AND (jobs.callback IS NULL OR callbacks.state NOT IN ({final_states}))))"
+        "NOT EXISTS (SELECT 1 FROM goal_jobs WHERE goal_jobs.job=jobs.id AND {JOB_TERMINAL}) AND (jobs.status='armed' OR ({JOB_TERMINAL} AND (jobs.callback IS NULL OR callbacks.state NOT IN ({final_states}))))"
     )
 }
 
@@ -183,6 +183,7 @@ impl Store {
             }
             Ok(())
         })?;
+        store.init_goals()?;
         Ok(store)
     }
 
@@ -204,12 +205,12 @@ impl Store {
         }
         q
     }
-    fn execute(&mut self, sql: &str, args: &[Value]) -> Result<()> {
+    pub(crate) fn execute(&mut self, sql: &str, args: &[Value]) -> Result<()> {
         self.runtime
             .block_on(Self::query(sql, args).execute(self.db.as_mut().unwrap()))?;
         Ok(())
     }
-    fn rows(&mut self, sql: &str, args: &[Value]) -> Result<Vec<Value>> {
+    pub(crate) fn rows(&mut self, sql: &str, args: &[Value]) -> Result<Vec<Value>> {
         let rows = self
             .runtime
             .block_on(Self::query(sql, args).fetch_all(self.db.as_mut().unwrap()))?;
@@ -233,13 +234,13 @@ impl Store {
             })
             .collect()
     }
-    fn first(&mut self, sql: &str, args: &[Value]) -> Result<Option<Value>> {
+    pub(crate) fn first(&mut self, sql: &str, args: &[Value]) -> Result<Option<Value>> {
         Ok(self.rows(sql, args)?.into_iter().next())
     }
-    fn exists(&mut self, sql: &str, args: &[Value]) -> Result<bool> {
+    pub(crate) fn exists(&mut self, sql: &str, args: &[Value]) -> Result<bool> {
         Ok(self.first(sql, args)?.is_some())
     }
-    fn transaction<T>(
+    pub(crate) fn transaction<T>(
         &mut self,
         immediate: bool,
         work: impl FnOnce(&mut Self) -> Result<T>,
@@ -307,7 +308,7 @@ impl Store {
     pub fn health(&mut self, parent: &str, updated_at: Option<f64>) -> Result<Value> {
         let jobs = self.rows(&format!("SELECT jobs.report,jobs.status FROM jobs JOIN parks ON parks.id=jobs.park LEFT JOIN callbacks ON callbacks.id=jobs.callback WHERE parks.parent=? AND parks.state='armed' AND {}", unsettled("'delivered','cancelled','expired'")), &[json!(parent)])?;
         let uncertain = self.rows("SELECT COUNT(*) AS count FROM callbacks WHERE parent=? AND state IN ('uncertain','cancel_uncertain')", &[json!(parent)])?[0]["count"].as_i64().unwrap();
-        let error = self.exists("SELECT 1 FROM parks WHERE parent=? AND state<>'cancelled' AND (error IS NOT NULL OR origin_pending=1 OR EXISTS (SELECT 1 FROM jobs WHERE jobs.park=parks.id AND interruption_pending=1)) UNION ALL SELECT 1 FROM callbacks WHERE parent=? AND state NOT IN ('delivered','cancelled','expired') AND error IS NOT NULL LIMIT 1", &[json!(parent),json!(parent)])?;
+        let error = self.exists("SELECT 1 FROM parks WHERE parent=? AND state<>'cancelled' AND (error IS NOT NULL OR origin_pending=1 OR EXISTS (SELECT 1 FROM jobs WHERE jobs.park=parks.id AND interruption_pending=1)) UNION ALL SELECT 1 FROM callbacks WHERE parent=? AND state NOT IN ('delivered','cancelled','expired','goal_owned','goal_settled') AND error IS NOT NULL LIMIT 1", &[json!(parent),json!(parent)])?;
         let reports: i64 = jobs.iter().map(|j| j["report"].as_i64().unwrap_or(0)).sum();
         let running = jobs.iter().filter(|j| j["status"] == "armed").count();
         let state = if uncertain != 0 {
@@ -353,6 +354,7 @@ impl Store {
         let parent = Uuid::parse_str(parent)?.to_string();
         let view = self.health(&parent, Some(crate::local::now()))?;
         crate::local::atomic_json(&self.directory.join(format!("{parent}.status.json")), &view)?;
+        self.goal_publish(&parent)?;
         Ok(view)
     }
 
@@ -396,6 +398,7 @@ impl Store {
                     s.execute("INSERT INTO jobs (id,park,kind,thread,turn,item,process,status,exit_code,callback,recovery_pending,label) VALUES (?,?,?,?,?,?,?,?,?,NULL,0,?)", &[json!(job.id),json!(park),json!(job.kind),json!(job.thread),json!(job.turn),json!(job.item),json!(job.process),json!(job.status),json!(job.exit_code),json!(label(&source))])?;
                     if pending.contains(&job.id) { s.execute("UPDATE jobs SET interruption_pending=1 WHERE id=?", &[json!(job.id)])?; }
                 }
+                s.goal_bind_jobs(parent,origin,&armed)?;
             }
             Ok(json!({"parent":parent,"park":park,"state":if !armed.is_empty(){"armed"}else if !existing.is_empty(){"already_registered"}else{"already_finished"},"armed":armed.iter().map(|j|j.id.clone()).collect::<Vec<_>>(),"already_registered":existing,"already_finished":finished}))
         })?;
@@ -486,7 +489,7 @@ impl Store {
     }
     pub fn active_parks(&mut self, parent: &str) -> Result<Vec<Value>> {
         self.rows(
-            "SELECT * FROM parks WHERE parent=? AND state='armed'",
+            "SELECT parks.*,EXISTS(SELECT 1 FROM jobs JOIN goal_jobs ON goal_jobs.job=jobs.id WHERE jobs.park=parks.id) AS goal_bound FROM parks WHERE parent=? AND state='armed'",
             &[json!(parent)],
         )
     }
@@ -559,7 +562,7 @@ impl Store {
         self.transaction(true, |s| {
             // Retire callbacks created by older batching races, before they can block fresh work.
             s.execute("UPDATE callbacks SET state=CASE WHEN EXISTS (SELECT 1 FROM jobs JOIN parks ON parks.id=jobs.park WHERE jobs.callback=callbacks.id AND parks.state='cancelled') THEN 'cancelled' ELSE 'expired' END WHERE parent=? AND state='ready' AND message IS NULL AND queue IS NULL AND EXISTS (SELECT 1 FROM jobs JOIN parks ON parks.id=jobs.park WHERE jobs.callback=callbacks.id AND parks.state IN ('cancelled','expired'))", &[json!(parent)])?;
-            let rows = s.rows(&format!("SELECT jobs.id,jobs.report,parks.origin FROM jobs JOIN parks ON parks.id=jobs.park WHERE parks.parent=? AND parks.state='armed' AND {JOB_TERMINAL} AND jobs.callback IS NULL"), &[json!(parent)])?;
+            let rows = s.rows(&format!("SELECT jobs.id,jobs.report,parks.origin FROM jobs JOIN parks ON parks.id=jobs.park WHERE parks.parent=? AND parks.state='armed' AND {JOB_TERMINAL} AND jobs.callback IS NULL AND NOT EXISTS (SELECT 1 FROM goal_jobs WHERE goal_jobs.job=jobs.id)"), &[json!(parent)])?;
             #[cfg(test)]
             BATCH_SELECTED.with(|hook| {
                 if let Some(hook) = hook.borrow_mut().take() { hook(); }
@@ -756,8 +759,9 @@ impl Store {
             )?)
     }
     pub fn finish_cycle(&mut self, parent: &str) -> Result<bool> {
+        self.execute("UPDATE callbacks SET state='goal_settled' WHERE parent=? AND state='goal_owned' AND EXISTS(SELECT 1 FROM jobs WHERE jobs.callback=callbacks.id) AND NOT EXISTS(SELECT 1 FROM jobs WHERE jobs.callback=callbacks.id AND jobs.status='armed')", &[json!(parent)])?;
         self.execute(&format!("UPDATE parks SET state='complete' WHERE parent=? AND state='armed' AND NOT EXISTS (SELECT 1 FROM jobs LEFT JOIN callbacks ON callbacks.id=jobs.callback WHERE jobs.park=parks.id AND {})",unsettled("'delivered','cancelled'")), &[json!(parent)])?;
-        let active = self.exists(&format!("SELECT 1 FROM jobs JOIN parks ON parks.id=jobs.park WHERE parks.parent=? AND parks.state='armed' AND (jobs.status='armed' OR ({JOB_TERMINAL} AND jobs.callback IS NULL)) LIMIT 1"), &[json!(parent)])?;
+        let active = self.exists(&format!("SELECT 1 FROM jobs JOIN parks ON parks.id=jobs.park WHERE parks.parent=? AND parks.state='armed' AND (jobs.status='armed' OR ({JOB_TERMINAL} AND jobs.callback IS NULL AND NOT EXISTS (SELECT 1 FROM goal_jobs WHERE goal_jobs.job=jobs.id))) LIMIT 1"), &[json!(parent)])?;
         let deliverable = self.exists("SELECT 1 FROM callbacks WHERE parent=? AND (state IN ('ready','pending','starting','in_flight','cancel_requested') OR (idempotent=1 AND state IN ('uncertain','cancel_uncertain')) OR (state='uncertain' AND queue IS NOT NULL AND reconcile_attempts<8)) LIMIT 1", &[json!(parent)])?;
         Ok(active || deliverable)
     }
@@ -773,13 +777,13 @@ impl Store {
     pub fn monitoring_failed(&mut self, parent: &str, error_type: &str) -> Result<()> {
         self.transaction(false, |s| {
             s.execute("UPDATE parks SET error=? WHERE parent=? AND state='armed'", &[json!(format!("Monitoring unavailable ({error_type}); completion remains unknown.")),json!(parent)])?;
-            s.execute("UPDATE callbacks SET error=? WHERE parent=? AND state NOT IN ('delivered','cancelled')", &[json!(format!("RPC unavailable ({error_type}); no blind enqueue retry.")),json!(parent)])
+            s.execute("UPDATE callbacks SET error=? WHERE parent=? AND state NOT IN ('delivered','cancelled','goal_owned','goal_settled')", &[json!(format!("RPC unavailable ({error_type}); no blind enqueue retry.")),json!(parent)])
         })
     }
     pub fn supervisor_failed(&mut self, parent: &str) -> Result<()> {
         self.transaction(false, |s| {
             s.execute("UPDATE parks SET error='Supervisor restart limit reached; observer recovery needs attention.' WHERE parent=? AND state='armed'", &[json!(parent)])?;
-            s.execute("UPDATE callbacks SET error='Supervisor restart limit reached; observer recovery needs attention.' WHERE parent=? AND state NOT IN ('delivered','cancelled','expired')", &[json!(parent)])
+            s.execute("UPDATE callbacks SET error='Supervisor restart limit reached; observer recovery needs attention.' WHERE parent=? AND state NOT IN ('delivered','cancelled','expired','goal_owned','goal_settled')", &[json!(parent)])
         })?;
         self.publish(parent)?;
         Ok(())

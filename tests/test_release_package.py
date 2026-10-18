@@ -80,7 +80,7 @@ def manifest_check(package):
     upstream = json.loads((package / 'codex-package.json').read_text())
     assert manifest['schema_version'] == 1 and manifest['voice'] is False, manifest
     protocol = manifest.get('coordinator_protocol')
-    assert type(protocol) is int and protocol == 2, 'unsupported coordinator protocol'
+    assert type(protocol) is int and protocol == 3, 'unsupported coordinator protocol'
     assert manifest['upstream'] == {'version': '0.163.0', 'tag': 'rust-v0.163.0',
         'commit': '83086188ae0614bd882818ff1aa23f3194962012'}, manifest['upstream']
     assert manifest['build']['rust'] == '1.99.1' and manifest['build']['cargo_profile'] == 'release'
@@ -91,7 +91,8 @@ def manifest_check(package):
         'resourcesDir': 'codex-resources', 'pathDir': 'codex-path'}, upstream
     required = ['bin/codex', 'bin/codex-plus', 'bin/codex-plus-runtime', 'bin/codex-code-mode-host', 'codex-path/rg',
         'codex-resources/bwrap', 'codex-package.json',
-        'docs/shell-workflow.md', 'docs/background-work.md', 'docs/rust-runtime.md', 'LICENSE', 'NOTICE',
+        'docs/shell-workflow.md', 'docs/background-work.md', 'docs/rust-runtime.md',
+        'docs/goals.md', 'docs/custom-goals.md', 'docs/evidence/custom-goals.json', 'LICENSE', 'NOTICE',
         'licenses/bubblewrap-COPYING', 'licenses/ripgrep-LICENSE-MIT',
         'licenses/ripgrep-LICENSE-UNLICENSE',
         'licenses/rusty-v8-LICENSE', 'licenses/v8-LICENSE', 'licenses/v8-LICENSE.v8',

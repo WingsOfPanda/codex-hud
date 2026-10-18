@@ -128,6 +128,15 @@ def wait(terminals, predicate, reason, timeout=15):
     raise AssertionError(f'{reason}\n' + '\n--- terminal ---\n'.join(terminal.text for terminal in terminals))
 
 
+def assert_no_park_records(home):
+    # Goal input admission can create the ledger without registering shell work.
+    database = home / 'codex-plus/background.sqlite'
+    if database.exists():
+        with sqlite3.connect(f'file:{database}?mode=ro', uri=True) as connection:
+            for table in ('parks', 'jobs', 'callbacks'):
+                assert connection.execute(f'SELECT COUNT(*) FROM {table}').fetchone()[0] == 0, table
+
+
 def composer_ready(text):
     return any(line.lstrip().startswith('›') for line in text.splitlines())
 
@@ -241,7 +250,7 @@ def shell_hud_smoke(binary, root, evidence):
             server.shells = [server.shell(700 + index, f'remote-root-{index}-held')]
             servers.append(server)
             terminals.append(Terminal(binary, home, workspace, server.url))
-            assert not (home / 'codex-plus').exists(), 'shell test accidentally registered park state'
+            assert_no_park_records(home)
         first, second = terminals
         wait(terminals, lambda: rows(first) and 'remote-root-0-held' in first.text and
              'remote-root-1-held' in second.text and len(worker_rows(second.text)) == 2 and
@@ -404,7 +413,7 @@ stream_max_retries=0
         provider.final_gate.set()
         wait([terminal], lambda: completed_turns() == 1 and shell_rows(terminal.text) and 'seen ' in terminal.text,
              'real idle local root did not show its still-running background shell', 30)
-        assert not (home / 'codex-plus').exists(), 'real shell was registered with park'
+        assert_no_park_records(home)
         assert provider.count == 2, f'expected two fixture model calls, got {provider.count}; see local-shell-provider-requests.json'
         assert not finished.exists(), 'command stopped before editable idle interval'
         assert_compact_hud(terminal.text, rows=1)

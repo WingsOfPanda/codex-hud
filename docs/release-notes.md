@@ -1,95 +1,62 @@
-# Codex Plus 0.163.0-plus.0.3.1
+# Codex Plus 0.163.0-plus.0.3.2
 
-This Plus patch release fixes completion delivery and advisor process cleanup,
-reduces inactive-worker HUD traffic, and shows the advisor's review topic in the
-main conversation. It retains OpenAI Codex 0.163.0, upstream commit
-`83086188ae0614bd882818ff1aa23f3194962012`, Rust 1.99.1 and the official stock
-daemon. No daemon source or database migration is added.
+This version adds Plus-owned goals to the Rust coordinator and native client.
+It retains OpenAI Codex 0.163.0, upstream commit
+`83086188ae0614bd882818ff1aa23f3194962012`, and Rust 1.99.1. The shared daemon
+remains OpenAI's binary, without daemon source or native-database migrations.
+Implementation and test evidence are separate from publication and installation.
 
-## Completion and cancellation fixes
+## Plus-owned goals
 
-- Callback selection and assignment share one immediate transaction. Concurrent
-  cancellation cannot leave a new ready callback blocking later completions;
-  invalidated, never-dispatched callbacks from the older race retire locally.
-- Exhausting a consumed-message history scan preserves that callback's uncertainty
-  without blocking unrelated fresh wakes. Transport/protocol failures still
-  propagate, and uncertain callbacks are not blindly resent.
-- Relative `CODEX_HOME` paths resolve against the caller's original directory
-  before detached startup or cooperative upgrade. Symlink protections remain.
-- A detached native owner-lifetime guard cleans up advisor consultations and Git
-  metadata probes even when `/stop` immediately kills the terminal group. It
-  adopts and reaps descendants that created separate sessions, using Linux
-  subreaper support and `/proc`. Unrelated process groups are preserved.
-- Advisor pointer collection disables Git fsmonitor locally. Result files retain
-  regular-file/no-follow and schema checks, with a separate 512 KiB transport
-  bound that accommodates permitted Unicode text and JSON escaping.
+`/goal` manages a persistent objective for an interactive root session. The
+coordinator schedules useful continuation and watches registered jobs locally.
+While healthy jobs run, the main thread becomes genuinely Idle and accepts
+input, with no repeated model check-ins. Shell/worker completion uses the stock
+queue path. A compact goal state uses the existing right input indicator;
+worker/job/advisor rows retain their three-row total limit.
 
-The ledger remains schema 1 and the coordinator remains protocol 2. Callback
-identities, frozen messages, cancellation provenance and LIVE/REPORT ONLY policy
-are preserved. Stock enqueue/acknowledgement ambiguity remains visible; this
-release does not promise exactly-once model/tool side effects or reboot recovery.
+Goal identity, revisions, exact-turn checkpoints, input epochs and dispatch
+identities live in the existing protected Plus SQLite ledger. Pause, edit and
+clear preserve running jobs/results and invalidate future continuation. Missing
+checkpoints, repeated lack of evidence or uncertainty require input. Optional
+one-hour/two-hour reviews default off, coalesce missed intervals and cannot poll
+healthy jobs. Hard time/token budgets are outside this version.
 
-## Advisor and HUD
+See [the goal workflow](goals.md) for checkpoint, native-goal transition and
+recovery semantics. Ending a goal turn is an agent instruction; registering a
+job alone does not make the daemon Idle. Progress evidence relevance remains
+agent/user judgment. Already-admitted work may execute after pause, including
+stock interrupted-turn recovery before Plus reconnects. Queue acknowledgement
+loss does not provide exactly-once model/tool side effects.
 
-The main conversation shows the review topic and elapsed time:
+## Other fixes retained
 
-```text
-• Advisor on wake and cancellation fixes · 5:01
-```
+Standalone worker tokens now match the displayed current turn's elapsed time,
+rather than showing lifetime usage beside a short current-turn timer. Explicit
+worker groups retain their batch lifetime scope. Exact current-turn process
+lookup also precedes bounded older-history fallback when registering shells in
+long sessions. Earlier callback/advisor cleanup and HUD fixes are retained.
 
-Completion or failure updates the same row. The model, effort and call count
-remain in the footer. Direct advisor commands use a compact brief fallback.
-An opaque wrapper such as `python3 consult.py` supplies a short topic using
-`# codex-plus-advisor: TOPIC` immediately after the foreground shell directive;
-unrelated commands are not guessed to be advisor work. See [advisor.md](advisor.md).
+## Rollout and rollback
 
-Only active workers require turn-history refreshes. Inactive thread rows remain
-available for grouped token/dispatch totals, while completed hidden workers no
-longer generate a turn-history request every second. UI refresh makes no model
-calls. Workers, shell jobs, advisor status, warnings and overflow still share
-three footer rows, preserving AP's prompt visibility window. Running TUIs must
-restart to use these display changes.
+The coordinator protocol changes from 2 to 3. A quiet checkpoint, official
+daemon restart and TUI restart are required. Fleet-config must preserve settings
+while disabling native goals effectively through the supported daemon startup
+feature override, and route the `goal` helper command. Merely rebuilding the
+client does not enable this workflow. Existing native goals remain stored;
+copying a reviewed objective into a paused Plus goal requires explicit consent.
 
-## Build and package corrections
-
-Developer builds select actual Cargo compiler-artifact paths instead of guessing
-where target/config/environment settings wrote the binaries. The CLI and its
-separate Code Mode host package are staged together, using upstream's pinned V8
-archive/bindings resolver. Existing Cargo/V8 caches remain reusable.
-
-Packages contain native Codex, the Code Mode host, digest-matched bwrap, ripgrep,
-the Rust helper, launcher, workflow documents and full target-specific dependency
-notices. Codex voice and Python runtime files remain excluded. Python is still a
-build/test dependency; no system interpreter is removed.
-
-Notice collection covers both the helper and CLI/host production graphs. Six
-crates without separate publisher license files have explicit checksum-bound
-declaration-backed resolutions. Canonical SPDX terms are labeled separately from
-publisher-authored notices, with no guessed authors or years. Matching ICU data
-notices, Microsoft's schema split grant and fxhash's actual Rust header remain
-independent required inputs. Unknown missing licenses and invalid hashes still
-fail assembly. See [notice resolution](notice-resolution.md).
-
-## Upgrade and rollback
-
-A compatible strictly higher protocol-2 release at the same upstream and target
-can transfer observers cooperatively after their current cycle. No shared-daemon
-restart is needed. The handoff records whether qualified upgrade acceptance
-permits installation without a quiet checkpoint; every rollback still requires
-one. Keep previous/in-use packages and retain the last Python 0.2.0 package until
-fleet-config and the user explicitly retire that fallback after the corrected
-Rust rollout and operational checks.
-
-Fleet-config owns installation, pins, wrappers, global instructions and rollout.
-This release changes no global instruction block; its documented topic header
-is optional for direct commands and required for explicitly labeled wrappers.
-Restart the TUI to pick up the new frontend; restarting it does not settle a
-registration or force a helper handoff.
+Preserve the last qualified rollback package and ledger. Rollback leaves Plus
+goals inert and native goals disabled, and must not expose goal callbacks to an
+older helper. It requires quiet coordination; live downgrade is unsupported.
+Fleet-config owns the separately coordinated installation.
+Voice remains omitted as in prior Plus packages.
 
 ## Qualification
 
-Complete archives are built and tested on their native GNU targets from one
-frozen Plus commit. Tests use private Codex homes and loopback providers. The
-companion note `docs/releases/0.163.0-plus.0.3.1.md` and `handoff.json` record exact
-archive/manifest/tree hashes, build/cache timings, per-target checks and limits.
-Earlier source/development evidence does not qualify these new release archives.
+See [custom-goals.json](evidence/custom-goals.json) for executed source/development
+checks, exact development-artifact hashes, preserved failures and limits. Official-daemon
+cases use private homes and loopback providers; wire fault and seeded recovery
+cases are distinguished. Read-only/Plan checkpoint writes can be denied and then
+require input; the client does not widen sandbox permissions. The companion
+release note records native acceptance and exact hashes for both release archives.

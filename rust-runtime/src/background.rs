@@ -129,6 +129,14 @@ fn latest(client: &mut impl Calls, thread: &str) -> Result<Value> {
     Ok(current.clone())
 }
 
+pub(crate) fn goal_current_turn(client: &mut Client, thread: &str) -> Result<Value> {
+    latest(client, thread)
+}
+
+pub(crate) fn goal_known_turn(client: &mut Client, thread: &str, ident: &str) -> Result<bool> {
+    Ok(turn(client, thread, ident)?.is_some())
+}
+
 fn turn(client: &mut impl Calls, thread: &str, ident: &str) -> Result<Option<Value>> {
     let mut found = None;
     scan_pages(
@@ -513,6 +521,15 @@ impl<'a> Observer<'a> {
     fn recover_generation(&mut self) -> Result<()> {
         self.connect()?;
         let generation = self.client.as_ref().unwrap().generation.clone();
+        let goal_status = self.store.goal_status(self.parent)?;
+        if goal_status["goal"].is_object()
+            || goal_status["running_jobs"].as_i64().unwrap_or(0) > 0
+            || !self.store.goal_dispatches(self.parent)?.is_empty()
+        {
+            self.store
+                .observe_generation(self.parent, Some(&generation))?;
+            return Ok(());
+        }
         if self
             .store
             .observe_generation(self.parent, Some(&generation))?
@@ -539,10 +556,24 @@ impl<'a> Observer<'a> {
                 {
                     return Ok(());
                 }
-                self.call(
-                    "thread/resume",
-                    json!({"threadId":self.parent,"excludeTurns":true}),
-                )?;
+                let mut params = json!({"threadId":self.parent,"excludeTurns":true});
+                let _mutation_lock = if self.store.goal_provenance(self.parent, None)?.is_some() {
+                    Some(crate::goal_command::GoalLock::acquire(
+                        &self.store.directory,
+                        self.parent,
+                    )?)
+                } else {
+                    None
+                };
+                if self.store.goal_provenance(self.parent, None)?.is_some() {
+                    crate::goal_command::isolation(
+                        self.store,
+                        self.client.as_mut().unwrap(),
+                        self.parent,
+                    )?;
+                    params["config"] = json!({"features.goals":false});
+                }
+                self.call("thread/resume", params)?;
                 self.recovery_loaded = true;
             }
         }
@@ -560,6 +591,16 @@ impl<'a> Observer<'a> {
             let origin = text(&park, "origin")?;
             let anchor = turn(self, self.parent, origin)?;
             let (status, mut evidence) = classify_turn(self, &home, self.parent, anchor.as_ref())?;
+            if flag(&park, "goal_bound")
+                && (status.as_deref() == Some("interrupted")
+                    || anchor
+                        .as_ref()
+                        .is_some_and(|a| a["status"] == "interrupted"))
+            {
+                self.store
+                    .goal_origin_interrupted(self.parent, text(&park, "id")?, now())?;
+                continue;
+            }
             if status.as_deref() == Some("interrupted") {
                 let evidence = evidence
                     .as_mut()
@@ -580,10 +621,11 @@ impl<'a> Observer<'a> {
             } else if matches!(status.as_deref(), Some("completed" | "failed")) {
                 self.store.origin_pending(self.parent, origin, false)?;
             }
-            if park["deadline"]
-                .as_f64()
-                .ok_or_else(|| anyhow!("invalid deadline"))?
-                < now()
+            if !flag(&park, "goal_bound")
+                && park["deadline"]
+                    .as_f64()
+                    .ok_or_else(|| anyhow!("invalid deadline"))?
+                    < now()
             {
                 self.store.expire_registration(text(&park, "id")?)?;
             }
@@ -844,6 +886,9 @@ impl<'a> Observer<'a> {
             return Ok(());
         }
         if let Some(ready) = ready {
+            if !self.account_goal_turns()? {
+                return Ok(());
+            }
             self.cancel_interrupted()?;
             let Some(ready) = self
                 .store
@@ -897,6 +942,9 @@ impl<'a> Observer<'a> {
         {
             return Ok(());
         }
+        if !self.account_goal_turns()? {
+            return Ok(());
+        }
         self.cancel_interrupted()?;
         if self
             .store
@@ -924,19 +972,426 @@ impl<'a> Observer<'a> {
         Ok(())
     }
 
+    fn goal_observing(&mut self) -> Result<bool> {
+        Ok(crate::goal_command::needs_observation(
+            &self.store.goal_status(self.parent)?,
+        ))
+    }
+
+    fn ordinary_callback_ready(&mut self, queue: &[Value]) -> Result<bool> {
+        if !self.store.queue_owned(self.parent, queue)? {
+            return Ok(false);
+        }
+        let (ready, _) = self
+            .store
+            .next_callback(self.parent, false, self.native_queue())?;
+        match ready {
+            Some(ready) => Ok(!self.store.callback_cancelling(&ready)?),
+            None => Ok(false),
+        }
+    }
+
+    fn goal_reconcile(&mut self, queue: &[Value]) -> Result<()> {
+        for dispatch in self.store.goal_dispatches(self.parent)? {
+            if dispatch["state"] == "ready" {
+                continue;
+            }
+            if let Some(turn) = dispatch["accepted_turn"].as_str() {
+                self.store.goal_accept_dispatch(
+                    text(&dispatch, "id")?,
+                    dispatch["queue"].as_str(),
+                    turn,
+                    now(),
+                )?;
+                continue;
+            }
+            let consumed = find_item(self, self.parent, None, |entry| {
+                entry["item"]["type"] == "userMessage"
+                    && entry["item"]["clientId"] == dispatch["client"]
+            })?;
+            if let Some(entry) = consumed {
+                let turn = text(&entry, "turnId")?;
+                self.store.goal_accept_dispatch(
+                    text(&dispatch, "id")?,
+                    dispatch["queue"].as_str(),
+                    turn,
+                    now(),
+                )?;
+                continue;
+            }
+            if dispatch["state"] == "starting" {
+                self.store.goal_dispatch_result(text(&dispatch,"id")?,"uncertain",dispatch["queue"].as_str(),None,Some("Observer recovered a queue/start submission without positive admission evidence; no blind start retry."),now())?;
+                continue;
+            }
+            let matches: Vec<_> = queue
+                .iter()
+                .filter(|entry| entry["clientUserMessageId"] == dispatch["client"])
+                .collect();
+            if matches.len() > 1 {
+                bail!("multiple queue entries match one custom goal dispatch");
+            }
+            if let Some(entry) = matches.first() {
+                let snapshot = self.store.goal_status(self.parent)?;
+                let current = snapshot["goal"]["id"] == dispatch["goal"]
+                    && snapshot["goal"]["revision"] == dispatch["revision"]
+                    && snapshot["input_epoch"] == dispatch["input_epoch"]
+                    && (matches!(
+                        snapshot["goal"]["state"].as_str(),
+                        Some("active" | "waiting")
+                    ) || dispatch["kind"] == "report"
+                        && snapshot["report_barrier"] == 1
+                        && snapshot["report_delivered"] == 0);
+                if !current {
+                    let deleted = self.call(
+                        "thread/queue/delete",
+                        json!({"threadId":self.parent,"queuedSubmissionId":entry["id"]}),
+                    )?;
+                    if deleted["deleted"] == true {
+                        self.store.goal_dispatch_result(
+                            text(&dispatch, "id")?,
+                            "done",
+                            entry["id"].as_str(),
+                            None,
+                            None,
+                            now(),
+                        )?;
+                    }
+                } else if dispatch["state"] == "submitting"
+                    || dispatch["state"] == "uncertain" && dispatch["queue"].is_null()
+                {
+                    self.store.goal_dispatch_result(
+                        text(&dispatch, "id")?,
+                        "pending",
+                        entry["id"].as_str(),
+                        None,
+                        None,
+                        now(),
+                    )?;
+                }
+            } else if dispatch["state"] == "submitting" || dispatch["state"] == "pending" {
+                self.store.goal_dispatch_result(
+                    text(&dispatch, "id")?,
+                    "uncertain",
+                    None,
+                    None,
+                    Some("Queue admission outcome unknown; no blind resend."),
+                    now(),
+                )?;
+            }
+        }
+        Ok(())
+    }
+
+    fn account_goal_turns(&mut self) -> Result<bool> {
+        self.store.goal_reconcile_accepted(self.parent, now())?;
+        // Finalize only explicitly admitted exact turns. Unrelated turns cannot consume checkpoints.
+        let home = self
+            .store
+            .directory
+            .parent()
+            .ok_or_else(|| anyhow!("state home unavailable"))?
+            .to_path_buf();
+        let mut admitted_turns = self.store.goal_turns(self.parent)?;
+        for dispatch in self.store.goal_dispatches(self.parent)? {
+            if let Some(turn) = dispatch["accepted_turn"].as_str() {
+                admitted_turns.push(json!({"turn":turn}));
+            }
+        }
+        for admitted in admitted_turns {
+            let ident = text(&admitted, "turn")?;
+            let current = turn(self, self.parent, ident)?;
+            let (status, _) = classify_turn(self, &home, self.parent, current.as_ref())?;
+            if current
+                .as_ref()
+                .is_some_and(|turn| turn["status"] == "interrupted")
+                && status.is_none()
+            {
+                self.store.goal_turn_uncertain(self.parent,ident,"Admitted goal turn has an interruption without positive terminal evidence; outcome remains unknown.",now())?;
+            }
+            if matches!(
+                status.as_deref(),
+                Some("completed" | "failed" | "interrupted")
+            ) {
+                if status.as_deref() == Some("completed")
+                    && self.call(
+                        "thread/read",
+                        json!({"threadId":self.parent,"includeTurns":false}),
+                    )?["thread"]["status"]["type"]
+                        != "idle"
+                {
+                    continue;
+                }
+                self.store.goal_finalize(
+                    self.parent,
+                    ident,
+                    status.as_deref() == Some("completed"),
+                    now(),
+                )?;
+            }
+        }
+        let snapshot = self.store.goal_status(self.parent)?;
+        Ok(!self.store.goal_turns(self.parent)?.iter().any(|turn| {
+            turn["goal"] == snapshot["goal"]["id"]
+                && turn["revision"] == snapshot["goal"]["revision"]
+                && turn["input_epoch"] == snapshot["input_epoch"]
+        }))
+    }
+
+    fn goal_step(&mut self) -> Result<()> {
+        let snapshot = self.store.goal_status(self.parent)?;
+        if !snapshot["goal"].is_object() && self.store.goal_dispatches(self.parent)?.is_empty() {
+            return Ok(());
+        }
+        self.account_goal_turns()?;
+        let queue = pages(self, "thread/queue/list", json!({"threadId":self.parent}))?;
+        self.goal_reconcile(&queue)?;
+        self.store.goal_reconcile_reports(self.parent, now())?;
+        let snapshot = self.store.goal_status(self.parent)?;
+        let report = snapshot["report_barrier"] == 1
+            && snapshot["report_delivered"] == 0
+            && matches!(
+                snapshot["goal"]["state"].as_str(),
+                Some("active" | "waiting" | "needs_input")
+            );
+        if !report
+            && !matches!(
+                snapshot["goal"]["state"].as_str(),
+                Some("active" | "waiting")
+            )
+        {
+            return Ok(());
+        }
+        self.connect()?;
+        let isolation = {
+            let _mutation_lock =
+                crate::goal_command::GoalLock::acquire(&self.store.directory, self.parent)?;
+            crate::goal_command::isolation(self.store, self.client.as_mut().unwrap(), self.parent)
+        };
+        if let Err(error) = isolation {
+            self.store.goal_set_error(
+                self.parent,
+                &format!("Native goal isolation unavailable: {error:#}"),
+                now(),
+            )?;
+            return Ok(());
+        }
+        let meta = self.call(
+            "thread/read",
+            json!({"threadId":self.parent,"includeTurns":false}),
+        )?;
+        if !root_thread(&meta["thread"], self.parent) {
+            bail!("custom goal parent is not a root thread");
+        }
+        if meta["thread"]["status"]["type"] == "notLoaded" {
+            // Reconcile first: resume itself may admit existing queue work.
+            let owned = self.store.goal_dispatches(self.parent)?;
+            if !snapshot["pending_input"].is_null()
+                || !queue.iter().all(|entry| {
+                    owned.iter().any(|dispatch| {
+                        dispatch["state"] == "pending"
+                            && dispatch["queue"] == entry["id"]
+                            && dispatch["client"] == entry["clientUserMessageId"]
+                            && dispatch["goal"] == snapshot["goal"]["id"]
+                            && dispatch["revision"] == snapshot["goal"]["revision"]
+                            && dispatch["input_epoch"] == snapshot["input_epoch"]
+                    })
+                })
+            {
+                return Ok(());
+            }
+            let _mutation_lock =
+                crate::goal_command::GoalLock::acquire(&self.store.directory, self.parent)?;
+            let current = self.store.goal_status(self.parent)?;
+            if current["goal"]["revision"] != snapshot["goal"]["revision"]
+                || current["input_epoch"] != snapshot["input_epoch"]
+                || !current["pending_input"].is_null()
+            {
+                return Ok(());
+            }
+            self.call("thread/resume",json!({"threadId":self.parent,"excludeTurns":true,"config":{"features.goals":false}}))?;
+            return Ok(());
+        }
+        if meta["thread"]["status"]["type"] != "idle" {
+            return Ok(());
+        }
+        // Ordinary park callbacks and user queue entries keep priority.
+        let owned = self.store.goal_dispatches(self.parent)?;
+        if !queue.iter().all(|q| {
+            owned
+                .iter()
+                .any(|d| q["clientUserMessageId"] == d["client"])
+        }) {
+            return Ok(());
+        }
+        if self.ordinary_callback_ready(&queue)? {
+            return Ok(());
+        }
+        self.store.goal_wait_ready(self.parent, now())?;
+        let mut snapshot = self.store.goal_status(self.parent)?;
+        let completion = self.store.goal_completion_results(self.parent)?;
+        let completed: Vec<Value> = completion["results"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .map(|job| job["id"].clone())
+            .collect();
+        snapshot["completion_jobs"] = json!(completed);
+        let kind = if !completed.is_empty() {
+            "completion"
+        } else if snapshot["goal"]["review_due"]
+            .as_f64()
+            .is_some_and(|due| due <= now())
+        {
+            "review"
+        } else {
+            "continue"
+        };
+        let message = if kind == "completion" {
+            format!(
+                "LIVE GOAL COMPLETION: Review these completed registered jobs while preserving observation of remaining jobs, then continue authorized useful work. Results: {}. {}",
+                completion,
+                crate::goal_command::instructions(&snapshot)
+            )
+        } else {
+            format!(
+                "LIVE GOAL CONTINUATION: Review the current custom goal and checkpoint, then continue authorized useful work. {}",
+                crate::goal_command::instructions(&snapshot)
+            )
+        };
+        if report {
+            let message = format!(
+                "REPORT ONLY: The coordinator recovered after an unwatched gap. Report recovered results and uncertainty, then wait for renewed user direction. Do not resume old follow-up actions or clear the report barrier. Stock already-admitted interrupted work may independently replay. Goal: {}. Recovered results (bounded; total includes any remaining results): {}",
+                snapshot["goal"],
+                self.store
+                    .goal_report_results(self.parent, text(&snapshot, "report_id")?)?
+            );
+            self.store
+                .goal_report_intent(self.parent, &snapshot, &message, now())?;
+        } else {
+            self.store
+                .goal_intent(self.parent, &snapshot, kind, &message, now())?;
+        }
+        let dispatches = self.store.goal_dispatches(self.parent)?;
+        let ready = dispatches
+            .iter()
+            .find(|entry| entry["state"] == "ready")
+            .cloned();
+        if let Some(ready) = ready {
+            let _mutation_lock =
+                crate::goal_command::GoalLock::acquire(&self.store.directory, self.parent)?;
+            let Some(claimed) = self.store.goal_claim_dispatch(text(&ready, "id")?)? else {
+                return Ok(());
+            };
+            let result=self.call("thread/queue/add",json!({"threadId":self.parent,"clientUserMessageId":claimed["client"],"input":[{"type":"text","text":claimed["message"],"textElements":[]}]}));
+            match result {
+                Ok(result)
+                    if result["queuedSubmission"]["clientUserMessageId"] == claimed["client"]
+                        && result["queuedSubmission"]["id"].is_string() =>
+                {
+                    self.store.goal_dispatch_result(
+                        text(&claimed, "id")?,
+                        "pending",
+                        result["queuedSubmission"]["id"].as_str(),
+                        None,
+                        None,
+                        now(),
+                    )?;
+                }
+                result => {
+                    self.store.goal_dispatch_result(text(&claimed,"id")?,"uncertain",None,None,Some("Queue/add may have admitted work; reconcile before further continuation."),now())?;
+                    if let Err(error) = result {
+                        return Err(error);
+                    } else {
+                        bail!("invalid custom goal enqueue acknowledgement");
+                    }
+                }
+            }
+        }
+        let queue = pages(self, "thread/queue/list", json!({"threadId":self.parent}))?;
+        self.goal_reconcile(&queue)?;
+        let dispatches = self.store.goal_dispatches(self.parent)?;
+        let Some(pending) = dispatches
+            .iter()
+            .find(|entry| entry["state"] == "pending")
+            .cloned()
+        else {
+            return Ok(());
+        };
+        let _mutation_lock =
+            crate::goal_command::GoalLock::acquire(&self.store.directory, self.parent)?;
+        let snapshot = self.store.goal_status(self.parent)?;
+        if snapshot["goal"]["id"] != pending["goal"]
+            || snapshot["goal"]["revision"] != pending["revision"]
+            || snapshot["input_epoch"] != pending["input_epoch"]
+            || !snapshot["pending_input"].is_null()
+        {
+            return Ok(());
+        }
+        if queue.len() != 1
+            || queue[0]["id"] != pending["queue"]
+            || queue[0]["clientUserMessageId"] != pending["client"]
+        {
+            return Ok(());
+        }
+        if self.call(
+            "thread/read",
+            json!({"threadId":self.parent,"includeTurns":false}),
+        )?["thread"]["status"]["type"]
+            != "idle"
+        {
+            return Ok(());
+        }
+        // Persist uncertainty before start; a lost start acknowledgement is never retried blindly.
+        self.store.goal_dispatch_result(
+            text(&pending, "id")?,
+            "starting",
+            pending["queue"].as_str(),
+            None,
+            None,
+            now(),
+        )?;
+        match self.call(
+            "thread/queue/start",
+            json!({"threadId":self.parent,"queuedSubmissionId":pending["queue"]}),
+        ) {
+            Ok(result) => {
+                let turn = text(&result["turn"], "id")?;
+                self.store.goal_accept_dispatch(
+                    text(&pending, "id")?,
+                    pending["queue"].as_str(),
+                    turn,
+                    now(),
+                )?;
+            }
+            Err(error) => {
+                self.store.goal_dispatch_result(
+                    text(&pending, "id")?,
+                    "uncertain",
+                    pending["queue"].as_str(),
+                    None,
+                    Some("Queue/start outcome unknown; no blind retry."),
+                    now(),
+                )?;
+                return Err(error);
+            }
+        }
+        Ok(())
+    }
+
     fn step(&mut self) -> Result<bool> {
         self.store
             .claim_observation(self.parent, &self.run_id, false)?;
         let result = (|| -> Result<bool> {
-            if !self.store.has_work(self.parent)? {
+            if !self.store.has_work(self.parent)? && !self.goal_observing()? {
                 return Ok(false);
             }
             self.recover_generation()?;
             self.cancel_interrupted()?;
             self.poll_jobs()?;
             self.store.batch(self.parent)?;
+            self.goal_step()?;
             self.deliver()?;
-            self.store.finish_cycle(self.parent)
+            Ok(self.store.finish_cycle(self.parent)? || self.goal_observing()?)
         })();
         self.store.publish(self.parent)?;
         result
@@ -952,7 +1407,7 @@ impl<'a> Observer<'a> {
         let deadline = Instant::now() + Duration::from_secs(MAX_SECONDS as u64);
         let result = (|| -> Result<i32> {
             let mut backoff = 1;
-            while Instant::now() < deadline {
+            while Instant::now() < deadline || self.goal_observing()? {
                 let active = match self.step() {
                     Ok(active) => {
                         self.store.monitoring_succeeded(self.parent)?;
@@ -966,6 +1421,15 @@ impl<'a> Observer<'a> {
                         self.client = None;
                         self.store
                             .monitoring_failed(self.parent, error_type(&error))?;
+                        if backoff >= 4 {
+                            self.store.goal_set_error(
+                                self.parent,
+                                &format!(
+                                    "Goal monitoring unavailable after local retries: {error:#}"
+                                ),
+                                now(),
+                            )?;
+                        }
                         self.store.publish(self.parent)?;
                         backoff = 30.min(backoff * 2);
                         true
@@ -1009,19 +1473,33 @@ fn error_type(error: &anyhow::Error) -> &'static str {
 
 struct RoleLock(File);
 impl RoleLock {
-    fn acquire(home: &Path, parent: &str, action: &str) -> Result<Self> {
-        let suffix = if action == "supervise" {
-            "supervisor.lock"
-        } else {
-            "lock"
+    fn open(home: &Path, parent: &str, action: &str) -> Result<File> {
+        let suffix = match action {
+            "supervise" => "supervisor.lock",
+            "launch" => "launch.lock",
+            _ => "lock",
         };
-        let file = OpenOptions::new()
+        Ok(OpenOptions::new()
             .create(true)
             .read(true)
             .write(true)
             .mode(0o600)
             .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
-            .open(state_directory(home)?.join(format!("{parent}.{suffix}")))?;
+            .open(state_directory(home)?.join(format!("{parent}.{suffix}")))?)
+    }
+    fn try_acquire(home: &Path, parent: &str, action: &str) -> Result<Option<Self>> {
+        let file = Self::open(home, parent, action)?;
+        if unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } == 0 {
+            return Ok(Some(Self(file)));
+        }
+        let error = std::io::Error::last_os_error();
+        if error.kind() == std::io::ErrorKind::WouldBlock {
+            return Ok(None);
+        }
+        Err(error.into())
+    }
+    fn acquire(home: &Path, parent: &str, action: &str) -> Result<Self> {
+        let file = Self::open(home, parent, action)?;
         loop {
             if unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX) } == 0 {
                 return Ok(Self(file));
@@ -1105,10 +1583,29 @@ fn supervise(
         attempt += 1;
     }
     store.supervisor_failed(parent)?;
+    store.goal_set_error(
+        parent,
+        "Supervisor restart limit reached; autonomous goal scheduling is unsafe.",
+        now(),
+    )?;
     Ok(0)
 }
 
-fn launch(parent: &str, home: &Path, package_root: &Path) -> Result<()> {
+pub(crate) fn launch(parent: &str, home: &Path, package_root: &Path) -> Result<()> {
+    let deadline = Instant::now() + Duration::from_secs(5);
+    let _launch = loop {
+        if let Some(lock) = RoleLock::try_acquire(home, parent, "launch")? {
+            break lock;
+        }
+        if Instant::now() >= deadline {
+            bail!("coordinator launch is already in progress");
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    };
+    let Some(reservation) = RoleLock::try_acquire(home, parent, "supervise")? else {
+        return Ok(());
+    };
+    drop(reservation);
     let mut command = package_command(package_root, home, "supervise", parent, None);
     command
         .stdin(Stdio::null())
@@ -1122,8 +1619,25 @@ fn launch(parent: &str, home: &Path, package_root: &Path) -> Result<()> {
             Ok(())
         });
     }
-    crate::local::spawn_exact(&mut command)?;
-    Ok(())
+    let mut child = crate::local::spawn_exact(&mut command)?;
+    let deadline = Instant::now() + Duration::from_secs(5);
+    loop {
+        if let Some(status) = child.try_wait()? {
+            if status.success() {
+                return Ok(());
+            }
+            bail!("coordinator supervisor exited during launch: {status}");
+        }
+        if RoleLock::try_acquire(home, parent, "supervise")?.is_none() {
+            return Ok(());
+        }
+        if Instant::now() >= deadline {
+            let _ = child.kill();
+            let _ = child.wait();
+            bail!("coordinator supervisor did not acquire its role within five seconds");
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    }
 }
 
 #[derive(Parser)]
@@ -1291,6 +1805,11 @@ fn run_main(args: &Arguments, argv: &[OsString], package_root: &Path, parent: &s
         {
             let _lock = if args.action == "park" {
                 None
+            } else if args.action == "supervise" {
+                let Some(lock) = RoleLock::try_acquire(&home, parent, &args.action)? else {
+                    return Ok(0);
+                };
+                Some(lock)
             } else {
                 Some(RoleLock::acquire(&home, parent, &args.action)?)
             };
@@ -1652,6 +2171,208 @@ mod tests {
             unsafe { libc::flock(contender.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) },
             0
         );
+    }
+
+    #[test]
+    fn ordinary_queue_admission_accounts_for_a_goal_eos_after_the_first_pass() {
+        use std::os::unix::net::UnixListener;
+        use tungstenite::Message;
+        let home = tempfile::tempdir().unwrap();
+        let parent = Uuid::new_v4().to_string();
+        let mut store = Store::open(home.path()).unwrap();
+        let goal = store
+            .goal_start(&parent, "review independent completion", None, false, now())
+            .unwrap();
+        let job = ResolvedJob {
+            id: "independent".into(),
+            kind: "process".into(),
+            thread: parent.clone(),
+            turn: Some("origin".into()),
+            item: Some("item".into()),
+            process: Some("1".into()),
+            status: "armed".into(),
+            exit_code: None,
+        };
+        store
+            .register_resolved(
+                &parent,
+                "origin",
+                "independent result",
+                &[job],
+                &HashMap::new(),
+                Some("generation"),
+                &HashSet::new(),
+            )
+            .unwrap();
+        let job = store.jobs_to_observe(&parent).unwrap().remove(0);
+        store
+            .observe_job(&job, Some("completed"), Some(0), None, false)
+            .unwrap();
+        store.batch(&parent).unwrap();
+        let id = goal["goal"]["id"].as_str().unwrap();
+        let epoch = goal["input_epoch"].as_i64().unwrap();
+        store
+            .goal_admit(&parent, id, 1, "origin", epoch, now())
+            .unwrap();
+        store.goal_checkpoint(&parent,id,1,"origin",epoch,&json!({"disposition":"continue","next_action":"Review the result","evidence":["registered:independent"]}),now()).unwrap();
+        let socket_directory = home.path().join("app-server-control");
+        std::fs::create_dir(&socket_directory).unwrap();
+        let listener =
+            UnixListener::bind(socket_directory.join("app-server-control.sock")).unwrap();
+        let server_home = home.path().to_path_buf();
+        let server_parent = parent.clone();
+        let server = std::thread::spawn(move || {
+            let mut store = Store::open(&server_home).unwrap();
+            let (socket, _) = listener.accept().unwrap();
+            socket
+                .set_read_timeout(Some(Duration::from_secs(5)))
+                .unwrap();
+            let mut socket = tungstenite::accept(socket).unwrap();
+            let mut first = true;
+            let mut admitted = false;
+            let mut additions = 0;
+            while let Ok(Message::Text(request)) = socket.read() {
+                let request: Value = serde_json::from_str(&request).unwrap();
+                if request["id"].is_null() {
+                    continue;
+                }
+                let result = match request["method"].as_str().unwrap() {
+                    "initialize" => json!({}),
+                    "thread/turns/list" => {
+                        let status = if first { "inProgress" } else { "completed" };
+                        first = false;
+                        json!({"data":[{"id":"origin","status":status}],"nextCursor":null})
+                    }
+                    "thread/read" => {
+                        json!({"thread":{"id":server_parent,"status":{"type":if admitted{"active"}else{"idle"}}}})
+                    }
+                    "thread/queue/list" => json!({"data":[],"nextCursor":null}),
+                    "thread/queue/add" => {
+                        assert!(
+                            store.goal_turns(&server_parent).unwrap().is_empty(),
+                            "old goal turn must finalize before queue/add can admit the ordinary callback"
+                        );
+                        assert_eq!(
+                            store.goal_status(&server_parent).unwrap()["goal"]["revision"],
+                            2
+                        );
+                        admitted = true;
+                        additions += 1;
+                        json!({"queuedSubmission":{"id":"ordinary-queue","clientUserMessageId":request["params"]["clientUserMessageId"]}})
+                    }
+                    method => panic!("unexpected method {method}"),
+                };
+                socket
+                    .send(Message::text(
+                        json!({"id":request["id"],"result":result}).to_string(),
+                    ))
+                    .unwrap();
+            }
+            additions
+        });
+        let mut observer = Observer::new(&mut store, &parent);
+        assert!(!observer.account_goal_turns().unwrap());
+        observer.deliver().unwrap();
+        drop(observer);
+        assert_eq!(server.join().unwrap(), 1);
+        let current = store.goal_status(&parent).unwrap();
+        store
+            .goal_admit(&parent, id, 2, "ordinary-callback", epoch, now())
+            .unwrap();
+        store
+            .goal_checkpoint(
+                &parent,
+                id,
+                2,
+                "ordinary-callback",
+                epoch,
+                &json!({"disposition":"needs_input","reason":"Independent result reviewed"}),
+                now(),
+            )
+            .unwrap();
+        assert_eq!(
+            store
+                .goal_finalize(&parent, "ordinary-callback", true, now())
+                .unwrap()["goal"]["state"],
+            "needs_input"
+        );
+        assert_eq!(current["binding"], Value::Null);
+    }
+
+    #[test]
+    fn ordinary_callback_priority_uses_actual_dispatch_eligibility() {
+        let home = tempfile::tempdir().unwrap();
+        let mut store = Store::open(home.path()).unwrap();
+        let parent = Uuid::new_v4().to_string();
+        let job = ResolvedJob {
+            id: "independent".into(),
+            kind: "process".into(),
+            thread: parent.clone(),
+            turn: Some("origin".into()),
+            item: Some("item".into()),
+            process: Some("1".into()),
+            status: "armed".into(),
+            exit_code: None,
+        };
+        store
+            .register_resolved(
+                &parent,
+                "origin",
+                "ordinary result",
+                &[job],
+                &HashMap::new(),
+                Some("generation"),
+                &HashSet::new(),
+            )
+            .unwrap();
+        let job = store.jobs_to_observe(&parent).unwrap().remove(0);
+        store
+            .observe_job(&job, Some("completed"), Some(0), None, false)
+            .unwrap();
+        store.batch(&parent).unwrap();
+        let mut observer = Observer::new(&mut store, &parent);
+        assert!(observer.ordinary_callback_ready(&[]).unwrap());
+        assert!(
+            !observer
+                .ordinary_callback_ready(&[json!({"clientUserMessageId":"already-admitted-goal"})])
+                .unwrap()
+        );
+        observer
+            .store
+            .execute(
+                "UPDATE callbacks SET idempotent=1 WHERE parent=?",
+                &[json!(parent)],
+            )
+            .unwrap();
+        assert!(!observer.ordinary_callback_ready(&[]).unwrap());
+        observer
+            .store
+            .execute(
+                "UPDATE callbacks SET idempotent=0,state='uncertain' WHERE parent=?",
+                &[json!(parent)],
+            )
+            .unwrap();
+        assert!(!observer.ordinary_callback_ready(&[]).unwrap());
+    }
+
+    #[test]
+    fn repeated_launches_do_not_spawn_contenders_while_supervisor_is_owned() {
+        let home = tempfile::tempdir().unwrap();
+        let parent = Uuid::new_v4().to_string();
+        let held = RoleLock::acquire(home.path(), &parent, "supervise").unwrap();
+        let missing_package = home.path().join("no-runtime-can-be-spawned");
+        let before = Instant::now();
+        for _ in 0..50 {
+            launch(&parent, home.path(), &missing_package).unwrap();
+        }
+        assert!(before.elapsed() < Duration::from_secs(2));
+        assert!(
+            RoleLock::try_acquire(home.path(), &parent, "supervise")
+                .unwrap()
+                .is_none()
+        );
+        drop(held);
+        assert!(launch(&parent, home.path(), &missing_package).is_err());
     }
 
     #[test]

@@ -1529,7 +1529,7 @@ index ea0894b3e..90d3aa931 100644
  strum_macros = { workspace = true }
  supports-color = { workspace = true }
 diff --git a/codex-rs/tui/src/app.rs b/codex-rs/tui/src/app.rs
-index 1b07e9826..9d6093c5b 100644
+index 1b07e9826..e7d2c0e2f 100644
 --- a/codex-rs/tui/src/app.rs
 +++ b/codex-rs/tui/src/app.rs
 @@ -196,6 +196,7 @@ use tokio_util::sync::CancellationToken;
@@ -1544,7 +1544,7 @@ index 1b07e9826..9d6093c5b 100644
  mod agents_overview_threads;
  mod agents_overview_usage;
  mod agents_overview_view;
-+mod worker_hud;
++pub(crate) mod worker_hud;
  pub(crate) use agents_overview::AGENTS_OVERVIEW_VIEW_ID;
  mod activity_groups;
  mod app_server_event_targets;
@@ -2385,7 +2385,7 @@ index 049849509..a60190597 100644
 +    Ok(())
  }
 diff --git a/codex-rs/tui/src/app/event_dispatch.rs b/codex-rs/tui/src/app/event_dispatch.rs
-index a7f7f1e82..595c85d8a 100644
+index a7f7f1e82..29a346abd 100644
 --- a/codex-rs/tui/src/app/event_dispatch.rs
 +++ b/codex-rs/tui/src/app/event_dispatch.rs
 @@ -159,22 +159,11 @@ impl App {
@@ -2416,7 +2416,51 @@ index a7f7f1e82..595c85d8a 100644
              AppEvent::UserVerificationApproved { thread_id, server_name, request_id } => {
                  Box::pin(self.start_user_verification(app_server, thread_id, server_name, request_id)).await?;
              }
-@@ -3025,6 +3014,18 @@ impl App {
+@@ -1021,21 +1010,6 @@ impl App {
+                     }
+                 }
+                 RunningTaskExitAction::Exit => {
+-                    if self.chat_widget.thread_id() == Some(thread_id)
+-                        && self.chat_widget.is_active_goal_turn_running()
+-                        && let Err(error) = app_server
+-                            .thread_goal_set(
+-                                thread_id,
+-                                /*objective*/ None,
+-                                Some(codex_app_server_protocol::ThreadGoalStatus::Paused),
+-                                /*token_budget*/ None,
+-                            )
+-                            .await
+-                    {
+-                        self.chat_widget
+-                            .add_error_message(format!("Failed to pause task goal: {error}"));
+-                        return Ok(AppRunControl::Continue);
+-                    }
+                     let turn_id = self
+                         .active_turn_id_for_thread(thread_id)
+                         .await
+@@ -1182,7 +1156,7 @@ impl App {
+                             .set_queue_autosend_suppressed(/*suppressed*/ true);
+                     }
+                     let handled = is_user_turn
+-                        && (matches!(
++                        && (err.downcast_ref::<crate::plus_goals::InputError>().is_some() || matches!(
+                             err.downcast_ref::<TypedRequestError>(),
+                             Some(TypedRequestError::Server { method, .. })
+                                 if method == "turn/start"
+@@ -1790,6 +1764,12 @@ impl App {
+             AppEvent::RefreshStatusLineWorkspaceHeadline { request_id } => {
+                 self.refresh_status_line_workspace_headline(app_server, request_id);
+             }
++            AppEvent::PlusGoalCommand { thread_id, command } => {
++                self.plus_goal_command(thread_id, command).await;
++            }
++            AppEvent::PlusGoalDraft { thread_id, draft, expected, edit } => {
++                self.set_plus_goal_draft(app_server, thread_id, draft, expected, edit).await;
++            }
+             AppEvent::OpenThreadGoalMenu { thread_id } => {
+                 self.open_thread_goal_menu(app_server, thread_id).await;
+             }
+@@ -3025,6 +3005,18 @@ impl App {
                      result,
                  );
              }
@@ -2428,18 +2472,33 @@ index a7f7f1e82..595c85d8a 100644
 +                self.finish_shell_hud(primary_thread_id, request_id, result);
 +                tui.frame_requester().schedule_frame();
 +            }
-+            AppEvent::WatcherHealthLoaded { primary_thread_id, request_id, health, advisor } => {
-+                self.finish_watcher_health(primary_thread_id, request_id, health, advisor);
++            AppEvent::WatcherHealthLoaded { primary_thread_id, request_id, health, advisor, goal } => {
++                self.finish_watcher_health(primary_thread_id, request_id, health, advisor, goal);
 +                tui.frame_requester().schedule_frame();
 +            }
              AppEvent::SelectAgentThread(thread_id) => {
                  self.select_agent_thread(tui, app_server, thread_id)
                      .await?;
 diff --git a/codex-rs/tui/src/app/owned_transcript_tests.rs b/codex-rs/tui/src/app/owned_transcript_tests.rs
-index ff6e0201b..d0d1b92d8 100644
+index ff6e0201b..56d15f109 100644
 --- a/codex-rs/tui/src/app/owned_transcript_tests.rs
 +++ b/codex-rs/tui/src/app/owned_transcript_tests.rs
-@@ -1849,3 +1849,96 @@ async fn footer_selection_defers_warning_clicks_and_preserves_the_draft() -> Res
+@@ -1615,12 +1615,13 @@ async fn inline_confirmation_preserves_compact_viewport_without_replaying_histor
+     let mut tui = crate::tui::test_support::make_test_tui()?;
+     tui.set_owned_screen(/*owned*/ false)?;
+     let size = Size::new(/*width*/ 80, /*height*/ 24);
+-    app.show_replace_thread_goal_confirmation(
++    app.show_plus_goal_draft_confirmation(
+         ThreadId::new(),
+         crate::goal_files::GoalDraft {
+             objective: "A replacement goal".to_string(),
+             ..Default::default()
+         },
++        Some(("existing-goal".into(), 3)),
+     );
+     app.render_chat_widget_frame(&mut tui, size)?;
+     assert!(tui.terminal.viewport_area.height < size.height);
+@@ -1849,3 +1850,96 @@ async fn footer_selection_defers_warning_clicks_and_preserves_the_draft() -> Res
      tui.set_owned_screen(/*owned*/ false)?;
      Ok(())
  }
@@ -2537,7 +2596,7 @@ index ff6e0201b..d0d1b92d8 100644
 +    Ok(())
 +}
 diff --git a/codex-rs/tui/src/app/reconnect.rs b/codex-rs/tui/src/app/reconnect.rs
-index 97e8d65d1..5bf8ee6dd 100644
+index 97e8d65d1..2f97780ea 100644
 --- a/codex-rs/tui/src/app/reconnect.rs
 +++ b/codex-rs/tui/src/app/reconnect.rs
 @@ -196,6 +196,7 @@ impl App {
@@ -2548,6 +2607,21 @@ index 97e8d65d1..5bf8ee6dd 100644
              self.account_email_request_id = None;
              // Cached blank sessions are usable only while this connection owns a subscription.
              self.agents_overview.blank_sessions.clear();
+@@ -541,6 +542,14 @@ impl App {
+             );
+         }
+         self.feedback_audience = bootstrap.feedback_audience;
++        if let Some(root) = self.primary_thread_id
++            && displayed == Some(root)
++            && !self.thread_unavailable(root)
++            && !self.chat_widget.is_external_writer_view()
++        {
++            self.maybe_prompt_resume_paused_goal_after_resume(app_server, root)
++                .await;
++        }
+         if displayed.is_some_and(|id| !self.thread_unavailable(id)) {
+             self.chat_widget.maybe_send_next_queued_input();
+         }
 diff --git a/codex-rs/tui/src/app/session_lifecycle.rs b/codex-rs/tui/src/app/session_lifecycle.rs
 index a4fff209a..d63eff0bd 100644
 --- a/codex-rs/tui/src/app/session_lifecycle.rs
@@ -2811,7 +2885,7 @@ index 9394604dd..8eb4bff91 100644
          side_threads: HashMap::new(),
          abandoned_side_threads: HashSet::new(),
 diff --git a/codex-rs/tui/src/app/tests.rs b/codex-rs/tui/src/app/tests.rs
-index 40c30df92..9945b602d 100644
+index 40c30df92..a6f8267d1 100644
 --- a/codex-rs/tui/src/app/tests.rs
 +++ b/codex-rs/tui/src/app/tests.rs
 @@ -6333,6 +6333,7 @@ async fn make_test_app() -> Box<App> {
@@ -2830,6 +2904,461 @@ index 40c30df92..9945b602d 100644
              pending_server_profiles: HashMap::new(),
              agents_overview: Default::default(),
              side_threads: HashMap::new(),
+@@ -6498,46 +6500,35 @@ pub(super) async fn make_test_app_with_channels() -> (
+ }
+ 
+ #[tokio::test]
+-async fn set_thread_goal_draft_materializes_long_objective_and_confirms_before_paste() -> Result<()>
++async fn plus_goal_draft_materialization_preserves_pastes_images_and_long_objectives() -> Result<()>
+ {
+-    let mut app = make_test_app().await;
++    let app = make_test_app().await;
+     let mut app_server =
+         crate::start_embedded_app_server_for_picker(app.chat_widget.config_ref()).await?;
+-    let started = app_server
+-        .start_thread(app.chat_widget.config_ref())
+-        .await?;
+-    let thread_id = started.session.thread_id;
+-    app.enqueue_primary_thread_session(started.session, started.turns)
+-        .await?;
++    let codex_home = app_server
++        .codex_home_path(&app.chat_widget.config_ref().codex_home)
++        .expect("codex home");
+     let objective = "x".repeat(MAX_THREAD_GOAL_OBJECTIVE_CHARS + 1);
+-
+-    app.set_thread_goal_draft(
++    let (reference, _) = goal_files::materialize_goal_draft(
+         &mut app_server,
+-        thread_id,
+-        crate::goal_files::GoalDraft {
++        Some(&codex_home),
++        goal_files::GoalDraft {
+             objective: objective.clone(),
+             ..Default::default()
+         },
+-        crate::app_event::ThreadGoalSetMode::ConfirmIfExists,
+     )
+-    .await;
+-
+-    let response = app_server.thread_goal_get(thread_id).await?;
+-    let goal = response.goal.expect("goal should be set");
+-    let saved_objective = goal.objective.clone();
+-    let codex_home = app_server
+-        .codex_home_path(&app.chat_widget.config_ref().codex_home)
+-        .expect("codex home");
+-    assert!(goal_files::objective_file_path(&goal.objective, Some(&codex_home)).is_some());
++    .await
++    .expect("materialize goal draft");
++    assert!(goal_files::objective_file_path(&reference, Some(&codex_home)).is_some());
+     assert_eq!(
+-        goal_files::objective_text_for_edit(&mut app_server, Some(&codex_home), &goal.objective)
++        goal_files::objective_text_for_edit(&mut app_server, Some(&codex_home), &reference)
+             .await
+-            .expect("managed goal file should be readable"),
++            .expect("read goal objective"),
+         objective
+     );
+     let is_managed = |home: &AppServerPath, path: &str| {
+         let reference = goal_files::objective_file_reference(&AppServerPath::from_app_server(path))
+-            .expect("goal objective reference");
++            .expect("objective reference");
+         goal_files::objective_file_path(&reference, Some(home)).is_some()
+     };
+     let suffix = "attachments/00000000-0000-4000-8000-000000000000/goal-objective.md";
+@@ -6548,155 +6539,89 @@ async fn set_thread_goal_draft_materializes_long_objective_and_confirms_before_p
+     ] {
+         assert!(!is_managed(&codex_home, &path));
+     }
+-    assert!(!is_managed(
+-        &AppServerPath::from_app_server("/tmp/codex\\home"),
+-        &format!("/tmp/codex/home/{suffix}")
+-    ));
+-    let unix_path = AppServerPath::from_app_server("/tmp/codex\\").join("a");
+-    assert_eq!(unix_path.as_str(), "/tmp/codex\\/a");
+-    let attachments_dir = app.chat_widget.config_ref().codex_home.join("attachments");
+-    let attachment_count = std::fs::read_dir(&attachments_dir)?.count();
+     let placeholder = "[Pasted Content 5 chars]";
+-    let paste_draft = crate::goal_files::GoalDraft {
+-        objective: format!("Use {placeholder}"),
+-        text_elements: vec![TextElement::new(
+-            (4..4 + placeholder.len()).into(),
+-            Some(placeholder.to_string()),
+-        )],
+-        pending_pastes: vec![(placeholder.to_string(), "hello".to_string())],
+-        ..Default::default()
+-    };
+-
+-    app.set_thread_goal_draft(
+-        &mut app_server,
+-        thread_id,
+-        paste_draft.clone(),
+-        crate::app_event::ThreadGoalSetMode::ConfirmIfExists,
+-    )
+-    .await;
+-
+-    assert_eq!(
+-        std::fs::read_dir(&attachments_dir)?.count(),
+-        attachment_count
+-    );
+-    assert_eq!(
+-        app_server
+-            .thread_goal_get(thread_id)
+-            .await?
+-            .goal
+-            .expect("goal should still be set")
+-            .objective,
+-        saved_objective
+-    );
+-
+-    app.set_thread_goal_draft(
++    let (reference, _) = goal_files::materialize_goal_draft(
+         &mut app_server,
+-        thread_id,
+-        paste_draft,
+-        crate::app_event::ThreadGoalSetMode::ReplaceExisting,
+-    )
+-    .await;
+-    let goal = app_server
+-        .thread_goal_get(thread_id)
+-        .await?
+-        .goal
+-        .expect("replacement goal should be set");
+-    let paste_path = goal
+-        .objective
+-        .strip_prefix("Use pasted text file: ")
+-        .and_then(|text| text.strip_suffix(". Read this file before continuing."))
+-        .expect("paste file reference");
+-    assert_eq!(std::fs::read_to_string(paste_path)?, "hello");
+-    let attachment_count = std::fs::read_dir(&attachments_dir)?.count();
+-
+-    let stale_paste = (placeholder.to_string(), "hello".to_string());
+-    app.set_thread_goal_draft(
+-        &mut app_server,
+-        thread_id,
+-        crate::goal_files::GoalDraft {
+-            objective: "small goal".to_string(),
+-            pending_pastes: vec![stale_paste],
++        Some(&codex_home),
++        goal_files::GoalDraft {
++            objective: format!("Use {placeholder}"),
++            text_elements: vec![TextElement::new(
++                (4..4 + placeholder.len()).into(),
++                Some(placeholder.into()),
++            )],
++            pending_pastes: vec![(placeholder.into(), "hello".into())],
+             ..Default::default()
+         },
+-        crate::app_event::ThreadGoalSetMode::ReplaceExisting,
+     )
+-    .await;
+-    assert_eq!(
+-        std::fs::read_dir(&attachments_dir)?.count(),
+-        attachment_count
+-    );
+-
+-    let whitespace_placeholder = "[Pasted Content 3 chars]";
+-    app.set_thread_goal_draft(
++    .await
++    .expect("materialize goal draft");
++    let path = reference
++        .strip_prefix("Use pasted text file: ")
++        .and_then(|text| text.strip_suffix(". Read this file before continuing."))
++        .expect("paste reference");
++    assert_eq!(std::fs::read_to_string(path)?, "hello");
++    let (_, output) = goal_files::materialize_goal_draft(
+         &mut app_server,
+-        thread_id,
+-        crate::goal_files::GoalDraft {
+-            objective: whitespace_placeholder.to_string(),
+-            text_elements: vec![TextElement::new(
+-                (0..whitespace_placeholder.len()).into(),
+-                Some(whitespace_placeholder.to_string()),
+-            )],
+-            pending_pastes: vec![(whitespace_placeholder.to_string(), " \n\t".to_string())],
++        Some(&codex_home),
++        goal_files::GoalDraft {
++            objective: "small goal".into(),
++            pending_pastes: vec![(placeholder.into(), "unused".into())],
+             ..Default::default()
+         },
+-        crate::app_event::ThreadGoalSetMode::ReplaceExisting,
+     )
+-    .await;
+-    assert_eq!(
+-        std::fs::read_dir(&attachments_dir)?.count(),
+-        attachment_count
+-    );
+-    assert_eq!(
+-        app_server
+-            .thread_goal_get(thread_id)
+-            .await?
+-            .goal
+-            .expect("small goal should remain set")
+-            .objective,
+-        "small goal"
++    .await
++    .expect("materialize goal draft");
++    assert!(output.is_none());
++    let whitespace = "[Pasted Content 3 chars]";
++    assert!(
++        goal_files::materialize_goal_draft(
++            &mut app_server,
++            Some(&codex_home),
++            goal_files::GoalDraft {
++                objective: whitespace.into(),
++                text_elements: vec![TextElement::new(
++                    (0..whitespace.len()).into(),
++                    Some(whitespace.into())
++                )],
++                pending_pastes: vec![(whitespace.into(), " \n\t".into())],
++                ..Default::default()
++            }
++        )
++        .await
++        .is_err()
+     );
+-
+     let image_dir = tempfile::tempdir()?;
+-    let image_path = image_dir.path().join("local-image.png");
++    let image_path = image_dir.path().join("image.png");
+     std::fs::write(&image_path, b"png bytes")?;
+-    let image_placeholder = "[Image #3]";
+-    app.set_thread_goal_draft(
++    let placeholder = "[Image #3]";
++    let (reference, _) = goal_files::materialize_goal_draft(
+         &mut app_server,
+-        thread_id,
+-        crate::goal_files::GoalDraft {
+-            objective: format!("Describe {image_placeholder}"),
++        Some(&codex_home),
++        goal_files::GoalDraft {
++            objective: format!("Describe {placeholder}"),
+             text_elements: vec![TextElement::new(
+-                (9..9 + image_placeholder.len()).into(),
+-                Some(image_placeholder.to_string()),
++                (9..9 + placeholder.len()).into(),
++                Some(placeholder.into()),
+             )],
+             local_images: vec![crate::bottom_pane::LocalImageAttachment {
+-                placeholder: image_placeholder.to_string(),
++                placeholder: placeholder.into(),
+                 path: image_path,
+             }],
+-            remote_image_urls: vec![
+-                "https://example.com/first.png".to_string(),
+-                "https://example.com/second.png".to_string(),
+-            ],
++            remote_image_urls: vec!["https://example.com/first.png".into()],
+             ..Default::default()
+         },
+-        crate::app_event::ThreadGoalSetMode::ReplaceExisting,
+     )
+-    .await;
+-    let objective = app_server
+-        .thread_goal_get(thread_id)
+-        .await?
+-        .goal
+-        .expect("image goal should be set")
+-        .objective;
+-    let copied_image = objective
++    .await
++    .expect("materialize goal draft");
++    let copied = reference
+         .strip_prefix("Describe image file: ")
+         .and_then(|text| text.split_once("\n\n"))
+         .map(|(path, _)| path)
+-        .expect("copied image path");
+-    assert_eq!(std::fs::read(copied_image)?, b"png bytes");
+-    assert!(objective.contains(
+-        "Referenced image URLs:\n- [Image #1]: https://example.com/first.png\n- [Image #2]: https://example.com/second.png"
+-    ));
++        .expect("copied image");
++    assert_eq!(std::fs::read(copied)?, b"png bytes");
++    assert!(
++        reference.contains("Referenced image URLs:\n- [Image #1]: https://example.com/first.png")
++    );
+     app_server.shutdown().await?;
+     Ok(())
+ }
+@@ -6704,12 +6629,13 @@ async fn set_thread_goal_draft_materializes_long_objective_and_confirms_before_p
+ #[tokio::test]
+ async fn replace_goal_confirmation_snapshot() {
+     let mut app = make_test_app().await;
+-    app.show_replace_thread_goal_confirmation(
++    app.show_plus_goal_draft_confirmation(
+         ThreadId::new(),
+         goal_files::GoalDraft {
+             objective: "New goal".to_string(),
+             ..Default::default()
+         },
++        Some(("existing-goal".into(), 3)),
+     );
+     assert_app_snapshot!(
+         "replace_goal_confirmation",
+@@ -6717,6 +6643,163 @@ async fn replace_goal_confirmation_snapshot() {
+     );
+ }
+ 
++#[tokio::test]
++async fn plus_goal_confirmation_freezes_revision_and_defers_draft_files() {
++    let (mut app, mut rx, mut op_rx) = make_test_app_with_channels().await;
++    let root = ThreadId::new();
++    let draft = goal_files::GoalDraft {
++        objective: "Use pasted objective".into(),
++        pending_pastes: vec![("placeholder".into(), "private objective".into())],
++        ..Default::default()
++    };
++    app.show_plus_goal_draft_confirmation(root, draft, Some(("original-goal".into(), 7)));
++    assert!(!app.config.codex_home.join("attachments").exists());
++    app.chat_widget
++        .handle_key_event(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
++    let (actual_root, draft, expected) = std::iter::from_fn(|| rx.try_recv().ok())
++        .find_map(|event| {
++            if let AppEvent::PlusGoalDraft {
++                thread_id,
++                draft,
++                expected,
++                edit: false,
++            } = event
++            {
++                Some((thread_id, draft, expected))
++            } else {
++                None
++            }
++        })
++        .expect("confirmed Plus goal draft");
++    assert_eq!(actual_root, root);
++    assert_eq!(expected, Some(("original-goal".into(), 7)));
++    assert_eq!(draft.pending_pastes[0].1, "private objective");
++    assert!(!app.config.codex_home.join("attachments").exists());
++    assert!(op_rx.try_recv().is_err());
++}
++
++#[tokio::test]
++async fn plus_goal_editor_expands_managed_objective_and_freezes_edit_identity() -> Result<()> {
++    let (mut app, mut rx, mut op_rx) = make_test_app_with_channels().await;
++    let mut app_server =
++        crate::start_embedded_app_server_for_picker(app.chat_widget.config_ref()).await?;
++    let started = app_server
++        .start_thread(app.chat_widget.config_ref())
++        .await?;
++    let root = started.session.thread_id;
++    app.enqueue_primary_thread_session(started.session, started.turns)
++        .await?;
++    let codex_home = app_server
++        .codex_home_path(&app.config.codex_home)
++        .expect("codex home");
++    let original = format!(
++        "{}detail",
++        "reviewed objective ".repeat(MAX_THREAD_GOAL_OBJECTIVE_CHARS)
++    );
++    let (reference, _) = goal_files::materialize_goal_draft(
++        &mut app_server,
++        Some(&codex_home),
++        goal_files::GoalDraft {
++            objective: original.clone(),
++            ..Default::default()
++        },
++    )
++    .await
++    .expect("materialize original objective");
++    let goal = serde_json::from_value(serde_json::json!({"id":"original-goal","revision":7,"state":"paused","objective":reference})).unwrap();
++    app.show_plus_goal_editor(&mut app_server, root, goal).await;
++    assert!(render_bottom_popup(&app.chat_widget, 80).contains("Edit Plus goal"));
++    app.chat_widget.handle_paste("!".into());
++    app.chat_widget
++        .handle_key_event(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
++    let events = std::iter::from_fn(|| rx.try_recv().ok()).collect::<Vec<_>>();
++    let observed = format!("{events:?}");
++    let (draft, expected) = events
++        .into_iter()
++        .find_map(|event| {
++            if let AppEvent::PlusGoalDraft {
++                thread_id,
++                draft,
++                expected,
++                edit: true,
++            } = event
++            {
++                assert_eq!(thread_id, root);
++                Some((draft, expected))
++            } else {
++                None
++            }
++        })
++        .unwrap_or_else(|| panic!("edited Plus goal draft missing: {observed}"));
++    assert_eq!(expected, Some(("original-goal".into(), 7)));
++    assert_eq!(draft.objective, format!("{original}!"));
++    let (edited_reference, _) =
++        goal_files::materialize_goal_draft(&mut app_server, Some(&codex_home), draft)
++            .await
++            .expect("materialize edited objective");
++    assert_ne!(edited_reference, reference);
++    assert_eq!(
++        goal_files::objective_text_for_edit(&mut app_server, Some(&codex_home), &reference)
++            .await
++            .expect("original retained"),
++        original
++    );
++    assert_eq!(
++        goal_files::objective_text_for_edit(&mut app_server, Some(&codex_home), &edited_reference)
++            .await
++            .expect("edited objective"),
++        format!("{original}!")
++    );
++    while let Ok(op) = op_rx.try_recv() {
++        assert!(
++            !matches!(op, Op::UserTurn { .. }),
++            "unexpected model submission: {op:?}"
++        );
++    }
++    app_server.shutdown().await?;
++    Ok(())
++}
++
++#[tokio::test]
++async fn plus_goal_editor_does_not_submit_when_managed_objective_is_missing() -> Result<()> {
++    let (mut app, mut rx, mut op_rx) = make_test_app_with_channels().await;
++    let mut app_server =
++        crate::start_embedded_app_server_for_picker(app.chat_widget.config_ref()).await?;
++    let started = app_server
++        .start_thread(app.chat_widget.config_ref())
++        .await?;
++    let root = started.session.thread_id;
++    app.enqueue_primary_thread_session(started.session, started.turns)
++        .await?;
++    let path = app
++        .config
++        .codex_home
++        .join("attachments")
++        .join(Uuid::new_v4().to_string())
++        .join("goal-objective.md");
++    let reference = goal_files::objective_file_reference(&AppServerPath::from_app_server(
++        path.to_string_lossy().into_owned(),
++    ))
++    .expect("managed reference");
++    let goal = serde_json::from_value(serde_json::json!({"id":"original-goal","revision":7,"state":"paused","objective":reference})).unwrap();
++    app.show_plus_goal_editor(&mut app_server, root, goal).await;
++    app.chat_widget
++        .handle_key_event(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
++    assert!(
++        !std::iter::from_fn(|| rx.try_recv().ok())
++            .any(|event| matches!(event, AppEvent::PlusGoalDraft { .. }))
++    );
++    while let Ok(op) = op_rx.try_recv() {
++        assert!(
++            !matches!(op, Op::UserTurn { .. }),
++            "unexpected model submission: {op:?}"
++        );
++    }
++    assert!(!path.exists());
++    app_server.shutdown().await?;
++    Ok(())
++}
++
+ pub(super) fn test_thread_session(thread_id: ThreadId, cwd: PathBuf) -> ThreadSessionState {
+     ThreadSessionState {
+         daybreak_enabled: false,
 diff --git a/codex-rs/tui/src/app/tests/snapshots/codex_tui__app__tests__disconnect__offline_draft.snap b/codex-rs/tui/src/app/tests/snapshots/codex_tui__app__tests__disconnect__offline_draft.snap
 index 139c4dd43..0b996dccc 100644
 --- a/codex-rs/tui/src/app/tests/snapshots/codex_tui__app__tests__disconnect__offline_draft.snap
@@ -2846,12 +3375,1421 @@ index 139c4dd43..0b996dccc 100644
  
    ⌃c quit
 +  Workers stale · counts unavailable · Shells stale · counts unavailable
+diff --git a/codex-rs/tui/src/app/thread_goal_actions.rs b/codex-rs/tui/src/app/thread_goal_actions.rs
+index 166e09010..8bb95cbc0 100644
+--- a/codex-rs/tui/src/app/thread_goal_actions.rs
++++ b/codex-rs/tui/src/app/thread_goal_actions.rs
+@@ -1,54 +1,22 @@
++//! The Plus menu and CLI share the helper mutation boundary, never native goal RPCs.
+ use super::App;
+ use crate::app_event::AppEvent;
+ use crate::app_event::ThreadGoalSetMode;
+ use crate::app_server_session::AppServerSession;
+-use crate::bottom_pane::SelectionAction;
+-use crate::bottom_pane::SelectionItem;
+-use crate::bottom_pane::SelectionViewParams;
+ use crate::bottom_pane::popup_consts::standard_popup_hint_line;
+-use crate::goal_display::GOAL_USAGE;
+-use crate::goal_display::goal_status_label;
+-use crate::goal_display::goal_usage_summary;
++use crate::bottom_pane::{SelectionAction, SelectionItem, SelectionViewParams};
+ use crate::goal_files;
+-use crate::text_formatting::truncate_text;
+-use codex_app_server_protocol::ThreadGoal;
++use crate::plus_goals::{self, Snapshot};
+ use codex_app_server_protocol::ThreadGoalStatus;
+ use codex_protocol::ThreadId;
+ 
+-const EPHEMERAL_THREAD_GOAL_ERROR_MESSAGE: &str = concat!(
+-    "Goals need a saved session. This session is temporary.\n",
+-    "Run `codex` to start a saved session, or `codex resume` / `/resume` to reopen one.",
+-);
+-
+ impl App {
+     pub(super) async fn open_thread_goal_menu(
+         &mut self,
+-        app_server: &mut AppServerSession,
++        _: &mut AppServerSession,
+         thread_id: ThreadId,
+     ) {
+-        let result = app_server.thread_goal_get(thread_id).await;
+-        if self.current_displayed_thread_id() != Some(thread_id) {
+-            return;
+-        }
+-
+-        let response = match result {
+-            Ok(response) => response,
+-            Err(err) => {
+-                self.chat_widget
+-                    .add_error_message(thread_goal_error_message("read", &err));
+-                return;
+-            }
+-        };
+-
+-        let Some(goal) = response.goal else {
+-            self.chat_widget.add_info_message(
+-                GOAL_USAGE.to_string(),
+-                Some("No goal is currently set.".to_string()),
+-            );
+-            return;
+-        };
+-
+-        self.chat_widget.show_goal_summary(goal);
++        self.plus_goal_command(thread_id, String::new()).await;
+     }
+ 
+     pub(super) async fn maybe_prompt_resume_paused_goal_after_resume(
+@@ -56,32 +24,21 @@ impl App {
+         app_server: &mut AppServerSession,
+         thread_id: ThreadId,
+     ) {
+-        if self.chat_widget.has_misalignment_policy_violation() {
+-            return;
+-        }
+-
+-        let result = app_server.thread_goal_get(thread_id).await;
+-        if self.current_displayed_thread_id() != Some(thread_id) {
++        if app_server.uses_remote_workspace()
++            || self.primary_thread_id != Some(thread_id)
++            || self.chat_widget.has_misalignment_policy_violation()
++        {
+             return;
+         }
+-
+-        let response = match result {
+-            Ok(response) => response,
+-            Err(err) => {
+-                tracing::warn!("failed to read thread goal after resume: {err}");
+-                return;
+-            }
+-        };
+-
+-        let Some(goal) = response.goal else {
+-            return;
+-        };
+-        if matches!(
+-            goal.status,
+-            ThreadGoalStatus::Paused | ThreadGoalStatus::Blocked | ThreadGoalStatus::UsageLimited
+-        ) {
+-            self.chat_widget
+-                .show_resume_paused_goal_prompt(thread_id, goal.objective);
++        // Reconnect restores observation without resuming a paused goal or renewing direction.
++        if let Err(error) = plus_goals::command(
++            self.config.codex_home.as_path(),
++            thread_id,
++            &["reconnect".into()],
++        )
++        .await
++        {
++            tracing::warn!(%error, "Plus goal observation could not reconnect");
+         }
+     }
+ 
+@@ -91,42 +48,79 @@ impl App {
+         thread_id: Option<ThreadId>,
+     ) {
+         let Some(thread_id) = thread_id else {
+-            self.show_no_thread_goal_to_edit();
+             return;
+         };
+-
+-        let result = app_server.thread_goal_get(thread_id).await;
+-        if self.current_displayed_thread_id() != Some(thread_id) {
++        if app_server.uses_remote_workspace() {
++            self.chat_widget
++                .add_error_message("Plus goals require a local owned root session.".into());
+             return;
+         }
+-
+-        let response = match result {
+-            Ok(response) => response,
+-            Err(err) => {
+-                self.chat_widget
+-                    .add_error_message(thread_goal_error_message("read", &err));
+-                return;
++        match plus_goals::command(
++            self.config.codex_home.as_path(),
++            thread_id,
++            &["status".into()],
++        )
++        .await
++        {
++            Ok(snapshot) => {
++                if let Some(goal) = snapshot.goal {
++                    self.show_plus_goal_editor(app_server, thread_id, goal)
++                        .await;
++                } else {
++                    self.chat_widget
++                        .add_error_message("No current Plus goal to edit.".into());
++                }
+             }
+-        };
+-
+-        let Some(mut goal) = response.goal else {
+-            self.show_no_thread_goal_to_edit();
+-            return;
+-        };
++            Err(error) => self
++                .chat_widget
++                .add_error_message(format!("Plus goal: {error}")),
++        }
++    }
+ 
++    pub(super) async fn show_plus_goal_editor(
++        &mut self,
++        app_server: &mut AppServerSession,
++        thread_id: ThreadId,
++        goal: plus_goals::Goal,
++    ) {
++        let expected = Some((goal.id, goal.revision));
+         let codex_home = app_server.codex_home_path(&self.config.codex_home);
+-        match goal_files::objective_text_for_edit(app_server, codex_home.as_ref(), &goal.objective)
+-            .await
++        let objective = match goal_files::objective_text_for_edit(
++            app_server,
++            codex_home.as_ref(),
++            &goal.objective,
++        )
++        .await
+         {
+-            Ok(objective) => goal.objective = objective,
+-            Err(err) => {
+-                self.chat_widget.add_error_message(err.to_string());
++            Ok(objective) => objective,
++            Err(error) => {
++                self.chat_widget.add_error_message(error.to_string());
++                return;
+             }
+-        }
++        };
+         if self.current_displayed_thread_id() != Some(thread_id) {
+             return;
+         }
+-        self.chat_widget.show_goal_edit_prompt(thread_id, goal);
++        let tx = self.app_event_tx.clone();
++        self.chat_widget.show_text_prompt(
++            crate::bottom_pane::custom_prompt_view::CustomPromptView::new(
++                "Edit Plus goal".into(),
++                "Type the objective and press Enter".into(),
++                objective,
++                None,
++                Box::new(move |objective| {
++                    tx.send(AppEvent::PlusGoalDraft {
++                        thread_id,
++                        draft: goal_files::GoalDraft {
++                            objective,
++                            ..Default::default()
++                        },
++                        expected: expected.clone(),
++                        edit: true,
++                    })
++                }),
++            ),
++        );
+     }
+ 
+     pub(super) async fn set_thread_goal_draft(
+@@ -136,333 +130,489 @@ impl App {
+         draft: goal_files::GoalDraft,
+         mode: ThreadGoalSetMode,
+     ) {
+-        let codex_home = app_server.codex_home_path(&self.config.codex_home);
+-        let mode = if matches!(mode, ThreadGoalSetMode::ConfirmIfExists) {
+-            let result = app_server.thread_goal_get(thread_id).await;
+-            if self.current_displayed_thread_id() != Some(thread_id) {
+-                return;
+-            }
+-
+-            match result {
+-                Ok(response) => match response.goal.as_ref() {
+-                    Some(goal) if should_confirm_before_replacing_goal(goal) => {
+-                        self.show_replace_thread_goal_confirmation(thread_id, draft);
+-                        return;
+-                    }
+-                    Some(_) => ThreadGoalSetMode::ReplaceExisting,
+-                    None => mode,
+-                },
+-                Err(err) => {
+-                    self.chat_widget
+-                        .add_error_message(thread_goal_error_message("read", &err));
+-                    return;
+-                }
+-            }
+-        } else {
+-            mode
+-        };
+-
+-        let (objective, output_dir) = match goal_files::materialize_goal_draft(
+-            app_server,
+-            codex_home.as_ref(),
+-            draft,
++        let snapshot = match plus_goals::command(
++            self.config.codex_home.as_path(),
++            thread_id,
++            &["status".into()],
+         )
+         .await
+         {
+-            Ok(materialized) => materialized,
+-            Err(err) => {
+-                if self.current_displayed_thread_id() == Some(thread_id) {
+-                    self.chat_widget.add_error_message(err.to_string());
+-                }
+-                return;
+-            }
+-        };
+-
+-        let replacing_goal = matches!(mode, ThreadGoalSetMode::ReplaceExisting);
+-        if replacing_goal {
+-            let result = app_server.thread_goal_clear(thread_id).await;
+-
+-            if let Err(err) = result {
+-                cleanup_materialized_goal_files(app_server, output_dir).await;
+-                if self.current_displayed_thread_id() != Some(thread_id) {
+-                    return;
+-                }
++            Ok(snapshot) => snapshot,
++            Err(error) => {
+                 self.chat_widget
+-                    .add_error_message(thread_goal_error_message("replace", &err));
++                    .add_error_message(format!("Plus goal: {error}"));
+                 return;
+             }
+-        }
+-
+-        let (status, token_budget) = match mode {
+-            ThreadGoalSetMode::ConfirmIfExists | ThreadGoalSetMode::ReplaceExisting => {
+-                (ThreadGoalStatus::Active, None)
+-            }
+-            ThreadGoalSetMode::UpdateExisting {
+-                status,
+-                token_budget,
+-            } => (status, Some(token_budget)),
+         };
+-
+-        let result = app_server
+-            .thread_goal_set(thread_id, Some(objective), Some(status), token_budget)
++        let expected = snapshot
++            .goal
++            .as_ref()
++            .map(|goal| (goal.id.clone(), goal.revision));
++        if matches!(mode, ThreadGoalSetMode::ConfirmIfExists)
++            && snapshot.goal.as_ref().is_some_and(|goal| {
++                !matches!(goal.state.as_str(), "complete" | "cleared" | "replaced")
++            })
++        {
++            self.show_plus_goal_draft_confirmation(thread_id, draft, expected);
++            return;
++        }
++        self.set_plus_goal_draft(app_server, thread_id, draft, expected, false)
+             .await;
++    }
+ 
+-        match result {
+-            Ok(response) => {
+-                if self.current_displayed_thread_id() != Some(thread_id) {
+-                    return;
++    pub(super) async fn set_plus_goal_draft(
++        &mut self,
++        app_server: &mut AppServerSession,
++        thread_id: ThreadId,
++        draft: goal_files::GoalDraft,
++        expected: Option<(String, u64)>,
++        edit: bool,
++    ) {
++        let codex_home = app_server.codex_home_path(&self.config.codex_home);
++        match goal_files::materialize_goal_draft(app_server, codex_home.as_ref(), draft).await {
++            Ok((objective, _output_dir)) => {
++                let mut args = vec![
++                    if edit { "edit" } else { "start" }.into(),
++                    "--objective".into(),
++                    objective,
++                ];
++                if let Some((id, revision)) = expected {
++                    args.extend(["--id".into(), id, "--revision".into(), revision.to_string()]);
+                 }
+-                self.chat_widget.add_info_message(
+-                    format!("Goal {}", goal_status_label(response.goal.status)),
+-                    Some(goal_usage_summary(&response.goal)),
+-                );
+-                self.chat_widget.maybe_send_next_queued_input();
+-            }
+-            Err(err) => {
+-                cleanup_materialized_goal_files(app_server, output_dir).await;
+-                if self.current_displayed_thread_id() != Some(thread_id) {
+-                    return;
++                if let Err(error) =
++                    plus_goals::command(self.config.codex_home.as_path(), thread_id, &args)
++                        .await
++                        .map(|snapshot| self.show_plus_goal_summary(&snapshot))
++                {
++                    // A lost reply may follow admission, so retain any referenced draft files.
++                    self.chat_widget
++                        .add_error_message(format!("Plus goal: {error}"));
+                 }
+-                let action = if replacing_goal { "replace" } else { "set" };
+-                self.chat_widget
+-                    .add_error_message(thread_goal_error_message(action, &err));
+             }
++            Err(error) => self.chat_widget.add_error_message(error.to_string()),
+         }
+     }
+ 
+     pub(super) async fn set_thread_goal_status(
+         &mut self,
+-        app_server: &mut AppServerSession,
++        _: &mut AppServerSession,
+         thread_id: ThreadId,
+         status: ThreadGoalStatus,
+     ) {
+-        let result = app_server
+-            .thread_goal_set(
+-                thread_id,
+-                /*objective*/ None,
+-                Some(status),
+-                /*token_budget*/ None,
+-            )
+-            .await;
+-        if self.current_displayed_thread_id() != Some(thread_id) {
+-            return;
+-        }
+-
+-        match result {
+-            Ok(response) => self.chat_widget.add_info_message(
+-                format!("Goal {}", goal_status_label(response.goal.status)),
+-                Some(goal_usage_summary(&response.goal)),
+-            ),
+-            Err(err) => self
+-                .chat_widget
+-                .add_error_message(thread_goal_error_message("update", &err)),
+-        }
++        let action = match status {
++            ThreadGoalStatus::Active => "resume",
++            ThreadGoalStatus::Complete => "complete",
++            _ => "pause",
++        };
++        self.plus_goal_command(thread_id, action.into()).await;
+     }
+ 
+     pub(super) async fn clear_thread_goal(
+         &mut self,
+-        app_server: &mut AppServerSession,
++        _: &mut AppServerSession,
+         thread_id: ThreadId,
+     ) {
+-        let result = app_server.thread_goal_clear(thread_id).await;
+-        if self.current_displayed_thread_id() != Some(thread_id) {
+-            return;
++        self.plus_goal_command(thread_id, "clear".into()).await;
++    }
++
++    pub(super) async fn plus_goal_command(&mut self, thread_id: ThreadId, command: String) {
++        let result = self.try_plus_goal_command(thread_id, &command).await;
++        if let Err(error) = result {
++            self.chat_widget
++                .add_error_message(format!("Plus goal: {error}"));
+         }
++    }
+ 
+-        match result {
+-            Ok(response) => {
+-                if response.cleared {
+-                    self.chat_widget
+-                        .add_info_message("Goal cleared".to_string(), /*hint*/ None);
++    async fn try_plus_goal_command(
++        &mut self,
++        thread_id: ThreadId,
++        command: &str,
++    ) -> Result<(), String> {
++        if self.app_server_target.thread_params_mode()
++            == crate::app_server_session::ThreadParamsMode::Remote
++        {
++            return Err("Plus goals require a local owned root session.".into());
++        }
++        if command.trim() == "edit" {
++            self.app_event_tx.send(AppEvent::OpenThreadGoalEditor {
++                thread_id: Some(thread_id),
++            });
++            return Ok(());
++        }
++        if let Some(json) = command.strip_prefix("mutation-json ") {
++            let args: Vec<String> = serde_json::from_str(json).map_err(|e| e.to_string())?;
++            let result =
++                plus_goals::command(self.config.codex_home.as_path(), thread_id, &args).await?;
++            if self.current_displayed_thread_id() == Some(thread_id) {
++                self.show_plus_goal_summary(&result);
++            }
++            return Ok(());
++        }
++        let snapshot = plus_goals::command(
++            self.config.codex_home.as_path(),
++            thread_id,
++            &["status".into()],
++        )
++        .await?;
++        if self.current_displayed_thread_id() != Some(thread_id) {
++            return Ok(());
++        }
++        let command = command.trim();
++        if command == "status" {
++            self.show_plus_goal_summary(&snapshot);
++            return Ok(());
++        }
++        if command.is_empty() {
++            self.show_plus_goal_menu(thread_id, snapshot);
++            return Ok(());
++        }
++        if command == "history" {
++            let snapshot = plus_goals::command(
++                self.config.codex_home.as_path(),
++                thread_id,
++                &["history".into()],
++            )
++            .await?;
++            let text = snapshot
++                .history
++                .iter()
++                .map(|g| format!("{} · {}\n{}", g.id, g.state, g.objective))
++                .collect::<Vec<_>>()
++                .join("\n\n");
++            self.chat_widget.add_info_message(
++                "Plus goal history".into(),
++                Some(if text.is_empty() {
++                    "No previous goals.".into()
+                 } else {
+-                    self.chat_widget.add_info_message(
+-                        "No goal to clear".to_string(),
+-                        Some("This thread does not currently have a goal.".to_string()),
+-                    );
+-                }
++                    text
++                }),
++            );
++            return Ok(());
++        }
++        if matches!(command, "start" | "convert" | "complete") {
++            let initial = String::new();
++            let prefix = command.to_string();
++            let expected = snapshot.goal.clone();
++            let tx = self.app_event_tx.clone();
++            let view = crate::bottom_pane::custom_prompt_view::CustomPromptView::new(
++                if command == "convert" {
++                    "Review native objective for paused Plus goal".into()
++                } else {
++                    format!("{command} Plus goal")
++                },
++                if command == "complete" {
++                    "Enter verification evidence references".into()
++                } else {
++                    "Type the objective and press Enter".into()
++                },
++                initial,
++                None,
++                Box::new(move |objective| {
++                    if prefix == "convert" || prefix == "start" {
++                        tx.send(AppEvent::PlusGoalCommand {
++                            thread_id,
++                            command: format!("{prefix} {objective}"),
++                        });
++                    } else if let Some(goal) = &expected {
++                        let mut args = plus_goals::mutation_args("complete", goal);
++                        args.extend([
++                            "--checkpoint".into(),
++                            serde_json::json!({"evidence":[objective]}).to_string(),
++                        ]);
++                        tx.send(AppEvent::PlusGoalCommand {
++                            thread_id,
++                            command: format!(
++                                "mutation-json {}",
++                                serde_json::to_string(&args).expect("string arguments")
++                            ),
++                        });
++                    }
++                }),
++            );
++            self.chat_widget.show_text_prompt(view);
++            return Ok(());
++        }
++        let (action, text) = command.split_once(' ').unwrap_or((command, ""));
++        if action == "convert" {
++            if text.trim().is_empty() {
++                return Err("Provide the reviewed native objective".into());
+             }
+-            Err(err) => self
+-                .chat_widget
+-                .add_error_message(thread_goal_error_message("clear", &err)),
++            let mut args = vec![
++                "start".into(),
++                "--objective".into(),
++                text.into(),
++                "--paused".into(),
++            ];
++            if let Some(goal) = snapshot.goal.as_ref() {
++                args.extend([
++                    "--id".into(),
++                    goal.id.clone(),
++                    "--revision".into(),
++                    goal.revision.to_string(),
++                ]);
++            }
++            self.confirm_plus_goal(
++                thread_id,
++                format!(
++                    "mutation-json {}",
++                    serde_json::to_string(&args).expect("string arguments")
++                ),
++                "Create paused Plus goal?",
++                text,
++            );
++            return Ok(());
++        }
++        let mut args = if matches!(action, "start" | "convert-confirmed" | "replace-confirmed")
++            || !matches!(
++                action,
++                "pause" | "resume" | "complete" | "clear" | "edit" | "review"
++            ) {
++            let objective = if matches!(action, "start" | "convert-confirmed" | "replace-confirmed")
++            {
++                text
++            } else {
++                command
++            };
++            if objective.trim().is_empty() {
++                return Err("Goal objective cannot be empty".into());
++            }
++            let mut start_args = vec!["start".into(), "--objective".into(), objective.into()];
++            if let Some(goal) = snapshot.goal.as_ref() {
++                start_args.extend([
++                    "--id".into(),
++                    goal.id.clone(),
++                    "--revision".into(),
++                    goal.revision.to_string(),
++                ]);
++            }
++            if !matches!(action, "convert-confirmed" | "replace-confirmed")
++                && snapshot.goal.as_ref().is_some_and(|g| {
++                    !matches!(g.state.as_str(), "complete" | "cleared" | "replaced")
++                })
++            {
++                self.confirm_plus_goal(
++                    thread_id,
++                    format!(
++                        "mutation-json {}",
++                        serde_json::to_string(&start_args).expect("string arguments")
++                    ),
++                    "Replace current Plus goal?",
++                    objective,
++                );
++                return Ok(());
++            }
++            start_args
++        } else {
++            let goal = snapshot.goal.as_ref().ok_or("No current Plus goal")?;
++            plus_goals::mutation_args(action, goal)
++        };
++        if action == "convert-confirmed" {
++            args.push("--paused".into());
+         }
++        if action == "edit" {
++            if text.trim().is_empty() {
++                return Err("Goal objective cannot be empty".into());
++            }
++            args.extend(["--objective".into(), text.into()]);
++        }
++        if action == "review" {
++            args.extend(["--review-seconds".into(), text.into()]);
++        }
++        if action == "complete" {
++            if text.trim().is_empty() {
++                return Err("Supply completion evidence references".into());
++            }
++            args.extend([
++                "--checkpoint".into(),
++                serde_json::json!({"evidence":[text]}).to_string(),
++            ]);
++        }
++        let result =
++            plus_goals::command(self.config.codex_home.as_path(), thread_id, &args).await?;
++        if self.current_displayed_thread_id() == Some(thread_id) {
++            self.show_plus_goal_summary(&result);
++        }
++        Ok(())
+     }
+ 
+-    pub(super) fn show_replace_thread_goal_confirmation(
++    fn show_plus_goal_summary(&mut self, snapshot: &Snapshot) {
++        if let Some(attention) = self.plus_goal_attention(snapshot) {
++            self.chat_widget
++                .add_info_message("Goal needs input".into(), Some(attention));
++        }
++        if let Some(goal) = &snapshot.goal {
++            self.chat_widget.add_info_message(
++                format!("Plus goal {}", goal.state),
++                Some(format!(
++                    "{}\nID: {} · revision {}{}{}",
++                    goal.objective,
++                    goal.id,
++                    goal.revision,
++                    goal.error
++                        .as_ref()
++                        .map(|e| format!("\n{e}"))
++                        .unwrap_or_default(),
++                    goal.checkpoint
++                        .as_ref()
++                        .map(|checkpoint| format!("\nCheckpoint: {checkpoint}"))
++                        .unwrap_or_default(),
++                )),
++            );
++        } else {
++            self.chat_widget
++                .add_info_message("No current Plus goal".into(), None);
++        }
++    }
++
++    pub(super) fn show_plus_goal_draft_confirmation(
+         &mut self,
+         thread_id: ThreadId,
+         draft: goal_files::GoalDraft,
++        expected: Option<(String, u64)>,
+     ) {
+         let objective = draft.objective.clone();
+-        let replace_draft = draft;
+-        let replace_actions: Vec<SelectionAction> = vec![Box::new(move |tx| {
+-            tx.send(AppEvent::SetThreadGoalDraft {
++        let action: SelectionAction = Box::new(move |tx| {
++            tx.send(AppEvent::PlusGoalDraft {
+                 thread_id,
+-                draft: replace_draft.clone(),
+-                mode: ThreadGoalSetMode::ReplaceExisting,
+-            });
+-        })];
+-        let items = vec![
+-            SelectionItem {
+-                name: "Replace current goal".to_string(),
+-                description: Some("Set the new objective and start it now".to_string()),
+-                actions: replace_actions,
+-                dismiss_on_select: true,
+-                ..Default::default()
+-            },
+-            SelectionItem {
+-                name: "Cancel".to_string(),
+-                description: Some("Keep the current goal".to_string()),
+-                dismiss_on_select: true,
+-                ..Default::default()
+-            },
+-        ];
++                draft: draft.clone(),
++                expected: expected.clone(),
++                edit: false,
++            })
++        });
+         self.chat_widget.show_selection_view(SelectionViewParams {
+-            title: Some("Replace goal?".to_string()),
+-            subtitle: Some(format!(
+-                "New objective: {}",
+-                truncate_text(&objective, /*max_graphemes*/ 200)
+-            )),
++            title: Some("Replace current Plus goal?".into()),
++            subtitle: Some(objective),
+             footer_hint: Some(standard_popup_hint_line()),
+-            items,
++            items: vec![
++                SelectionItem {
++                    name: "Replace goal".into(),
++                    actions: vec![action],
++                    dismiss_on_select: true,
++                    ..Default::default()
++                },
++                SelectionItem {
++                    name: "Cancel".into(),
++                    dismiss_on_select: true,
++                    ..Default::default()
++                },
++            ],
+             ..SelectionViewParams::confirmation()
+         });
+     }
+ 
+-    fn show_no_thread_goal_to_edit(&mut self) {
+-        self.chat_widget
+-            .add_error_message("No goal is currently set.".to_string());
+-        self.chat_widget.add_info_message(
+-            GOAL_USAGE.to_string(),
+-            Some("Create a goal before editing it.".to_string()),
+-        );
+-    }
+-}
+-
+-async fn cleanup_materialized_goal_files(
+-    app_server: &mut AppServerSession,
+-    output_dir: Option<goal_files::GoalFilePath>,
+-) {
+-    if let Some(output_dir) = output_dir
+-        && let Err(err) = app_server.file_system().fs_remove_path(&output_dir).await
+-    {
+-        tracing::warn!("failed to clean up materialized goal files at {output_dir}: {err}");
+-    }
+-}
+-
+-fn thread_goal_error_message(action: &str, err: &color_eyre::Report) -> String {
+-    if is_ephemeral_thread_goal_error(err) {
+-        EPHEMERAL_THREAD_GOAL_ERROR_MESSAGE.to_string()
+-    } else {
+-        format!("Failed to {action} thread goal: {err}")
+-    }
+-}
+-
+-fn is_ephemeral_thread_goal_error(err: &color_eyre::Report) -> bool {
+-    err.chain().any(|cause| {
+-        let message = cause.to_string();
+-        message.contains("ephemeral thread does not support goals")
+-            || message.contains("thread goals require a persisted thread; this thread is ephemeral")
+-    })
+-}
+-
+-fn should_confirm_before_replacing_goal(goal: &ThreadGoal) -> bool {
+-    // Completed goals are terminal, so `/goal <objective>` can start a fresh goal
+-    // without asking the user to confirm replacing already-finished work.
+-    match goal.status {
+-        ThreadGoalStatus::Complete => false,
+-        ThreadGoalStatus::Active
+-        | ThreadGoalStatus::Paused
+-        | ThreadGoalStatus::Blocked
+-        | ThreadGoalStatus::UsageLimited
+-        | ThreadGoalStatus::BudgetLimited => true,
+-    }
+-}
+-
+-#[cfg(test)]
+-mod tests {
+-    use crate::history_cell::HistoryCell;
+-    use pretty_assertions::assert_eq;
+-    use ratatui::layout::Rect;
+-
+-    use super::*;
+-
+-    #[test]
+-    fn thread_goal_error_message_explains_temporary_session() {
+-        let err = color_eyre::eyre::eyre!(
+-            "thread/goal/get failed: ephemeral thread does not support goals: thread-1"
+-        )
+-        .wrap_err("thread/goal/get failed in TUI");
+-
+-        assert_eq!(
+-            thread_goal_error_message("read", &err),
+-            EPHEMERAL_THREAD_GOAL_ERROR_MESSAGE
+-        );
+-    }
+-
+-    #[test]
+-    fn thread_goal_ephemeral_error_message_renders_snapshot() {
+-        let err = color_eyre::eyre::eyre!(
+-            "thread/goal/get failed: ephemeral thread does not support goals: thread-1"
+-        )
+-        .wrap_err("thread/goal/get failed in TUI");
+-        let cell = crate::history_cell::new_error_event(thread_goal_error_message("read", &err));
+-        let width = 72;
+-        let height = 6;
+-        let backend = crate::test_backend::VT100Backend::new(width, height);
+-        let mut terminal =
+-            crate::custom_terminal::Terminal::with_options(backend).expect("terminal");
+-        terminal.set_viewport_area(Rect::new(0, height - 1, width, 1));
+-
+-        crate::insert_history::insert_history_lines(
+-            &mut terminal,
+-            cell.display_lines(/*width*/ width),
+-        )
+-        .expect("insert history lines");
+-
+-        insta::assert_snapshot!(terminal.backend());
+-    }
+-
+-    #[test]
+-    fn thread_goal_error_message_preserves_generic_failure_context() {
+-        let err =
+-            color_eyre::eyre::eyre!("server disappeared").wrap_err("thread/goal/get failed in TUI");
+-
+-        assert_eq!(
+-            thread_goal_error_message("read", &err),
+-            "Failed to read thread goal: thread/goal/get failed in TUI"
+-        );
+-    }
+-
+-    #[test]
+-    fn completed_goal_does_not_require_replace_confirmation() {
+-        assert!(!should_confirm_before_replacing_goal(&test_goal(
+-            ThreadGoalStatus::Complete
+-        )));
++    fn confirm_plus_goal(
++        &mut self,
++        thread_id: ThreadId,
++        command: String,
++        title: &str,
++        objective: &str,
++    ) {
++        let action: SelectionAction = Box::new(move |tx| {
++            tx.send(AppEvent::PlusGoalCommand {
++                thread_id,
++                command: command.clone(),
++            })
++        });
++        self.chat_widget.show_selection_view(SelectionViewParams {
++            title: Some(title.into()),
++            subtitle: Some(objective.into()),
++            footer_hint: Some(standard_popup_hint_line()),
++            items: vec![
++                SelectionItem {
++                    name: "Confirm reviewed objective".into(),
++                    actions: vec![action],
++                    dismiss_on_select: true,
++                    ..Default::default()
++                },
++                SelectionItem {
++                    name: "Cancel".into(),
++                    dismiss_on_select: true,
++                    ..Default::default()
++                },
++            ],
++            ..SelectionViewParams::confirmation()
++        });
+     }
+ 
+-    #[test]
+-    fn unfinished_goals_require_replace_confirmation() {
+-        for status in [
+-            ThreadGoalStatus::Active,
+-            ThreadGoalStatus::Paused,
+-            ThreadGoalStatus::Blocked,
+-            ThreadGoalStatus::UsageLimited,
+-            ThreadGoalStatus::BudgetLimited,
+-        ] {
+-            assert!(should_confirm_before_replacing_goal(&test_goal(status)));
++    fn show_plus_goal_menu(&mut self, thread_id: ThreadId, snapshot: Snapshot) {
++        let attention = self
++            .plus_goal_attention(&snapshot)
++            .map(|reason| format!("\n{reason}"))
++            .unwrap_or_default();
++        let mut actions = vec![
++            ("Details and checkpoint", "status"),
++            ("Start / replace goal", "start"),
++            ("Convert reviewed native objective (paused)", "convert"),
++            ("History", "history"),
++        ];
++        if snapshot.goal.is_some() {
++            actions.extend([
++                ("Edit objective", "edit"),
++                ("Pause", "pause"),
++                ("Resume", "resume"),
++                ("Complete", "complete"),
++                ("Clear", "clear"),
++                ("Scheduled reviews off", "review 0"),
++                ("Review hourly", "review 3600"),
++                ("Review every two hours", "review 7200"),
++            ]);
+         }
++        let items = actions
++            .into_iter()
++            .map(|(name, command)| {
++                let command = command.to_string();
++                SelectionItem {
++                    name: name.into(),
++                    actions: vec![Box::new(move |tx| {
++                        tx.send(AppEvent::PlusGoalCommand {
++                            thread_id,
++                            command: command.clone(),
++                        })
++                    })],
++                    dismiss_on_select: true,
++                    ..Default::default()
++                }
++            })
++            .collect();
++        self.chat_widget.show_selection_view(SelectionViewParams {
++            title: Some("Plus goal".into()),
++            subtitle: snapshot
++                .goal
++                .map(|g| {
++                    format!(
++                        "{}: {}{}{}",
++                        g.state,
++                        g.objective,
++                        g.error.map(|e| format!("\n{e}")).unwrap_or_default(),
++                        attention,
++                    )
++                })
++                .or_else(|| (!attention.is_empty()).then_some(attention)),
++            footer_hint: Some(standard_popup_hint_line()),
++            items,
++            ..Default::default()
++        });
+     }
+ 
+-    fn test_goal(status: ThreadGoalStatus) -> ThreadGoal {
+-        ThreadGoal {
+-            thread_id: ThreadId::new().to_string(),
+-            objective: "Finish the thing.".to_string(),
+-            status,
+-            token_budget: None,
+-            tokens_used: 0,
+-            time_used_seconds: 0,
+-            created_at: 1_776_272_400,
+-            updated_at: 1_776_272_460,
+-        }
++    fn plus_goal_attention(&self, snapshot: &Snapshot) -> Option<String> {
++        snapshot
++            .attention
++            .as_ref()
++            .map(ToString::to_string)
++            .or_else(|| {
++                (snapshot
++                    .goal
++                    .as_ref()
++                    .is_some_and(|goal| matches!(goal.state.as_str(), "active" | "waiting"))
++                    && self
++                        .worker_hud
++                        .goal
++                        .as_ref()
++                        .is_some_and(|(_, label)| label == "Goal needs input"))
++                .then(|| {
++                    "Goal monitoring or delivery is uncertain; review its status before continuing."
++                        .into()
++                })
++            })
+     }
+ }
+diff --git a/codex-rs/tui/src/app/thread_routing.rs b/codex-rs/tui/src/app/thread_routing.rs
+index c8d16dc9c..6cf52a01c 100644
+--- a/codex-rs/tui/src/app/thread_routing.rs
++++ b/codex-rs/tui/src/app/thread_routing.rs
+@@ -746,182 +746,267 @@ impl App {
+                 final_output_json_schema,
+                 collaboration_mode,
+             } => {
+-                let mut should_start_turn = true;
+-                if let Some(turn_id) = self.active_turn_id_for_thread(thread_id).await {
+-                    let mut steer_turn_id = turn_id;
+-                    let mut retried_after_turn_mismatch = false;
+-                    loop {
+-                        match app_server
+-                            .turn_steer(
+-                                thread_id,
+-                                steer_turn_id.clone(),
++                let plus_snapshot = if self.primary_thread_id == Some(thread_id)
++                    && !app_server.uses_remote_workspace()
++                {
++                    Some(
++                        crate::plus_goals::command(
++                            self.config.codex_home.as_path(),
++                            thread_id,
++                            &[
++                                "input".into(),
++                                "--submission-id".into(),
+                                 client_user_message_id.clone(),
+-                                items.to_vec(),
+-                            )
+-                            .await
+-                        {
+-                            Ok(_) => {
+-                                if self.active_thread_id == Some(thread_id)
+-                                    && self.chat_widget.thread_id() == Some(thread_id)
+-                                {
+-                                    crate::startup_recovery::acknowledged(client_user_message_id);
+-                                }
+-                                return Ok(true);
+-                            }
+-                            Err(error) => {
+-                                if let Some(turn_error) =
+-                                    active_turn_not_steerable_turn_error(&error)
+-                                {
+-                                    if !self.chat_widget.enqueue_rejected_steer() {
+-                                        self.chat_widget.add_error_message(turn_error.message);
++                            ],
++                        )
++                        .await
++                        .map_err(crate::plus_goals::InputError)?,
++                    )
++                } else {
++                    None
++                };
++                if let Some((id, label)) = self.worker_hud.goal.as_ref() {
++                    if label == "Goal complete" {
++                        self.worker_hud.dismissed_complete = Some(id.clone());
++                        self.worker_hud.goal = None;
++                        self.chat_widget.set_plus_goal_indicator(None);
++                    }
++                }
++                let mut plus_items = items.to_vec();
++                if let Some(snapshot) = &plus_snapshot {
++                    if !snapshot.instructions.is_empty() {
++                        plus_items.push(codex_app_server_protocol::UserInput::Text {
++                            text: snapshot.instructions.clone(),
++                            text_elements: vec![],
++                        });
++                    }
++                }
++                let mut accepted_plus_turn = None;
++                let mut queued_plus_input = false;
++                let submission_result: Result<bool> = async {
++                    let mut should_start_turn = true;
++                    if let Some(turn_id) = self.active_turn_id_for_thread(thread_id).await {
++                        let mut steer_turn_id = turn_id;
++                        let mut retried_after_turn_mismatch = false;
++                        loop {
++                            match app_server
++                                .turn_steer(
++                                    thread_id,
++                                    steer_turn_id.clone(),
++                                    client_user_message_id.clone(),
++                                    plus_items.clone(),
++                                )
++                                .await
++                            {
++                                Ok(_) => {
++                                    accepted_plus_turn = Some(steer_turn_id.clone());
++                                    if self.active_thread_id == Some(thread_id)
++                                        && self.chat_widget.thread_id() == Some(thread_id)
++                                    {
++                                        crate::startup_recovery::acknowledged(
++                                            client_user_message_id,
++                                        );
+                                     }
+                                     return Ok(true);
+                                 }
+-                                match active_turn_steer_race(&error) {
+-                                    Some(ActiveTurnSteerRace::Missing) => {
+-                                        if let Some(channel) =
+-                                            self.thread_event_channels.get(&thread_id)
+-                                        {
+-                                            let mut store = channel.store.lock().await;
+-                                            store.clear_active_turn_id();
+-                                        }
+-                                        should_start_turn = true;
+-                                        break;
+-                                    }
+-                                    Some(ActiveTurnSteerRace::ExpectedTurnMismatch {
+-                                        actual_turn_id,
+-                                    }) if !retried_after_turn_mismatch
+-                                        && actual_turn_id != steer_turn_id =>
++                                Err(error) => {
++                                    if let Some(turn_error) =
++                                        active_turn_not_steerable_turn_error(&error)
+                                     {
+-                                        // Review flows can swap the active turn before the TUI
+-                                        // processes the corresponding notification. Retry once with
+-                                        // the server-reported turn id so non-steerable review turns
+-                                        // still fall through to the existing queueing behavior.
+-                                        if let Some(channel) =
+-                                            self.thread_event_channels.get(&thread_id)
+-                                        {
+-                                            let mut store = channel.store.lock().await;
+-                                            store.set_active_turn_id(actual_turn_id.clone());
++                                        if !self.chat_widget.enqueue_rejected_steer() {
++                                            self.chat_widget.add_error_message(turn_error.message);
++                                        } else {
++                                            queued_plus_input = true;
+                                         }
+-                                        steer_turn_id = actual_turn_id;
+-                                        retried_after_turn_mismatch = true;
++                                        return Ok(true);
+                                     }
+-                                    Some(ActiveTurnSteerRace::ExpectedTurnMismatch {
+-                                        actual_turn_id,
+-                                    }) => {
+-                                        if let Some(channel) =
+-                                            self.thread_event_channels.get(&thread_id)
++                                    match active_turn_steer_race(&error) {
++                                        Some(ActiveTurnSteerRace::Missing) => {
++                                            if let Some(channel) =
++                                                self.thread_event_channels.get(&thread_id)
++                                            {
++                                                let mut store = channel.store.lock().await;
++                                                store.clear_active_turn_id();
++                                            }
++                                            should_start_turn = true;
++                                            break;
++                                        }
++                                        Some(ActiveTurnSteerRace::ExpectedTurnMismatch {
++                                            actual_turn_id,
++                                        }) if !retried_after_turn_mismatch
++                                            && actual_turn_id != steer_turn_id =>
+                                         {
+-                                            let mut store = channel.store.lock().await;
+-                                            store.set_active_turn_id(actual_turn_id);
++                                            // Review flows can swap the active turn before the TUI
++                                            // processes the corresponding notification. Retry once with
++                                            // the server-reported turn id so non-steerable review turns
++                                            // still fall through to the existing queueing behavior.
++                                            if let Some(channel) =
++                                                self.thread_event_channels.get(&thread_id)
++                                            {
++                                                let mut store = channel.store.lock().await;
++                                                store.set_active_turn_id(actual_turn_id.clone());
++                                            }
++                                            steer_turn_id = actual_turn_id;
++                                            retried_after_turn_mismatch = true;
++                                        }
++                                        Some(ActiveTurnSteerRace::ExpectedTurnMismatch {
++                                            actual_turn_id,
++                                        }) => {
++                                            if let Some(channel) =
++                                                self.thread_event_channels.get(&thread_id)
++                                            {
++                                                let mut store = channel.store.lock().await;
++                                                store.set_active_turn_id(actual_turn_id);
++                                            }
++                                            return Err(error.into());
+                                         }
+-                                        return Err(error.into());
++                                        None => return Err(error.into()),
+                                     }
+-                                    None => return Err(error.into()),
+                                 }
+                             }
+                         }
+                     }
+-                }
+-                if should_start_turn {
+-                    let enabled = self.chat_widget.daybreak_enabled
+-                        && !self.chat_widget.side_conversation_active()
+-                        && !self.side_threads.contains_key(&thread_id);
+-                    let eligible_account = self.chat_widget.daybreak_account_eligible();
+-                    let cyber_access_program = match crate::daybreak::program_for_turn(
+-                        &self.chat_widget.model_catalog().models,
+-                        model,
+-                        eligible_account,
+-                        enabled,
+-                    ) {
+-                        Ok(program) => program,
+-                        Err(message) => {
+-                            if !self
+-                                .chat_widget
+-                                .handle_turn_start_rejection(message.clone())
+-                            {
+-                                self.chat_widget.add_error_message(message);
++                    if should_start_turn {
++                        let enabled = self.chat_widget.daybreak_enabled
++                            && !self.chat_widget.side_conversation_active()
++                            && !self.side_threads.contains_key(&thread_id);
++                        let eligible_account = self.chat_widget.daybreak_account_eligible();
++                        let cyber_access_program = match crate::daybreak::program_for_turn(
++                            &self.chat_widget.model_catalog().models,
++                            model,
++                            eligible_account,
++                            enabled,
++                        ) {
++                            Ok(program) => program,
++                            Err(message) => {
++                                if !self
++                                    .chat_widget
++                                    .handle_turn_start_rejection(message.clone())
++                                {
++                                    self.chat_widget.add_error_message(message);
++                                }
++                                return Ok(true);
+                             }
+-                            return Ok(true);
+-                        }
+-                    };
+-                    let config = self.chat_widget.config_ref();
+-                    let selected_profile =
+-                        self.pending_server_profiles.get(&thread_id).or_else(|| {
+-                            self.agents_overview
+-                                .requested_permission_profiles
+-                                .get(&thread_id)
++                        };
++                        let config = self.chat_widget.config_ref();
++                        let selected_profile =
++                            self.pending_server_profiles.get(&thread_id).or_else(|| {
++                                self.agents_overview
++                                    .requested_permission_profiles
++                                    .get(&thread_id)
++                            });
++                        let selected_active = selected_profile.map(|profile| {
++                            ActivePermissionProfile::new(profile.profile_id.clone())
+                         });
+-                    let selected_active = selected_profile
+-                        .map(|profile| ActivePermissionProfile::new(profile.profile_id.clone()));
+-                    let (turn_approval_policy, turn_approvals_reviewer) =
+-                        if let Some(profile) = selected_profile {
+-                            (
+-                                profile.approval_policy,
+-                                profile.approvals_reviewer.map(Into::into),
++                        let (turn_approval_policy, turn_approvals_reviewer) =
++                            if let Some(profile) = selected_profile {
++                                (
++                                    profile.approval_policy,
++                                    profile.approvals_reviewer.map(Into::into),
++                                )
++                            } else if self.app_server_target.thread_params_mode()
++                                == crate::app_server_session::ThreadParamsMode::Remote
++                            {
++                                (
++                                    Some(config.permissions.approval_policy.value().into()),
++                                    Some(config.approvals_reviewer.into()),
++                                )
++                            } else {
++                                (
++                                    Some(*approval_policy),
++                                    Some(
++                                        approvals_reviewer
++                                            .unwrap_or(config.approvals_reviewer)
++                                            .into(),
++                                    ),
++                                )
++                            };
++                        // Only explicit choices may override the saved server profile.
++                        let explicit_profile = self
++                            .runtime_permission_profile_override
++                            .as_ref()
++                            .filter(|profile| {
++                                profile.turn_override
++                                    == RuntimePermissionProfileTurnOverride::LegacySandbox
++                            });
++                        let permissions_override = Self::turn_permissions_override_from_config(
++                            config,
++                            selected_active.as_ref().or_else(|| {
++                                explicit_profile
++                                    .and_then(|profile| profile.active_permission_profile.as_ref())
++                            }),
++                            explicit_profile.and_then(
++                                RuntimePermissionProfileOverride::turn_permission_profile,
++                            ),
++                        );
++                        let response = app_server
++                            .turn_start(
++                                thread_id,
++                                client_user_message_id.clone(),
++                                plus_items,
++                                cwd.clone(),
++                                turn_approval_policy,
++                                turn_approvals_reviewer,
++                                permissions_override,
++                                config.permissions.user_visible_workspace_roots(),
++                                model.to_string(),
++                                effort.clone(),
++                                *summary,
++                                service_tier.clone(),
++                                collaboration_mode.clone(),
++                                final_output_json_schema.clone(),
++                                cyber_access_program.map(Into::into),
+                             )
+-                        } else if self.app_server_target.thread_params_mode()
+-                            == crate::app_server_session::ThreadParamsMode::Remote
++                            .await?;
++                        accepted_plus_turn = Some(response.turn.id.clone());
++                        if self.active_thread_id == Some(thread_id)
++                            && self.chat_widget.thread_id() == Some(thread_id)
+                         {
+-                            (
+-                                Some(config.permissions.approval_policy.value().into()),
+-                                Some(config.approvals_reviewer.into()),
+-                            )
+-                        } else {
+-                            (
+-                                Some(*approval_policy),
+-                                Some(
+-                                    approvals_reviewer
+-                                        .unwrap_or(config.approvals_reviewer)
+-                                        .into(),
+-                                ),
+-                            )
+-                        };
+-                    // Only explicit choices may override the saved server profile.
+-                    let explicit_profile = self
+-                        .runtime_permission_profile_override
+-                        .as_ref()
+-                        .filter(|profile| {
+-                            profile.turn_override
+-                                == RuntimePermissionProfileTurnOverride::LegacySandbox
+-                        });
+-                    let permissions_override = Self::turn_permissions_override_from_config(
+-                        config,
+-                        selected_active.as_ref().or_else(|| {
+-                            explicit_profile
+-                                .and_then(|profile| profile.active_permission_profile.as_ref())
+-                        }),
+-                        explicit_profile
+-                            .and_then(RuntimePermissionProfileOverride::turn_permission_profile),
+-                    );
+-                    let response = app_server
+-                        .turn_start(
+-                            thread_id,
+-                            client_user_message_id.clone(),
+-                            items.to_vec(),
+-                            cwd.clone(),
+-                            turn_approval_policy,
+-                            turn_approvals_reviewer,
+-                            permissions_override,
+-                            config.permissions.user_visible_workspace_roots(),
+-                            model.to_string(),
+-                            effort.clone(),
+-                            *summary,
+-                            service_tier.clone(),
+-                            collaboration_mode.clone(),
+-                            final_output_json_schema.clone(),
+-                            cyber_access_program.map(Into::into),
+-                        )
+-                        .await?;
+-                    if self.active_thread_id == Some(thread_id)
+-                        && self.chat_widget.thread_id() == Some(thread_id)
++                            crate::startup_recovery::acknowledged(client_user_message_id);
++                            self.chat_widget
++                                .record_safety_buffering_turn(response.turn.id, op);
++                        }
++                    }
++                    Ok(true)
++                }
++                .await;
++                if plus_snapshot.is_some() && !queued_plus_input {
++                    let mut settle = vec![
++                        "input-settle".into(),
++                        "--submission-id".into(),
++                        client_user_message_id.clone(),
++                    ];
++                    if let Some(turn) = accepted_plus_turn {
++                        settle.extend(["--accepted".into(), "--turn".into(), turn]);
++                    } else {
++                        let rejected = submission_result
++                            .as_ref()
++                            .err()
++                            .and_then(|error| error.downcast_ref::<TypedRequestError>())
++                            .is_some_and(|error| matches!(error, TypedRequestError::Server { .. }));
++                        settle.extend([
++                            "--outcome".into(),
++                            if submission_result.is_ok() || rejected {
++                                "failed"
++                            } else {
++                                "uncertain"
++                            }
++                            .into(),
++                        ]);
++                    }
++                    if let Err(error) = crate::plus_goals::command(
++                        self.config.codex_home.as_path(),
++                        thread_id,
++                        &settle,
++                    )
++                    .await
+                     {
+-                        crate::startup_recovery::acknowledged(client_user_message_id);
+-                        self.chat_widget
+-                            .record_safety_buffering_turn(response.turn.id, op);
++                        self.chat_widget.add_error_message(format!(
++                            "Plus goal input admission needs review: {error}"
++                        ));
+                     }
+                 }
+-                Ok(true)
++                submission_result
+             }
+             AppCommand::ListSkills { cwds, force_reload } => {
+                 self.handle_skills_list_result(
 diff --git a/codex-rs/tui/src/app/worker_hud.rs b/codex-rs/tui/src/app/worker_hud.rs
 new file mode 100644
-index 000000000..24cede85a
+index 000000000..15afc4f7d
 --- /dev/null
 +++ b/codex-rs/tui/src/app/worker_hud.rs
-@@ -0,0 +1,1680 @@
+@@ -0,0 +1,1748 @@
 +//! Per-client worker metadata refresh. These requests never start or steer a turn.
 +
 +use super::*;
@@ -2902,6 +4840,8 @@ index 000000000..24cede85a
 +    watcher_attempted_at: Option<Instant>,
 +    watcher: Option<WatcherHealth>,
 +    advisor: Option<crate::bottom_pane::worker_hud::AdvisorRow>,
++    pub(super) goal: Option<(String, String)>,
++    pub(super) dismissed_complete: Option<String>,
 +}
 +
 +#[derive(Default)]
@@ -3078,6 +5018,28 @@ index 000000000..24cede85a
 +        frame_requester: &tui::FrameRequester,
 +    ) {
 +        self.worker_hud.bind(self.primary_thread_id);
++        let goal_indicator = self
++            .worker_hud
++            .goal
++            .clone()
++            .filter(|(id, label)| {
++                self.current_displayed_thread_id() == self.primary_thread_id
++                    && !(label == "Goal complete"
++                        && self.worker_hud.dismissed_complete.as_ref() == Some(id))
++            })
++            .map(|(_, label)| {
++                let label = if label.starts_with("Goal waiting")
++                    && self.chat_widget.is_agent_turn_running()
++                {
++                    "Goal active".into()
++                } else if self.reconnect.offline && matches!(label.as_str(), "Goal active") {
++                    "Goal needs input".into()
++                } else {
++                    label
++                };
++                crate::bottom_pane::GoalStatusIndicator::Plus(label)
++            });
++        self.chat_widget.set_plus_goal_indicator(goal_indicator);
 +        self.refresh_watcher_health(app_server.uses_remote_workspace());
 +        self.refresh_shell_hud(app_server);
 +        let Some(root) = self.primary_thread_id else {
@@ -3301,6 +5263,7 @@ index 000000000..24cede85a
 +            self.worker_hud.watcher = None;
 +            self.chat_widget.set_watcher_health(None);
 +            self.worker_hud.advisor = None;
++            self.worker_hud.goal = None;
 +            self.chat_widget.set_advisor(None);
 +            return;
 +        }
@@ -3332,6 +5295,17 @@ index 000000000..24cede85a
 +            .join(format!("{root}.advisor.json"));
 +        let ready = super::advisor::ready_model(&self.model_catalog.models);
 +        let app_event_tx = self.app_event_tx.clone();
++        let goal_home = self.config.codex_home.clone();
++        let fallback_goal = self.worker_hud.goal.clone().map(|(id, label)| {
++            (
++                id,
++                if label.starts_with("Goal waiting") || label == "Goal active" {
++                    "Goal needs input".into()
++                } else {
++                    label
++                },
++            )
++        });
 +        tokio::spawn(async move {
 +            let read = tokio::task::spawn_blocking(move || {
 +                let now = SystemTime::now()
@@ -3341,21 +5315,42 @@ index 000000000..24cede85a
 +                (
 +                    read_watcher_health(path.as_path(), root, now),
 +                    super::advisor::read_advisor(&advisor_path, root, now, ready),
++                    match crate::plus_goals::read(goal_home.as_path(), root) {
++                        Ok(Some(snapshot)) => {
++                            let id = snapshot
++                                .goal
++                                .as_ref()
++                                .map(|goal| goal.id.clone())
++                                .unwrap_or_default();
++                            crate::plus_goals::indicator(
++                                goal_home.as_path(),
++                                root,
++                                snapshot,
++                                now,
++                                false,
++                            )
++                            .map(|label| (id, label))
++                        }
++                        Ok(None) => None,
++                        Err(_) => Some((String::new(), "Goal needs input".into())),
++                    },
 +                )
 +            });
-+            let (health, advisor) = tokio::time::timeout(WATCHER_TIMEOUT, read)
++            let (health, advisor, goal) = tokio::time::timeout(WATCHER_TIMEOUT, read)
 +                .await
 +                .ok()
 +                .and_then(Result::ok)
 +                .unwrap_or((
 +                    Some(WatcherHealth::Unavailable),
 +                    Some(super::advisor::unavailable()),
++                    fallback_goal,
 +                ));
 +            app_event_tx.send(AppEvent::WatcherHealthLoaded {
 +                primary_thread_id: root,
 +                request_id,
 +                health,
 +                advisor,
++                goal,
 +            });
 +        });
 +    }
@@ -3366,6 +5361,7 @@ index 000000000..24cede85a
 +        request_id: Uuid,
 +        health: Option<WatcherHealth>,
 +        advisor: Option<crate::bottom_pane::worker_hud::AdvisorRow>,
++        goal: Option<(String, String)>,
 +    ) {
 +        if self.primary_thread_id == Some(root)
 +            && self.worker_hud.finish_watcher(root, request_id, health)
@@ -3373,6 +5369,7 @@ index 000000000..24cede85a
 +            self.chat_widget
 +                .set_watcher_health(self.worker_hud.watcher.clone());
 +            self.worker_hud.advisor = advisor;
++            self.worker_hud.goal = goal;
 +            self.chat_widget
 +                .set_advisor(self.worker_hud.advisor.clone());
 +        }
@@ -3419,7 +5416,14 @@ index 000000000..24cede85a
 +    reports: u64,
 +}
 +
-+pub(super) fn read_status_bytes(path: &std::path::Path) -> std::io::Result<Option<Vec<u8>>> {
++pub(crate) fn read_status_bytes(path: &std::path::Path) -> std::io::Result<Option<Vec<u8>>> {
++    read_status_bytes_with_limit(path, WATCHER_MAX_BYTES)
++}
++
++pub(crate) fn read_status_bytes_with_limit(
++    path: &std::path::Path,
++    max_bytes: u64,
++) -> std::io::Result<Option<Vec<u8>>> {
 +    use std::io::Read;
 +    let mut options = std::fs::OpenOptions::new();
 +    options.read(true);
@@ -3435,12 +5439,12 @@ index 000000000..24cede85a
 +        Err(err) => return Err(err),
 +    };
 +    let metadata = file.metadata()?;
-+    if !metadata.is_file() || metadata.len() > WATCHER_MAX_BYTES {
++    if !metadata.is_file() || metadata.len() > max_bytes {
 +        return Err(std::io::Error::other("invalid local status file"));
 +    }
 +    let mut bytes = Vec::new();
-+    file.take(WATCHER_MAX_BYTES + 1).read_to_end(&mut bytes)?;
-+    if bytes.len() as u64 > WATCHER_MAX_BYTES {
++    file.take(max_bytes + 1).read_to_end(&mut bytes)?;
++    if bytes.len() as u64 > max_bytes {
 +        return Err(std::io::Error::other("oversized local status file"));
 +    }
 +    Ok(Some(bytes))
@@ -3966,12 +5970,13 @@ index 000000000..24cede85a
 +            request_id,
 +            health,
 +            advisor,
++            goal,
 +        } = event
 +        else {
 +            panic!("expected independent watcher refresh");
 +        };
 +        assert_eq!(health, Some(WatcherHealth::Uncertain(1)));
-+        app.finish_watcher_health(primary_thread_id, request_id, health, advisor);
++        app.finish_watcher_health(primary_thread_id, request_id, health, advisor, goal);
 +        assert_eq!(app.worker_hud.watcher, Some(WatcherHealth::Uncertain(1)));
 +        assert_eq!(app.worker_hud.pending, Some(worker_request));
 +        assert!(app.worker_hud.rows.is_empty());
@@ -3997,6 +6002,7 @@ index 000000000..24cede85a
 +            request_id,
 +            Some(WatcherHealth::Uncertain(1)),
 +            Some(super::super::advisor::unavailable()),
++            None,
 +        );
 +        assert_eq!(app.worker_hud.watcher, None);
 +        assert_eq!(app.worker_hud.advisor, None);
@@ -4533,10 +6539,27 @@ index 000000000..24cede85a
 +    }
 +}
 diff --git a/codex-rs/tui/src/app_event.rs b/codex-rs/tui/src/app_event.rs
-index a20193149..930cff629 100644
+index a20193149..2164ce401 100644
 --- a/codex-rs/tui/src/app_event.rs
 +++ b/codex-rs/tui/src/app_event.rs
-@@ -414,6 +414,22 @@ pub(crate) enum AppEvent {
+@@ -295,6 +295,16 @@ pub(crate) struct AgentPickerThreadRefresh {
+ #[allow(clippy::large_enum_variant)]
+ #[derive(Debug, IntoStaticStr)]
+ pub(crate) enum AppEvent {
++    PlusGoalCommand {
++        thread_id: ThreadId,
++        command: String,
++    },
++    PlusGoalDraft {
++        thread_id: ThreadId,
++        draft: GoalDraft,
++        expected: Option<(String, u64)>,
++        edit: bool,
++    },
+     AccountEmailLoaded {
+         request_id: uuid::Uuid,
+         email: Option<String>,
+@@ -414,6 +424,23 @@ pub(crate) enum AppEvent {
          request_id: Uuid,
          result: Result<AgentPickerThreadRefresh, String>,
      },
@@ -4555,12 +6578,179 @@ index a20193149..930cff629 100644
 +        request_id: Uuid,
 +        health: Option<crate::bottom_pane::worker_hud::WatcherHealth>,
 +        advisor: Option<crate::bottom_pane::worker_hud::AdvisorRow>,
++        goal: Option<(String, String)>,
 +    },
      /// Switch the active thread to the selected agent.
      SelectAgentThread(ThreadId),
  
+diff --git a/codex-rs/tui/src/app_server_session.rs b/codex-rs/tui/src/app_server_session.rs
+index 837fcb13c..aa36470b3 100644
+--- a/codex-rs/tui/src/app_server_session.rs
++++ b/codex-rs/tui/src/app_server_session.rs
+@@ -895,6 +895,7 @@ impl AppServerSession {
+         if self.history_support == ThreadHistorySupport::LegacyOnly {
+             params.history_mode = None;
+         }
++        crate::plus_goals::validate_config(config)?;
+         self.thread_tool_transport().validate_config(config)?;
+         self.thread_tool_transport().configure(&mut params);
+         let request_handle = self.request_handle();
+@@ -1037,6 +1038,7 @@ impl AppServerSession {
+         permission_mode: ForkPermissionMode,
+         config_source: ForkConfigSource,
+     ) -> Result<AppServerStartedThread> {
++        crate::plus_goals::validate_config(&config)?;
+         self.thread_tool_transport().validate_config(&config)?;
+         let fork_parent = match presentation {
+             ForkPresentation::Regular => self
+@@ -1830,6 +1832,7 @@ pub(crate) async fn start_thread_with_request_handle(
+         remote_cwd_override.as_deref(),
+         /*session_start_source*/ None,
+     );
++    crate::plus_goals::validate_config(&config)?;
+     thread_tool_transport.validate_config(&config)?;
+     launch_choices.configure(&mut params);
+     params.daybreak_enabled = (config.daybreak_enabled && !config.ephemeral).then_some(true);
+@@ -2019,6 +2022,9 @@ fn config_request_overrides_from_config(
+     if config.bypass_hook_trust {
+         overrides.insert("bypass_hook_trust".to_string(), true.into());
+     }
++    overrides
++        .entry("features".into())
++        .or_insert_with(|| serde_json::json!({}))["goals"] = false.into();
+     Some(overrides)
+ }
+ 
+@@ -2193,6 +2199,10 @@ fn thread_resume_params_from_config(
+     if model_settings == ResumeModelSettings::PreserveExistingThread {
+         return ThreadResumeParams {
+             thread_id: thread_id.to_string(),
++            config: Some(HashMap::from([(
++                "features".into(),
++                serde_json::json!({"goals": false}),
++            )])),
+             ..ThreadResumeParams::default()
+         };
+     }
+@@ -2321,6 +2331,15 @@ async fn started_thread_from_start_response(
+     config: &Config,
+     thread_params_mode: ThreadParamsMode,
+ ) -> Result<AppServerStartedThread> {
++    if thread_params_mode == ThreadParamsMode::Embedded {
++        crate::plus_goals::attest(
++            config.codex_home.as_path(),
++            &response.thread.id,
++            response.cwd.as_path(),
++            "fresh",
++        )
++        .await;
++    }
+     let blocks_direct_input = thread_blocks_direct_input(&response.thread);
+     let session = thread_session_state_from_thread_start_response(
+         &response,
+@@ -2365,6 +2384,15 @@ async fn started_thread_from_fork_response(
+     config: &Config,
+     thread_params_mode: ThreadParamsMode,
+ ) -> Result<AppServerStartedThread> {
++    if thread_params_mode == ThreadParamsMode::Embedded {
++        crate::plus_goals::attest(
++            config.codex_home.as_path(),
++            &response.thread.id,
++            response.cwd.as_path(),
++            "fresh",
++        )
++        .await;
++    }
+     let blocks_direct_input = thread_blocks_direct_input(&response.thread);
+     let session = thread_session_state_from_thread_fork_response(
+         &response,
+@@ -3677,6 +3705,46 @@ mod tests {
+         Ok(())
+     }
+ 
++    #[tokio::test]
++    async fn plus_goal_loading_paths_disable_native_scheduler() {
++        let home = tempfile::tempdir().unwrap();
++        let config = build_config(&home).await;
++        let root = ThreadId::new();
++        let start =
++            thread_start_params_from_config(&config, ThreadParamsMode::Embedded, None, None);
++        assert_eq!(start.config.as_ref().unwrap()["features"]["goals"], false);
++        assert!(
++            start
++                .developer_instructions
++                .as_deref()
++                .unwrap()
++                .contains(crate::plus_goals::INSTRUCTIONS)
++        );
++        for mode in [
++            ResumeModelSettings::RestoreFromThread,
++            ResumeModelSettings::OverrideFromCurrentConfig,
++            ResumeModelSettings::PreserveExistingThread,
++        ] {
++            let resume = thread_resume_params_from_config(
++                config.clone(),
++                root,
++                ThreadParamsMode::Embedded,
++                None,
++                mode,
++                crate::resume_permissions::ResumePermissions::CURRENT_CONFIG,
++            );
++            assert_eq!(resume.config.as_ref().unwrap()["features"]["goals"], false);
++        }
++        let fork = thread_fork_params_from_config(config, root, ThreadParamsMode::Embedded, None);
++        assert_eq!(fork.config.as_ref().unwrap()["features"]["goals"], false);
++        assert!(
++            fork.developer_instructions
++                .as_deref()
++                .unwrap()
++                .contains(crate::plus_goals::INSTRUCTIONS)
++        );
++    }
++
+     #[tokio::test]
+     async fn thread_resume_params_can_restore_persisted_model_settings() {
+         let temp_dir = tempfile::tempdir().expect("tempdir");
+diff --git a/codex-rs/tui/src/app_server_session/rollout_history.rs b/codex-rs/tui/src/app_server_session/rollout_history.rs
+index cfe049959..ce54c5ae2 100644
+--- a/codex-rs/tui/src/app_server_session/rollout_history.rs
++++ b/codex-rs/tui/src/app_server_session/rollout_history.rs
+@@ -155,6 +155,17 @@ impl AppServerSession {
+         model_settings: ResumeModelSettings,
+         permission_overrides: crate::resume_permissions::ResumePermissions,
+     ) -> Result<AppServerStartedThread> {
++        crate::plus_goals::validate_config(&config)?;
++        let cold_plus_runtime = !self.uses_remote_workspace()
++            && self
++                .thread_read(thread_id, false)
++                .await
++                .is_ok_and(|thread| {
++                    matches!(
++                        thread.status,
++                        codex_app_server_protocol::ThreadStatus::NotLoaded
++                    )
++                });
+         self.thread_tool_transport().validate_config(&config)?;
+         let session_config = if matches!(
+             model_settings,
+@@ -236,6 +247,15 @@ impl AppServerSession {
+                 ));
+             }
+         };
++        if cold_plus_runtime {
++            crate::plus_goals::attest(
++                config.codex_home.as_path(),
++                &response.thread.id,
++                response.cwd.as_path(),
++                "cold-resume",
++            )
++            .await;
++        }
+         self.hydrate_initial_thread_history(
+             &mut response.thread,
+             response.turns_backwards_cursor.clone(),
 diff --git a/codex-rs/tui/src/bottom_pane/chat_composer.rs b/codex-rs/tui/src/bottom_pane/chat_composer.rs
-index 2ad3f1cd9..3d6643d34 100644
+index 2ad3f1cd9..fa224bd28 100644
 --- a/codex-rs/tui/src/bottom_pane/chat_composer.rs
 +++ b/codex-rs/tui/src/bottom_pane/chat_composer.rs
 @@ -10,9 +10,9 @@
@@ -4592,7 +6782,62 @@ index 2ad3f1cd9..3d6643d34 100644
                  let show_queue_hint = match footer_props.mode {
                      FooterMode::ComposerHasDraft => footer_props.is_task_running,
                      FooterMode::HistorySearch
-@@ -5073,10 +5066,10 @@ mod tests {
+@@ -4628,12 +4621,16 @@ impl ChatComposer {
+                     } else {
+                         None
+                     };
+-                    let left_mode_indicator =
+-                        if status_line_active || self.status_surface_height(options) > 0 {
+-                            None
+-                        } else {
+-                            self.footer.collaboration_mode_indicator
+-                        };
++                    let left_mode_indicator = if status_line_active
++                        || self.status_surface_height(options) > 0
++                        || matches!(
++                            self.footer.goal_status_indicator,
++                            Some(GoalStatusIndicator::Plus(_))
++                        ) {
++                        None
++                    } else {
++                        self.footer.collaboration_mode_indicator
++                    };
+                     let active_footer_hint_override = self.footer.hint_override.as_ref();
+                     let mut left_width = if self.footer.flash_visible() {
+                         self.footer
+@@ -4664,6 +4661,11 @@ impl ChatComposer {
+                             Some(line)
+                         } else if self.status_surface_height(options) > 0 || transition_active {
+                             None
++                        } else if matches!(
++                            self.footer.goal_status_indicator,
++                            Some(GoalStatusIndicator::Plus(_))
++                        ) {
++                            self.mode_indicator_line(false)
+                         } else if status_line_active {
+                             let full = self.mode_indicator_line(show_cycle_hint);
+                             let compact = self.mode_indicator_line(/*show_cycle_hint*/ false);
+@@ -4676,6 +4678,19 @@ impl ChatComposer {
+                         } else {
+                             Some(self.right_footer_line_with_context())
+                         };
++                    let right_line = right_line.map(|line| {
++                        if matches!(
++                            self.footer.goal_status_indicator,
++                            Some(GoalStatusIndicator::Plus(_))
++                        ) {
++                            truncate_line_with_ellipsis_if_overflow(
++                                line,
++                                usize::from(inset_footer_hint_area(hint_rect).width),
++                            )
++                        } else {
++                            line
++                        }
++                    });
+                     let right_width = right_line.as_ref().map(|l| l.width() as u16).unwrap_or(0);
+                     if status_line_active
+                         && let Some(max_left) = max_left_width_for_right(hint_rect, right_width)
+@@ -5073,10 +5088,10 @@ mod tests {
      }
  
      #[test]
@@ -4605,7 +6850,7 @@ index 2ad3f1cd9..3d6643d34 100644
              /*has_input_focus*/ true,
              sender,
              /*enhanced_keys_supported*/ false,
-@@ -5084,46 +5077,14 @@ mod tests {
+@@ -5084,46 +5099,14 @@ mod tests {
              /*disable_paste_burst*/ false,
          );
  
@@ -5002,10 +7247,26 @@ index c35c2d93e..10a855cf9 100644
  
  
 diff --git a/codex-rs/tui/src/bottom_pane/chat_composer/status_surface.rs b/codex-rs/tui/src/bottom_pane/chat_composer/status_surface.rs
-index 60ee2e0fa..13536bf43 100644
+index 60ee2e0fa..dbf1b1522 100644
 --- a/codex-rs/tui/src/bottom_pane/chat_composer/status_surface.rs
 +++ b/codex-rs/tui/src/bottom_pane/chat_composer/status_surface.rs
-@@ -16,6 +16,9 @@ impl ChatComposer {
+@@ -6,7 +6,14 @@ use super::*;
+ 
+ impl ChatComposer {
+     pub(super) fn status_surface_height(&self, options: ComposerRenderOptions<'_>) -> u16 {
+-        u16::from(options.separate_status_line && self.footer.status_line_enabled)
++        u16::from(
++            options.separate_status_line
++                && (self.footer.status_line_enabled
++                    || matches!(
++                        self.footer.goal_status_indicator,
++                        Some(GoalStatusIndicator::Plus(_))
++                    )),
++        )
+     }
+ 
+     pub(super) fn hint_footer_props(&self, options: ComposerRenderOptions<'_>) -> FooterProps {
+@@ -16,6 +23,9 @@ impl ChatComposer {
              props.status_line_value = None;
              props.active_agent_label = None;
          }
@@ -5015,11 +7276,69 @@ index 60ee2e0fa..13536bf43 100644
          props
      }
  
+@@ -56,6 +66,19 @@ impl ChatComposer {
+         } else {
+             self.mode_indicator_line(/*show_cycle_hint*/ false)
+         };
++        let right = right.map(|line| {
++            if matches!(
++                self.footer.goal_status_indicator,
++                Some(GoalStatusIndicator::Plus(_))
++            ) {
++                truncate_line_with_ellipsis_if_overflow(
++                    line,
++                    usize::from(inset_footer_hint_area(area).width),
++                )
++            } else {
++                line
++            }
++        });
+         let right_width = right
+             .as_ref()
+             .map_or(/*default*/ 0, |line| line.width() as u16);
 diff --git a/codex-rs/tui/src/bottom_pane/chat_composer/status_surface_tests.rs b/codex-rs/tui/src/bottom_pane/chat_composer/status_surface_tests.rs
-index 03e761f4f..8625d6f3e 100644
+index 03e761f4f..81b615298 100644
 --- a/codex-rs/tui/src/bottom_pane/chat_composer/status_surface_tests.rs
 +++ b/codex-rs/tui/src/bottom_pane/chat_composer/status_surface_tests.rs
-@@ -57,6 +57,53 @@ fn render_with_height(
+@@ -4,6 +4,37 @@ use super::*;
+ use pretty_assertions::assert_eq;
+ use tokio::sync::mpsc::unbounded_channel;
+ 
++#[test]
++fn plus_goal_uses_existing_status_surface_and_truncates_without_wrapping() {
++    for enabled in [true, false] {
++        let mut composer = composer();
++        composer.set_status_line_enabled(enabled);
++        composer.set_collaboration_mode_indicator(Some(CollaborationModeIndicator::Plan));
++        composer.set_goal_status_indicator(Some(GoalStatusIndicator::Plus(
++            "Goal waiting · 12 jobs".into(),
++        )));
++        composer.set_text_content("editable draft".into(), vec![], vec![]);
++        let (wide, cursor) = render(&composer, 80, None);
++        assert!(wide.contains("Goal waiting · 12 jobs"), "{wide}");
++        assert!(!wide.contains("Plan"), "{wide}");
++        assert!(wide.contains("editable draft"), "{wide}");
++        assert!(cursor.is_some());
++        let options = composer.resolve_render_options(ComposerRenderOptions {
++            separate_status_line: true,
++            ..Default::default()
++        });
++        let height = composer.desired_height_with_options(80, options);
++        assert_eq!(height, 4);
++        let (narrow, cursor) = render(&composer, 12, None);
++        assert!(narrow.contains("Goal"), "{narrow}");
++        assert!(cursor.is_some());
++        assert_eq!(
++            composer.desired_height_with_options(12, options),
++            height + 1
++        );
++    }
++}
++
+ fn composer() -> ChatComposer {
+     let (tx, _rx) = unbounded_channel();
+     let mut composer = ChatComposer::new(
+@@ -57,6 +88,53 @@ fn render_with_height(
      (text, composer.cursor_pos_with_options(area, options))
  }
  
@@ -5073,7 +7392,7 @@ index 03e761f4f..8625d6f3e 100644
  #[test]
  fn passive_activity_keeps_shortcuts_only_when_the_complete_hint_fits() {
      let mut composer = composer();
-@@ -124,7 +171,7 @@ fn fullscreen_plan_indicator_keeps_the_cycle_hint_when_it_fits() {
+@@ -124,7 +202,7 @@ fn fullscreen_plan_indicator_keeps_the_cycle_hint_when_it_fits() {
      composer.set_status_line(/*status_line*/ None);
      let (empty_narrow, _) = render(&composer, /*width*/ 24, /*footer*/ None);
      assert_eq!(
@@ -5082,7 +7401,7 @@ index 03e761f4f..8625d6f3e 100644
          Some("Plan mode")
      );
      let (empty_wide, _) = render(&composer, /*width*/ 100, /*footer*/ None);
-@@ -135,15 +182,12 @@ fn fullscreen_plan_indicator_keeps_the_cycle_hint_when_it_fits() {
+@@ -135,15 +213,12 @@ fn fullscreen_plan_indicator_keeps_the_cycle_hint_when_it_fits() {
  
      composer.set_input_enabled(/*enabled*/ false, /*placeholder*/ None);
      let (read_only, _) = render(&composer, /*width*/ 100, /*footer*/ None);
@@ -5100,7 +7419,7 @@ index 03e761f4f..8625d6f3e 100644
          Some("Plan mode")
      );
  }
-@@ -195,7 +239,7 @@ fn shortcut_help_stays_above_the_prompt_and_bottom_status() {
+@@ -195,7 +270,7 @@ fn shortcut_help_stays_above_the_prompt_and_bottom_status() {
  }
  
  #[test]
@@ -5109,7 +7428,7 @@ index 03e761f4f..8625d6f3e 100644
      let (width, available_height) = (40, 12);
      let mut composer = composer();
      let mut geometry = Vec::new();
-@@ -228,7 +272,10 @@ fn shortcut_help_keeps_bottom_anchored_composer_status_and_cursor_stable() {
+@@ -228,7 +303,10 @@ fn shortcut_help_keeps_bottom_anchored_composer_status_and_cursor_stable() {
              composer.cursor_pos_with_options(area, options),
          ));
      }
@@ -5121,11 +7440,51 @@ index 03e761f4f..8625d6f3e 100644
  }
  
  #[test]
+diff --git a/codex-rs/tui/src/bottom_pane/footer.rs b/codex-rs/tui/src/bottom_pane/footer.rs
+index f0b809ce5..f9b2d456f 100644
+--- a/codex-rs/tui/src/bottom_pane/footer.rs
++++ b/codex-rs/tui/src/bottom_pane/footer.rs
+@@ -99,6 +99,7 @@ pub(crate) enum CollaborationModeIndicator {
+ 
+ #[derive(Clone, Debug, Eq, PartialEq)]
+ pub(crate) enum GoalStatusIndicator {
++    Plus(String),
+     Active { usage: Option<String> },
+     Paused,
+     Blocked,
+@@ -583,6 +584,7 @@ pub(crate) fn goal_status_indicator_line(
+ ) -> Option<Line<'static>> {
+     let indicator = indicator?;
+     let label = match indicator {
++        GoalStatusIndicator::Plus(label) => label.clone(),
+         GoalStatusIndicator::Active { usage } => {
+             if let Some(usage) = usage {
+                 format!("Pursuing goal ({usage})")
+@@ -618,8 +620,8 @@ pub(crate) fn status_line_right_indicator_line(
+     ide_context_active: bool,
+     show_cycle_hint: bool,
+ ) -> Option<Line<'static>> {
+-    let primary_indicator = mode_indicator_line(collaboration_mode_indicator, show_cycle_hint)
+-        .or_else(|| goal_status_indicator_line(goal_status_indicator));
++    let primary_indicator = goal_status_indicator_line(goal_status_indicator)
++        .or_else(|| mode_indicator_line(collaboration_mode_indicator, show_cycle_hint));
+     let ide_context_indicator = ide_context_active.then(|| Line::from(vec!["IDE context".cyan()]));
+     let mut line: Option<Line<'static>> = None;
+ 
 diff --git a/codex-rs/tui/src/bottom_pane/mod.rs b/codex-rs/tui/src/bottom_pane/mod.rs
-index ae9405e9f..8dab42d5c 100644
+index ae9405e9f..83b819811 100644
 --- a/codex-rs/tui/src/bottom_pane/mod.rs
 +++ b/codex-rs/tui/src/bottom_pane/mod.rs
-@@ -207,6 +207,7 @@ mod paste_burst;
+@@ -169,6 +169,8 @@ pub(crate) use footer::CollaborationModeIndicator;
+ pub(crate) use footer::GoalStatusIndicator;
+ #[cfg(test)]
+ pub(crate) use footer::goal_status_indicator_line;
++#[cfg(test)]
++pub(crate) use footer::status_line_right_indicator_line;
+ pub(crate) use list_selection_view::ColumnWidthMode;
+ pub(crate) use list_selection_view::ListSelectionView;
+ pub(crate) use list_selection_view::OnSelectionChangedCallback;
+@@ -207,6 +209,7 @@ mod paste_burst;
  mod pending_input_preview;
  mod pending_thread_approvals;
  mod picker_option;
@@ -5133,7 +7492,7 @@ index ae9405e9f..8dab42d5c 100644
  pub(crate) use picker_option::picker_option_list;
  pub(crate) use picker_option::picker_option_row;
  pub(crate) mod popup_consts;
-@@ -331,6 +332,7 @@ pub(crate) struct BottomPane {
+@@ -331,6 +334,7 @@ pub(crate) struct BottomPane {
      pending_input_preview: PendingInputPreview,
      /// Inactive threads with pending approval requests.
      pending_thread_approvals: PendingThreadApprovals,
@@ -5141,7 +7500,7 @@ index ae9405e9f..8dab42d5c 100644
      context_window_percent: Option<i64>,
      context_window_used_tokens: Option<i64>,
      keymap: RuntimeKeymap,
-@@ -405,6 +407,7 @@ impl BottomPane {
+@@ -405,6 +409,7 @@ impl BottomPane {
              unified_exec_footer: UnifiedExecFooter::new(),
              pending_input_preview: PendingInputPreview::new(),
              pending_thread_approvals: PendingThreadApprovals::new(),
@@ -5149,7 +7508,7 @@ index ae9405e9f..8dab42d5c 100644
              esc_backtrack_hint: false,
              animations_enabled,
              effects,
-@@ -1732,6 +1735,40 @@ impl BottomPane {
+@@ -1732,6 +1737,40 @@ impl BottomPane {
          self.request_redraw();
      }
  
@@ -5190,7 +7549,7 @@ index ae9405e9f..8dab42d5c 100644
      /// Update the inactive-thread approval list shown above the composer.
      pub(crate) fn set_pending_thread_approvals(&mut self, threads: Vec<String>) {
          if self.pending_thread_approvals.set_threads(threads) {
-@@ -2495,6 +2532,7 @@ impl BottomPane {
+@@ -2495,6 +2534,7 @@ impl BottomPane {
                  }))
              };
              flex2.push(/*flex*/ 0, composer);
@@ -5198,7 +7557,7 @@ index ae9405e9f..8dab42d5c 100644
              RenderableItem::Owned(Box::new(flex2))
          }
      }
-@@ -2729,6 +2767,95 @@ mod tests {
+@@ -2729,6 +2769,95 @@ mod tests {
          assert_eq!(pane.composer_text(), "main draft");
      }
  
@@ -6929,7 +9288,7 @@ index 000000000..6e0bafe33
 +    }
 +}
 diff --git a/codex-rs/tui/src/chatwidget.rs b/codex-rs/tui/src/chatwidget.rs
-index 2f74f843d..951f60112 100644
+index 2f74f843d..11932fd47 100644
 --- a/codex-rs/tui/src/chatwidget.rs
 +++ b/codex-rs/tui/src/chatwidget.rs
 @@ -263,6 +263,7 @@ mod connectors;
@@ -6949,7 +9308,15 @@ index 2f74f843d..951f60112 100644
      collab_agent_metadata: HashMap<ThreadId, AgentMetadata>,
      pending_collab_spawn_requests: HashMap<String, multi_agents::SpawnRequestSummary>,
      suppressed_exec_calls: HashSet<String>,
-@@ -1168,6 +1171,7 @@ impl ChatWidget {
+@@ -777,6 +780,7 @@ pub(crate) struct ChatWidget {
+     thread_usage: thread_usage::ThreadUsageState,
+     // Current thread-goal status shown in the status line when plan mode is inactive.
+     current_goal_status_indicator: Option<GoalStatusIndicator>,
++    plus_goal_indicator: Option<GoalStatusIndicator>,
+     current_goal_status: Option<GoalStatusState>,
+     external_editor_state: ExternalEditorState,
+     last_rendered_user_message_display: Option<UserMessageDisplay>,
+@@ -1168,6 +1172,7 @@ impl ChatWidget {
      }
  
      pub(crate) fn pre_draw_tick(&mut self) {
@@ -6957,7 +9324,7 @@ index 2f74f843d..951f60112 100644
          self.update_due_hook_visibility();
          self.schedule_hook_timer_if_needed();
          self.bottom_pane.pre_draw_tick();
-@@ -1201,6 +1205,7 @@ impl ChatWidget {
+@@ -1201,6 +1206,7 @@ impl ChatWidget {
      }
  
      fn flush_active_cell(&mut self) {
@@ -6965,7 +9332,7 @@ index 2f74f843d..951f60112 100644
          if let Some(active) = self.transcript.take_active_cell() {
              self.app_event_tx.send(AppEvent::InsertHistoryCell(active));
              self.request_pending_usage_output_insertion();
-@@ -1244,6 +1249,7 @@ impl ChatWidget {
+@@ -1244,6 +1250,7 @@ impl ChatWidget {
          &mut self,
          cell: &dyn HistoryCell,
      ) -> Option<Box<dyn HistoryCell>> {
@@ -6973,7 +9340,7 @@ index 2f74f843d..951f60112 100644
          // Keep the placeholder session header as the active cell until real session info arrives,
          // so we can merge headers instead of committing a duplicate box to history.
          let keep_placeholder_header_active = !self.is_session_configured()
-@@ -1435,6 +1441,7 @@ impl ChatWidget {
+@@ -1435,6 +1442,7 @@ impl ChatWidget {
  
      /// Mark the active cell as failed (✗) and flush it into history.
      fn finalize_active_cell_as_failed(&mut self) {
@@ -6981,10 +9348,17 @@ index 2f74f843d..951f60112 100644
          if let Some(mut cell) = self.transcript.take_active_cell() {
              // Insert finalized cell into history and keep grouping consistent.
              if let Some(exec) = cell.as_any_mut().downcast_mut::<ExecCell>() {
-@@ -1452,6 +1459,49 @@ impl ChatWidget {
+@@ -1452,6 +1460,56 @@ impl ChatWidget {
          }
      }
  
++    pub(crate) fn show_text_prompt(
++        &mut self,
++        view: crate::bottom_pane::custom_prompt_view::CustomPromptView,
++    ) {
++        self.bottom_pane.show_text_prompt(view);
++    }
++
 +    pub(crate) fn set_worker_hud(
 +        &mut self,
 +        rows: Vec<crate::bottom_pane::worker_hud::WorkerRow>,
@@ -7031,7 +9405,7 @@ index 2f74f843d..951f60112 100644
      pub(crate) fn set_pending_thread_approvals(&mut self, threads: Vec<String>) {
          self.bottom_pane.set_pending_thread_approvals(threads);
      }
-@@ -1498,6 +1548,8 @@ impl ChatWidget {
+@@ -1498,6 +1556,8 @@ impl ChatWidget {
      fn clean_background_terminals(&mut self) {
          self.submit_op(AppCommand::clean_background_terminals());
          self.unified_exec_processes.clear();
@@ -7349,7 +9723,7 @@ index a0533b315..c09f77ef4 100644
              return;
          }
 diff --git a/codex-rs/tui/src/chatwidget/constructor.rs b/codex-rs/tui/src/chatwidget/constructor.rs
-index 05dde949e..d510f1c24 100644
+index 05dde949e..da72cc15b 100644
 --- a/codex-rs/tui/src/chatwidget/constructor.rs
 +++ b/codex-rs/tui/src/chatwidget/constructor.rs
 @@ -185,6 +185,8 @@ impl ChatWidget {
@@ -7361,11 +9735,27 @@ index 05dde949e..d510f1c24 100644
              collab_agent_metadata: HashMap::new(),
              pending_collab_spawn_requests: HashMap::new(),
              suppressed_exec_calls: HashSet::new(),
+@@ -285,6 +287,7 @@ impl ChatWidget {
+             status_line_workspace_messages_disabled: false,
+             thread_usage: thread_usage::ThreadUsageState::default(),
+             current_goal_status_indicator: None,
++            plus_goal_indicator: None,
+             current_goal_status: None,
+             external_editor_state: ExternalEditorState::Closed,
+             last_rendered_user_message_display: None,
 diff --git a/codex-rs/tui/src/chatwidget/session_flow.rs b/codex-rs/tui/src/chatwidget/session_flow.rs
-index 6077a0f9e..a969a80de 100644
+index 6077a0f9e..b473b669d 100644
 --- a/codex-rs/tui/src/chatwidget/session_flow.rs
 +++ b/codex-rs/tui/src/chatwidget/session_flow.rs
-@@ -330,6 +330,8 @@ impl ChatWidget {
+@@ -109,6 +109,7 @@ impl ChatWidget {
+         self.clear_safety_buffering();
+         self.thread_name = session.thread_name.clone();
+         self.current_goal_status_indicator = None;
++        self.plus_goal_indicator = None;
+         self.current_goal_status = None;
+         self.update_collaboration_mode_indicator();
+         self.forked_from = session.forked_from_id;
+@@ -330,6 +331,8 @@ impl ChatWidget {
          self.turn_lifecycle.reset_thread();
          self.review = Default::default();
          self.transcript.take_active_cell();
@@ -7374,6 +9764,81 @@ index 6077a0f9e..a969a80de 100644
          self.transcript.reset_copy_history();
          self.transcript.reset_turn_flags();
          for turn in retained_turns {
+diff --git a/codex-rs/tui/src/chatwidget/settings.rs b/codex-rs/tui/src/chatwidget/settings.rs
+index b0b9674c6..a0095018b 100644
+--- a/codex-rs/tui/src/chatwidget/settings.rs
++++ b/codex-rs/tui/src/chatwidget/settings.rs
+@@ -364,8 +364,7 @@ impl ChatWidget {
+     }
+ 
+     pub(super) fn sync_goal_command_enabled(&mut self) {
+-        self.bottom_pane
+-            .set_goal_command_enabled(self.config.features.enabled(Feature::Goals));
++        self.bottom_pane.set_goal_command_enabled(true);
+     }
+ 
+     pub(super) fn sync_mentions_v2_enabled(&mut self) {
+@@ -655,25 +654,17 @@ impl ChatWidget {
+ 
+     pub(super) fn update_collaboration_mode_indicator(&mut self) {
+         let indicator = self.collaboration_mode_indicator();
+-        let goal_indicator = if indicator.is_none() {
+-            self.goal_status_indicator(Instant::now())
+-        } else {
+-            None
+-        };
++        let goal_indicator = self.plus_goal_indicator.clone();
+         self.current_goal_status_indicator = goal_indicator.clone();
+         self.bottom_pane.set_collaboration_mode_indicator(indicator);
+         self.bottom_pane.set_goal_status_indicator(goal_indicator);
+     }
+ 
+-    pub(crate) fn refresh_goal_status_indicator_for_time_tick(&mut self) {
+-        if self.collaboration_mode_indicator().is_some() {
+-            return;
+-        }
+-        let goal_indicator = self.goal_status_indicator(Instant::now());
+-        if goal_indicator != self.current_goal_status_indicator {
+-            self.current_goal_status_indicator = goal_indicator.clone();
+-            self.bottom_pane.set_goal_status_indicator(goal_indicator);
+-        }
++    pub(crate) fn refresh_goal_status_indicator_for_time_tick(&mut self) {}
++
++    pub(crate) fn set_plus_goal_indicator(&mut self, indicator: Option<GoalStatusIndicator>) {
++        self.plus_goal_indicator = indicator;
++        self.update_collaboration_mode_indicator();
+     }
+ 
+     fn goal_status_indicator(&self, now: Instant) -> Option<GoalStatusIndicator> {
+@@ -686,24 +677,18 @@ impl ChatWidget {
+     }
+ 
+     pub(super) fn on_thread_goal_updated(&mut self, goal: AppThreadGoal, turn_id: Option<String>) {
+-        if let Some(active_thread_id) = self.thread_id
+-            && active_thread_id.to_string() != goal.thread_id
++        // Native records are preserved; only the Plus projection controls this surface.
++        if self
++            .thread_id
++            .is_some_and(|root| root.to_string() != goal.thread_id)
+         {
+             return;
+         }
+-        if !self.config.features.enabled(Feature::Goals) {
+-            self.current_goal_status_indicator = None;
+-            self.current_goal_status = None;
+-            self.update_collaboration_mode_indicator();
+-            return;
+-        }
+         if goal.status == AppThreadGoalStatus::BudgetLimited
+             && let Some(turn_id) = turn_id
+         {
+             self.turn_lifecycle.mark_budget_limited(turn_id);
+         }
+-        self.current_goal_status = Some(GoalStatusState::new(goal, Instant::now()));
+-        self.update_collaboration_mode_indicator();
+     }
+ 
+     /// Cycle to the next collaboration mode variant (Plan -> Default -> Plan).
 diff --git a/codex-rs/tui/src/chatwidget/shell_policy.rs b/codex-rs/tui/src/chatwidget/shell_policy.rs
 new file mode 100644
 index 000000000..6521fffda
@@ -7664,6 +10129,176 @@ index 000000000..6521fffda
 +        );
 +    }
 +}
+diff --git a/codex-rs/tui/src/chatwidget/slash_dispatch.rs b/codex-rs/tui/src/chatwidget/slash_dispatch.rs
+index 5327f805c..c7ecc716b 100644
+--- a/codex-rs/tui/src/chatwidget/slash_dispatch.rs
++++ b/codex-rs/tui/src/chatwidget/slash_dispatch.rs
+@@ -382,9 +382,6 @@ impl ChatWidget {
+                 self.apply_plan_slash_command();
+             }
+             SlashCommand::Goal => {
+-                if !self.config.features.enabled(Feature::Goals) {
+-                    return;
+-                }
+                 if let Some(thread_id) = self.thread_id {
+                     self.app_event_tx
+                         .send(AppEvent::OpenThreadGoalMenu { thread_id });
+@@ -966,16 +963,39 @@ impl ChatWidget {
+                 }
+             }
+             SlashCommand::Goal if !trimmed.is_empty() => {
+-                if !self.config.features.enabled(Feature::Goals) {
++                enum GoalControlCommand {
++                    Clear,
++                    SetStatus(AppThreadGoalStatus),
++                }
++                if matches!(
++                    trimmed,
++                    "start" | "complete" | "history" | "status" | "convert"
++                ) || trimmed.starts_with("complete ")
++                    || trimmed.starts_with("edit ")
++                    || trimmed.starts_with("convert ")
++                    || trimmed.starts_with("review ")
++                {
++                    if let Some(thread_id) = self.thread_id {
++                        let (command, _) = crate::bottom_pane::ChatComposer::expand_pending_pastes(
++                            &args,
++                            text_elements.clone(),
++                            &pending_pastes,
++                        );
++                        self.app_event_tx.send(AppEvent::PlusGoalCommand {
++                            thread_id,
++                            command: command.trim().into(),
++                        });
++                    } else {
++                        self.add_error_message(
++                            "Wait for the saved session to start before using goal controls."
++                                .into(),
++                        );
++                    }
+                     if source == SlashCommandDispatchSource::Live {
+                         self.clear_live_goal_submission();
+                     }
+                     return;
+                 }
+-                enum GoalControlCommand {
+-                    Clear,
+-                    SetStatus(AppThreadGoalStatus),
+-                }
+                 let control_command = match trimmed.to_ascii_lowercase().as_str() {
+                     "clear" => Some(GoalControlCommand::Clear),
+                     "edit" => {
+@@ -1004,22 +1024,37 @@ impl ChatWidget {
+                         }
+                         return;
+                     };
+-                    match command {
+-                        GoalControlCommand::Clear => {
+-                            self.app_event_tx
+-                                .send(AppEvent::ClearThreadGoal { thread_id });
+-                        }
+-                        GoalControlCommand::SetStatus(status) => {
+-                            self.app_event_tx
+-                                .send(AppEvent::SetThreadGoalStatus { thread_id, status });
+-                        }
+-                    }
++                    let command = match command {
++                        GoalControlCommand::Clear => "clear",
++                        GoalControlCommand::SetStatus(AppThreadGoalStatus::Paused) => "pause",
++                        GoalControlCommand::SetStatus(_) => "resume",
++                    };
++                    self.app_event_tx.send(AppEvent::PlusGoalCommand {
++                        thread_id,
++                        command: command.into(),
++                    });
+                     self.append_message_history_entry(format!("/goal {trimmed}"));
+                     if source == SlashCommandDispatchSource::Live {
+                         self.clear_live_goal_submission();
+                     }
+                     return;
+                 }
++                let (args, text_elements) = if let Some(objective) = args.strip_prefix("start ") {
++                    (
++                        objective.to_string(),
++                        text_elements
++                            .into_iter()
++                            .map(|element| {
++                                element.map_range(|range| ByteRange {
++                                    start: range.start.saturating_sub(6),
++                                    end: range.end.saturating_sub(6),
++                                })
++                            })
++                            .collect(),
++                    )
++                } else {
++                    (args, text_elements)
++                };
+                 let draft = GoalDraft {
+                     objective: args,
+                     text_elements,
+@@ -1243,7 +1278,7 @@ impl ChatWidget {
+             connectors_enabled: self.connectors_enabled(),
+             plugins_command_enabled: self.config.features.enabled(Feature::Plugins),
+             token_activity_command_enabled: self.has_codex_backend_auth,
+-            goal_command_enabled: self.config.features.enabled(Feature::Goals),
++            goal_command_enabled: true,
+             service_tier_commands_enabled: !self.current_model_service_tier_commands().is_empty(),
+             daybreak_command_description: self.daybreak_command_description(),
+             voice_command_enabled: self.realtime_conversation_available_for_thread,
+diff --git a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__esc_interrupt_goal_paused_footer.snap b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__esc_interrupt_goal_paused_footer.snap
+deleted file mode 100644
+index d9aaa4e57..000000000
+--- a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__esc_interrupt_goal_paused_footer.snap
++++ /dev/null
+@@ -1,11 +0,0 @@
+----
+-source: tui/src/chatwidget/tests/status_and_layout.rs
+-expression: snapshot
+----
+-"                                                                                "
+-"• Working (0s • esc to interrupt)                                               "
+-"                                                                                "
+-"                                                                                "
+-"› Ask Codex to do anything                                                      "
+-"                                                                                "
+-"  GPT-5.6-Sol default · /tmp/project                Goal paused (/goal resume)  "
+diff --git a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__esc_interrupt_goal_paused_footer@windows.snap b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__esc_interrupt_goal_paused_footer@windows.snap
+deleted file mode 100644
+index b2b296cb6..000000000
+--- a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__esc_interrupt_goal_paused_footer@windows.snap
++++ /dev/null
+@@ -1,11 +0,0 @@
+----
+-source: tui/src/chatwidget/tests/status_and_layout.rs
+-expression: snapshot
+----
+-"                                                                                "
+-"• Working (0s • esc to interrupt)                                               "
+-"                                                                                "
+-"                                                                                "
+-"› Ask Codex to do anything                                                      "
+-"                                                                                "
+-"  GPT-5.6-Sol default · /tmp/project              Goal paused (/goal resume)    "
+diff --git a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_goal_active_token_budget_footer.snap b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_goal_active_token_budget_footer.snap
+index d7fddce12..6c0113f9c 100644
+--- a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_goal_active_token_budget_footer.snap
++++ b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_goal_active_token_budget_footer.snap
+@@ -6,4 +6,4 @@ expression: normalized_backend_snapshot(terminal.backend())
+ "                                                                                "
+ "› Ask Codex to do anything                                                      "
+ "                                                                                "
+-"  GPT-5.5                                            Pursuing goal (40K / 50K)  "
++"  GPT-5.5                                                          Goal active  "
+diff --git a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_goal_complete_elapsed_footer.snap b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_goal_complete_elapsed_footer.snap
+index 10e1d6409..4c1e4e202 100644
+--- a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_goal_complete_elapsed_footer.snap
++++ b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_goal_complete_elapsed_footer.snap
+@@ -6,4 +6,4 @@ expression: normalized_backend_snapshot(terminal.backend())
+ "                                                                                "
+ "› Ask Codex to do anything                                                      "
+ "                                                                                "
+-"  GPT-5.5                                           Goal achieved (2d 23h 42m)  "
++"  GPT-5.5                                                        Goal complete  "
 diff --git a/codex-rs/tui/src/chatwidget/tests.rs b/codex-rs/tui/src/chatwidget/tests.rs
 index 8534d753f..0df6d0931 100644
 --- a/codex-rs/tui/src/chatwidget/tests.rs
@@ -8222,6 +10857,408 @@ index 000000000..3c2870bf0
 +        }
 +    }
 +}
+diff --git a/codex-rs/tui/src/chatwidget/tests/slash_commands.rs b/codex-rs/tui/src/chatwidget/tests/slash_commands.rs
+index f867a24d5..6f749b7c0 100644
+--- a/codex-rs/tui/src/chatwidget/tests/slash_commands.rs
++++ b/codex-rs/tui/src/chatwidget/tests/slash_commands.rs
+@@ -4,6 +4,90 @@ use crate::bottom_pane::slash_commands::ServiceTierCommand;
+ use pretty_assertions::assert_eq;
+ use serial_test::serial;
+ 
++#[tokio::test]
++async fn plus_goal_commands_remain_available_with_native_goals_disabled() {
++    let (mut chat, mut rx, mut op_rx) = make_chatwidget_manual(None).await;
++    chat.set_feature_enabled(Feature::Goals, false);
++    let thread_id = ThreadId::new();
++    chat.thread_id = Some(thread_id);
++    submit_composer_text(&mut chat, "/goal pause");
++    let mut found = false;
++    while let Ok(event) = rx.try_recv() {
++        if let AppEvent::PlusGoalCommand {
++            thread_id: actual,
++            command,
++        } = event
++        {
++            assert_eq!(actual, thread_id);
++            assert_eq!(command, "pause");
++            found = true;
++        }
++    }
++    assert!(found);
++    assert_no_submit_op(&mut op_rx);
++    submit_composer_text(&mut chat, "/goal");
++    assert!(std::iter::from_fn(|| rx.try_recv().ok()).any(|event|
++        matches!(event, AppEvent::OpenThreadGoalMenu { thread_id: actual } if actual == thread_id)));
++    assert_no_submit_op(&mut op_rx);
++}
++
++#[tokio::test]
++async fn plus_goal_indicator_preserves_plan_and_native_disabled_state() {
++    let (mut chat, _rx, _op_rx) = make_chatwidget_manual(None).await;
++    chat.set_feature_enabled(Feature::Goals, false);
++    let before = chat.active_mode_kind();
++    chat.set_plus_goal_indicator(Some(crate::bottom_pane::GoalStatusIndicator::Plus(
++        "Goal paused".into(),
++    )));
++    assert_eq!(chat.active_mode_kind(), before);
++    assert_eq!(
++        chat.current_goal_status_indicator,
++        Some(crate::bottom_pane::GoalStatusIndicator::Plus(
++            "Goal paused".into()
++        ))
++    );
++    let line = crate::bottom_pane::status_line_right_indicator_line(
++        Some(crate::bottom_pane::CollaborationModeIndicator::Plan),
++        chat.current_goal_status_indicator.as_ref(),
++        false,
++        true,
++    )
++    .unwrap();
++    assert_eq!(line.to_string(), "Goal paused");
++    chat.refresh_goal_status_indicator_for_time_tick();
++    assert_eq!(
++        chat.current_goal_status_indicator,
++        Some(crate::bottom_pane::GoalStatusIndicator::Plus(
++            "Goal paused".into()
++        ))
++    );
++}
++
++#[tokio::test]
++async fn plus_goal_conversion_preserves_reviewed_paste_text() {
++    let (mut chat, mut rx, mut op_rx) = make_chatwidget_manual(None).await;
++    let root = ThreadId::new();
++    chat.thread_id = Some(root);
++    chat.set_feature_enabled(Feature::Goals, false);
++    chat.bottom_pane
++        .set_composer_text("/goal convert ".into(), vec![], vec![]);
++    let objective = "reviewed native objective ".repeat(80);
++    chat.handle_paste(objective.clone());
++    submit_current_composer(&mut chat);
++    let command = std::iter::from_fn(|| rx.try_recv().ok())
++        .find_map(|event| {
++            if let AppEvent::PlusGoalCommand { thread_id, command } = event {
++                assert_eq!(thread_id, root);
++                Some(command)
++            } else {
++                None
++            }
++        })
++        .expect("reviewed conversion command");
++    assert_eq!(command, format!("convert {}", objective.trim()));
++    assert_no_submit_op(&mut op_rx);
++}
++
+ fn force_pet_image_support(chat: &mut ChatWidget) {
+     chat.set_pet_image_support_for_tests(crate::pets::PetImageSupport::Supported(
+         crate::pets::ImageProtocol::Kitty,
+@@ -876,7 +960,7 @@ async fn goal_control_slash_commands_emit_goal_events() {
+         ("/goal resume", Some(AppThreadGoalStatus::Active)),
+     ];
+ 
+-    for (command, status) in cases {
++    for (command, _status) in cases {
+         let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
+         chat.set_feature_enabled(Feature::Goals, /*enabled*/ true);
+         let thread_id = ThreadId::new();
+@@ -889,30 +973,16 @@ async fn goal_control_slash_commands_emit_goal_events() {
+         chat.handle_key_event(KeyCode::Enter.into());
+         assert_matches!(rx.try_recv(), Ok(AppEvent::FollowTranscript));
+ 
+-        match status {
+-            Some(status) => {
+-                let event = rx.try_recv().expect("expected goal status event");
+-                let AppEvent::SetThreadGoalStatus {
+-                    thread_id: actual_thread_id,
+-                    status: actual_status,
+-                } = event
+-                else {
+-                    panic!("expected SetThreadGoalStatus, got {event:?}");
+-                };
+-                assert_eq!(actual_thread_id, thread_id);
+-                assert_eq!(actual_status, status);
+-            }
+-            None => {
+-                let event = rx.try_recv().expect("expected clear goal event");
+-                let AppEvent::ClearThreadGoal {
+-                    thread_id: actual_thread_id,
+-                } = event
+-                else {
+-                    panic!("expected ClearThreadGoal, got {event:?}");
+-                };
+-                assert_eq!(actual_thread_id, thread_id);
+-            }
+-        }
++        let event = rx.try_recv().expect("expected Plus goal control event");
++        let AppEvent::PlusGoalCommand {
++            thread_id: actual_thread_id,
++            command: actual_command,
++        } = event
++        else {
++            panic!("expected PlusGoalCommand, got {event:?}");
++        };
++        assert_eq!(actual_thread_id, thread_id);
++        assert_eq!(actual_command, command.trim_start_matches("/goal "));
+         chat.handle_key_event(KeyCode::Char('x').into());
+         chat.handle_key_event(KeyCode::Right.into());
+         chat.handle_key_event(KeyCode::Esc.into());
+@@ -2715,7 +2785,7 @@ async fn agent_turn_complete_notification_does_not_reuse_stale_copy_source() {
+ }
+ 
+ #[tokio::test]
+-async fn active_goal_without_follow_up_suppresses_agent_turn_complete_notification() {
++async fn native_goal_record_does_not_suppress_ordinary_turn_completion() {
+     let (mut chat, _rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
+     chat.set_feature_enabled(Feature::Goals, /*enabled*/ true);
+     chat.handle_server_notification(
+@@ -2740,7 +2810,10 @@ async fn active_goal_without_follow_up_suppresses_agent_turn_complete_notificati
+ 
+     complete_turn_with_message(&mut chat, "turn-1", Some("Still working"));
+ 
+-    assert_matches!(chat.pending_notification, None);
++    assert_matches!(
++        chat.pending_notification,
++        Some(Notification::AgentTurnComplete { .. })
++    );
+ }
+ 
+ #[tokio::test]
+diff --git a/codex-rs/tui/src/chatwidget/tests/status_and_layout.rs b/codex-rs/tui/src/chatwidget/tests/status_and_layout.rs
+index 301b55c2c..9533921f6 100644
+--- a/codex-rs/tui/src/chatwidget/tests/status_and_layout.rs
++++ b/codex-rs/tui/src/chatwidget/tests/status_and_layout.rs
+@@ -2253,18 +2253,18 @@ async fn answer_phase_controls_working_status_snapshot() {
+ }
+ 
+ #[tokio::test]
+-async fn ctrl_c_interrupt_pauses_active_goal_turn() {
++async fn ctrl_c_interrupt_preserves_plus_goal() {
+     let (mut chat, mut rx, mut op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
+     let thread_id = start_active_goal_turn(&mut chat);
+ 
+     chat.handle_key_event(KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL));
+ 
+     next_interrupt_op(&mut op_rx);
+-    assert_goal_paused_event(&mut rx, thread_id);
++    assert_no_goal_pause_event(&mut rx, thread_id);
+ }
+ 
+ #[tokio::test]
+-async fn esc_interrupt_pauses_active_goal_turn() {
++async fn esc_interrupt_preserves_plus_goal() {
+     let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
+     chat.show_welcome_banner = false;
+     let thread_id = start_active_goal_turn(&mut chat);
+@@ -2272,26 +2272,16 @@ async fn esc_interrupt_pauses_active_goal_turn() {
+     chat.handle_key_event(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
+ 
+     assert_matches!(rx.try_recv(), Ok(AppEvent::CodexOp(Op::Interrupt)));
+-    assert_goal_paused_event(&mut rx, thread_id);
++    assert_no_goal_pause_event(&mut rx, thread_id);
+ 
+-    update_thread_goal(&mut chat, thread_id, AppThreadGoalStatus::Paused);
+-    let width = 80;
+-    let height = chat.desired_height(width);
+-    let mut terminal = ratatui::Terminal::new(TestBackend::new(width, height)).expect("terminal");
+-    terminal
+-        .draw(|f| chat.render(f.area(), f.buffer_mut()))
+-        .expect("draw goal paused footer");
+-    let snapshot = normalized_backend_snapshot(terminal.backend());
+-    #[cfg(target_os = "windows")]
+-    insta::with_settings!({ snapshot_suffix => "windows" }, {
+-        assert_chatwidget_snapshot!("esc_interrupt_goal_paused_footer", snapshot);
+-    });
+-    #[cfg(not(target_os = "windows"))]
+-    assert_chatwidget_snapshot!("esc_interrupt_goal_paused_footer", snapshot);
++    assert_eq!(
++        chat.current_goal_status_indicator,
++        Some(GoalStatusIndicator::Plus("Goal active".into()))
++    );
+ }
+ 
+ #[tokio::test]
+-async fn request_user_input_interrupt_pauses_active_goal_turn() {
++async fn request_user_input_interrupt_preserves_plus_goal() {
+     for key_event in [
+         KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE),
+         KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL),
+@@ -2310,50 +2300,29 @@ async fn request_user_input_interrupt_pauses_active_goal_turn() {
+         chat.handle_key_event(key_event);
+ 
+         assert_matches!(rx.try_recv(), Ok(AppEvent::CodexOp(Op::Interrupt)));
+-        assert_goal_paused_event(&mut rx, thread_id);
++        assert_no_goal_pause_event(&mut rx, thread_id);
+     }
+ }
+ 
+ fn start_active_goal_turn(chat: &mut ChatWidget) -> ThreadId {
+     let thread_id = ThreadId::new();
+-    chat.set_feature_enabled(Feature::Goals, /*enabled*/ true);
++    chat.set_feature_enabled(Feature::Goals, false);
+     chat.thread_id = Some(thread_id);
+-    update_thread_goal(chat, thread_id, AppThreadGoalStatus::Active);
++    chat.set_plus_goal_indicator(Some(GoalStatusIndicator::Plus("Goal active".into())));
+     chat.on_task_started();
+     thread_id
+ }
+ 
+-fn update_thread_goal(chat: &mut ChatWidget, thread_id: ThreadId, status: AppThreadGoalStatus) {
+-    let mut goal = test_thread_goal(
+-        status,
+-        /*token_budget*/ Some(50_000),
+-        /*tokens_used*/ 40_000,
+-    );
+-    let thread_id = thread_id.to_string();
+-    goal.thread_id = thread_id.clone();
+-    chat.handle_server_notification(
+-        ServerNotification::ThreadGoalUpdated(
+-            codex_app_server_protocol::ThreadGoalUpdatedNotification {
+-                thread_id,
+-                turn_id: None,
+-                goal,
+-            },
+-        ),
+-        /*replay_kind*/ None,
+-    );
+-}
+-
+-fn assert_goal_paused_event(
++fn assert_no_goal_pause_event(
+     rx: &mut tokio::sync::mpsc::UnboundedReceiver<AppEvent>,
+-    thread_id: ThreadId,
++    _thread_id: ThreadId,
+ ) {
+-    assert_matches!(
+-        rx.try_recv(),
+-        Ok(AppEvent::SetThreadGoalStatus {
+-            thread_id: event_thread_id,
+-            status: AppThreadGoalStatus::Paused,
+-        }) if event_thread_id == thread_id
+-    );
++    while let Ok(event) = rx.try_recv() {
++        assert!(!matches!(
++            event,
++            AppEvent::SetThreadGoalStatus { .. } | AppEvent::PlusGoalCommand { .. }
++        ));
++    }
+ }
+ 
+ #[tokio::test]
+@@ -4282,6 +4251,7 @@ async fn status_line_goal_active_token_budget_footer_snapshot() {
+     chat.show_welcome_banner = false;
+     chat.local_settings.tui.status_line = Some(vec!["model-name".to_string()]);
+     chat.refresh_status_line();
++    chat.set_plus_goal_indicator(Some(GoalStatusIndicator::Plus("Goal active".into())));
+     chat.handle_server_notification(
+         ServerNotification::ThreadGoalUpdated(
+             codex_app_server_protocol::ThreadGoalUpdatedNotification {
+@@ -4325,6 +4295,7 @@ async fn status_line_goal_complete_elapsed_footer_snapshot() {
+         /*tokens_used*/ 40_000,
+     );
+     goal.time_used_seconds = 2 * 24 * 60 * 60 + 23 * 60 * 60 + 42 * 60;
++    chat.set_plus_goal_indicator(Some(GoalStatusIndicator::Plus("Goal complete".into())));
+     chat.handle_server_notification(
+         ServerNotification::ThreadGoalUpdated(
+             codex_app_server_protocol::ThreadGoalUpdatedNotification {
+@@ -4352,6 +4323,7 @@ async fn status_line_goal_complete_elapsed_footer_snapshot() {
+ async fn session_configured_clears_goal_status_footer() {
+     let (mut chat, _rx, _op_rx) = make_chatwidget_manual(Some("gpt-5.4")).await;
+     chat.set_feature_enabled(Feature::Goals, /*enabled*/ true);
++    chat.set_plus_goal_indicator(Some(GoalStatusIndicator::Plus("Goal active".into())));
+     chat.handle_server_notification(
+         ServerNotification::ThreadGoalUpdated(
+             codex_app_server_protocol::ThreadGoalUpdatedNotification {
+@@ -4368,9 +4340,7 @@ async fn session_configured_clears_goal_status_footer() {
+     );
+     assert_eq!(
+         chat.current_goal_status_indicator,
+-        Some(GoalStatusIndicator::Active {
+-            usage: Some("40K / 50K".to_string())
+-        })
++        Some(GoalStatusIndicator::Plus("Goal active".into()))
+     );
+     chat.turn_lifecycle
+         .budget_limited_turn_ids
+diff --git a/codex-rs/tui/src/chatwidget/tests/terminal_title.rs b/codex-rs/tui/src/chatwidget/tests/terminal_title.rs
+index abf13c778..3f7487966 100644
+--- a/codex-rs/tui/src/chatwidget/tests/terminal_title.rs
++++ b/codex-rs/tui/src/chatwidget/tests/terminal_title.rs
+@@ -1,7 +1,6 @@
+ //! Terminal-title focused tests for live chatwidget status-surface behavior.
+ 
+ use super::*;
+-use crate::bottom_pane::goal_status_indicator_line;
+ use pretty_assertions::assert_eq;
+ 
+ #[tokio::test]
+@@ -33,61 +32,20 @@ async fn daybreak_status_surfaces_follow_the_thread_preference() {
+ }
+ 
+ #[tokio::test]
+-async fn goal_clock_refresh_redraws_only_when_elapsed_label_changes() {
++async fn plus_goal_status_has_no_clock_or_timer_redraws() {
++    let (mut chat, _rx, _op_rx) = make_chatwidget_manual(None).await;
+     let (frame_requester, mut draw_rx) = FrameRequester::test_channel();
+-    let (mut chat, _rx, _op_rx) = make_chatwidget_manual_with_auth(
+-        /*model_override*/ None,
+-        /*has_chatgpt_account*/ false,
+-        /*has_codex_backend_auth*/ false,
+-        frame_requester,
+-    )
+-    .await;
+-    chat.set_feature_enabled(Feature::Goals, /*enabled*/ true);
+-    chat.bottom_pane.set_task_running(/*running*/ true);
+-    chat.bottom_pane.hide_status_indicator();
+-    let observed_at = Instant::now() - Duration::from_secs(/*secs*/ 90);
+-    chat.turn_lifecycle.goal_status_active_turn_started_at = Some(observed_at);
+-    let goal = AppThreadGoal {
+-        thread_id: "thread-1".to_string(),
+-        objective: "Keep improving the benchmark".to_string(),
+-        status: AppThreadGoalStatus::Active,
+-        token_budget: None,
+-        tokens_used: 0,
+-        time_used_seconds: 60,
+-        created_at: 0,
+-        updated_at: 0,
+-    };
+-    chat.on_thread_goal_updated(goal.clone(), /*turn_id*/ None);
+-    let initial_indicator = chat.current_goal_status_indicator.clone();
++    chat.frame_requester = frame_requester;
++    chat.set_plus_goal_indicator(Some(GoalStatusIndicator::Plus("Goal active".into())));
+     while draw_rx.try_recv().is_ok() {}
+-
+-    chat.current_goal_status = Some(GoalStatusState::new(goal, observed_at));
++    let initial = chat.current_goal_status_indicator.clone();
+     chat.refresh_goal_status_indicator_for_time_tick();
+-    chat.refresh_terminal_title();
+-    assert!(draw_rx.try_recv().is_ok());
+-    assert!(chat.terminal_title_next_refresh.is_some());
+-
+     chat.refresh_goal_status_indicator_for_time_tick();
+-    chat.refresh_terminal_title();
++    assert_eq!(chat.current_goal_status_indicator, initial);
+     assert_eq!(
+         draw_rx.try_recv(),
+         Err(tokio::sync::mpsc::error::TryRecvError::Empty)
+     );
+-    let labels = [
+-        initial_indicator.as_ref(),
+-        chat.current_goal_status_indicator.as_ref(),
+-    ]
+-    .map(|indicator| {
+-        let line = goal_status_indicator_line(indicator).expect("active goal indicator");
+-        line.spans
+-            .iter()
+-            .map(|span| span.content.as_ref())
+-            .collect::<String>()
+-    });
+-    insta::assert_snapshot!(labels.join("\n"), @r"
+-    Pursuing goal (1m)
+-    Pursuing goal (2m)
+-    ");
+ }
+ 
+ #[tokio::test]
 diff --git a/codex-rs/tui/src/exec_cell/advisor.rs b/codex-rs/tui/src/exec_cell/advisor.rs
 new file mode 100644
 index 000000000..07dc951bd
@@ -8568,6 +11605,372 @@ index 000000000..47fc7f8f5
 +expression: text(&cell)
 +---
 +• Advised on task · 4:12
+diff --git a/codex-rs/tui/src/lib.rs b/codex-rs/tui/src/lib.rs
+index a3fb5447b..bfbccfea6 100644
+--- a/codex-rs/tui/src/lib.rs
++++ b/codex-rs/tui/src/lib.rs
+@@ -166,6 +166,7 @@ mod inline_visualization;
+ pub(crate) mod insert_history;
+ mod managed_worktree_tool_specs;
+ mod managed_worktree_tools;
++mod plus_goals;
+ mod terminal_program_status;
+ pub use insert_history::insert_history_lines;
+ mod footer_hint;
+diff --git a/codex-rs/tui/src/plus_goals.rs b/codex-rs/tui/src/plus_goals.rs
+new file mode 100644
+index 000000000..557176b27
+--- /dev/null
++++ b/codex-rs/tui/src/plus_goals.rs
+@@ -0,0 +1,310 @@
++//! Plus state lives in the helper; rendering reads its local projection only.
++use codex_protocol::ThreadId;
++use serde::Deserialize;
++use serde_json::Value;
++use std::path::Path;
++
++#[derive(Debug, thiserror::Error)]
++#[error("Plus goal input could not be recorded: {0}")]
++pub(crate) struct InputError(pub String);
++
++#[derive(Clone, Debug, Deserialize)]
++pub(crate) struct Snapshot {
++    pub version: u32,
++    pub root: String,
++    pub goal: Option<Goal>,
++    #[serde(default)]
++    pub history: Vec<Goal>,
++    #[serde(default)]
++    pub instructions: String,
++    pub attention: Option<Value>,
++}
++
++#[derive(Clone, Debug, Deserialize)]
++pub(crate) struct Goal {
++    pub id: String,
++    pub revision: u64,
++    pub state: String,
++    pub objective: String,
++    pub checkpoint: Option<Value>,
++    pub error: Option<String>,
++    #[serde(default)]
++    pub running_jobs: usize,
++}
++
++impl Goal {
++    pub(crate) fn label(&self) -> Option<String> {
++        Some(match self.state.as_str() {
++            "active" => "Goal active".into(),
++            "waiting" => {
++                let jobs = self.running_jobs;
++                if jobs == 0 {
++                    "Goal waiting".into()
++                } else {
++                    format!("Goal waiting · {jobs} jobs")
++                }
++            }
++            "needs_input" => "Goal needs input".into(),
++            "paused" => "Goal paused".into(),
++            "complete" => "Goal complete".into(),
++            "cleared" | "replaced" => return None,
++            _ => "Goal needs input".into(),
++        })
++    }
++}
++
++pub(crate) fn read(home: &Path, root: ThreadId) -> Result<Option<Snapshot>, String> {
++    let path = home.join("codex-plus/goals").join(format!("{root}.json"));
++    let bytes = match crate::app::worker_hud::read_status_bytes_with_limit(&path, 64 * 1024) {
++        Ok(Some(bytes)) => bytes,
++        Ok(None) => return Ok(None),
++        Err(error) => return Err(error.to_string()),
++    };
++    let snapshot: Snapshot = serde_json::from_slice(&bytes).map_err(|e| e.to_string())?;
++    if snapshot.version != 1 || snapshot.root != root.to_string() {
++        return Err("Goal status ownership/version mismatch".into());
++    }
++    Ok(Some(snapshot))
++}
++
++pub(crate) async fn command(
++    home: &Path,
++    root: ThreadId,
++    args: &[String],
++) -> Result<Snapshot, String> {
++    let exe = std::env::current_exe().map_err(|e| e.to_string())?;
++    let helper = exe.with_file_name("codex-plus-runtime");
++    let mut cmd = tokio::process::Command::new(helper);
++    cmd.arg("goal")
++        .args(args)
++        .arg("--thread")
++        .arg(root.to_string())
++        .arg("--json")
++        .env("CODEX_HOME", home)
++        .env_remove("CODEX_THREAD_ID")
++        .stdin(std::process::Stdio::null())
++        .kill_on_drop(true);
++    let result = tokio::time::timeout(std::time::Duration::from_secs(30), cmd.output())
++        .await
++        .map_err(|_| "Goal helper timed out".to_string())?
++        .map_err(|e| format!("Goal helper unavailable: {e}"))?;
++    if !result.status.success() {
++        let json = serde_json::from_slice::<Value>(&result.stdout).ok();
++        return Err(json
++            .as_ref()
++            .and_then(|v| v.get("error"))
++            .and_then(Value::as_str)
++            .map(str::to_string)
++            .unwrap_or_else(|| {
++                let stderr = String::from_utf8_lossy(&result.stderr);
++                if stderr.trim().is_empty() {
++                    format!("Goal helper exited {}", result.status)
++                } else {
++                    stderr.chars().take(2048).collect::<String>().trim().into()
++                }
++            }));
++    }
++    let snapshot: Snapshot = serde_json::from_slice(&result.stdout).map_err(|e| e.to_string())?;
++    if snapshot.root != root.to_string() || snapshot.version != 1 {
++        return Err("Goal helper returned a different session".into());
++    }
++    Ok(snapshot)
++}
++
++pub(crate) fn mutation_args(action: &str, goal: &Goal) -> Vec<String> {
++    vec![
++        action.into(),
++        "--id".into(),
++        goal.id.clone(),
++        "--revision".into(),
++        goal.revision.to_string(),
++    ]
++}
++
++pub(crate) fn indicator(
++    home: &Path,
++    root: ThreadId,
++    snapshot: Snapshot,
++    now: f64,
++    turn_running: bool,
++) -> Option<String> {
++    if snapshot.attention.is_some() {
++        return Some("Goal needs input".into());
++    }
++    let mut goal = snapshot.goal?;
++    if matches!(goal.state.as_str(), "active" | "waiting") {
++        let path = home.join("codex-plus").join(format!("{root}.status.json"));
++        let healthy = crate::app::worker_hud::read_status_bytes(&path)
++            .ok()
++            .flatten()
++            .and_then(|data| serde_json::from_slice::<Value>(&data).ok())
++            .is_some_and(|health| {
++                health["version"] == 1
++                    && health["parent"] == root.to_string()
++                    && health["updated_at"].as_f64().is_some_and(|at| {
++                            at.is_finite() && at >= 0.0 && now.is_finite() && now >= 0.0 && (now - at).abs() <= 15.0
++                    })
++                    && matches!(health["state"].as_str(), Some("waiting" | "idle"))
++            });
++        if !healthy {
++            return Some("Goal needs input".into());
++        }
++        if goal.state == "waiting" && turn_running {
++            goal.state = "active".into();
++        }
++    }
++    goal.label()
++}
++
++pub(crate) const INSTRUCTIONS: &str = "Codex Plus owns /goal. Native goal tools do not control Plus goals. At the start of each turn, inspect `codex-plus goal status --thread $CODEX_THREAD_ID --json` when a Plus goal exists. Follow its instructions for exact goal ID, revision, input epoch and admitted turn. Before ending a goal turn, stage an explicit checkpoint using `codex-plus goal checkpoint`: continue with next action and evidence references, wait on exact registered jobs, request input, or complete with verification evidence. Read the status instructions for the JSON schema and current binding. Ordinary user input has priority; a goal does not expand permissions. Paused, changed, uncertain or stale goal bindings never authorize continuation. Preserve these instructions through compaction.";
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    #[test]
++    fn plus_goal_labels_have_no_clock() {
++        let mut goal = Goal {
++            id: "id".into(),
++            revision: 2,
++            state: "waiting".into(),
++            objective: "x".into(),
++            checkpoint: Some(serde_json::json!({"jobs":["a","b"]})),
++            error: None,
++            running_jobs: 2,
++        };
++        assert_eq!(goal.label().as_deref(), Some("Goal waiting · 2 jobs"));
++        for (state, label) in [
++            ("active", "Goal active"),
++            ("needs_input", "Goal needs input"),
++            ("paused", "Goal paused"),
++            ("complete", "Goal complete"),
++        ] {
++            goal.state = state.into();
++            assert_eq!(goal.label().as_deref(), Some(label));
++        }
++        assert_eq!(
++            mutation_args("pause", &goal),
++            ["pause", "--id", "id", "--revision", "2"]
++        );
++    }
++
++    #[test]
++    fn plus_goal_projection_is_read_only_and_rejects_other_roots_and_malformed_data() {
++        let home = tempfile::tempdir().unwrap();
++        let root = ThreadId::new();
++        assert!(read(home.path(), root).unwrap().is_none());
++        let dir = home.path().join("codex-plus/goals");
++        assert!(!dir.exists());
++        std::fs::create_dir_all(&dir).unwrap();
++        let path = dir.join(format!("{root}.json"));
++        let data = serde_json::json!({"version":1,"root":root,"input_epoch":2,"goal":null});
++        std::fs::write(&path, data.to_string()).unwrap();
++        let before = std::fs::read(&path).unwrap();
++        assert!(read(home.path(), root).unwrap().unwrap().goal.is_none());
++        assert_eq!(std::fs::read(&path).unwrap(), before);
++        std::fs::write(
++            &path,
++            data.to_string()
++                .replace(&root.to_string(), &ThreadId::new().to_string()),
++        )
++        .unwrap();
++        assert!(read(home.path(), root).is_err());
++        std::fs::write(&path, "malformed").unwrap();
++        assert!(read(home.path(), root).is_err());
++        std::fs::write(&path, vec![b' '; 64 * 1024 + 1]).unwrap();
++        assert!(read(home.path(), root).is_err());
++    }
++
++    #[cfg(unix)]
++    #[test]
++    fn plus_goal_projection_rejects_symlinks() {
++        let home = tempfile::tempdir().unwrap();
++        let root = ThreadId::new();
++        let dir = home.path().join("codex-plus/goals");
++        std::fs::create_dir_all(&dir).unwrap();
++        let target = home.path().join("target");
++        std::fs::write(&target, "{}").unwrap();
++        std::os::unix::fs::symlink(target, dir.join(format!("{root}.json"))).unwrap();
++        assert!(read(home.path(), root).is_err());
++    }
++
++    #[test]
++    fn plus_goal_zero_job_monitor_health_and_active_turn_gate_waiting() {
++        let home = tempfile::tempdir().unwrap();
++        let root = ThreadId::new();
++        let snapshot: Snapshot = serde_json::from_value(serde_json::json!({"version":1,"root":root,"input_epoch":0,"goal":{"id":"goal","revision":1,"state":"waiting","objective":"x","running_jobs":0}})).unwrap();
++        assert_eq!(
++            indicator(home.path(), root, snapshot.clone(), 100.0, false).as_deref(),
++            Some("Goal needs input")
++        );
++        std::fs::create_dir_all(home.path().join("codex-plus")).unwrap();
++        let path = home
++            .path()
++            .join("codex-plus")
++            .join(format!("{root}.status.json"));
++        std::fs::write(&path, serde_json::json!({"version":1,"parent":root,"state":"waiting","updated_at":100.0,"jobs":0}).to_string()).unwrap();
++        let before = std::fs::read(&path).unwrap();
++        assert_eq!(
++            indicator(home.path(), root, snapshot.clone(), 100.0, false).as_deref(),
++            Some("Goal waiting")
++        );
++        assert_eq!(
++            indicator(home.path(), root, snapshot.clone(), 100.0, true).as_deref(),
++            Some("Goal active")
++        );
++        assert_eq!(
++            indicator(home.path(), root, snapshot.clone(), 116.0, false).as_deref(),
++            Some("Goal needs input")
++        );
++        assert_eq!(std::fs::read(&path).unwrap(), before);
++        let mut paused = snapshot;
++        paused.goal.as_mut().unwrap().state = "paused".into();
++        assert_eq!(
++            indicator(home.path(), root, paused, 1000.0, false).as_deref(),
++            Some("Goal paused")
++        );
++    }
++}
++
++pub(crate) async fn attest(home: &Path, root: &str, cwd: &Path, kind: &str) {
++    let Ok(root) = ThreadId::from_string(root) else {
++        return;
++    };
++    let args = vec![
++        "provenance".into(),
++        "--cwd".into(),
++        cwd.to_string_lossy().into_owned(),
++        "--load-kind".into(),
++        kind.into(),
++    ];
++    if let Err(error) = command(home, root, &args).await {
++        tracing::debug!(%error, "Plus goal runtime isolation not established");
++    }
++}
++
++pub(crate) fn validate_config(
++    config: &crate::legacy_core::config::Config,
++) -> color_eyre::Result<()> {
++    use codex_config::ConfigLayerSource;
++    for layer in config.config_layer_stack.layers_low_to_high() {
++        if matches!(
++            &layer.name,
++            ConfigLayerSource::SessionFlags
++                | ConfigLayerSource::User {
++                    profile: Some(_),
++                    ..
++                }
++        ) && layer
++            .config
++            .get("features")
++            .and_then(|v| v.get("goals"))
++            .and_then(toml::Value::as_bool)
++            == Some(true)
++        {
++            return Err(color_eyre::eyre::eyre!(
++                "Codex Plus owns /goal; features.goals=true conflicts with Plus goals. Remove the conflicting launch/profile override."
++            ));
++        }
++    }
++    Ok(())
++}
+diff --git a/codex-rs/tui/src/snapshots/codex_tui__app__tests__replace_goal_confirmation.snap b/codex-rs/tui/src/snapshots/codex_tui__app__tests__replace_goal_confirmation.snap
+index 1aacd04c3..213e51a33 100644
+--- a/codex-rs/tui/src/snapshots/codex_tui__app__tests__replace_goal_confirmation.snap
++++ b/codex-rs/tui/src/snapshots/codex_tui__app__tests__replace_goal_confirmation.snap
+@@ -2,11 +2,11 @@
+ source: tui/src/app/tests.rs
+ expression: "render_bottom_popup(&app.chat_widget, 80)"
+ ---
+-      Replace goal?
+-› As  New objective: New goal
++      Replace current Plus goal?
++› As  New goal
+ 
+   GP
+-    › 1. Replace current goal  Set the new objective and start it now
+-      2. Cancel                Keep the current goal
++    › 1. Replace goal
++      2. Cancel
+ 
+       enter select · esc back
+diff --git a/codex-rs/tui/src/terminal_visualization_instructions.rs b/codex-rs/tui/src/terminal_visualization_instructions.rs
+index eb59f2d15..6399f7977 100644
+--- a/codex-rs/tui/src/terminal_visualization_instructions.rs
++++ b/codex-rs/tui/src/terminal_visualization_instructions.rs
+@@ -11,6 +11,13 @@ pub(crate) fn with_terminal_visualization_instructions(
+     config: &Config,
+     control_instructions: Option<String>,
+ ) -> Option<String> {
++    let control_instructions = Some(format!(
++        "{}\n\n{}",
++        control_instructions
++            .or_else(|| config.developer_instructions.clone())
++            .unwrap_or_default(),
++        crate::plus_goals::INSTRUCTIONS
++    ));
+     if !config
+         .features
+         .enabled(Feature::TerminalVisualizationInstructions)
 diff --git a/codex-rs/tui/src/thread_transcript/tools.rs b/codex-rs/tui/src/thread_transcript/tools.rs
 index 73e80d617..e665186e2 100644
 --- a/codex-rs/tui/src/thread_transcript/tools.rs

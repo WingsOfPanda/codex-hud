@@ -30,9 +30,9 @@ from urllib.request import urlopen
 ROOT = Path(__file__).resolve().parents[1]
 UPSTREAM_COMMIT = '83086188ae0614bd882818ff1aa23f3194962012'
 UPSTREAM_VERSION = '0.163.0'
-PLUS_VERSION = '0.3.1'
+PLUS_VERSION = '0.3.2'
 RELEASE = f'{UPSTREAM_VERSION}-plus.{PLUS_VERSION}'
-COORDINATOR_PROTOCOL = 2
+COORDINATOR_PROTOCOL = 3
 PATCH = 'patches/codex-0.163.0-worker-hud.patch'
 TARGETS = {'x86_64-unknown-linux-gnu': 62, 'aarch64-unknown-linux-gnu': 183}
 DOCS = ('README.md', 'GLOSSARY.md', 'docs/background-work.md',
@@ -40,7 +40,8 @@ DOCS = ('README.md', 'GLOSSARY.md', 'docs/background-work.md',
         'docs/releasing.md', 'docs/advisor.md', 'docs/rust-runtime.md',
         'docs/audit-fixes.md', 'docs/notice-resolution.md',
         'docs/evidence/audit-fixes.json', 'docs/evidence/advisor-topic.json',
-        'docs/evidence/notice-resolution.json')
+        'docs/evidence/notice-resolution.json', 'docs/goals.md',
+        'docs/custom-goals.md', 'docs/evidence/custom-goals.json')
 
 
 def runtime_source_files(root):

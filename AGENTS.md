@@ -65,3 +65,8 @@ For cancellation, unavailable watcher health, or uncertain delivery, follow
 [status and cancellation](docs/background-work.md#status-and-cancellation).
 Use `./bin/codex-plus park --status` to inspect state. Preserve the ledger and
 report unknown outcomes rather than blindly resending callbacks or rerunning jobs.
+
+For Plus-owned goals, read [goal checkpoints and recovery](docs/goals.md#model-workflow)
+on start/resume, before ending a goal turn, or when goal status needs input.
+Use the admitted identity and structured checkpoint; preserve newer user
+direction, report-only barriers and existing action approvals.

@@ -119,6 +119,9 @@ class InstalledLauncherTests(unittest.TestCase):
         result = self.launch('advisor', '--help')
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn('--brief', result.stdout)
+        result = self.launch('goal', '--help')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('checkpoint', result.stdout)
         self.env.pop('CODEX_THREAD_ID', None)
         result = self.launch('advisor', '--brief', 'Installed advisor routing check.')
         self.assertEqual(result.returncode, 1, result.stderr)
@@ -139,7 +142,7 @@ class InstalledLauncherTests(unittest.TestCase):
         (decoy / '__init__.py').write_text('raise RuntimeError("decoy package imported")\n')
         (cwd / 'cwd_module.py').write_text('VALUE = "working directory import retained"\n')
         self.env.pop('PYTHONSAFEPATH', None)
-        for helper, code in (('advisor', 0), ('park', 0), ('run', 2)):
+        for helper, code in (('advisor', 0), ('park', 0), ('goal', 0), ('run', 2)):
             with self.subTest(helper=helper):
                 result = subprocess.run([str(self.link), helper, '--help'], cwd=cwd,
                                         env=self.env, capture_output=True, text=True, timeout=5)

@@ -21,6 +21,12 @@ exact-turn evidence. `local.rs` owns private files and child execution.
 `runner.rs` and `advisor.rs` preserve command I/O and cancellation contracts.
 `upgrade.rs` validates the adjacent immutable package before re-execution.
 
+The 0.3.2 goal candidate adds `goals.rs` for durable goal policy and
+`goal_command.rs` for the root CLI, using this same store. Goal admission and
+user mutations share a bounded local lock around queue submission; SQLite
+transactions still do not span network calls. The [goal workflow](goals.md)
+defines the protocol-3 cutover, pending user-input fence and recovery barrier.
+
 The migration preserves ledger schema and status JSON version 1, exact job and
 callback identities, frozen payloads, uncertainty, and cancellation provenance.
 Python Unicode validation is retained for reasons and compact labels.
@@ -56,7 +62,7 @@ establish a production security boundary. Complete release archives still need
 
 ## Fleet contract
 
-This is a protocol-2 bootstrap from Python protocol 1: use the
+The original Rust migration was a protocol-2 bootstrap from Python protocol 1: use the
 [quiet cutover and rollback procedure](background-work.md#cooperative-package-upgrades).
 The shared daemon stays stock 0.163.0. Fleet helper scans must recognize both
 `python3 -m codex_plus.background` and native `codex-plus-runtime` process roles.
@@ -68,3 +74,10 @@ Preserve the last qualified Python package and its interpreter explicitly until
 that rollback is retired. Rust helpers do not transfer to older or protocol-1
 packages; every rollback uses a quiet checkpoint. Build/test-only Python remains
 permitted, and removing system Python is outside this change.
+
+Custom goals require protocol 3, effective native-goal disabling and a stock
+daemon restart at quiet cutover, despite keeping upstream 0.163.0 unchanged.
+The wrapper adds `goal`; quiet checks also inspect goal dispatches and distinguish
+active versus settled goal-owned callback markers. Preserve the goal ledger and
+a qualified rollback package without dispatching its goal records through older
+helpers. See the [goal rollout contract](goals.md#stock-daemon-isolation-and-rollout-contract).

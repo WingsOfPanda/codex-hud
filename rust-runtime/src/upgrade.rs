@@ -14,7 +14,7 @@ use std::{
     process::Command,
 };
 
-pub const COORDINATOR_PROTOCOL: u64 = 2;
+pub const COORDINATOR_PROTOCOL: u64 = 3;
 pub const UPGRADE_EXIT: i32 = 75;
 const RUNTIME: &str = "bin/codex-plus-runtime";
 
@@ -279,7 +279,7 @@ mod tests {
         fs::write(root.join(RUNTIME), payload).unwrap();
         fs::set_permissions(root.join(RUNTIME), fs::Permissions::from_mode(0o755)).unwrap();
         let files = json!({RUNTIME:{"size":payload.len(),"mode":"0755","sha256":format!("{:x}",Sha256::digest(payload))}});
-        let manifest = json!({"schema_version":1,"coordinator_protocol":2,"release":release,"upstream":{"version":"fixture"},"target":"x86_64-unknown-linux-gnu","tree_sha256":format!("{:x}",Sha256::digest(crate::local::ascii_json(&files).unwrap().as_bytes())),"files":files});
+        let manifest = json!({"schema_version":1,"coordinator_protocol":COORDINATOR_PROTOCOL,"release":release,"upstream":{"version":"fixture"},"target":"x86_64-unknown-linux-gnu","tree_sha256":format!("{:x}",Sha256::digest(crate::local::ascii_json(&files).unwrap().as_bytes())),"files":files});
         fs::write(
             root.join("codex-plus.json"),
             serde_json::to_vec(&manifest).unwrap(),
@@ -332,6 +332,7 @@ mod tests {
         let valid = manifest(&new).unwrap();
         for (key, value) in [
             ("coordinator_protocol", json!(1)),
+            ("coordinator_protocol", json!(2)),
             ("coordinator_protocol", json!(true)),
             ("target", json!("different")),
             ("upstream", json!({"version":"other"})),

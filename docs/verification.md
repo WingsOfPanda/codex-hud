@@ -6,6 +6,50 @@ Rust 1.99.1. Keep the ordinary installed Codex and global configuration intact.
 
 ## Current release acceptance
 
+### Plus-owned goals for 0.3.2
+
+Use [the approved design](custom-goals.md) and [the goal workflow](goals.md).
+The implementation evidence is [custom-goals.json](evidence/custom-goals.json);
+it identifies the tested x86 frontend and optimized Rust helper separately from
+release packages. Tests use private homes, an official stock 0.163.0 daemon and
+loopback providers. They do not modify the installed daemon or global policy.
+
+Root acceptance passed 112 optimized-runtime unit tests, all 31 goal scenarios,
+both actual goal TUI cases, 27 park regressions, seven upgrade cases, six stock
+lifecycle scenarios and all 23 terminal smoke stages. The focused native filters
+passed 69 goal, 38 status, 42 HUD, 18 shell-policy, 53 execution-flow and six
+transcript tests, with overlapping coverage. Packaging, launcher, source-guard
+and terminal-fixture checks passed 40, 11, 11 and 18 tests respectively; both
+upstream UI scenarios passed. Preserved failed runs and their fixes are recorded
+in the evidence, including the final independent-callback/EOS regression.
+
+```sh
+cargo +1.99.1 test --locked --release --manifest-path rust-runtime/Cargo.toml --lib
+python3 tests/test_custom_goals_stock.py --runtime /absolute/candidate/runtime \
+  --stock-binary /absolute/official/codex --evidence .build/goals --scenario all
+# Use the native-smoke interpreter with pyte installed:
+python3 tests/test_custom_goal_tui.py --binary /absolute/candidate/codex \
+  --runtime /absolute/candidate/runtime --stock-binary /absolute/official/codex \
+  --evidence .build/goal-tui --scenario all
+```
+
+Cover exact-turn dispositions and positive EOS, input priority/receipt races,
+partial shell and worker completion, missing/repeated progress, pause/edit/clear,
+replaced goals, queue ambiguity, report-only renewal, controlled isolation,
+unloaded roots and actual TUI resume restarting observation. Check an independent
+park callback racing goal EOS before admitting the next goal turn. Healthy job
+waiting and display refresh must add no model requests. The right goal indicator
+must preserve editable input, narrow layouts and the three-row activity budget.
+Run the existing park, upgrade, stock lifecycle, terminal, packaging and focused
+native goal/status/HUD/shell/transcript checks as regressions.
+
+Wire fault fixtures and seeded crash windows are labeled separately from official
+daemon cases. Restrictive read-only/Plan and workspace policies verify denied
+checkpoint writes lead to NeedsInput, without widening permissions; they do not
+establish automatic checkpointing under those policies. The approved stock
+already-admitted recovery exception remains. Complete x86 and ARM archives need
+their own native qualification before release; these source checks are not that.
+
 ### Worker time and token scopes
 
 Standalone rows pair the latest turn's elapsed time with that exact turn's
