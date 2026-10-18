@@ -6,14 +6,15 @@ tracks its own parent thread in ordinary terminals and split tmux panes.
 Release builds patch the frontend and keep upstream daemon code unchanged.
 The HUD and Rust completion coordinator work with the official stock daemon.
 
-The combined 0.163.0-plus.0.4.0 candidate adds [reviewed detached jobs](docs/detached-jobs.md):
+The 0.163.0-plus.0.4.1 patch release fixes transient input and Ultracode admission
+failures. It retains [reviewed detached jobs](docs/detached-jobs.md):
 workers prepare expensive work, the root reviews and launches it, and local
 executors preserve results across qualified TUI and stock-daemon restarts.
 It retains [Plus-owned goals](docs/goals.md) and genuine Idle waiting.
 This checkout is not a fleet installation; fleet-config owns the quiet initial
 protocol transition and later qualified upgrades.
 
-The same candidate includes default-off [Ultracode mode](docs/ultracode.md) for
+The release includes default-off [Ultracode mode](docs/ultracode.md) for
 root-led worker phases, short shell topics, the parallel MCP/web activity-row fix
 and the optional weekly-reset countdown. It uses coordinator protocol 5 and
 execution record format 1. Private feature qualification does not establish

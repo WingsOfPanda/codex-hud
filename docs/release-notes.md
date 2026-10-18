@@ -1,6 +1,14 @@
-# Codex Plus 0.163.0-plus.0.4.0
+# Codex Plus 0.163.0-plus.0.4.1
 
-This combined candidate adds reviewed detached jobs, default-off Ultracode,
+This patch release fixes first-turn admission and Ultracode confirmation when
+the daemon's history metadata is temporarily unavailable. The helper retries
+only the exact unsupported turn/item history errors, up to four reads with
+100 ms between attempts. It never resends accepted input or guesses a turn.
+Unresolved mode confirmation shows `Ultracode unavailable` with a reason;
+an explicit status check can recover once the history is readable. Confirmed
+mode snapshots remain unchanged during steering. The frontend patch is unchanged.
+
+It retains reviewed detached jobs, default-off Ultracode,
 short shell topics and an optional weekly-reset countdown. It also retains the
 parallel MCP/web activity-row fix: original Calling/Browsing rows settle by call
 identity, interruption stops pending indicators, and late authoritative results

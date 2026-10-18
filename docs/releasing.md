@@ -13,7 +13,7 @@ updates; increment its patch component for Plus fixes and its minor component
 for Plus features. Every new combination still needs qualified target packages.
 Existing published `plus.N` releases retain their original identities.
 
-The combined detached-job/Ultracode candidate is `0.163.0-plus.0.4.0`: coordinator protocol 5 and
+The current detached-job/Ultracode patch release is `0.163.0-plus.0.4.1`: coordinator protocol 5 and
 package `execution_record_format: 1`, with the same pinned official 0.163.0 daemon.
 The execution format describes durable executor records separately from
 coordinator/upstream compatibility. These identities do not establish package
