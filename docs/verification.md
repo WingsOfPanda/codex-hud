@@ -6,6 +6,39 @@ Rust 1.99.1. Keep the ordinary installed Codex and global configuration intact.
 
 ## Current release acceptance
 
+### Parallel MCP and web activity
+
+Source/development acceptance is recorded in
+[parallel-tool-rows.json](evidence/parallel-tool-rows.json). Root checks passed
+195 native filter invocations (overlapping coverage), all nine targeted PTY cases,
+all 23 terminal smoke stages, both upstream UI scenarios and 53 source-guard,
+packaging and fixture checks. This fix is not part of installed 0.3.2.
+
+Overlapping tool calls must settle their original transcript rows by call ID,
+including calls that finish out of order or after another activity replaces the
+active row. After completion, neither `Calling` nor `Browsing the web` may remain
+active, and each call's result appears once. Preserve success, failure, image
+output and full transcript details. Interrupted calls settle without claiming
+success; a late result updates the same retained row. If ordinary terminal
+scrollback already printed the interruption, print the authoritative late result
+as a correction without adding a second retained transcript entry.
+
+Check both the owned transcript and ordinary terminal fallback. Pending terminal
+history waits for settlement instead of permanently printing an unfinished row.
+Cover mixed MCP/web calls, completion-only replay, unrelated shell output,
+turn-end cleanup and composer editing, using private homes and loopback fixtures.
+These checks do not require a model request or a daemon change.
+
+```sh
+# Use the native-smoke interpreter with pyte installed:
+python3 tests/test_tool_activity_tui.py /absolute/candidate/codex \
+  --evidence .build/tool-activity
+```
+
+The nine PTY cases cover completion, interruption and late results in owned,
+terminal-owned and no-alternate-screen modes. Native filters `tool_activity_tests`
+and `native_history::tests` cover the same call ownership and scrollback ordering.
+
 ### Plus-owned goals for 0.3.2
 
 Use [the approved design](custom-goals.md) and [the goal workflow](goals.md).

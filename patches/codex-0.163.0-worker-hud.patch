@@ -2385,10 +2385,18 @@ index 049849509..a60190597 100644
 +    Ok(())
  }
 diff --git a/codex-rs/tui/src/app/event_dispatch.rs b/codex-rs/tui/src/app/event_dispatch.rs
-index a7f7f1e82..29a346abd 100644
+index a7f7f1e82..52e86d920 100644
 --- a/codex-rs/tui/src/app/event_dispatch.rs
 +++ b/codex-rs/tui/src/app/event_dispatch.rs
-@@ -159,22 +159,11 @@ impl App {
+@@ -79,6 +79,7 @@ impl App {
+                     | AppEvent::ConfirmDaemonUpdate(_)
+                     | AppEvent::RunDaemonUpdate(_)
+                     | AppEvent::InsertHistoryCell(_)
++                    | AppEvent::RefreshRetainedToolCall(_)
+                     | AppEvent::CommitRealtimeTranscriptHistory
+                     | AppEvent::ResetTranscriptForThreadSwitch
+                     | AppEvent::ResetTranscriptForThreadSwitchPreservingScreen
+@@ -159,22 +160,11 @@ impl App {
              event => (event, None),
          };
          match event {
@@ -2416,7 +2424,17 @@ index a7f7f1e82..29a346abd 100644
              AppEvent::UserVerificationApproved { thread_id, server_name, request_id } => {
                  Box::pin(self.start_user_verification(app_server, thread_id, server_name, request_id)).await?;
              }
-@@ -1021,21 +1010,6 @@ impl App {
+@@ -909,6 +899,9 @@ impl App {
+             AppEvent::InsertHistoryCell(cell) => {
+                 self.insert_history_cell(tui, cell);
+             }
++            AppEvent::RefreshRetainedToolCall(cell) => {
++                self.refresh_retained_tool_call(tui, &cell);
++            }
+             AppEvent::TurnTipReady { thread_id, turn_id } => {
+                 self.turn_tips.ready(thread_id, &turn_id, self.transcript_cells.last());
+                 tui.frame_requester().schedule_frame();
+@@ -1021,21 +1014,6 @@ impl App {
                      }
                  }
                  RunningTaskExitAction::Exit => {
@@ -2438,7 +2456,7 @@ index a7f7f1e82..29a346abd 100644
                      let turn_id = self
                          .active_turn_id_for_thread(thread_id)
                          .await
-@@ -1182,7 +1156,7 @@ impl App {
+@@ -1182,7 +1160,7 @@ impl App {
                              .set_queue_autosend_suppressed(/*suppressed*/ true);
                      }
                      let handled = is_user_turn
@@ -2447,7 +2465,7 @@ index a7f7f1e82..29a346abd 100644
                              err.downcast_ref::<TypedRequestError>(),
                              Some(TypedRequestError::Server { method, .. })
                                  if method == "turn/start"
-@@ -1790,6 +1764,12 @@ impl App {
+@@ -1790,6 +1768,12 @@ impl App {
              AppEvent::RefreshStatusLineWorkspaceHeadline { request_id } => {
                  self.refresh_status_line_workspace_headline(app_server, request_id);
              }
@@ -2460,7 +2478,7 @@ index a7f7f1e82..29a346abd 100644
              AppEvent::OpenThreadGoalMenu { thread_id } => {
                  self.open_thread_goal_menu(app_server, thread_id).await;
              }
-@@ -3025,6 +3005,18 @@ impl App {
+@@ -3025,6 +3009,18 @@ impl App {
                      result,
                  );
              }
@@ -2479,6 +2497,213 @@ index a7f7f1e82..29a346abd 100644
              AppEvent::SelectAgentThread(thread_id) => {
                  self.select_agent_thread(tui, app_server, thread_id)
                      .await?;
+diff --git a/codex-rs/tui/src/app/history_ui.rs b/codex-rs/tui/src/app/history_ui.rs
+index ca29929c1..6487d3ca1 100644
+--- a/codex-rs/tui/src/app/history_ui.rs
++++ b/codex-rs/tui/src/app/history_ui.rs
+@@ -101,6 +101,12 @@ impl App {
+             tui.frame_requester().schedule_frame();
+             return;
+         }
++        if let Some(cell) = cell
++            .as_any()
++            .downcast_ref::<history_cell::RetainedToolCallCell>()
++        {
++            cell.mark_native_rendered();
++        }
+         if self.initial_history_replay_buffer.as_ref().is_some() {
+             self.insert_history_cell_lines_with_initial_replay_buffer(tui, cell.as_ref(), width);
+             self.last_rendered_history_tail = None;
+diff --git a/codex-rs/tui/src/app/native_history.rs b/codex-rs/tui/src/app/native_history.rs
+index b34523e28..4c3cfc2d5 100644
+--- a/codex-rs/tui/src/app/native_history.rs
++++ b/codex-rs/tui/src/app/native_history.rs
+@@ -23,6 +23,10 @@ pub(super) fn is_pending(cell: &dyn HistoryCell) -> bool {
+     cell.as_any()
+         .downcast_ref::<history_cell::DynamicToolCallCell>()
+         .is_some_and(history_cell::DynamicToolCallCell::is_active)
++        || cell
++            .as_any()
++            .downcast_ref::<history_cell::RetainedToolCallCell>()
++            .is_some_and(history_cell::RetainedToolCallCell::is_active)
+ }
+ 
+ impl NativeHistory {
+@@ -115,6 +119,24 @@ impl NativeHistory {
+ }
+ 
+ impl App {
++    pub(super) fn refresh_retained_tool_call(
++        &mut self,
++        tui: &mut tui::Tui,
++        updated: &history_cell::RetainedToolCallCell,
++    ) {
++        if !tui.is_owned_screen()
++            && let Some(cell) = self.transcript_cells.iter().find(|cell| {
++                cell.as_any()
++                    .downcast_ref::<history_cell::RetainedToolCallCell>()
++                    .is_some_and(|cell| cell.shares_state_with(updated))
++            })
++            && !self.native_history.contains(cell)
++        {
++            self.native_history.defer(cell);
++        }
++        tui.frame_requester().schedule_frame();
++    }
++
+     pub(super) fn flush_native_history(&mut self, tui: &mut tui::Tui) {
+         if tui.is_owned_screen() || self.overlay.is_some() {
+             return;
+diff --git a/codex-rs/tui/src/app/native_history_tests.rs b/codex-rs/tui/src/app/native_history_tests.rs
+index 6e340c424..aaf27274d 100644
+--- a/codex-rs/tui/src/app/native_history_tests.rs
++++ b/codex-rs/tui/src/app/native_history_tests.rs
+@@ -5,6 +5,145 @@ use codex_app_server_protocol::DynamicToolCallOutputContentItem;
+ use codex_app_server_protocol::DynamicToolCallStatus;
+ use pretty_assertions::assert_eq;
+ 
++#[tokio::test]
++async fn parallel_mcp_and_web_wait_for_settled_rows_before_native_commit() -> Result<()> {
++    let mut app = crate::app::test_support::make_test_app().await;
++    let mut tui = crate::tui::test_support::make_test_tui()?;
++    let mcp = history_cell::RetainedToolCallCell::new(history_cell::new_active_mcp_tool_call(
++        "mcp".into(),
++        history_cell::McpInvocation {
++            server: "test".into(),
++            tool: "lookup".into(),
++            arguments: None,
++        },
++        false,
++    ));
++    let web = history_cell::RetainedToolCallCell::new(history_cell::new_active_web_search_call(
++        "web".into(),
++        "query".into(),
++        false,
++    ));
++    app.insert_history_cell(&mut tui, Box::new(mcp.clone()));
++    app.insert_history_cell(&mut tui, Box::new(web.clone()));
++    app.flush_native_history(&mut tui);
++    assert!(tui.pending_history_lines_for_test().is_empty());
++    web.finish(|cell| {
++        cell.as_any_mut()
++            .downcast_mut::<history_cell::WebSearchCell>()
++            .unwrap()
++            .complete()
++    });
++    app.flush_native_history(&mut tui);
++    assert!(tui.pending_history_lines_for_test().is_empty());
++    mcp.mark_interrupted();
++    app.flush_native_history(&mut tui);
++    let lines = tui.pending_history_lines_for_test();
++    let text = lines
++        .iter()
++        .map(|line| line.line.to_string())
++        .collect::<Vec<_>>()
++        .join("\n");
++    assert!(
++        !text.contains("Calling") && !text.contains("Browsing"),
++        "{text}"
++    );
++    assert_eq!(text.matches("test.lookup").count(), 1);
++    assert_eq!(text.matches("Searched the web").count(), 1);
++    app.flush_native_history(&mut tui);
++    assert_eq!(tui.pending_history_lines_for_test(), lines);
++    Ok(())
++}
++
++#[tokio::test]
++async fn late_tool_results_preserve_output_before_and_after_native_commit() -> Result<()> {
++    for (commit_interruption, immediate) in [(false, false), (true, false), (true, true)] {
++        let mut app = crate::app::test_support::make_test_app().await;
++        let mut tui = crate::tui::test_support::make_test_tui()?;
++        let mcp = history_cell::RetainedToolCallCell::new(history_cell::new_active_mcp_tool_call(
++            "mcp".into(),
++            history_cell::McpInvocation {
++                server: "test".into(),
++                tool: "lookup".into(),
++                arguments: None,
++            },
++            false,
++        ));
++        let web = history_cell::RetainedToolCallCell::new(
++            history_cell::new_active_web_search_call("web".into(), String::new(), false),
++        );
++        if !immediate {
++            app.insert_history_cell(&mut tui, Box::new(mcp.clone()));
++            app.insert_history_cell(&mut tui, Box::new(web.clone()));
++        }
++        mcp.mark_interrupted();
++        web.mark_interrupted();
++        if immediate {
++            app.insert_history_cell(&mut tui, Box::new(mcp.clone()));
++            app.insert_history_cell(&mut tui, Box::new(web.clone()));
++        }
++        if commit_interruption {
++            app.flush_native_history(&mut tui);
++        }
++        let mcp_rendered = mcp.finish(|cell| {
++            let result = serde_json::from_value(serde_json::json!({"content": [{"type": "text", "text": "authoritative late output"}]})).unwrap();
++            cell.as_any_mut().downcast_mut::<history_cell::McpToolCallCell>().unwrap().complete(std::time::Duration::from_millis(5), Ok(result));
++        });
++        let web_rendered = web.finish(|cell| {
++            let cell = cell
++                .as_any_mut()
++                .downcast_mut::<history_cell::WebSearchCell>()
++                .unwrap();
++            cell.update(
++                codex_app_server_protocol::WebSearchAction::Other,
++                "late query".into(),
++            );
++            cell.complete();
++        });
++        assert_eq!(mcp_rendered, commit_interruption);
++        assert_eq!(web_rendered, commit_interruption);
++        if mcp_rendered {
++            app.refresh_retained_tool_call(&mut tui, &mcp);
++        }
++        if web_rendered {
++            app.refresh_retained_tool_call(&mut tui, &web);
++        }
++        app.flush_native_history(&mut tui);
++        let lines = tui.pending_history_lines_for_test();
++        let text = lines
++            .iter()
++            .map(|line| line.line.to_string())
++            .collect::<Vec<_>>()
++            .join("\n");
++        assert_eq!(
++            text.matches("authoritative late output").count(),
++            1,
++            "{text}"
++        );
++        assert_eq!(text.matches("late query").count(), 1, "{text}");
++        assert_eq!(app.transcript_cells.len(), 2);
++        let replay = app
++            .render_transcript_lines_for_reflow(80)
++            .lines
++            .iter()
++            .map(|line| line.line.to_string())
++            .collect::<Vec<_>>()
++            .join("\n");
++        assert_eq!(
++            replay.matches("authoritative late output").count(),
++            1,
++            "{replay}"
++        );
++        assert_eq!(replay.matches("late query").count(), 1, "{replay}");
++        assert!(
++            !replay.contains("interrupted") && !replay.contains("Interrupted"),
++            "{replay}"
++        );
++        app.flush_native_history(&mut tui);
++        assert_eq!(tui.pending_history_lines_for_test(), lines);
++    }
++    Ok(())
++}
++
+ #[tokio::test]
+ async fn quota_warnings_are_emitted_once_and_survive_native_replay() -> Result<()> {
+     for initial_replay in [false, true] {
 diff --git a/codex-rs/tui/src/app/owned_transcript_tests.rs b/codex-rs/tui/src/app/owned_transcript_tests.rs
 index ff6e0201b..56d15f109 100644
 --- a/codex-rs/tui/src/app/owned_transcript_tests.rs
@@ -6539,7 +6764,7 @@ index 000000000..15afc4f7d
 +    }
 +}
 diff --git a/codex-rs/tui/src/app_event.rs b/codex-rs/tui/src/app_event.rs
-index a20193149..2164ce401 100644
+index a20193149..1d5c09423 100644
 --- a/codex-rs/tui/src/app_event.rs
 +++ b/codex-rs/tui/src/app_event.rs
 @@ -295,6 +295,16 @@ pub(crate) struct AgentPickerThreadRefresh {
@@ -6583,6 +6808,15 @@ index a20193149..2164ce401 100644
      /// Switch the active thread to the selected agent.
      SelectAgentThread(ThreadId),
  
+@@ -1166,6 +1193,8 @@ pub(crate) enum AppEvent {
+     FollowTranscript,
+ 
+     InsertHistoryCell(Box<dyn HistoryCell>),
++    /// Correct native scrollback after a late result updates an already retained interrupted row.
++    RefreshRetainedToolCall(crate::history_cell::RetainedToolCallCell),
+     /// FIFO barrier after the completed turn's history insertions.
+     TurnTipReady {
+         thread_id: ThreadId,
 diff --git a/codex-rs/tui/src/app_server_session.rs b/codex-rs/tui/src/app_server_session.rs
 index 837fcb13c..aa36470b3 100644
 --- a/codex-rs/tui/src/app_server_session.rs
@@ -9288,7 +9522,7 @@ index 000000000..6e0bafe33
 +    }
 +}
 diff --git a/codex-rs/tui/src/chatwidget.rs b/codex-rs/tui/src/chatwidget.rs
-index 2f74f843d..11932fd47 100644
+index 2f74f843d..8f7aa5581 100644
 --- a/codex-rs/tui/src/chatwidget.rs
 +++ b/codex-rs/tui/src/chatwidget.rs
 @@ -263,6 +263,7 @@ mod connectors;
@@ -9332,7 +9566,18 @@ index 2f74f843d..11932fd47 100644
          if let Some(active) = self.transcript.take_active_cell() {
              self.app_event_tx.send(AppEvent::InsertHistoryCell(active));
              self.request_pending_usage_output_insertion();
-@@ -1244,6 +1250,7 @@ impl ChatWidget {
+@@ -1216,6 +1222,10 @@ impl ChatWidget {
+                     .as_any()
+                     .downcast_ref::<history_cell::ComputerActivityCell>()
+                     .is_some_and(|cell| !cell.is_active())
++                || cell
++                    .as_any()
++                    .downcast_ref::<history_cell::RetainedToolCallCell>()
++                    .is_some_and(|cell| !cell.is_active())
+         })
+     }
+ 
+@@ -1244,6 +1254,7 @@ impl ChatWidget {
          &mut self,
          cell: &dyn HistoryCell,
      ) -> Option<Box<dyn HistoryCell>> {
@@ -9340,7 +9585,7 @@ index 2f74f843d..11932fd47 100644
          // Keep the placeholder session header as the active cell until real session info arrives,
          // so we can merge headers instead of committing a duplicate box to history.
          let keep_placeholder_header_active = !self.is_session_configured()
-@@ -1435,6 +1442,7 @@ impl ChatWidget {
+@@ -1435,6 +1446,7 @@ impl ChatWidget {
  
      /// Mark the active cell as failed (✗) and flush it into history.
      fn finalize_active_cell_as_failed(&mut self) {
@@ -9348,7 +9593,7 @@ index 2f74f843d..11932fd47 100644
          if let Some(mut cell) = self.transcript.take_active_cell() {
              // Insert finalized cell into history and keep grouping consistent.
              if let Some(exec) = cell.as_any_mut().downcast_mut::<ExecCell>() {
-@@ -1452,6 +1460,56 @@ impl ChatWidget {
+@@ -1452,6 +1464,56 @@ impl ChatWidget {
          }
      }
  
@@ -9405,7 +9650,7 @@ index 2f74f843d..11932fd47 100644
      pub(crate) fn set_pending_thread_approvals(&mut self, threads: Vec<String>) {
          self.bottom_pane.set_pending_thread_approvals(threads);
      }
-@@ -1498,6 +1556,8 @@ impl ChatWidget {
+@@ -1498,6 +1560,8 @@ impl ChatWidget {
      fn clean_background_terminals(&mut self) {
          self.submit_op(AppCommand::clean_background_terminals());
          self.unified_exec_processes.clear();
@@ -9414,8 +9659,23 @@ index 2f74f843d..11932fd47 100644
          self.sync_unified_exec_footer();
          self.add_info_message(
              "Stopping all background terminals.".to_string(),
+@@ -1813,6 +1877,14 @@ impl ChatWidget {
+         self.blocks_direct_input = true;
+         self.external_writer_view = true;
+         self.pause_unavailable_thread();
++        for cell in self
++            .transcript
++            .mcp_calls
++            .values()
++            .chain(self.transcript.web_calls.values())
++        {
++            cell.freeze_snapshot();
++        }
+         if let Some(cell) = self.transcript.active_cell.as_mut() {
+             if let Some(exec) = cell.as_any_mut().downcast_mut::<ExecCell>() {
+                 exec.freeze_snapshot();
 diff --git a/codex-rs/tui/src/chatwidget/command_lifecycle.rs b/codex-rs/tui/src/chatwidget/command_lifecycle.rs
-index a0533b315..c09f77ef4 100644
+index a0533b315..641b244b8 100644
 --- a/codex-rs/tui/src/chatwidget/command_lifecycle.rs
 +++ b/codex-rs/tui/src/chatwidget/command_lifecycle.rs
 @@ -3,8 +3,12 @@
@@ -9722,6 +9982,17 @@ index a0533b315..c09f77ef4 100644
          if self.suppressed_exec_calls.remove(&id) {
              return;
          }
+@@ -398,6 +545,10 @@ impl ChatWidget {
+                     ExecEndTarget::OrphanHistoryWhileActiveExec
+                 }
+                 None if cell.as_any().is::<McpToolCallCell>()
++                    || cell
++                        .as_any()
++                        .downcast_ref::<history_cell::RetainedToolCallCell>()
++                        .is_some_and(history_cell::RetainedToolCallCell::is_active)
+                     || cell
+                         .as_any()
+                         .downcast_ref::<history_cell::ComputerActivityCell>()
 diff --git a/codex-rs/tui/src/chatwidget/constructor.rs b/codex-rs/tui/src/chatwidget/constructor.rs
 index 05dde949e..da72cc15b 100644
 --- a/codex-rs/tui/src/chatwidget/constructor.rs
@@ -9743,11 +10014,42 @@ index 05dde949e..da72cc15b 100644
              current_goal_status: None,
              external_editor_state: ExternalEditorState::Closed,
              last_rendered_user_message_display: None,
+diff --git a/codex-rs/tui/src/chatwidget/dynamic_activity.rs b/codex-rs/tui/src/chatwidget/dynamic_activity.rs
+index 348031a32..9c8b94604 100644
+--- a/codex-rs/tui/src/chatwidget/dynamic_activity.rs
++++ b/codex-rs/tui/src/chatwidget/dynamic_activity.rs
+@@ -50,5 +50,14 @@ impl ChatWidget {
+         for (_, cell) in self.transcript.dynamic_calls.drain() {
+             cell.mark_interrupted();
+         }
++        // Keep interrupted handles so late results update their original retained row.
++        for cell in self
++            .transcript
++            .mcp_calls
++            .values()
++            .chain(self.transcript.web_calls.values())
++        {
++            cell.mark_interrupted();
++        }
+     }
+ }
 diff --git a/codex-rs/tui/src/chatwidget/session_flow.rs b/codex-rs/tui/src/chatwidget/session_flow.rs
-index 6077a0f9e..b473b669d 100644
+index 6077a0f9e..6c512af77 100644
 --- a/codex-rs/tui/src/chatwidget/session_flow.rs
 +++ b/codex-rs/tui/src/chatwidget/session_flow.rs
-@@ -109,6 +109,7 @@ impl ChatWidget {
+@@ -60,6 +60,11 @@ impl ChatWidget {
+         self.permission_discovery = None;
+         self.permission_profiles_menu_opened = false;
+         self.transcript.reset_copy_history();
++        if self.thread_id != Some(session.thread_id) {
++            self.finish_dynamic_activity();
++            self.transcript.mcp_calls.clear();
++            self.transcript.web_calls.clear();
++        }
+         let history_metadata = session.message_history.unwrap_or_default();
+         self.bottom_pane.set_history_metadata(
+             session.thread_id,
+@@ -109,6 +114,7 @@ impl ChatWidget {
          self.clear_safety_buffering();
          self.thread_name = session.thread_name.clone();
          self.current_goal_status_indicator = None;
@@ -9755,15 +10057,18 @@ index 6077a0f9e..b473b669d 100644
          self.current_goal_status = None;
          self.update_collaboration_mode_indicator();
          self.forked_from = session.forked_from_id;
-@@ -330,6 +331,8 @@ impl ChatWidget {
+@@ -330,7 +336,11 @@ impl ChatWidget {
          self.turn_lifecycle.reset_thread();
          self.review = Default::default();
          self.transcript.take_active_cell();
 +        self.managed_shells.clear();
 +        self.publish_shell_hud();
          self.transcript.reset_copy_history();
++        self.transcript.mcp_calls.clear();
++        self.transcript.web_calls.clear();
          self.transcript.reset_turn_flags();
          for turn in retained_turns {
+             let mut replaying_delegation = false;
 diff --git a/codex-rs/tui/src/chatwidget/settings.rs b/codex-rs/tui/src/chatwidget/settings.rs
 index b0b9674c6..a0095018b 100644
 --- a/codex-rs/tui/src/chatwidget/settings.rs
@@ -11259,6 +11564,402 @@ index abf13c778..3f7487966 100644
  }
  
  #[tokio::test]
+diff --git a/codex-rs/tui/src/chatwidget/tests/tool_activity_tests.rs b/codex-rs/tui/src/chatwidget/tests/tool_activity_tests.rs
+index 4638d46b8..645d1a51a 100644
+--- a/codex-rs/tui/src/chatwidget/tests/tool_activity_tests.rs
++++ b/codex-rs/tui/src/chatwidget/tests/tool_activity_tests.rs
+@@ -1,5 +1,229 @@
+ use super::*;
+ 
++fn parallel_mcp_item(id: &str, failed: bool) -> AppServerThreadItem {
++    serde_json::from_value(json!({
++        "type": "mcpToolCall", "id": id, "server": "test", "tool": id,
++        "status": if failed { "failed" } else { "completed" }, "arguments": {},
++        "result": {"content": [{"type": "text", "text": format!("result-{id}")}]},
++        "durationMs": 5
++    }))
++    .unwrap()
++}
++
++fn start_parallel_mcp(chat: &mut ChatWidget, id: &str) {
++    let mut item = parallel_mcp_item(id, false);
++    if let AppServerThreadItem::McpToolCall { status, result, .. } = &mut item {
++        *status = codex_app_server_protocol::McpToolCallStatus::InProgress;
++        *result = None;
++    }
++    chat.on_mcp_tool_call_started(item);
++}
++
++#[tokio::test]
++async fn interrupted_parallel_tools_settle_once_even_with_late_results() {
++    for interrupted in [false, true] {
++        let (mut chat, mut rx, _ops) = make_chatwidget_manual(None).await;
++        drain_insert_history(&mut rx);
++        start_parallel_mcp(&mut chat, "mcp");
++        chat.on_web_search_begin("web".into());
++        if interrupted {
++            chat.finalize_turn();
++        } else {
++            chat.on_task_complete(None, None, false);
++        }
++        let cells = std::iter::from_fn(|| rx.try_recv().ok())
++            .filter_map(|event| {
++                if let AppEvent::InsertHistoryCell(cell) = event {
++                    Some(cell)
++                } else {
++                    None
++                }
++            })
++            .collect::<Vec<_>>();
++        assert_eq!(cells.len(), 2);
++        let text = cells
++            .iter()
++            .map(|cell| lines_to_single_string(&cell.raw_lines()))
++            .collect::<String>();
++        assert!(
++            !text.contains("Calling") && !text.contains("Browsing"),
++            "{text}"
++        );
++        assert!(
++            text.contains("interrupted") && text.contains("Interrupted web search"),
++            "{text}"
++        );
++        chat.on_mcp_tool_call_completed(parallel_mcp_item("mcp", false));
++        chat.on_web_search_end(
++            "web".into(),
++            "late".into(),
++            codex_app_server_protocol::WebSearchAction::Other,
++        );
++        assert!(drain_insert_history(&mut rx).is_empty());
++        assert!(chat.transcript.mcp_calls.is_empty());
++        assert!(chat.transcript.web_calls.is_empty());
++        let completed = cells
++            .iter()
++            .map(|cell| lines_to_single_string(&cell.raw_lines()))
++            .collect::<String>();
++        assert_eq!(completed.matches("result-mcp").count(), 1, "{completed}");
++        assert!(
++            completed.contains("Searched the web for late"),
++            "{completed}"
++        );
++        assert!(
++            !completed.contains("interrupted") && !completed.contains("Interrupted"),
++            "{completed}"
++        );
++    }
++}
++
++#[tokio::test]
++async fn parallel_mcp_and_web_completion_preserves_running_shell_and_dynamic_output() {
++    let (mut chat, mut rx, _ops) = make_chatwidget_manual(None).await;
++    drain_insert_history(&mut rx);
++    chat.on_task_started();
++    start_parallel_mcp(&mut chat, "mcp");
++    chat.on_web_search_begin("web".into());
++    let dynamic = |status: &str| {
++        serde_json::from_value(json!({
++            "type": "dynamicToolCall", "id": "dynamic", "tool": "dynamic", "arguments": {},
++            "status": status, "contentItems": [{"type": "inputText", "text": "dynamic-result"}]
++        }))
++        .unwrap()
++    };
++    chat.on_dynamic_tool_item(dynamic("inProgress"));
++    begin_exec(&mut chat, "shell", "sleep 1");
++    let shell_id = chat.transcript.active_cell.as_ref().unwrap() as *const _;
++    chat.on_mcp_tool_call_completed(parallel_mcp_item("mcp", false));
++    chat.on_web_search_end(
++        "web".into(),
++        "query".into(),
++        codex_app_server_protocol::WebSearchAction::Other,
++    );
++    assert_eq!(
++        shell_id,
++        chat.transcript.active_cell.as_ref().unwrap() as *const _
++    );
++    chat.on_dynamic_tool_item(dynamic("completed"));
++    chat.finalize_turn();
++    let text = drain_insert_history(&mut rx)
++        .iter()
++        .map(|lines| lines_to_single_string(lines))
++        .collect::<String>();
++    assert!(
++        !text.contains("Calling") && !text.contains("Browsing"),
++        "{text}"
++    );
++    assert_eq!(text.matches("result-mcp").count(), 1);
++    assert_eq!(text.matches("dynamic-result").count(), 1);
++}
++
++#[tokio::test]
++async fn parallel_mcp_rows_settle_original_calls_in_either_order() {
++    for mode in [
++        crate::transcript_mode::TranscriptMode::Terminal,
++        crate::transcript_mode::TranscriptMode::Owned,
++    ] {
++        for ids in [["first", "second"], ["second", "first"]] {
++            let (mut chat, mut rx, _ops) = make_chatwidget_manual(None).await;
++            chat.local_settings.transcript_mode = mode;
++            drain_insert_history(&mut rx);
++            start_parallel_mcp(&mut chat, "first");
++            start_parallel_mcp(&mut chat, "second");
++            let mut cells = std::iter::from_fn(|| rx.try_recv().ok())
++                .filter_map(|event| {
++                    if let AppEvent::InsertHistoryCell(cell) = event {
++                        Some(cell)
++                    } else {
++                        None
++                    }
++                })
++                .collect::<Vec<_>>();
++            for id in ids {
++                chat.on_mcp_tool_call_completed(parallel_mcp_item(id, id == "second"));
++            }
++            cells.extend(
++                std::iter::from_fn(|| rx.try_recv().ok()).filter_map(|event| {
++                    if let AppEvent::InsertHistoryCell(cell) = event {
++                        Some(cell)
++                    } else {
++                        None
++                    }
++                }),
++            );
++            let text = cells
++                .iter()
++                .map(|cell| lines_to_single_string(&cell.raw_lines()))
++                .collect::<String>();
++            assert!(!text.contains("Calling"), "{mode:?}: {text}");
++            assert_eq!(cells.len(), 2, "{text}");
++            for id in ["first", "second"] {
++                assert_eq!(text.matches(&format!("result-{id}")).count(), 1, "{text}");
++            }
++        }
++    }
++}
++
++#[tokio::test]
++async fn parallel_web_and_mcp_rows_settle_original_calls() {
++    for order in [false, true] {
++        let (mut chat, mut rx, _ops) = make_chatwidget_manual(None).await;
++        drain_insert_history(&mut rx);
++        chat.on_web_search_begin("web-1".into());
++        start_parallel_mcp(&mut chat, "mcp");
++        chat.on_web_search_begin("web-2".into());
++        let mut cells = std::iter::from_fn(|| rx.try_recv().ok())
++            .filter_map(|event| {
++                if let AppEvent::InsertHistoryCell(cell) = event {
++                    Some(cell)
++                } else {
++                    None
++                }
++            })
++            .collect::<Vec<_>>();
++        let complete_web = |chat: &mut ChatWidget, id: &str| {
++            chat.on_web_search_end(
++                id.into(),
++                format!("query-{id}"),
++                codex_app_server_protocol::WebSearchAction::Search {
++                    query: Some(format!("query-{id}")),
++                    queries: None,
++                },
++            )
++        };
++        if order {
++            complete_web(&mut chat, "web-2");
++        }
++        chat.on_mcp_tool_call_completed(parallel_mcp_item("mcp", false));
++        complete_web(&mut chat, "web-1");
++        if !order {
++            complete_web(&mut chat, "web-2");
++        }
++        cells.extend(
++            std::iter::from_fn(|| rx.try_recv().ok()).filter_map(|event| {
++                if let AppEvent::InsertHistoryCell(cell) = event {
++                    Some(cell)
++                } else {
++                    None
++                }
++            }),
++        );
++        let text = cells
++            .iter()
++            .map(|cell| lines_to_single_string(&cell.raw_lines()))
++            .collect::<String>();
++        assert!(
++            !text.contains("Calling") && !text.contains("Browsing"),
++            "{text}"
++        );
++        assert_eq!(cells.len(), 3, "{text}");
++        assert_eq!(text.matches("query-web-1").count(), 1);
++        assert_eq!(text.matches("query-web-2").count(), 1);
++        assert_eq!(text.matches("result-mcp").count(), 1);
++    }
++}
++
+ #[tokio::test]
+ async fn image_result_live_and_replay_render_in_the_owning_call() {
+     let item: AppServerThreadItem = serde_json::from_value(json!({
+diff --git a/codex-rs/tui/src/chatwidget/tool_lifecycle.rs b/codex-rs/tui/src/chatwidget/tool_lifecycle.rs
+index 135aabca8..8954701c0 100644
+--- a/codex-rs/tui/src/chatwidget/tool_lifecycle.rs
++++ b/codex-rs/tui/src/chatwidget/tool_lifecycle.rs
+@@ -68,12 +68,18 @@ impl ChatWidget {
+ 
+     pub(super) fn on_web_search_begin(&mut self, call_id: String) {
+         self.flush_answer_stream_with_separator();
++        if self.transcript.web_calls.contains_key(&call_id) {
++            return;
++        }
+         self.flush_active_cell();
+-        self.transcript.active_cell = Some(Box::new(history_cell::new_active_web_search_call(
+-            call_id,
+-            String::new(),
+-            self.local_settings.tui.animations && self.local_settings.tui.effects.progress,
+-        )));
++        let cell =
++            history_cell::RetainedToolCallCell::new(history_cell::new_active_web_search_call(
++                call_id.clone(),
++                String::new(),
++                self.local_settings.tui.animations && self.local_settings.tui.effects.progress,
++            ));
++        self.transcript.web_calls.insert(call_id, cell.clone());
++        self.transcript.active_cell = Some(Box::new(cell));
+         self.bump_active_cell_revision();
+         self.request_redraw();
+     }
+@@ -85,24 +91,25 @@ impl ChatWidget {
+         action: codex_app_server_protocol::WebSearchAction,
+     ) {
+         self.flush_answer_stream_with_separator();
+-        let mut handled = false;
+-        if let Some(cell) = self
+-            .transcript
+-            .active_cell
+-            .as_mut()
+-            .and_then(|cell| cell.as_any_mut().downcast_mut::<WebSearchCell>())
+-            && cell.call_id() == call_id
+-        {
+-            cell.update(action.clone(), query.clone());
+-            cell.complete();
++        if let Some(cell) = self.transcript.web_calls.remove(&call_id) {
++            let native_rendered = cell.finish(|cell| {
++                let cell = cell
++                    .as_any_mut()
++                    .downcast_mut::<WebSearchCell>()
++                    .expect("web call");
++                cell.update(action, query);
++                cell.complete();
++            });
++            if native_rendered {
++                self.app_event_tx
++                    .send(AppEvent::RefreshRetainedToolCall(cell));
++            }
+             self.bump_active_cell_revision();
+-            self.flush_active_cell();
+-            handled = true;
+-        }
+-
+-        if !handled {
++            self.flush_retained_tool_call(&format!("web:{call_id}"));
++        } else {
+             self.add_to_history(history_cell::new_web_search_call(call_id, query, action));
+         }
++        self.request_redraw();
+     }
+ 
+     pub(super) fn on_collab_event(&mut self, cell: PlainHistoryCell) {
+@@ -202,12 +209,17 @@ impl ChatWidget {
+             self.request_redraw();
+             return;
+         }
++        if self.transcript.mcp_calls.contains_key(&id) {
++            return;
++        }
+         self.flush_active_cell();
+-        self.transcript.active_cell = Some(Box::new(history_cell::new_active_mcp_tool_call(
+-            id,
++        let cell = history_cell::RetainedToolCallCell::new(history_cell::new_active_mcp_tool_call(
++            id.clone(),
+             invocation,
+             self.local_settings.tui.animations && self.local_settings.tui.effects.progress,
+-        )));
++        ));
++        self.transcript.mcp_calls.insert(id, cell.clone());
++        self.transcript.active_cell = Some(Box::new(cell));
+         self.bump_active_cell_revision();
+         self.request_redraw();
+     }
+@@ -237,26 +249,38 @@ impl ChatWidget {
+             return;
+         }
+ 
+-        match self
+-            .transcript
+-            .active_cell
+-            .as_mut()
+-            .and_then(|cell| cell.as_any_mut().downcast_mut::<McpToolCallCell>())
+-        {
+-            Some(cell) if cell.call_id() == id => cell.complete(duration, result),
+-            _ => {
+-                self.flush_active_cell();
+-                let mut cell = history_cell::new_active_mcp_tool_call(
+-                    id,
+-                    invocation,
+-                    self.local_settings.tui.animations && self.local_settings.tui.effects.progress,
+-                );
+-                cell.complete(duration, result);
+-                self.transcript.active_cell = Some(Box::new(cell));
++        if let Some(cell) = self.transcript.mcp_calls.remove(&id) {
++            let native_rendered = cell.finish(|cell| {
++                cell.as_any_mut()
++                    .downcast_mut::<McpToolCallCell>()
++                    .expect("MCP call")
++                    .complete(duration, result);
++            });
++            if native_rendered {
++                self.app_event_tx
++                    .send(AppEvent::RefreshRetainedToolCall(cell));
+             }
+-        };
++            self.bump_active_cell_revision();
++            self.flush_retained_tool_call(&format!("mcp:{id}"));
++        } else {
++            let mut cell = history_cell::new_active_mcp_tool_call(
++                id,
++                invocation,
++                self.local_settings.tui.animations && self.local_settings.tui.effects.progress,
++            );
++            cell.complete(duration, result);
++            self.add_to_history(cell);
++        }
++        self.request_redraw();
++    }
+ 
+-        self.flush_active_cell();
++    fn flush_retained_tool_call(&mut self, activity_id: &str) {
++        if self.transcript.active_cell.as_ref().is_some_and(|cell| {
++            cell.as_any().is::<history_cell::RetainedToolCallCell>()
++                && cell.activity_ids().iter().any(|id| id == activity_id)
++        }) {
++            self.flush_active_cell();
++        }
+     }
+ 
+     /// Preserve pending calls and timers, returning the revisions before and after hydration.
+diff --git a/codex-rs/tui/src/chatwidget/transcript.rs b/codex-rs/tui/src/chatwidget/transcript.rs
+index f055cd1b7..0946144be 100644
+--- a/codex-rs/tui/src/chatwidget/transcript.rs
++++ b/codex-rs/tui/src/chatwidget/transcript.rs
+@@ -37,6 +37,10 @@ pub(super) struct TranscriptState {
+     /// Shared retained rows for concurrently running dynamic tools, removed on completion.
+     pub(super) dynamic_calls:
+         std::collections::HashMap<String, crate::history_cell::DynamicToolCallCell>,
++    pub(super) mcp_calls:
++        std::collections::HashMap<String, crate::history_cell::RetainedToolCallCell>,
++    pub(super) web_calls:
++        std::collections::HashMap<String, crate::history_cell::RetainedToolCallCell>,
+     /// Monotonic-ish counter used to invalidate transcript overlay caching.
+     pub(super) active_cell_revision: u64,
+     /// One bounded entry shared by layout and paint across unchanged active-cell frames.
 diff --git a/codex-rs/tui/src/exec_cell/advisor.rs b/codex-rs/tui/src/exec_cell/advisor.rs
 new file mode 100644
 index 000000000..07dc951bd
@@ -11605,6 +12306,241 @@ index 000000000..47fc7f8f5
 +expression: text(&cell)
 +---
 +• Advised on task · 4:12
+diff --git a/codex-rs/tui/src/history_cell/mod.rs b/codex-rs/tui/src/history_cell/mod.rs
+index ac39aef42..c265e79a4 100644
+--- a/codex-rs/tui/src/history_cell/mod.rs
++++ b/codex-rs/tui/src/history_cell/mod.rs
+@@ -115,6 +115,7 @@ mod notices;
+ mod patches;
+ mod plans;
+ mod request_user_input;
++mod retained_tool;
+ mod search;
+ mod separators;
+ mod session;
+@@ -137,6 +138,7 @@ pub(crate) use notices::*;
+ pub(crate) use patches::*;
+ pub(crate) use plans::*;
+ pub(crate) use request_user_input::*;
++pub(crate) use retained_tool::RetainedToolCallCell;
+ pub(crate) use search::*;
+ pub(crate) use separators::*;
+ pub(crate) use session::*;
+diff --git a/codex-rs/tui/src/history_cell/retained_tool.rs b/codex-rs/tui/src/history_cell/retained_tool.rs
+new file mode 100644
+index 000000000..ad541169c
+--- /dev/null
++++ b/codex-rs/tui/src/history_cell/retained_tool.rs
+@@ -0,0 +1,147 @@
++//! Shared rows keep overlapping MCP and web completions attached to their original call.
++
++use super::*;
++use std::sync::Arc;
++use std::sync::RwLock;
++
++#[derive(Clone, Debug)]
++pub(crate) struct RetainedToolCallCell {
++    data: Arc<RwLock<RetainedToolCallData>>,
++}
++
++#[derive(Debug)]
++struct RetainedToolCallData {
++    cell: Box<dyn HistoryCell>,
++    active: bool,
++    native_rendered: bool,
++}
++
++impl RetainedToolCallCell {
++    pub(crate) fn new(cell: impl HistoryCell + 'static) -> Self {
++        Self {
++            data: Arc::new(RwLock::new(RetainedToolCallData {
++                cell: Box::new(cell),
++                active: true,
++                native_rendered: false,
++            })),
++        }
++    }
++
++    pub(crate) fn is_active(&self) -> bool {
++        self.data
++            .read()
++            .unwrap_or_else(std::sync::PoisonError::into_inner)
++            .active
++    }
++
++    /// Return whether native scrollback already needs a correction for this row.
++    pub(crate) fn finish(&self, update: impl FnOnce(&mut dyn HistoryCell)) -> bool {
++        let mut data = self
++            .data
++            .write()
++            .unwrap_or_else(std::sync::PoisonError::into_inner);
++        let native_rendered = data.native_rendered;
++        update(data.cell.as_mut());
++        data.active = false;
++        data.native_rendered = false;
++        native_rendered
++    }
++
++    pub(crate) fn mark_interrupted(&self) {
++        if !self.is_active() {
++            return;
++        }
++        self.finish(|cell| {
++            if let Some(cell) = cell.as_any_mut().downcast_mut::<McpToolCallCell>() {
++                cell.mark_failed();
++            } else if let Some(cell) = cell.as_any_mut().downcast_mut::<WebSearchCell>() {
++                cell.mark_interrupted();
++            }
++        });
++    }
++
++    pub(crate) fn mark_native_rendered(&self) {
++        self.data
++            .write()
++            .unwrap_or_else(std::sync::PoisonError::into_inner)
++            .native_rendered = true;
++    }
++
++    pub(crate) fn shares_state_with(&self, other: &Self) -> bool {
++        Arc::ptr_eq(&self.data, &other.data)
++    }
++
++    pub(crate) fn freeze_snapshot(&self) {
++        let mut data = self
++            .data
++            .write()
++            .unwrap_or_else(std::sync::PoisonError::into_inner);
++        if let Some(cell) = data.cell.as_any_mut().downcast_mut::<McpToolCallCell>() {
++            cell.freeze_snapshot();
++        } else if let Some(cell) = data.cell.as_any_mut().downcast_mut::<WebSearchCell>() {
++            cell.freeze_snapshot();
++        }
++    }
++
++    fn with_cell<T>(&self, f: impl FnOnce(&dyn HistoryCell) -> T) -> T {
++        let data = self
++            .data
++            .read()
++            .unwrap_or_else(std::sync::PoisonError::into_inner);
++        f(data.cell.as_ref())
++    }
++}
++
++impl HistoryCell for RetainedToolCallCell {
++    fn has_stable_transcript_height(&self) -> bool {
++        false
++    }
++
++    fn activity_ids(&self) -> Vec<String> {
++        self.with_cell(|cell| cell.activity_ids())
++    }
++
++    fn display_lines(&self, width: u16) -> Vec<Line<'static>> {
++        self.with_cell(|cell| cell.display_lines(width))
++    }
++
++    fn compact_hyperlink_lines(&self, width: u16) -> Vec<HyperlinkLine> {
++        self.with_cell(|cell| cell.compact_hyperlink_lines(width))
++    }
++
++    fn retained_hyperlink_lines(&self, width: u16, detailed: bool) -> Vec<HyperlinkLine> {
++        self.with_cell(|cell| cell.retained_hyperlink_lines(width, detailed))
++    }
++
++    fn expanded_hyperlink_lines(&self, width: u16) -> Vec<HyperlinkLine> {
++        self.with_cell(|cell| cell.expanded_hyperlink_lines(width))
++    }
++
++    fn activity_disclosure(&self, width: u16) -> Option<ActivityDisclosure> {
++        self.with_cell(|cell| cell.activity_disclosure(width))
++    }
++
++    fn display_hyperlink_lines(&self, width: u16) -> Vec<HyperlinkLine> {
++        self.with_cell(|cell| cell.display_hyperlink_lines(width))
++    }
++
++    fn transcript_lines(&self, width: u16) -> Vec<Line<'static>> {
++        self.with_cell(|cell| cell.transcript_lines(width))
++    }
++
++    fn transcript_hyperlink_lines(&self, width: u16) -> Vec<HyperlinkLine> {
++        self.with_cell(|cell| cell.transcript_hyperlink_lines(width))
++    }
++
++    fn raw_lines(&self) -> Vec<Line<'static>> {
++        self.with_cell(|cell| cell.raw_lines())
++    }
++
++    fn live_raw_lines(&self) -> Vec<Line<'static>> {
++        self.with_cell(|cell| cell.live_raw_lines())
++    }
++
++    fn transcript_animation_tick(&self) -> Option<u64> {
++        self.with_cell(|cell| cell.transcript_animation_tick())
++    }
++}
+diff --git a/codex-rs/tui/src/history_cell/search.rs b/codex-rs/tui/src/history_cell/search.rs
+index e32ccd918..fb9d7eed7 100644
+--- a/codex-rs/tui/src/history_cell/search.rs
++++ b/codex-rs/tui/src/history_cell/search.rs
+@@ -43,6 +43,7 @@ pub(crate) struct WebSearchCell {
+     action: Option<WebSearchAction>,
+     start_time: Instant,
+     completed: bool,
++    interrupted: bool,
+     animations_enabled: bool,
+ }
+ 
+@@ -59,14 +60,11 @@ impl WebSearchCell {
+             action,
+             start_time: Instant::now(),
+             completed: false,
++            interrupted: false,
+             animations_enabled,
+         }
+     }
+ 
+-    pub(crate) fn call_id(&self) -> &str {
+-        &self.call_id
+-    }
+-
+     pub(crate) fn update(&mut self, action: WebSearchAction, query: String) {
+         self.action = Some(action);
+         self.query = query;
+@@ -74,9 +72,22 @@ impl WebSearchCell {
+ 
+     pub(crate) fn complete(&mut self) {
+         self.completed = true;
++        self.interrupted = false;
++    }
++
++    pub(crate) fn freeze_snapshot(&mut self) {
++        self.animations_enabled = false;
++    }
++
++    pub(crate) fn mark_interrupted(&mut self) {
++        self.completed = true;
++        self.interrupted = true;
+     }
+ 
+     fn summary(&self) -> Line<'static> {
++        if self.interrupted {
++            return Line::from("Interrupted web search".bold());
++        }
+         let detail = web_search_detail(self.action.as_ref(), &self.query);
+         let (header, separator) = match (&self.action, self.completed) {
+             (Some(WebSearchAction::OpenPage { .. }), completed) => (
+@@ -121,6 +132,10 @@ impl WebSearchCell {
+ }
+ 
+ impl HistoryCell for WebSearchCell {
++    fn activity_ids(&self) -> Vec<String> {
++        vec![format!("web:{}", self.call_id)]
++    }
++
+     fn display_lines(&self, width: u16) -> Vec<Line<'static>> {
+         let bullet = if self.completed {
+             "•".dim()
 diff --git a/codex-rs/tui/src/lib.rs b/codex-rs/tui/src/lib.rs
 index a3fb5447b..bfbccfea6 100644
 --- a/codex-rs/tui/src/lib.rs
