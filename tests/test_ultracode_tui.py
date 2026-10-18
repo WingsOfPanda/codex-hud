@@ -182,7 +182,26 @@ def run_case(binary, root_directory, evidence, bootstrap, *, empty=False, unqual
                 assert " high ultracode · " in badge[0], badge[0]
                 assert badge[0].lower().count("ultracode") == 1, badge[0]
         (evidence / "on-draft-screen.txt").write_text(terminal.text + "\n")
+        reason = "Message history confirmation unavailable; input was accepted."
+        projection_path = home / "codex-plus/ultracode" / f"{root}.json"
+        if not empty and not unqualified:
+            confirmed = json.loads(projection_path.read_text())
+            unresolved = dict(confirmed, effective=None, availability="unavailable",
+                              unavailable_reason=reason)
+            temporary = projection_path.with_suffix(".tmp")
+            temporary.write_text(json.dumps(unresolved))
+            temporary.replace(projection_path)
+            wait([terminal], lambda: any("ultracode unavailable" in line.lower()
+                 for line in footer(terminal)), "unresolved mode confirmation stayed pending")
         command("status")
+        if not empty and not unqualified:
+            wait([terminal], lambda: "Message history confirmation unavailable" in terminal.text,
+                 "status hid the mode confirmation failure reason")
+            (evidence / "unavailable-screen.txt").write_text(terminal.text + "\n")
+            temporary.write_text(json.dumps(confirmed))
+            temporary.replace(projection_path)
+            wait([terminal], lambda: not any("ultracode unavailable" in line.lower()
+                 for line in footer(terminal)), "recovered confirmation retained unavailable badge")
         command("off")
         if not unqualified:
             wait([terminal], lambda: "Ultracode off pending" in terminal.text, "off request lost pending acknowledgement")

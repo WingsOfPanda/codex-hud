@@ -43,6 +43,13 @@ specific read error, with a short bounded delay. It never resubmits the message 
 accepts a different turn. If confirmation still fails, the admission warning and
 unresolved input remain for review.
 
+Ultracode also needs the turn's initial user message to confirm its mode. A
+temporary `list_items is not supported yet` response gets the same bounded read
+retry. If mode confirmation fails, the accepted message stays accepted and the
+status shows `Ultracode unavailable`; `/ultracode status` explains the failure and
+can recover once the history is readable. An already-confirmed turn keeps its
+original mode through steering. Neither confirmation path resends user input.
+
 Plus stores the complete original startup developer instructions privately and
 restores them on qualified cold loads. This preserves both the bootstrap and
 existing custom instructions through later compaction. Status and HUD projections

@@ -293,6 +293,100 @@ class RuntimeAcceptance(unittest.TestCase):
                     self.assertEqual(status['pending_input']['submission_id'], submission)
                     self.assertIsNone(projection['effective'])
 
+    def test_ultracode_item_readiness_preserves_input_and_reports_unavailable(self):
+        unsupported = {'code': -32601, 'message': 'list_items is not supported yet'}
+        cases = [
+            ('recovers', {'error': unsupported}, 2, True),
+            ('persistent', {'error': unsupported}, 100, False),
+            ('wrong_code', {'error': dict(unsupported, code=-32603)}, 1, False),
+            ('other_error', {'error': dict(unsupported, message='permission denied')}, 1, False),
+            ('empty_items', {'result': {'data': [], 'nextCursor': None}}, 1, False),
+            ('foreign_item', {'result': {'data': [{'turnId': str(uuid.uuid4()),
+                'item': {'type': 'userMessage', 'clientId': str(uuid.uuid4())}}],
+                'nextCursor': None}}, 1, False),
+        ]
+        for label, response, failures, recovered in cases:
+            with self.subTest(label=label), self.fixture(label=label) as f:
+                f.env.pop('CODEX_THREAD_ID')
+                f.fake.parent_turns = []
+                result = subprocess.run([
+                    str(f.runtime), 'ultracode', 'provenance', '--thread', PARENT,
+                    '--load-kind', 'fresh', '--developer-instructions-stdin', '--json',
+                ], env=f.env, input=(REPO / 'docs/ultracode-bootstrap.txt').read_text(),
+                    capture_output=True, text=True, timeout=10)
+                self.assertEqual(result.returncode, 0, (result.stdout, result.stderr))
+                f.cli('ultracode', 'on', '--thread', PARENT, '--json')
+                submission, turn = str(uuid.uuid4()), str(uuid.uuid4())
+                f.cli('goal', 'input', '--thread', PARENT, '--submission-id', submission, '--json')
+                f.fake.parent_turns = [{'id': turn, 'status': 'inProgress'}]
+                f.fake.entries = [{'turnId': turn, 'item': {
+                    'type': 'userMessage', 'clientId': submission,
+                }}]
+                original_reply = f.server.reply
+                reads = []
+
+                def reply(method, params):
+                    if method == 'thread/items/list':
+                        reads.append(dict(params))
+                        if len(reads) <= failures:
+                            return response
+                    return original_reply(method, params)
+
+                f.server.reply = reply
+                before = len(f.server.requests)
+                started = time.monotonic()
+                result = f.cli('goal', 'input-settle', '--thread', PARENT,
+                    '--submission-id', submission, '--turn', turn, '--accepted', '--json')
+                self.assertLess(time.monotonic() - started, 3)
+                self.assertIsNone(json.loads(result.stdout)['pending_input'])
+                projection_path = f.home / 'codex-plus/ultracode' / f'{PARENT}.json'
+                projection = json.loads(projection_path.read_text())
+                self.assertTrue(all(p['threadId'] == PARENT and p['turnId'] == turn for p in reads))
+                if recovered:
+                    self.assertEqual(result.stderr, '')
+                    self.assertEqual(len(reads), 3)
+                    self.assertEqual(projection['availability'], 'available')
+                    self.assertEqual(projection['effective']['submission'], submission)
+                    self.assertEqual(projection['effective']['turn'], turn)
+                else:
+                    self.assertEqual(projection['availability'], 'unavailable')
+                    self.assertTrue(projection['unavailable_reason'])
+                    self.assertIsNone(projection['effective'])
+                    self.assertEqual(projection['instructions'], '')
+                    self.assertIn(submission, [p['submission'] for p in projection['pending']])
+                    if label == 'persistent':
+                        self.assertGreater(len(reads), 1)
+                        self.assertLessEqual(len(reads), 6)
+                        # A status read must not conceal the still-unresolved error.
+                        status = json.loads(f.cli('ultracode', 'status', '--thread', PARENT, '--json').stdout)
+                        self.assertEqual(status['availability'], 'unavailable')
+                        self.assertIn(unsupported['message'], status['unavailable_reason'])
+                    else:
+                        self.assertEqual(len(reads), 1)
+                self.assertTrue(all(r.get('method') in (
+                    'initialize', 'initialized', 'thread/read', 'thread/turns/list', 'thread/items/list',
+                ) for r in f.server.requests[before:]), 'mode confirmation replayed a mutation')
+                f.server.reply = original_reply
+                status = json.loads(f.cli('ultracode', 'status', '--thread', PARENT, '--json').stdout)
+                self.assertEqual(status['availability'], 'available')
+                self.assertNotIn('unavailable_reason', status)
+                self.assertEqual(status['effective']['submission'], submission)
+                self.assertEqual(status['effective']['turn'], turn)
+                self.assertTrue(status['effective']['enabled'])
+                self.assertEqual(status['pending'], [])
+                # Steering a confirmed turn must retain its original mode without rereading items.
+                f.cli('ultracode', 'off', '--thread', PARENT, '--json')
+                steer = str(uuid.uuid4())
+                f.cli('goal', 'input', '--thread', PARENT, '--submission-id', steer, '--json')
+                reads.clear()
+                f.server.reply = reply
+                f.cli('goal', 'input-settle', '--thread', PARENT, '--submission-id', steer,
+                    '--turn', turn, '--accepted', '--json')
+                self.assertEqual(reads, [])
+                projection = json.loads(projection_path.read_text())
+                self.assertEqual(projection['availability'], 'available')
+                self.assertEqual(projection['effective'], status['effective'])
+
     def test_exact_worker_process_ids_and_python_reopen_deduplicate(self):
         with self.fixture() as f:
             f.fake.running = [{'processId': '23091', 'itemId': 'command-item'}]
