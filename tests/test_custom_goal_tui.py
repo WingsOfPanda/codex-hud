@@ -106,8 +106,9 @@ def restart_recovery(binary, runtime, stock, evidence):
              and f.provider.count == before + 1 and 'Goal needs input' in terminal.text,
              'cold TUI resume did not restore observation and report-only recovery', 30)
         wait_server(lambda: f.thread()['status']['type'] == 'idle', 'recovery report did not finish')
-        snapshot = f.goal()
-        assert snapshot['report_barrier'] == 1 and snapshot['report_delivered'] == 1, snapshot
+        snapshot = wait_server(lambda: (state := f.goal())['report_delivered'] == 1 and state,
+                               'recovered report admission was not positively attributed', timeout=8)
+        assert snapshot['report_barrier'] == 1, snapshot
         assert snapshot['goal']['state'] == 'needs_input', snapshot
         report = f.goal('history')['dispatches']
         assert len(report) == 1 and report[0]['kind'] == 'report', report

@@ -127,6 +127,14 @@ old goal. Independently, the stock managed daemon may resume an already-admitted
 interrupted turn before Plus reconnects. Report-first ordering is not guaranteed
 for that stock recovery. This exception does not permit new Plus continuations.
 
+An acknowledged entry can leave the stock queue before its user message becomes
+visible in history. The coordinator allows five seconds from the actual
+acknowledgement/start transition for local metadata reconciliation, without
+resubmitting or calling the model. Expiry or lost acknowledgement remains
+uncertain. Recovery also blocks model goal mutations before a report is prepared;
+only a positively accepted ordinary input at the current epoch or an explicit
+host goal action can authorize renewed direction.
+
 Unknown ownership, job outcome, isolation or delivery becomes `Goal needs input`
 with a reason. Temporary transport errors retry locally. Preserve the ledger;
 inspect goal and park status, reconcile positive evidence and ask for direction

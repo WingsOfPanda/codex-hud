@@ -23,6 +23,15 @@ and terminal-fixture checks passed 40, 11, 11 and 18 tests respectively; both
 upstream UI scenarios passed. Preserved failed runs and their fixes are recorded
 in the evidence, including the final independent-callback/EOS regression.
 
+Subsequent ARM release qualification exposed an acknowledged queue-to-history
+visibility gap. Its deterministic regression went red before the fix; additional
+root checks passed 120 Rust tests and the pre-report recovery-barrier stock case.
+Goal fixtures wait for positive attribution rather than equating provider/Idle
+visibility with coordinator acknowledgement. The advisor fixture retains its
+narrow live checks and restores normal height for completed transcript history.
+The release companion note records the final per-target archive reruns; the
+earlier source evidence does not qualify those new archive bytes.
+
 ```sh
 cargo +1.99.1 test --locked --release --manifest-path rust-runtime/Cargo.toml --lib
 python3 tests/test_custom_goals_stock.py --runtime /absolute/candidate/runtime \

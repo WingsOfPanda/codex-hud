@@ -24,6 +24,43 @@ mod tests {
         let store = Store::open(home.path()).unwrap();
         (home, store, Uuid::new_v4().to_string())
     }
+    #[test]
+    fn settlement_time_tracks_acknowledgement_and_start_not_intent_creation() {
+        let (home, mut store, root) = fixture();
+        let snapshot = store
+            .goal_start(&root, "settle exactly once", None, false, 1.0)
+            .unwrap();
+        let dispatch = store
+            .goal_intent(&root, &snapshot, "continue", "frozen payload", 2.0)
+            .unwrap()
+            .unwrap();
+        let id = dispatch["id"].as_str().unwrap();
+        store.goal_claim_dispatch(id).unwrap().unwrap();
+        assert_eq!(
+            store
+                .goal_dispatch_result(id, "pending", Some("queue"), None, None, 10.0)
+                .unwrap()["settlement_started"],
+            10.0
+        );
+        assert_eq!(
+            store
+                .goal_dispatch_result(id, "pending", Some("queue"), None, None, 20.0)
+                .unwrap()["settlement_started"],
+            10.0
+        );
+        assert_eq!(
+            store
+                .goal_dispatch_result(id, "starting", Some("queue"), None, None, 30.0)
+                .unwrap()["settlement_started"],
+            30.0
+        );
+        drop(store);
+        let mut store = Store::open(home.path()).unwrap();
+        assert_eq!(
+            store.goal_dispatches(&root).unwrap()[0]["settlement_started"],
+            30.0
+        );
+    }
     fn start(s: &mut Store, root: &str) -> Value {
         s.goal_start(root, "Verify the requested result", None, false, 0.0)
             .unwrap()
@@ -1448,6 +1485,94 @@ mod tests {
     }
 
     #[test]
+    fn a_recovery_barrier_blocks_model_mutations_before_a_report_is_prepared() {
+        let (_home, mut store, root) = fixture();
+        start(&mut store, &root);
+        let old_input = Uuid::new_v4().to_string();
+        store
+            .goal_input_submission(&root, &old_input, false, 1.0)
+            .unwrap();
+        store
+            .goal_input_settle(
+                &root,
+                &old_input,
+                Some("preexisting-stock-turn"),
+                "accepted",
+                2.0,
+            )
+            .unwrap();
+        store.goal_recovery(&root, "report", "gap", 3.0).unwrap();
+        assert!(store.goal_dispatches(&root).unwrap().is_empty());
+        assert!(store.goal_model_mutation_blocked(&root).unwrap());
+        let failed_input = Uuid::new_v4().to_string();
+        store
+            .goal_input_submission(&root, &failed_input, false, 4.0)
+            .unwrap();
+        assert!(store.goal_model_mutation_blocked(&root).unwrap());
+        store
+            .goal_input_settle(&root, &failed_input, None, "failed", 5.0)
+            .unwrap();
+        assert!(store.goal_model_mutation_blocked(&root).unwrap());
+        let new_input = Uuid::new_v4().to_string();
+        store
+            .goal_input_submission(&root, &new_input, false, 6.0)
+            .unwrap();
+        store
+            .goal_input_settle(&root, &new_input, None, "uncertain", 7.0)
+            .unwrap();
+        assert!(store.goal_model_mutation_blocked(&root).unwrap());
+        store
+            .goal_input_settle(
+                &root,
+                &new_input,
+                Some("ordinary-user-turn"),
+                "accepted",
+                8.0,
+            )
+            .unwrap();
+        assert!(!store.goal_model_mutation_blocked(&root).unwrap());
+        let newer_input = Uuid::new_v4().to_string();
+        store
+            .goal_input_submission(&root, &newer_input, false, 9.0)
+            .unwrap();
+        assert!(store.goal_model_mutation_blocked(&root).unwrap());
+        assert_eq!(store.goal_status(&root).unwrap()["report_barrier"], 1);
+    }
+
+    #[test]
+    fn an_unattributed_submitted_report_cannot_authorize_model_mutations() {
+        let (_home, mut store, root) = fixture();
+        start(&mut store, &root);
+        store.goal_recovery(&root, "report", "gap", 1.0).unwrap();
+        let report = store
+            .test_goal_report_intent(&root, "REPORT ONLY", 2.0)
+            .unwrap()
+            .unwrap();
+        let id = report["id"].as_str().unwrap();
+        store.goal_claim_dispatch(id).unwrap().unwrap();
+        store
+            .goal_dispatch_result(id, "pending", Some("queue"), None, None, 3.0)
+            .unwrap();
+        assert!(store.goal_model_mutation_blocked(&root).unwrap());
+        let submission = Uuid::new_v4().to_string();
+        store
+            .goal_input_submission(&root, &submission, false, 4.0)
+            .unwrap();
+        assert!(store.goal_model_mutation_blocked(&root).unwrap());
+        store
+            .goal_input_settle(
+                &root,
+                &submission,
+                Some("actual-user-turn"),
+                "accepted",
+                5.0,
+            )
+            .unwrap();
+        assert!(!store.goal_model_mutation_blocked(&root).unwrap());
+        assert_eq!(store.goal_status(&root).unwrap()["report_barrier"], 1);
+    }
+
+    #[test]
     fn report_turn_renewal_requires_an_accepted_later_ordinary_user_receipt() {
         let (_home, mut s, root) = fixture();
         start(&mut s, &root);
@@ -1466,23 +1591,22 @@ mod tests {
         )
         .unwrap();
         s.goal_finalize(&root, "report-turn", true, 4.0).unwrap();
-        assert!(s.goal_report_turn_blocked(&root, "report-turn").unwrap());
-        assert!(!s.goal_report_turn_blocked(&root, "unrelated-turn").unwrap());
+        assert!(s.goal_model_mutation_blocked(&root).unwrap());
         s.execute(
             "UPDATE goal_roots SET input_epoch=input_epoch+1 WHERE root=?",
             &[json!(root)],
         )
         .unwrap();
-        assert!(s.goal_report_turn_blocked(&root, "report-turn").unwrap());
+        assert!(s.goal_model_mutation_blocked(&root).unwrap());
         let input = Uuid::new_v4().to_string();
         s.goal_input_submission(&root, &input, false, 5.0).unwrap();
-        assert!(s.goal_report_turn_blocked(&root, "report-turn").unwrap());
+        assert!(s.goal_model_mutation_blocked(&root).unwrap());
         s.goal_input_settle(&root, &input, None, "uncertain", 6.0)
             .unwrap();
-        assert!(s.goal_report_turn_blocked(&root, "report-turn").unwrap());
+        assert!(s.goal_model_mutation_blocked(&root).unwrap());
         s.goal_input_settle(&root, &input, Some("report-turn"), "accepted", 7.0)
             .unwrap();
-        assert!(!s.goal_report_turn_blocked(&root, "report-turn").unwrap());
+        assert!(!s.goal_model_mutation_blocked(&root).unwrap());
         assert_eq!(s.goal_status(&root).unwrap()["report_barrier"], 1);
     }
     #[test]
@@ -1793,6 +1917,9 @@ impl Store {
             ] { s.execute(sql,&[])?; }
             if !s.rows("PRAGMA table_info(goal_dispatches)",&[])?.iter().any(|r|r["name"]=="report_id") {
                 s.execute("ALTER TABLE goal_dispatches ADD COLUMN report_id TEXT",&[])?;
+            }
+            if !s.rows("PRAGMA table_info(goal_dispatches)",&[])?.iter().any(|r|r["name"]=="settlement_started") {
+                s.execute("ALTER TABLE goal_dispatches ADD COLUMN settlement_started REAL",&[])?;
             }
             if !s.rows("PRAGMA table_info(goal_roots)",&[])?.iter().any(|r|r["name"]=="pending_input") {
                 s.execute("ALTER TABLE goal_roots ADD COLUMN pending_input TEXT",&[])?;
@@ -2592,6 +2719,9 @@ impl Store {
             if let Some(q)=queue {ensure!(dispatch["queue"].is_null() || dispatch["queue"]==q,"queue identity changed");}
             if let Some(t)=accepted_turn {ensure!(dispatch["accepted_turn"].is_null() || dispatch["accepted_turn"]==t,"accepted turn identity changed");}
             s.execute("UPDATE goal_dispatches SET state=?,queue=COALESCE(queue,?),accepted_turn=COALESCE(accepted_turn,?),error=? WHERE id=?", &[json!(state),json!(queue),json!(accepted_turn),json!(error),json!(id)])?;
+            if matches!(state,"pending"|"starting") && dispatch["state"]!=state {
+                s.execute("UPDATE goal_dispatches SET settlement_started=? WHERE id=?",&[json!(now),json!(id)])?;
+            }
             if state=="accepted" && dispatch["kind"]=="report" {s.execute("UPDATE goal_roots SET report_delivered=1 WHERE root=? AND report_id=?", &[dispatch["root"].clone(),dispatch["report_id"].clone()])?;}
             if state=="uncertain" {s.execute("UPDATE goals SET state='needs_input',error=?,updated=? WHERE id=? AND current=1 AND revision=? AND state IN ('active','waiting')", &[json!(error.unwrap_or("Goal delivery outcome is uncertain")),json!(now),dispatch["goal"].clone(),dispatch["revision"].clone()])?;}
             let accepted=s.first("SELECT * FROM goal_dispatches WHERE id=?", &[json!(id)])?.unwrap();
@@ -2636,8 +2766,9 @@ impl Store {
         self.goal_publish(root)
     }
 
-    pub fn goal_report_turn_blocked(&mut self, root: &str, turn: &str) -> Result<bool> {
-        self.exists("SELECT 1 FROM goal_roots r JOIN goal_dispatches d ON d.root=r.root WHERE r.root=? AND r.report_barrier=1 AND d.kind='report' AND d.accepted_turn=? AND NOT EXISTS(SELECT 1 FROM goal_inputs i WHERE i.root=r.root AND i.state='accepted' AND i.input_epoch>d.input_epoch) LIMIT 1",&[json!(root),json!(turn)])
+    pub fn goal_model_mutation_blocked(&mut self, root: &str) -> Result<bool> {
+        // Recovery revokes old turn authority before a report is prepared or visible.
+        self.exists("SELECT 1 FROM goal_roots r WHERE r.root=? AND r.report_barrier=1 AND NOT EXISTS(SELECT 1 FROM goal_inputs i WHERE i.root=r.root AND i.state='accepted' AND i.input_epoch=r.input_epoch) LIMIT 1",&[json!(root)])
     }
 
     pub fn goal_report_jobs(&mut self, root: &str) -> Result<Vec<Value>> {

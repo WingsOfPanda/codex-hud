@@ -363,18 +363,10 @@ fn execute(args: &Arguments, package_root: &Path) -> Result<Value> {
     if !root(&meta["thread"], &parent) {
         bail!("custom goals require an interactive root thread");
     }
-    if model_context && store.goal_status(&parent)?["report_barrier"] == 1 {
-        let current = crate::background::goal_current_turn(&mut rpc, &parent)?;
-        if store.goal_report_turn_blocked(
-            &parent,
-            current["id"]
-                .as_str()
-                .context("current root turn unavailable")?,
-        )? {
-            bail!(
-                "a report-only model turn must report and wait; goal mutations require new user direction or an explicit host /goal action"
-            );
-        }
+    if model_context && store.goal_model_mutation_blocked(&parent)? {
+        bail!(
+            "a report-only model turn must report and wait; goal mutations require new user direction or an explicit host /goal action"
+        );
     }
     let timestamp = now();
     let result = match args.action.as_str() {

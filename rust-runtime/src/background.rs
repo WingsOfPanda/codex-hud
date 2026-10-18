@@ -25,6 +25,7 @@ use crate::upgrade::{exec_package, package_command, select_package};
 
 const MAX_PAGES: usize = 32;
 const HEARTBEAT_SECONDS: u64 = 5;
+const GOAL_SETTLEMENT_SECONDS: f64 = 5.0;
 const SOURCES: &[&str] = &[
     "subAgent",
     "subAgentThreadSpawn",
@@ -1069,6 +1070,9 @@ impl<'a> Observer<'a> {
                     )?;
                 }
             } else if dispatch["state"] == "submitting" || dispatch["state"] == "pending" {
+                if dispatch["state"] == "pending" && self.settle_goal_admission(&dispatch)? {
+                    continue;
+                }
                 self.store.goal_dispatch_result(
                     text(&dispatch, "id")?,
                     "uncertain",
@@ -1080,6 +1084,55 @@ impl<'a> Observer<'a> {
             }
         }
         Ok(())
+    }
+
+    fn settle_goal_admission(&mut self, dispatch: &Value) -> Result<bool> {
+        let Some(started) = dispatch["settlement_started"]
+            .as_f64()
+            .filter(|value| value.is_finite())
+        else {
+            return Ok(false);
+        };
+        if !dispatch["queue"].as_str().is_some_and(|id| !id.is_empty()) {
+            return Ok(false);
+        }
+        let elapsed = now() - started;
+        if !(0.0..GOAL_SETTLEMENT_SECONDS).contains(&elapsed) {
+            return Ok(false);
+        }
+        let deadline = Instant::now() + Duration::from_secs_f64(GOAL_SETTLEMENT_SECONDS - elapsed);
+        // Stock can consume an acknowledged queue entry before its user item is visible.
+        while let Some(remaining) = deadline.checked_duration_since(Instant::now()) {
+            std::thread::sleep(remaining.min(Duration::from_millis(50)));
+            let consumed = find_item(self, self.parent, None, |entry| {
+                entry["item"]["type"] == "userMessage"
+                    && entry["item"]["clientId"] == dispatch["client"]
+            });
+            let consumed = match consumed {
+                Ok(consumed) => consumed,
+                Err(error) => {
+                    self.store.goal_dispatch_result(
+                        text(dispatch, "id")?,
+                        "uncertain",
+                        None,
+                        None,
+                        Some("Acknowledged handoff reconciliation failed; no blind retry."),
+                        now(),
+                    )?;
+                    return Err(error);
+                }
+            };
+            if let Some(entry) = consumed {
+                self.store.goal_accept_dispatch(
+                    text(dispatch, "id")?,
+                    dispatch["queue"].as_str(),
+                    text(&entry, "turnId")?,
+                    now(),
+                )?;
+                return Ok(true);
+            }
+        }
+        Ok(false)
     }
 
     fn account_goal_turns(&mut self) -> Result<bool> {
@@ -1342,7 +1395,7 @@ impl<'a> Observer<'a> {
             return Ok(());
         }
         // Persist uncertainty before start; a lost start acknowledgement is never retried blindly.
-        self.store.goal_dispatch_result(
+        let started = self.store.goal_dispatch_result(
             text(&pending, "id")?,
             "starting",
             pending["queue"].as_str(),
@@ -1364,6 +1417,10 @@ impl<'a> Observer<'a> {
                 )?;
             }
             Err(error) => {
+                drop(_mutation_lock);
+                if self.settle_goal_admission(&started)? {
+                    return Ok(());
+                }
                 self.store.goal_dispatch_result(
                     text(&pending, "id")?,
                     "uncertain",
@@ -2171,6 +2228,279 @@ mod tests {
             unsafe { libc::flock(contender.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) },
             0
         );
+    }
+
+    fn delayed_goal_handoff(change: &'static str) -> (Value, Value, (usize, usize, usize)) {
+        use std::os::unix::net::UnixListener;
+        use tungstenite::Message;
+        let home = tempfile::tempdir().unwrap();
+        let parent = Uuid::new_v4().to_string();
+        let mut store = Store::open(home.path()).unwrap();
+        let snapshot = store
+            .goal_start(
+                &parent,
+                "settle the acknowledged submission",
+                None,
+                false,
+                now() - 3600.0,
+            )
+            .unwrap();
+        let dispatch = store
+            .goal_intent(
+                &parent,
+                &snapshot,
+                "continue",
+                "one frozen continuation",
+                now() - 3600.0,
+            )
+            .unwrap()
+            .unwrap();
+        let dispatch = store
+            .goal_claim_dispatch(text(&dispatch, "id").unwrap())
+            .unwrap()
+            .unwrap();
+        let client = dispatch["client"].clone();
+        let server_home = home.path().to_path_buf();
+        let server_parent = parent.clone();
+        let directory = home.path().join("app-server-control");
+        std::fs::create_dir(&directory).unwrap();
+        let listener = UnixListener::bind(directory.join("app-server-control.sock")).unwrap();
+        let server = std::thread::spawn(move || {
+            let mut store = Store::open(&server_home).unwrap();
+            let (socket, _) = listener.accept().unwrap();
+            socket
+                .set_read_timeout(Some(Duration::from_secs(5)))
+                .unwrap();
+            let mut socket = tungstenite::accept(socket).unwrap();
+            let mut adds = 0;
+            let mut reads = 0;
+            let mut starts = 0;
+            while let Ok(Message::Text(request)) = socket.read() {
+                let request: Value = serde_json::from_str(&request).unwrap();
+                if request["id"].is_null() {
+                    continue;
+                }
+                let result = match request["method"].as_str().unwrap() {
+                    "initialize" => json!({}),
+                    "thread/queue/add" => {
+                        adds += 1;
+                        json!({"queuedSubmission":{"id":"acknowledged-queue","clientUserMessageId":client}})
+                    }
+                    "thread/queue/start" => {
+                        starts += 1;
+                        socket.send(Message::text(json!({"id":request["id"],"error":{"code":-32600,"message":"Already consumed"}}).to_string())).unwrap();
+                        continue;
+                    }
+                    "thread/items/list" => {
+                        reads += 1;
+                        if reads == 1 {
+                            let current = store.goal_status(&server_parent).unwrap();
+                            let id = current["goal"]["id"].as_str().unwrap();
+                            let revision = current["goal"]["revision"].as_i64().unwrap();
+                            match change {
+                                "pause" => {
+                                    store
+                                        .goal_mutate(
+                                            &server_parent,
+                                            id,
+                                            revision,
+                                            "pause",
+                                            &json!({}),
+                                            now(),
+                                        )
+                                        .unwrap();
+                                }
+                                "input" => {
+                                    store
+                                        .goal_input_submission(
+                                            &server_parent,
+                                            &Uuid::new_v4().to_string(),
+                                            false,
+                                            now(),
+                                        )
+                                        .unwrap();
+                                }
+                                "replace" => {
+                                    store
+                                        .goal_replace(
+                                            &server_parent,
+                                            id,
+                                            revision,
+                                            "New user objective",
+                                            None,
+                                            false,
+                                            now(),
+                                        )
+                                        .unwrap();
+                                }
+                                "report" => {
+                                    store
+                                        .goal_recovery(
+                                            &server_parent,
+                                            "report-barrier",
+                                            "Unwatched recovery",
+                                            now(),
+                                        )
+                                        .unwrap();
+                                }
+                                _ => {}
+                            }
+                        }
+                        json!({"data":if reads<3 || change=="missing"{vec![]}else{vec![json!({"turnId":"accepted-turn","item":{"id":"accepted-message","type":"userMessage","clientId":client}})]},"nextCursor":null})
+                    }
+                    method => panic!("unexpected mutation or model request: {method}"),
+                };
+                socket
+                    .send(Message::text(
+                        json!({"id":request["id"],"result":result}).to_string(),
+                    ))
+                    .unwrap();
+            }
+            (adds, reads, starts)
+        });
+        let mut observer = Observer::new(&mut store, &parent);
+        let ack=observer.call("thread/queue/add",json!({"threadId":parent,"clientUserMessageId":dispatch["client"],"input":[{"type":"text","text":dispatch["message"],"textElements":[]}]})).unwrap();
+        let acknowledged = observer
+            .store
+            .goal_dispatch_result(
+                text(&dispatch, "id").unwrap(),
+                "pending",
+                ack["queuedSubmission"]["id"].as_str(),
+                None,
+                None,
+                if change == "expired" {
+                    now() - GOAL_SETTLEMENT_SECONDS - 1.0
+                } else {
+                    now()
+                },
+            )
+            .unwrap();
+        match change {
+            "uncertain" => {
+                observer
+                    .store
+                    .goal_dispatch_result(
+                        text(&dispatch, "id").unwrap(),
+                        "uncertain",
+                        None,
+                        None,
+                        Some("Separate genuine delivery uncertainty"),
+                        now(),
+                    )
+                    .unwrap();
+            }
+            "recovered-start" => {
+                observer
+                    .store
+                    .goal_dispatch_result(
+                        text(&dispatch, "id").unwrap(),
+                        "starting",
+                        acknowledged["queue"].as_str(),
+                        None,
+                        None,
+                        now(),
+                    )
+                    .unwrap();
+            }
+            "live-start" => {
+                let started = observer
+                    .store
+                    .goal_dispatch_result(
+                        text(&dispatch, "id").unwrap(),
+                        "starting",
+                        acknowledged["queue"].as_str(),
+                        None,
+                        None,
+                        now(),
+                    )
+                    .unwrap();
+                assert!(
+                    observer
+                        .call(
+                            "thread/queue/start",
+                            json!({"threadId":parent,"queuedSubmissionId":started["queue"]})
+                        )
+                        .is_err()
+                );
+                assert!(observer.settle_goal_admission(&started).unwrap());
+            }
+            _ => {}
+        }
+        for _ in 0..3 {
+            observer.goal_reconcile(&[]).unwrap();
+        }
+        let snapshot = observer.store.goal_status(&parent).unwrap();
+        let saved = observer.store.goal_dispatches(&parent).unwrap().remove(0);
+        drop(observer);
+        (snapshot, saved, server.join().unwrap())
+    }
+
+    #[test]
+    fn acknowledged_goal_queue_handoff_waits_for_matching_history() {
+        let (snapshot, saved, calls) = delayed_goal_handoff("none");
+        assert_eq!(calls, (1, 3, 0));
+        assert_eq!(saved["accepted_turn"], "accepted-turn");
+        assert_eq!(snapshot["goal"]["state"], "active");
+        assert_eq!(snapshot["binding"]["turn"], "accepted-turn");
+    }
+
+    #[test]
+    fn acknowledged_handoff_preserves_newer_user_and_report_authority() {
+        for change in ["pause", "input", "replace", "report"] {
+            let (snapshot, saved, calls) = delayed_goal_handoff(change);
+            assert_eq!(calls, (1, 3, 0));
+            assert_eq!(saved["accepted_turn"], "accepted-turn");
+            assert!(snapshot["binding"].is_null(), "{change}");
+            match change {
+                "pause" => assert_eq!(snapshot["goal"]["state"], "paused"),
+                "input" => {
+                    assert_eq!(snapshot["pending_input"]["state"], "submitting");
+                    assert_eq!(snapshot["input_epoch"], 2);
+                }
+                "replace" => {
+                    assert_ne!(snapshot["goal"]["id"], saved["goal"]);
+                    assert_eq!(snapshot["goal"]["state"], "active");
+                }
+                "report" => {
+                    assert_eq!(snapshot["report_barrier"], 1);
+                    assert_eq!(snapshot["goal"]["state"], "needs_input");
+                }
+                _ => unreachable!(),
+            }
+        }
+    }
+
+    #[test]
+    fn expired_or_recovered_unknown_handoffs_never_auto_renew() {
+        for change in ["expired", "uncertain", "recovered-start"] {
+            let (snapshot, saved, calls) = delayed_goal_handoff(change);
+            assert_eq!(calls, (1, 3, 0));
+            assert_eq!(saved["accepted_turn"], "accepted-turn");
+            assert_eq!(snapshot["goal"]["state"], "needs_input");
+            assert!(snapshot["binding"].is_null());
+        }
+    }
+
+    #[test]
+    fn live_start_failure_observes_consumption_without_retrying_start() {
+        let (snapshot, saved, calls) = delayed_goal_handoff("live-start");
+        assert_eq!(calls, (1, 3, 1));
+        assert_eq!(saved["accepted_turn"], "accepted-turn");
+        assert_eq!(snapshot["goal"]["state"], "active");
+        assert_eq!(snapshot["binding"]["turn"], "accepted-turn");
+    }
+
+    #[test]
+    fn acknowledged_handoff_without_positive_evidence_expires_locally() {
+        let before = Instant::now();
+        let (snapshot, saved, calls) = delayed_goal_handoff("missing");
+        assert!(before.elapsed() < Duration::from_secs(7));
+        assert_eq!(calls.0, 1);
+        assert_eq!(calls.2, 0);
+        assert!(saved["accepted_turn"].is_null());
+        assert_eq!(saved["state"], "uncertain");
+        assert_eq!(snapshot["goal"]["state"], "needs_input");
+        assert!(snapshot["binding"].is_null());
     }
 
     #[test]

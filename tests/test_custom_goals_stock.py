@@ -296,7 +296,9 @@ def live_completion(f, worker=False):
     state = coordinator_state(f.home)
     assert len(state["jobs"]) == 1 and state["jobs"][0]["status"] == "completed", state
     assert len(state["callbacks"]) == 1 and state["callbacks"][0]["state"] in ("goal_owned", "goal_settled"), state
-    dispatches = f.goal("history")["dispatches"]
+    dispatches = wait(lambda: (rows := f.goal("history")["dispatches"])
+                      and rows[0]["accepted_turn"] and rows,
+                      "goal completion was not positively attributed to its exact turn", timeout=8)
     assert len(dispatches) == 1 and dispatches[0]["accepted_turn"], dispatches
     stop(observer)
     f.observe()
@@ -452,6 +454,52 @@ def progress_guard(f):
     assert current(f)["goal"]["no_progress"] == 2
     assert observer.poll() in (None, 0)
     f.report["final_snapshot"] = current(f)
+
+
+def pre_report_recovery_barrier(f):
+    """Already-admitted stock work cannot renew recovery before a report is prepared."""
+    start(f, paused=False)
+    origin, gate = f.start_turn(held=True, text="Previously admitted stock work")
+    with sqlite3.connect(f.home / "codex-plus/background.sqlite") as db:
+        proof = json.loads(db.execute("SELECT value FROM goal_provenance WHERE root=?",
+                                      (f.parent,)).fetchone()[0])
+        proof["last_observed_uptime"] -= 45
+        db.execute("UPDATE goal_provenance SET value=? WHERE root=?", (json.dumps(proof), f.parent))
+    recovered = f.goal("reconnect")
+    assert recovered["report_barrier"] == 1 and not f.goal("history")["dispatches"]
+
+    def model_resume():
+        goal = current(f)["goal"]
+        result = subprocess.run([str(f.runtime), "goal", "resume", "--id", goal["id"],
+            "--revision", str(goal["revision"]), "--json"],
+            env=f.env | {"CODEX_THREAD_ID": f.parent}, cwd=f.work,
+            stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=15)
+        f.report.setdefault("model_resumes", []).append(dict(exit=result.returncode,
+            output=json.loads(result.stdout)))
+        return result
+
+    assert model_resume().returncode != 0, "stock work renewed recovery before a report or user receipt"
+    assert current(f)["report_barrier"] == 1
+    f.mutate("pause", current(f)["goal"])
+    gate.set()
+    assert f.terminal(origin)["status"] == "completed"
+    f.quiet()
+    assert f.provider.count == 1
+
+    submission = str(uuid.uuid4())
+    f.goal("input", "--submission-id", submission)
+    fresh, fresh_gate = f.start_turn(held=True, text="New user direction: resume the Plus objective")
+    f.goal("input-settle", "--submission-id", submission, "--turn", fresh, "--accepted")
+    assert current(f)["report_barrier"] == 1, "ordinary input silently renewed recovery"
+    assert model_resume().returncode == 0, "accepted user direction could not explicitly resume"
+    assert current(f)["report_barrier"] == 0 and current(f)["goal"]["state"] == "active"
+    f.mutate("pause", current(f)["goal"])
+    fresh_gate.set()
+    assert f.terminal(fresh)["status"] == "completed"
+    f.quiet()
+    assert f.provider.count == 2
+    f.report.update(simulated_observation_gap=True, report_prepared_before_rejection=False,
+                    accepted_fresh_user_turn=fresh, final_snapshot=f.goal("history"))
 
 
 def report_barrier(f):
@@ -1074,7 +1122,8 @@ SCENARIOS = {"cli-transactions": cli_transactions,
              "reconnect-restarts-observer": reconnect_restarts_observer,
              "interrupted-old-origin": interrupted_old_origin,
              "partial-two-job-completion": partial_two_job_completion,
-             "mixed-independent-priority": mixed_independent_priority}
+             "mixed-independent-priority": mixed_independent_priority,
+             "pre-report-recovery-barrier": pre_report_recovery_barrier}
 
 
 def run(runtime, binary, evidence, scenario):

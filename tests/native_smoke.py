@@ -873,6 +873,10 @@ stream_max_retries=0
             wait([terminal], lambda: terminal.resized_frame(replies) and 'advisor-live-draft' in terminal.text and
                  len(advisor_transcript_rows(terminal.text)) == 1, 'resize lost live advisor or draft')
             (evidence / f'advisor-transcript-{label}-live.txt').write_text(terminal.text + '\n')
+            # Both completed cells need room when the unrelated shell finishes last.
+            replies = terminal.resize(32, 120)
+            wait([terminal], lambda: terminal.resized_frame(replies) and 'advisor-live-draft' in terminal.text,
+                 'normal advisor viewport did not restore draft')
             release.touch()
             expected = ('• Advisor failed on ' if failed else '• Advised on ') + topic
             wait([terminal], lambda: expected in terminal.text and provider.count == 2,

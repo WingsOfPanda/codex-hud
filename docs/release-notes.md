@@ -22,6 +22,11 @@ checkpoints, repeated lack of evidence or uncertainty require input. Optional
 one-hour/two-hour reviews default off, coalesce missed intervals and cannot poll
 healthy jobs. Hard time/token budgets are outside this version.
 
+Queue reconciliation tolerates the acknowledged stock handoff before turn
+history becomes visible, while preserving real uncertainty and preventing
+duplicate submission. Recovery guards apply even before the report is queued,
+so pre-existing stock work cannot renew a Plus goal without new direction.
+
 See [the goal workflow](goals.md) for checkpoint, native-goal transition and
 recovery semantics. Ending a goal turn is an agent instruction; registering a
 job alone does not make the daemon Idle. Progress evidence relevance remains
