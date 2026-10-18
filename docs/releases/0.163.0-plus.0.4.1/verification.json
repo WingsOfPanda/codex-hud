@@ -1,0 +1,180 @@
+{
+  "release": "0.163.0-plus.0.4.1",
+  "plus_commit": "727163057a18aa17ff9cd539ae2af2440b6e890d",
+  "targets": {
+    "x86_64": {
+      "package": {
+        "triple": "x86_64-unknown-linux-gnu",
+        "asset": "codex-plus-0.163.0-plus.0.4.1-x86_64-unknown-linux-gnu.tar.gz",
+        "sha256": "6f6b6b153f8c360859f7abdcbfe3b36e97f986cf960ed0bb6f5d265d0d6e367c",
+        "tree_sha256": "e950aacaec0367aef5360a3e0e1ae9290e9be8eccbe18e1a7acc7f0e309b0a8e",
+        "manifest_sha256": "8e6af985ad5382ab131cd3db2f58c3af38f891074d10baf0819f683ff1491cf5",
+        "files": 50
+      },
+      "native_runtime_units": 183,
+      "runtime_blackbox_tests": 29,
+      "admission_subcases": 12,
+      "runner_passed": 16,
+      "runner_skipped": 3,
+      "upgrade_tests": 7,
+      "stock_lifecycle_scenarios": 6,
+      "ultracode_terminal_cases": 4,
+      "native_smoke_stages": 23,
+      "operator_probes_passed": true,
+      "artifact_scan_passed": true,
+      "compatibility": {
+        "passed": true,
+        "gate_sha256": "e90271806c32ce335461567b6385beec95c838215facf078cf427075da84a0b4",
+        "checks": [
+          "real native package identities, inventory hashes, protocol 5 and execution format 1",
+          "0.4.1 actual native prepare/launch, durable execution result, one side effect, delivered idle callback",
+          "bidirectional input reservation/accepted settlement and steering preserve exact admitted Ultracode snapshots",
+          "quiet 0.4.0 reads 0.4.1 park/job/result/goal/Ultracode data with unchanged schema and every row",
+          "bidirectional maintenance hold identity/leave, schema/rows/result preserved and no replay/provider calls",
+          "both qualified package inputs and official binary remain unchanged"
+        ],
+        "old_runtime_sha256": "c9b26d2524ae9365213d0ea9c70d53eb04b16cf3ea10289a61f2f0e891c6c5b6",
+        "new_runtime_sha256": "3c5e1a6761e2426f3866de3bac6f492a544b3dfd6867a3537230bdfa9e7c2c84",
+        "schema_sha256": "8667cf967bdcebd7eacb35a22d7f2781fe2387dda29509dd415d389d79635791",
+        "read_passes": [
+          {
+            "package": "old",
+            "schema_sha256": "8667cf967bdcebd7eacb35a22d7f2781fe2387dda29509dd415d389d79635791",
+            "rows_unchanged": true
+          },
+          {
+            "package": "new",
+            "schema_sha256": "8667cf967bdcebd7eacb35a22d7f2781fe2387dda29509dd415d389d79635791",
+            "rows_unchanged": true
+          },
+          {
+            "package": "old",
+            "schema_sha256": "8667cf967bdcebd7eacb35a22d7f2781fe2387dda29509dd415d389d79635791",
+            "rows_unchanged": true
+          }
+        ],
+        "quiet_rollback": {
+          "admission_quiet": true,
+          "execution_quiet": true,
+          "observer_processes": [],
+          "row_identities_unchanged": true,
+          "schema_unchanged": true,
+          "schema_sha256": "8667cf967bdcebd7eacb35a22d7f2781fe2387dda29509dd415d389d79635791",
+          "result_unchanged": true,
+          "workload_runs": 1,
+          "provider_requests_from_reads_and_holds": 0
+        },
+        "hold_directions": [
+          {
+            "enter": "old",
+            "leave": "new",
+            "identity_preserved": true
+          },
+          {
+            "enter": "new",
+            "leave": "old",
+            "identity_preserved": true
+          }
+        ],
+        "original_packages_unchanged": true,
+        "stock_sha256": "399ff69c431c066e40de318fba45c2b07f45a76b19939d247ee4828fc70c4215"
+      }
+    },
+    "aarch64": {
+      "package": {
+        "triple": "aarch64-unknown-linux-gnu",
+        "asset": "codex-plus-0.163.0-plus.0.4.1-aarch64-unknown-linux-gnu.tar.gz",
+        "sha256": "0278554e19f11b8bb1409400179bf980f1bbcaff0ef85093342d3f8a158658b4",
+        "tree_sha256": "4a16c1e22454ebb44ba67d7053b2f36b5c84fea85e2ca0e1ce9d1ff3fd0e7284",
+        "manifest_sha256": "cdb03979798e5a4e6bdc9f9a9ac3268a54d5b895cf3e3fa7f538cd07c92e7986",
+        "files": 50
+      },
+      "native_runtime_units": 183,
+      "runtime_blackbox_tests": 29,
+      "admission_subcases": 12,
+      "runner_passed": 16,
+      "runner_skipped": 3,
+      "upgrade_tests": 7,
+      "stock_lifecycle_scenarios": 6,
+      "ultracode_terminal_cases": 4,
+      "native_smoke_stages": 23,
+      "operator_probes_passed": true,
+      "artifact_scan_passed": true,
+      "compatibility": {
+        "passed": true,
+        "gate_sha256": "e90271806c32ce335461567b6385beec95c838215facf078cf427075da84a0b4",
+        "checks": [
+          "real native package identities, inventory hashes, protocol 5 and execution format 1",
+          "0.4.1 actual native prepare/launch, durable execution result, one side effect, delivered idle callback",
+          "bidirectional input reservation/accepted settlement and steering preserve exact admitted Ultracode snapshots",
+          "quiet 0.4.0 reads 0.4.1 park/job/result/goal/Ultracode data with unchanged schema and every row",
+          "bidirectional maintenance hold identity/leave, schema/rows/result preserved and no replay/provider calls",
+          "both qualified package inputs and official binary remain unchanged"
+        ],
+        "old_runtime_sha256": "ea3adceac146b854135244659d208cc97547c25a8616d1ce88144501539c5eee",
+        "new_runtime_sha256": "f368195f069eeb660e031b8375caec1e243988243a83caf249e6b8e4269d2e4d",
+        "schema_sha256": "8667cf967bdcebd7eacb35a22d7f2781fe2387dda29509dd415d389d79635791",
+        "read_passes": [
+          {
+            "package": "old",
+            "schema_sha256": "8667cf967bdcebd7eacb35a22d7f2781fe2387dda29509dd415d389d79635791",
+            "rows_unchanged": true
+          },
+          {
+            "package": "new",
+            "schema_sha256": "8667cf967bdcebd7eacb35a22d7f2781fe2387dda29509dd415d389d79635791",
+            "rows_unchanged": true
+          },
+          {
+            "package": "old",
+            "schema_sha256": "8667cf967bdcebd7eacb35a22d7f2781fe2387dda29509dd415d389d79635791",
+            "rows_unchanged": true
+          }
+        ],
+        "quiet_rollback": {
+          "admission_quiet": true,
+          "execution_quiet": true,
+          "observer_processes": [],
+          "row_identities_unchanged": true,
+          "schema_unchanged": true,
+          "schema_sha256": "8667cf967bdcebd7eacb35a22d7f2781fe2387dda29509dd415d389d79635791",
+          "result_unchanged": true,
+          "workload_runs": 1,
+          "provider_requests_from_reads_and_holds": 0
+        },
+        "hold_directions": [
+          {
+            "enter": "old",
+            "leave": "new",
+            "identity_preserved": true
+          },
+          {
+            "enter": "new",
+            "leave": "old",
+            "identity_preserved": true
+          }
+        ],
+        "original_packages_unchanged": true,
+        "stock_sha256": "8a96f66d059d653e68bfd5f3c79337e6f1d7d170d80bf705eb7d0249b34c0ece"
+      }
+    }
+  },
+  "frontend_reuse": "codex, codex-code-mode-host and bwrap are byte-for-byte from qualified 0.4.0 on each architecture; unchanged pinned upstream, frontend patch, build settings and resources.",
+  "qualification_limits": [
+    "x86 raw bwrap UID-map probe is denied identically for official and Plus; both actual CLI read-only sandboxes passed. ARM package gates all passed.",
+    "Three Python-only runner monkeypatch tests are explicit skips; 16 runner tests passed and native Rust units provide implementation coverage.",
+    "Natural first-turn timing race was not reproduced; exact observed RPC failures were injected through the actual helper entry points.",
+    "Unchanged frontend Rust/HUD, additional detached/advisor, SSH lifetime and bootstrap pressure qualification inherited from 0.4.0; full upstream suite and real-provider benchmarks not rerun.",
+    "Cross-version gate tests quiet rollback and actual mixed helpers, not simultaneous native TUI instances, running-executor rollback, observer downgrade transfer or 0.3.x compatibility.",
+    "Initial cross-version fixtures failed because the test itself held the supervisor lock before expecting a callback. The corrected test delays that lock until after delivery; original failed evidence retained and both archives unchanged."
+  ],
+  "evidence_paths": {
+    "x86": ".build/release041/x86/qualification-summary.json",
+    "arm": ".build/release041/arm/remote-summary.json",
+    "archives": ".build/release041/verified-archives.json",
+    "native_compatibility": [
+      ".build/release041/x86/compat-r2/gate.json",
+      ".build/release041/arm/compat-r2/gate.json"
+    ]
+  }
+}

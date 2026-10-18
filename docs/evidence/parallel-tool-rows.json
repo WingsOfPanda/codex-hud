@@ -1,0 +1,162 @@
+{
+  "status": "source_candidate_verified_not_released",
+  "date": "2026-10-18",
+  "branch": "fix/settle-parallel-tool-rows",
+  "problem": "Concurrent MCP and web calls left original Calling/Browsing rows unfinished while appending separate completed rows.",
+  "behavior": [
+    "Shared call state settles the original MCP/web rows by call identity.",
+    "Pending native scrollback is committed only after settlement.",
+    "Interruption stops pending indicators without claiming success.",
+    "Late authoritative results update retained rows; already printed native interruption rows receive one output-only correction.",
+    "Existing result rendering, images, CUA groups, shell and dynamic activity are retained."
+  ],
+  "source": {
+    "upstream": "83086188ae0614bd882818ff1aa23f3194962012",
+    "source_tree": "8548031e8578c52ccc9b469002037c76273ec7b8",
+    "baseline_tree": "0058658fca3f2065d38bfdc20d000011429af659",
+    "changed_paths": [
+      "codex-rs/tui/src/app/event_dispatch.rs",
+      "codex-rs/tui/src/app/history_ui.rs",
+      "codex-rs/tui/src/app/native_history.rs",
+      "codex-rs/tui/src/app/native_history_tests.rs",
+      "codex-rs/tui/src/app_event.rs",
+      "codex-rs/tui/src/chatwidget.rs",
+      "codex-rs/tui/src/chatwidget/command_lifecycle.rs",
+      "codex-rs/tui/src/chatwidget/dynamic_activity.rs",
+      "codex-rs/tui/src/chatwidget/session_flow.rs",
+      "codex-rs/tui/src/chatwidget/tests/tool_activity_tests.rs",
+      "codex-rs/tui/src/chatwidget/tool_lifecycle.rs",
+      "codex-rs/tui/src/chatwidget/transcript.rs",
+      "codex-rs/tui/src/history_cell/mod.rs",
+      "codex-rs/tui/src/history_cell/retained_tool.rs",
+      "codex-rs/tui/src/history_cell/search.rs"
+    ],
+    "patch_sha256": "97643d8456eab3429d4f4adde401cadbdf3bc55616e0071d21d81f7017290872",
+    "forward_reverse_apply": true,
+    "exact_worktree": true,
+    "source_index_unchanged": true,
+    "delta_tui_only": true
+  },
+  "candidate": {
+    "path": "/home/liupan/Aerius/codex-plus/.build/tool-rows/root/candidate/bin/codex",
+    "sha256": "c48ee411171f6c5b9c14c05d9f5788db223c337fac43a60943191a93b2b33e7c",
+    "profile": "dev-small",
+    "target": "x86_64-unknown-linux-gnu",
+    "rust": "1.99.1",
+    "adjacent_host": ".build/tool-rows/root/candidate/bin/codex-code-mode-host",
+    "adjacent_runtime": ".build/tool-rows/root/candidate/bin/codex-plus-runtime"
+  },
+  "red_evidence": {
+    "native_parallel": ".build/tool-rows/native/red-parallel.log",
+    "native_late_output": ".build/tool-rows/native/red-late-result.log",
+    "terminal_modes": [
+      ".build/tool-rows/terminal/red-owned",
+      ".build/tool-rows/terminal/red-terminal",
+      ".build/tool-rows/terminal/red-no-alt",
+      ".build/tool-rows/terminal/red-interrupt"
+    ]
+  },
+  "root_acceptance": {
+    "tools": {
+      "passed": 9,
+      "report": ".build/tool-rows/root/tools/report.json",
+      "log": "/home/liupan/Aerius/codex-plus/.build/tool-rows/root/tools.log"
+    },
+    "smoke": {
+      "passed": 23,
+      "report": ".build/tool-rows/root/smoke/report.json",
+      "log": "/home/liupan/Aerius/codex-plus/.build/tool-rows/root/smoke.log"
+    },
+    "upstream": {
+      "passed": 2,
+      "report": ".build/tool-rows/root/upstream/report.json",
+      "log": "/home/liupan/Aerius/codex-plus/.build/tool-rows/root/upstream.log"
+    },
+    "native": {
+      "passed_filter_invocations": 195,
+      "filters": [
+        {
+          "filter": "tool_activity_tests",
+          "passed": 5,
+          "log": "/home/liupan/Aerius/codex-plus/.build/tool-rows/root/native-tool_activity_tests.log"
+        },
+        {
+          "filter": "native_history::tests",
+          "passed": 4,
+          "log": "/home/liupan/Aerius/codex-plus/.build/tool-rows/root/native-native_history__tests.log"
+        },
+        {
+          "filter": "dynamic_activity_tests",
+          "passed": 3,
+          "log": "/home/liupan/Aerius/codex-plus/.build/tool-rows/root/native-dynamic_activity_tests.log"
+        },
+        {
+          "filter": "computer_activity_tests",
+          "passed": 4,
+          "log": "/home/liupan/Aerius/codex-plus/.build/tool-rows/root/native-computer_activity_tests.log"
+        },
+        {
+          "filter": "history_replay",
+          "passed": 35,
+          "log": "/home/liupan/Aerius/codex-plus/.build/tool-rows/root/native-history_replay.log"
+        },
+        {
+          "filter": "exec_flow",
+          "passed": 53,
+          "log": "/home/liupan/Aerius/codex-plus/.build/tool-rows/root/native-exec_flow.log"
+        },
+        {
+          "filter": "worker_hud",
+          "passed": 42,
+          "log": "/home/liupan/Aerius/codex-plus/.build/tool-rows/root/native-worker_hud.log"
+        },
+        {
+          "filter": "shell_policy",
+          "passed": 18,
+          "log": "/home/liupan/Aerius/codex-plus/.build/tool-rows/root/native-shell_policy.log"
+        },
+        {
+          "filter": "thread_transcript::tools::tests",
+          "passed": 6,
+          "log": "/home/liupan/Aerius/codex-plus/.build/tool-rows/root/native-thread_transcript__tools__tests.log"
+        },
+        {
+          "filter": "history_cell::mcp",
+          "passed": 17,
+          "log": "/home/liupan/Aerius/codex-plus/.build/tool-rows/root/native-history_cell__mcp.log"
+        },
+        {
+          "filter": "history_cell::search",
+          "passed": 4,
+          "log": "/home/liupan/Aerius/codex-plus/.build/tool-rows/root/native-history_cell__search.log"
+        },
+        {
+          "filter": "app::activity_groups",
+          "passed": 4,
+          "log": "/home/liupan/Aerius/codex-plus/.build/tool-rows/root/native-app__activity_groups.log"
+        }
+      ]
+    },
+    "source_guard_packaging_fixture": {
+      "source_guard": 11,
+      "packaging": 40,
+      "fixture_selfchecks": 2,
+      "log": "/home/liupan/.codex/codex-plus/logs/dc71d07b-dd3c-4a5d-9a89-894444968aa2.log"
+    }
+  },
+  "setup_failures_preserved": {
+    "path": ".build/tool-rows/root/setup-failed",
+    "causes": [
+      "Initial harness selected a stale test executable; a zero-match assertion caught it. Corrected using the executable named by current Cargo test output.",
+      "Initial private candidate lacked the adjacent goal helper. Repeated UI gates with complete candidate/bin layout."
+    ],
+    "product_changes_to_resolve_setup": false
+  },
+  "limits": [
+    "Native filter counts include overlapping coverage.",
+    "PTY lifecycle cases use loopback app-server notifications, no real search services or model requests.",
+    "Broader smoke uses private loopback providers and tests no extra model calls from UI refresh.",
+    "No optimized or ARM release build, publication, merge or fleet installation.",
+    "A native terminal can retain an already printed interruption above the later correction; retained history and replay contain one authoritative final row."
+  ]
+}

@@ -6,6 +6,23 @@ tracks its own parent thread in ordinary terminals and split tmux panes.
 Release builds patch the frontend and keep upstream daemon code unchanged.
 The HUD and Rust completion coordinator work with the official stock daemon.
 
+The 0.163.0-plus.0.4.1 patch release fixes transient input and Ultracode admission
+failures. It retains [reviewed detached jobs](docs/detached-jobs.md):
+workers prepare expensive work, the root reviews and launches it, and local
+executors preserve results across qualified TUI and stock-daemon restarts.
+It retains [Plus-owned goals](docs/goals.md) and genuine Idle waiting.
+This checkout is not a fleet installation; fleet-config owns the quiet initial
+protocol transition and later qualified upgrades.
+
+The release includes default-off [Ultracode mode](docs/ultracode.md) for
+root-led worker phases, short shell topics, the parallel MCP/web activity-row fix
+and the optional weekly-reset countdown. It uses coordinator protocol 5 and
+execution record format 1. Private feature qualification does not establish
+complete archive acceptance; the companion release note records qualification
+on each architecture.
+The initial protocol-3 to protocol-5 fleet cutover requires quiet coordination
+and a TUI restart, preserving the stock daemon and disabled native goals.
+
 The patch targets **Codex 0.163.0**, upstream commit
 `83086188ae0614bd882818ff1aa23f3194962012`.
 
@@ -82,6 +99,13 @@ The one-time Python-to-Rust rollout needs a
 
 ## Display behavior
 
+Select **Weekly reset** in `/statusline` to show `resets in 2d 5h` alongside
+your existing items (`weekly-reset` in `tui.status_line`). The countdown uses
+Codex's reported weekly reset timestamp and the local clock; refreshing it makes
+no model calls or extra quota requests. Missing timestamps show `reset unknown`;
+an elapsed timestamp shows `reset due` until updated quota data arrives. This
+item is optional and adds no extra footer row.
+
 The strip shows active and waiting direct workers without a count header:
 
 ```text
@@ -89,8 +113,8 @@ GPT-6.1-Sol (high) · integration probe · 3:42 · 123.4K tok
 ```
 
 Rows start with the full reported model and reasoning effort, followed by a short task
-name, elapsed time, and cumulative reported tokens. Routine active state is
-implicit; approval/input waits and stale data remain explicit. Long names shorten
+name, current-turn elapsed time, and current-turn reported tokens. Routine active
+state is implicit; approval/input waits and stale data remain explicit. Long names shorten
 to leave room for metrics. Activity rows are dim; warnings use normal brightness.
 Recognized GPT Sol/Astra names use display casing while preserving their version
 and suffixes; custom and provider-prefixed identifiers remain intact. The model
@@ -133,11 +157,15 @@ it never starts, steers, or queues a model turn. A stalled or disconnected
 metadata source shows stale cached rows or an unavailable warning. Refresh does not
 capture keyboard input.
 
-Token totals use the local backend's existing SQLite metadata through a read-only
-connection, respecting its configured SQLite directory. They reflect recorded
-usage updates, not a per-token streaming counter or a subscription cost. Zero
-means no usage has been recorded yet. Remote backends, unavailable counters, and
-known forked threads show `?`; fork totals can include inherited parent usage.
+Standalone token counts use the local rollout's latest usage record for the exact
+worker and displayed turn, through a bounded read-only tail scan. Reusing a worker
+starts a new turn count; restarting the client preserves the recorded turn count.
+Counts include input and output, with cached input already included in input.
+They reflect recorded usage updates, not a per-token streaming counter or a
+subscription cost. A reported zero displays `0`; missing, unreadable, unmatched,
+or out-of-budget usage displays `?`, without falling back to lifetime totals.
+Remote backends show `?`. Forked workers need a usage record for their own exact
+thread and turn; inherited parent records cannot supply their count.
 The release adds no native database migration and requires no shared-daemon
 replacement. See [delivery limits](docs/background-work.md#stock-daemon-and-delivery-limits)
 for crash recovery and ambiguous notification delivery.
@@ -165,10 +193,14 @@ GPT-6.1-Sol (high) · hud styling (3 agents) · 1:20 · 250K tok
 ```
 
 The count includes only active/waiting members: 3 becomes 2, then 1, and the group
-disappears at zero. Tokens include recorded usage from all group members,
-including finished members, so completion does not reduce the total. Group
-elapsed time starts at the earliest member's creation; standalone rows keep their
-latest-turn elapsed time. Missing metrics remain unknown. Model and effort come
+disappears at zero. Group rows retain their batch scope: tokens include lifetime
+usage from all members of that explicit batch, including finished members, and
+elapsed time starts at the earliest member's creation. Their counters use the local
+backend's existing SQLite metadata through a read-only connection, respecting its
+configured SQLite directory; forked group members remain unknown because their
+lifetime totals can include inherited usage. Use a fresh batch for a new dispatch.
+Standalone rows pair latest-turn elapsed time with that same turn's usage. Missing metrics remain
+unknown. Model and effort come
 from the remaining active/waiting members; differing known settings show `mixed`.
 
 Different batches and parent threads stay separate. Untagged or malformed names

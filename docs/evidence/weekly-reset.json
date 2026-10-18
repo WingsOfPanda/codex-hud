@@ -1,0 +1,104 @@
+{
+  "schema": 1,
+  "feature": "Weekly reset countdown and inline Ultracode label",
+  "status": "implemented and privately verified on x86_64; not released or installed",
+  "base_commit": "84737e8",
+  "display": {
+    "weekly": "resets in 2d 5h",
+    "picker": "Weekly reset",
+    "config_item": "weekly-reset",
+    "missing": "reset unknown",
+    "elapsed": "reset due",
+    "ultracode": "GPT-6-Astra high ultracode",
+    "model_priority": [
+      "model-with-reasoning",
+      "model"
+    ],
+    "no_model_item": "standalone label",
+    "explicit_empty": "hidden"
+  },
+  "native_binary": {
+    "path": "/home/liupan/Aerius/codex-plus/.build/weekly-reset/native/codex",
+    "sha256": "da9673d275884ab382008b6bc2140d99c3460ab4afb6b0c60eb5ebdd64f3dbad"
+  },
+  "patch": {
+    "upstream": "83086188ae0614bd882818ff1aa23f3194962012",
+    "patch_sha256": "9f83b21c45063ebad978e4b3ffc8b49114651671818e0bdb3e71ac671c9fcf17",
+    "source_tree": "b9d01d2e9faa4076779bbc502ba4613b328afd00",
+    "clean_application": true,
+    "matches_native_source": true
+  },
+  "verification": {
+    "native_filters": [
+      {
+        "filter": "weekly_reset",
+        "passed": 3,
+        "log": "/home/liupan/Aerius/codex-plus/.build/weekly-reset/root-checks/weekly_reset.log"
+      },
+      {
+        "filter": "status_line",
+        "passed": 91,
+        "log": "/home/liupan/Aerius/codex-plus/.build/weekly-reset/root-checks/status_line.log"
+      },
+      {
+        "filter": "ultracode",
+        "passed": 12,
+        "log": "/home/liupan/Aerius/codex-plus/.build/weekly-reset/root-checks/ultracode.log"
+      },
+      {
+        "filter": "status_surface_preview",
+        "passed": 22,
+        "log": "/home/liupan/Aerius/codex-plus/.build/weekly-reset/root-checks/status_surface_preview.log"
+      },
+      {
+        "filter": "worker_hud",
+        "passed": 47,
+        "log": "/home/liupan/Aerius/codex-plus/.build/weekly-reset/root-checks/worker_hud.log"
+      }
+    ],
+    "counts_overlap": true,
+    "weekly_terminal": {
+      "passed": true,
+      "binary": "/home/liupan/Aerius/codex-plus/.build/weekly-reset/native/codex",
+      "stages": [
+        "unknown timestamp",
+        "weekly remaining plus exact compact countdown",
+        "swapped windows and local expiry without quota fetch",
+        "selectable status-line item"
+      ],
+      "fixture": "private protocol fixture; no provider",
+      "model_calls": 0
+    },
+    "ultracode_terminal": {
+      "passed": true,
+      "fixture": "helper stub transport, not stock-daemon acceptance",
+      "bootstrap_sha256": "521d563b280999e64ca21ab300038c38fdb8280678405af88e50620afe2ce799",
+      "binary_sha256": "da9673d275884ab382008b6bc2140d99c3460ab4afb6b0c60eb5ebdd64f3dbad",
+      "source_equals_docs": true,
+      "binary_contains_complete_bootstrap": true,
+      "cases": [
+        "custom",
+        "model",
+        "empty",
+        "unqualified"
+      ],
+      "model_turn_requests": 0,
+      "evidence": "/home/liupan/Aerius/codex-plus/.build/weekly-reset/ultracode-terminal"
+    },
+    "no_extra_quota_requests_while_counting": true,
+    "expiry_with_no_active_workers": true,
+    "editable_composer": true,
+    "existing_selection_preserved": true
+  },
+  "source_notes": [
+    "Preserve the reported raw reset timestamp in the client display cache; use UTC wall clock for countdown.",
+    "Only the actual weekly quota window is used; nonweekly secondary fallback is rejected.",
+    "Existing local status refresh is reused; no timer, model calls or quota polling was added.",
+    "Full account snapshots drive quota display; sparse usage notifications do not replace them."
+  ],
+  "limits": [
+    "Terminal probes use private app-server/helper fixtures, not a live account quota.",
+    "No ARM build, release package, publication, merge, installation or global status-line configuration changes.",
+    "New item is opt-in through /statusline after rollout."
+  ]
+}

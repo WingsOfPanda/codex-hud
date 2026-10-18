@@ -128,6 +128,15 @@ def wait(terminals, predicate, reason, timeout=15):
     raise AssertionError(f'{reason}\n' + '\n--- terminal ---\n'.join(terminal.text for terminal in terminals))
 
 
+def assert_no_park_records(home):
+    # Goal input admission can create the ledger without registering shell work.
+    database = home / 'codex-plus/background.sqlite'
+    if database.exists():
+        with sqlite3.connect(f'file:{database}?mode=ro', uri=True) as connection:
+            for table in ('parks', 'jobs', 'callbacks'):
+                assert connection.execute(f'SELECT COUNT(*) FROM {table}').fetchone()[0] == 0, table
+
+
 def composer_ready(text):
     return any(line.lstrip().startswith('›') for line in text.splitlines())
 
@@ -157,7 +166,7 @@ def assert_compact_hud(text, *, rows=None, idle=True):
     lines = [line.strip() for line in text.splitlines() if line.strip()]
     activities = worker_rows(text) + shell_rows(text) + advisor_rows(text)
     alerts = [line for line in lines if line.startswith(('Workers stale', 'Workers unavailable',
-              'Shells stale', 'Shells unavailable', 'Watcher ', 'Wake pending', 'Wake delivery ', 'Restart report '))]
+              'Shells stale', 'Shells unavailable', 'Background status unavailable', 'Watcher ', 'Wake pending', 'Wake delivery ', 'Restart report '))]
     overflow = [line for line in lines if re.match(r'^\+\d+ more$', line)]
     hud = activities + alerts + overflow
     assert len(hud) <= 3, f'HUD exceeded three total rows\n{text}'
@@ -208,6 +217,16 @@ def write_health(home, parent, state, *, jobs=0, uncertain=0, reports=0, age=0):
     temporary.replace(target)
 
 
+def token_usage_record(thread, turn, total, lifetime):
+    def usage(tokens):
+        return dict(input_tokens=tokens, cached_input_tokens=0, output_tokens=0,
+                    reasoning_output_tokens=0, total_tokens=tokens)
+    return dict(timestamp='2026-10-17T00:00:00Z', type='token_usage_record', payload=dict(
+        thread_id=thread, turn_id=turn, session_id=thread, root_turn_id=turn,
+        response_id=f'fixture-{turn}', usage=usage(total),
+        turn_token_usage=usage(total), thread_token_usage=usage(lifetime)))
+
+
 def shell_hud_smoke(binary, root, evidence):
     """Remote snapshots are authoritative even when their PIDs are not local."""
     terminals, servers = [], []
@@ -231,7 +250,7 @@ def shell_hud_smoke(binary, root, evidence):
             server.shells = [server.shell(700 + index, f'remote-root-{index}-held')]
             servers.append(server)
             terminals.append(Terminal(binary, home, workspace, server.url))
-            assert not (home / 'codex-plus').exists(), 'shell test accidentally registered park state'
+            assert_no_park_records(home)
         first, second = terminals
         wait(terminals, lambda: rows(first) and 'remote-root-0-held' in first.text and
              'remote-root-1-held' in second.text and len(worker_rows(second.text)) == 2 and
@@ -295,10 +314,16 @@ def shell_hud_smoke(binary, root, evidence):
         (evidence / 'shell-alert-overflow-screen.txt').write_text(first.text + '\n')
         servers[0].shell_next_cursor = None
         wait(terminals, lambda: '+2 more' in first.text and 'stale' not in first.text, 'cyclic pagination did not recover')
-        servers[0].shells = [servers[0].shell(730, 'printf 界界界 \x1b[31mcontrol\x1b[0m\nnext\r\ttab\x1b]0;shell-control-title\x07')]
-        wait(terminals, lambda: len(rows(first)) == 1 and '界' in first.text, 'Unicode shell command did not render')
+        unsafe_command = 'printf 界界界 \x1b[31mcontrol\x1b[0m\nnext\r\ttab\x1b]0;shell-control-title\x07'
+        servers[0].shells = [servers[0].shell(730, unsafe_command)]
+        wait(terminals, lambda: len(rows(first)) == 1 and 'Background · Shell task ·' in first.text,
+             'opaque shell command did not use a compact fallback')
         assert '\x1b' not in first.text and not any(line.strip() in ('next', 'tab') for line in first.screen.display), first.text
         assert b'\x1b[31mcontrol' not in first.output and b'\x1b]0;shell-control-title\x07' not in first.output, 'shell command injected terminal controls'
+        servers[0].shells = [servers[0].shell(731,
+            '# codex-plus-shell: background\n# codex-plus-task: 检查界界界\n' + unsafe_command)]
+        wait(terminals, lambda: len(rows(first)) == 1 and '检查界界界' in first.text,
+             'Unicode task topic did not render')
         replies = first.resize(10, 50)
         wait(terminals, lambda: first.resized_frame(replies) and rows(first) and 'shell-draft-0' in first.text, 'narrow shell row lost header or draft')
         os.write(first.master, b'-narrow')
@@ -331,7 +356,7 @@ def shell_hud_smoke(binary, root, evidence):
             (evidence / f'shell-fixture-errors-{index}.json').write_text(json.dumps(server.errors, indent=2) + '\n')
 
 
-def local_shell_smoke(binary, root, evidence):
+def local_shell_smoke(binary, root, evidence, task_topic=None):
     """The real embedded app-server retains a yielded command after its turn ends."""
     home, workspace = root / 'local-shell-home', root / 'local-shell-workspace'
     home.mkdir(mode=0o700)
@@ -341,6 +366,8 @@ def local_shell_smoke(binary, root, evidence):
                f'(( SECONDS < deadline )); do sleep 0.1; done; '
                f'test -e {shlex.quote(str(release))} || exit 124; '
                f'printf canonical-shell-completion > {shlex.quote(str(finished))}')
+    if task_topic:
+        command = f'# codex-plus-shell: background\n# codex-plus-task: {task_topic}\n{command}'
     provider = ResponsesProvider(command)
     terminal = None
     (home / 'config.toml').write_text(write_model_catalog(home) + f'''model="gpt-6.1-sol"
@@ -394,7 +421,10 @@ stream_max_retries=0
         provider.final_gate.set()
         wait([terminal], lambda: completed_turns() == 1 and shell_rows(terminal.text) and 'seen ' in terminal.text,
              'real idle local root did not show its still-running background shell', 30)
-        assert not (home / 'codex-plus').exists(), 'real shell was registered with park'
+        assert_no_park_records(home)
+        if task_topic:
+            assert any(row.startswith(f'Background · {task_topic} · seen ')
+                       for row in shell_rows(terminal.text)), terminal.text
         assert provider.count == 2, f'expected two fixture model calls, got {provider.count}; see local-shell-provider-requests.json'
         assert not finished.exists(), 'command stopped before editable idle interval'
         assert_compact_hud(terminal.text, rows=1)
@@ -413,6 +443,11 @@ stream_max_retries=0
         assert finished.read_text() == 'canonical-shell-completion'
         assert 'local-shell-idle-draft' in terminal.text and provider.count == requests_before == 2
         assert completed_turns() == 1, 'shell polling or completion started an extra turn'
+        if task_topic:
+            commands = [json.loads(event['payload']['arguments']).get('cmd')
+                        for event in events() if event.get('payload', {}).get('type') == 'function_call'
+                        and event['payload'].get('name') == 'exec_command']
+            assert command in commands, 'HUD topic replaced the stored full command'
         (evidence / 'local-shell-complete-screen.txt').write_text(terminal.text + '\n')
         (evidence / 'local-shell-rollout.json').write_text(json.dumps(events(), indent=2) + '\n')
         return ['real private local embedded app-server: one loopback tool turn, yielded finite shell survives completed turn, row and editable idle draft without park registration, actual command completion removes row, zero extra model calls or turns']
@@ -840,7 +875,8 @@ stream_max_retries=0
             assert len(advisor_transcript_rows(terminal.text)) == 1, terminal.text
             assert '• Advised on ' not in terminal.text, 'initial exec yield prematurely completed advisor row'
             if wrapper:
-                assert any('bash -c' in row for row in shell_rows(terminal.text)), \
+                assert any(row.startswith('Background · Shell task · seen ')
+                           for row in shell_rows(terminal.text)), \
                     'unrelated shell was hidden or relabeled as advisor'
                 assert 'Running # codex-plus-advisor:' not in terminal.text, terminal.text
             else:
@@ -854,6 +890,10 @@ stream_max_retries=0
             wait([terminal], lambda: terminal.resized_frame(replies) and 'advisor-live-draft' in terminal.text and
                  len(advisor_transcript_rows(terminal.text)) == 1, 'resize lost live advisor or draft')
             (evidence / f'advisor-transcript-{label}-live.txt').write_text(terminal.text + '\n')
+            # Both completed cells need room when the unrelated shell finishes last.
+            replies = terminal.resize(32, 120)
+            wait([terminal], lambda: terminal.resized_frame(replies) and 'advisor-live-draft' in terminal.text,
+                 'normal advisor viewport did not restore draft')
             release.touch()
             expected = ('• Advisor failed on ' if failed else '• Advised on ') + topic
             wait([terminal], lambda: expected in terminal.text and provider.count == 2,
@@ -949,18 +989,37 @@ def tmux_smoke(binary, root, evidence):
 
 
 def worker_history_smoke(binary, root, evidence):
-    """Historical children retain their rows without fetching terminal turns."""
+    """Local current-turn tokens and retained group history need no model calls."""
     home, workspace = root / 'history-home', root / 'history-workspace'
-    home.mkdir()
+    home.mkdir(mode=0o700)
     workspace.mkdir()
     (home / 'config.toml').write_text('model="gpt-6-sol"\nmodel_provider="openai"\nsuppress_unstable_features_warning=true\nanalytics.enabled=false\nfeatures.daemon_auto_start=false\n')
     (home / 'auth.json').write_text('{"OPENAI_API_KEY":"isolated-fixture-only"}')
-    server = AppServer('00000000-0000-0000-0008-000000000001', workspace, 33)
+    socket = home / 'app-server-control/app-server-control.sock'
+    socket.parent.mkdir(mode=0o700)
+    server = AppServer('00000000-0000-0000-0008-000000000001', workspace, 33,
+                       socket_path=socket)
+    socket.chmod(0o600)
     terminal = None
     samples = {}
     for worker in server.workers:
         worker['status'] = {'type': 'idle'}
         server.turns[worker['id']][0].update(status='completed', completedAt=int(time.time()))
+    active = server.workers[2]
+    rollout = home / 'reused-worker.jsonl'
+    active['path'] = str(rollout)
+    rollout.write_text('\n'.join(json.dumps(token_usage_record(active['id'], turn, total, lifetime))
+        for turn, total, lifetime in [('older-turn', 342061522, 342061522),
+                                      ('latest', 679013, 342740535)]) + '\n')
+    with sqlite3.connect(home / 'state_5.sqlite') as database:
+        database.execute('CREATE TABLE threads (id TEXT PRIMARY KEY, tokens_used INTEGER NOT NULL)')
+        database.executemany('INSERT INTO threads VALUES (?, ?)',
+            [(worker['id'], 342740535 if worker is active else 1000000)
+             for worker in server.workers])
+        database_rows = database.execute('SELECT * FROM threads ORDER BY id').fetchall()
+
+    def active_line():
+        return next((line for line in worker_rows(terminal.text) if 'worker 3 ·' in line), '')
 
     def sample(label, expected):
         start = len(server.requests)
@@ -979,24 +1038,50 @@ def worker_history_smoke(binary, root, evidence):
         assert_compact_hud(terminal.text)
 
     try:
-        terminal = Terminal(binary, home, workspace, server.url)
+        terminal = Terminal(binary, home, workspace)
         wait([terminal], lambda: composer_ready(terminal.text), 'history composer unavailable', 30)
         sample('33 inactive', {})
         assert not worker_rows(terminal.text), terminal.text
+        # Stock TUI startup initializes SQLite bookkeeping before HUD-only refreshes.
+        database_before = (home / 'state_5.sqlite').read_bytes()
+        active['status'] = {'type': 'active', 'activeFlags': []}
+        turn = server.turns[active['id']][0]
+        turn.update(status='inProgress', startedAt=int(time.time()) - 108, completedAt=None)
+        wait([terminal], lambda: '679K tok' in active_line(), 'latest turn used lifetime tokens')
+        line = active_line()
+        assert '343M tok' not in line, line
+        age = re.search(r' · (\d+):(\d{2}) · ', line)
+        assert 108 <= int(age[1]) * 60 + int(age[2]) < 130, line
+        assert_compact_hud(terminal.text, rows=1)
+        (evidence / 'history-current-turn-screen.txt').write_text(terminal.text + '\n')
+        turn.update(id='followup-turn', startedAt=int(time.time()))
+        wait([terminal], lambda: '? tok' in active_line(), 'new turn inherited prior or lifetime tokens')
+        assert re.search(r' · 0:\d{2} · \? tok$', active_line()), active_line()
+        with rollout.open('a') as stream:
+            stream.write(json.dumps(token_usage_record(active['id'], 'followup-turn', 1234, 342741769)) + '\n')
+        rollout_before = rollout.read_bytes()
+        wait([terminal], lambda: '1.23K tok' in active_line(), 'follow-up current-turn usage missing')
+        assert (home / 'state_5.sqlite').read_bytes() == database_before, 'HUD wrote token database'
+        terminal.close()
+        terminal = Terminal(binary, home, workspace)
+        wait([terminal], lambda: '1.23K tok' in active_line(), 'restart lost reported current-turn usage', 30)
+        os.write(terminal.master, b'token-draft')
+        wait([terminal], lambda: 'token-draft' in terminal.text, 'token refresh blocked composer')
+        assert_compact_hud(terminal.text, rows=1)
+        (evidence / 'history-restarted-turn-screen.txt').write_text(terminal.text + '\n')
         # Keep inactive members in an active group, including its oldest creation time.
         for index, member in enumerate(('finished', 'error', 'active')):
             worker = server.workers[index]
             worker['source']['subAgent']['thread_spawn']['agent_path'] = f'/root/history__b1__{member}'
         server.workers[1]['status'] = {'type': 'systemError'}
         server.workers[3]['status'] = {'type': 'notLoaded'}
-        active = server.workers[2]
-        active['status'] = {'type': 'active', 'activeFlags': []}
-        server.turns[active['id']][0].update(status='inProgress', completedAt=None)
-        wait([terminal], lambda: 'history (1 agent)' in terminal.text, 'mixed history group missing')
+        wait([terminal], lambda: 'history (1 agent)' in terminal.text and '345M tok' in terminal.text,
+             'mixed history group lost inactive members or lifetime tokens')
         sample('one active among history', {active['id']: 1})
         line = next(line for line in worker_rows(terminal.text) if 'history (1 agent)' in line)
         age = re.search(r' · (\d+):(\d{2}) · ', line)
         assert int(age[1]) * 60 + int(age[2]) >= 120, line
+        assert line.endswith('345M tok'), line
         for flag, label in [('waitingOnApproval', 'wait approval'), ('waitingOnUserInput', 'wait input')]:
             active['status']['activeFlags'] = [flag]
             wait([terminal], lambda: label in terminal.text, f'{label}: active flag disappeared')
@@ -1006,7 +1091,11 @@ def worker_history_smoke(binary, root, evidence):
         sample('all inactive after completion', {})
         assert not server.errors, server.errors
         assert not any(request['method'] in ('turn/start', 'turn/steer') for request in server.requests)
-        return ['33 historical children: zero inactive turn reads, one per active or waiting child per refresh, mixed group age retained, active-to-idle collapse, zero model calls']
+        assert (home / 'state_5.sqlite').read_bytes() == database_before, 'HUD wrote token database'
+        with sqlite3.connect(f'file:{home / "state_5.sqlite"}?mode=ro', uri=True) as database:
+            assert database.execute('SELECT * FROM threads ORDER BY id').fetchall() == database_rows, 'token counters changed'
+        assert rollout.read_bytes() == rollout_before, 'HUD wrote worker rollout'
+        return ['33 local historical children: zero inactive turn reads; reused worker shows 679K current-turn tokens at 1:48 instead of 343M lifetime; follow-up resets to unknown then 1.23K and survives TUI restart; inactive group members retain 345M lifetime tokens and oldest age; active-to-idle collapse; editable last-six composer; read-only database and zero model calls']
     finally:
         if terminal is not None:
             (evidence / 'history-screen.txt').write_text(terminal.text + '\n')
@@ -1014,6 +1103,7 @@ def worker_history_smoke(binary, root, evidence):
         server.close()
         (evidence / 'history-rpc.json').write_text(json.dumps(server.requests, indent=2) + '\n')
         (evidence / 'history-request-counts.json').write_text(json.dumps(samples, indent=2) + '\n')
+        shutil.copyfile(rollout, evidence / 'history-worker-rollout.jsonl')
 
 
 def run(binary, evidence):
@@ -1041,6 +1131,10 @@ def run(binary, evidence):
             with sqlite3.connect(home / 'state_5.sqlite') as database:
                 database.execute('CREATE TABLE threads (id TEXT PRIMARY KEY, tokens_used INTEGER NOT NULL)')
                 database.executemany('INSERT INTO threads VALUES (?, ?)', [(worker['id'], 987654) for worker in server.workers])
+            for worker in server.workers:
+                path = home / f"{worker['id']}.jsonl"
+                path.write_text(json.dumps(token_usage_record(worker['id'], 'latest', 987654, 987654)) + '\n')
+                worker['path'] = str(path)
             servers.append(server)
             terminals.append(Terminal(binary, home, workspace, server.url))
 

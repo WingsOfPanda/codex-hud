@@ -33,8 +33,17 @@ working directory; do not assume the command is installed on PATH.
 
 Before launching shell work, follow [the shell workflow](docs/shell-workflow.md):
 classify noninteractive work explicitly, capture logs with the managed runner,
+give the HUD a short purpose with `# codex-plus-task: TOPIC` after the mode line,
 and request a two-second foreground yield. Keep interactive and unclassified
-commands visible. Use the background mode immediately for known long jobs.
+commands visible. Use background display for long work that remains on the
+native-shell path, including independent AP sessions.
+
+Before assigning or launching expensive work, read the
+[reviewed job workflow](docs/detached-jobs.md#agent-workflow). Interactive roots
+plan preparation, allowed quick checks and the worker's handoff point. Workers
+hand back expected runs over eight minutes and hardware/service operations;
+unexpected overruns finish normally. The root reviews and launches detached
+jobs, seeking safe parallelism after checking resources and worktrees.
 
 When dispatching related workers, use the explicit topic/batch naming rule in
 [Worker groups](README.md#worker-groups).
@@ -65,3 +74,8 @@ For cancellation, unavailable watcher health, or uncertain delivery, follow
 [status and cancellation](docs/background-work.md#status-and-cancellation).
 Use `./bin/codex-plus park --status` to inspect state. Preserve the ledger and
 report unknown outcomes rather than blindly resending callbacks or rerunning jobs.
+
+For Plus-owned goals, read [goal checkpoints and recovery](docs/goals.md#model-workflow)
+on start/resume, before ending a goal turn, or when goal status needs input.
+Use the admitted identity and structured checkpoint; preserve newer user
+direction, report-only barriers and existing action approvals.

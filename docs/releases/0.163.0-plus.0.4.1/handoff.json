@@ -1,0 +1,39 @@
+{
+  "release": "0.163.0-plus.0.4.1",
+  "plus_commit": "727163057a18aa17ff9cd539ae2af2440b6e890d",
+  "coordinator_protocol": 5,
+  "execution_record_format": 1,
+  "upstream": {
+    "version": "0.163.0",
+    "tag": "rust-v0.163.0",
+    "commit": "83086188ae0614bd882818ff1aa23f3194962012"
+  },
+  "note": "docs/releases/0.163.0-plus.0.4.1.md",
+  "targets": {
+    "x86_64": {
+      "triple": "x86_64-unknown-linux-gnu",
+      "asset": "codex-plus-0.163.0-plus.0.4.1-x86_64-unknown-linux-gnu.tar.gz",
+      "sha256": "6f6b6b153f8c360859f7abdcbfe3b36e97f986cf960ed0bb6f5d265d0d6e367c",
+      "tree_sha256": "e950aacaec0367aef5360a3e0e1ae9290e9be8eccbe18e1a7acc7f0e309b0a8e",
+      "manifest_sha256": "8e6af985ad5382ab131cd3db2f58c3af38f891074d10baf0819f683ff1491cf5"
+    },
+    "aarch64": {
+      "triple": "aarch64-unknown-linux-gnu",
+      "asset": "codex-plus-0.163.0-plus.0.4.1-aarch64-unknown-linux-gnu.tar.gz",
+      "sha256": "0278554e19f11b8bb1409400179bf980f1bbcaff0ef85093342d3f8a158658b4",
+      "tree_sha256": "4a16c1e22454ebb44ba67d7053b2f36b5c84fea85e2ca0e1ce9d1ff3fd0e7284",
+      "manifest_sha256": "cdb03979798e5a4e6bdc9f9a9ac3268a54d5b895cf3e3fa7f538cd07c92e7986"
+    }
+  },
+  "rollout": {
+    "daemon_restart": false,
+    "quiet_checkpoint": true,
+    "executions": "wait",
+    "session_restart": "optional",
+    "agents_md": null,
+    "retain": [
+      "0.163.0-plus.0.4.0"
+    ],
+    "notes": "Helper-only patch; no background.sqlite schema change or new migration, protocol 5 and execution format 1 unchanged. Native x86 and ARM quiet rollback to 0.4.0 over 0.4.1-written records and bidirectional maintenance holds passed. Drain actual work, enter hold with current, stage quiet and install, then leave with the selected helper; preserve in-use and unresolved-execution package directories. Mixed 0.4.0/0.4.1 helpers are qualified for the tested shared-ledger input/status contract. Restart 0.4.0 TUIs to obtain adjacent-helper fixes; restart is not required for this version mix correctness. Legacy 0.3.x adjacent helpers are not qualified against protocol-5 state: restart those sessions before further Plus operations; retaining their directories does not authorize rollback. Fresh-home operator probe shapes unchanged. Preserve official daemon, native goals disabled, updater policy and global AGENTS block. Fleet staging/test, default-branch merge and rollout retain their separate user gates."
+  }
+}

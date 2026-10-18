@@ -76,6 +76,7 @@ class PackageIntegrityTests(unittest.TestCase):
         self.manifest = {
             'schema_version': 1, 'release': package_release.RELEASE, 'plus_commit': 'a' * 40,
             'coordinator_protocol': package_release.COORDINATOR_PROTOCOL,
+            'execution_record_format': package_release.EXECUTION_RECORD_FORMAT,
             'frontend_patch_sha256': 'b' * 64, 'target': 'x86_64-unknown-linux-gnu',
             'upstream': {'version': '0.163.0', 'tag': 'rust-v0.163.0',
                          'commit': package_release.UPSTREAM_COMMIT},
@@ -105,12 +106,13 @@ class PackageIntegrityTests(unittest.TestCase):
         return package_release.verify_package(self.package)
 
     def test_valid_package_and_declared_hash_recipe(self):
-        self.assertEqual(package_release.COORDINATOR_PROTOCOL, 2)
+        self.assertEqual(package_release.COORDINATOR_PROTOCOL, 5)
+        self.assertEqual(package_release.EXECUTION_RECORD_FORMAT, 1)
         self.assertFalse((self.package / 'codex-resources/zsh').exists())
         self.assertEqual(self.verify()['tree_sha256'], self.manifest['tree_sha256'])
 
     def test_coordinator_protocol_must_be_explicit_and_supported(self):
-        for value in (None, True, 0, 1, '2'):
+        for value in (None, True, 0, 1, 2, 3, 4, '5'):
             with self.subTest(protocol=value):
                 self.manifest['coordinator_protocol'] = value
                 self.save_manifest()
@@ -122,10 +124,25 @@ class PackageIntegrityTests(unittest.TestCase):
         self.assertIn('rust-runtime/Cargo.lock', package_release.SOURCE_FILES)
         self.assertFalse(any(name.startswith('codex_plus/') for name in package_release.SOURCE_FILES))
         self.assertIn('docs/advisor.md', package_release.DOCS)
+        self.assertIn('docs/goals.md', package_release.DOCS)
+        self.assertIn('docs/custom-goals.md', package_release.DOCS)
+        self.assertIn('docs/detached-jobs.md', package_release.DOCS)
+        self.assertIn('docs/ultracode.md', package_release.DOCS)
+        self.assertIn('docs/ultracode-bootstrap.txt', package_release.SOURCE_FILES)
+        self.assertIn('docs/ultracode-policy.md', package_release.SOURCE_FILES)
+        self.assertIn('docs/evidence/custom-goals.json', package_release.DOCS)
         (self.package / 'bin/codex-plus-runtime').unlink()
         self.seal()
         with self.assertRaisesRegex(ValueError, 'Missing regular package file: bin/codex-plus-runtime'):
             self.verify()
+
+    def test_execution_record_format_is_independent_and_explicit(self):
+        for value in (None, True, 0, 2, '1'):
+            with self.subTest(execution_record_format=value):
+                self.manifest['execution_record_format'] = value
+                self.save_manifest()
+                with self.assertRaisesRegex(ValueError, 'execution record format'):
+                    self.verify()
 
     def test_previous_toolchain_provenance_is_not_accepted_for_new_packages(self):
         self.manifest['build']['rust'] = '1.99.0'

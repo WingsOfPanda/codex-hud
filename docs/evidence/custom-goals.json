@@ -1,0 +1,637 @@
+{
+  "schema_version": 1,
+  "candidate": "0.163.0-plus.0.3.2",
+  "status": "x86 source/development acceptance; no release archives or deployment",
+  "base_commit": "c090a6ac7490249ed312251ee9f29408d37c5aa4",
+  "branch": "feat/custom-goals-0.3.2",
+  "rust": "1.99.1",
+  "coordinator_protocol": 3,
+  "upstream": {
+    "version": "0.163.0",
+    "commit": "83086188ae0614bd882818ff1aa23f3194962012"
+  },
+  "source_proof": {
+    "upstream": "83086188ae0614bd882818ff1aa23f3194962012",
+    "frontend_only": true,
+    "clean_forward_reverse": true,
+    "exact_source_reconstruction": true,
+    "source_tree": "0058658fca3f2065d38bfdc20d000011429af659",
+    "patch_sha256": "5657158e0f8878d4721453d22366f1f2c4fcd52b48a7bcd1245eaa2dfed4fbe6",
+    "external_lock_packages_unchanged": 1314
+  },
+  "artifacts": {
+    "frontend": {
+      "path": ".build/custom-goal-impl/root/final-v9-release/bin/codex",
+      "profile": "dev-small",
+      "sha256": "72f30d48f3c5534a15d4afb65cb5e07c534bdc096ab13f2066e380caec280f4d"
+    },
+    "runtime": {
+      "path": ".build/custom-goal-impl/root/final-v9-release/bin/codex-plus-runtime",
+      "profile": "release",
+      "sha256": "b4ee603c3f6bda26bb870db9dffcb3b9a0840c7b2198bb3c5b2c00cee86e6f82",
+      "source_inventory": ".build/custom-goal-impl/source-runtime-v9-release.sha256",
+      "source_inventory_sha256": "4ce8d8f7ca9135a079d87e1cf2030c758f54ceeb1e7d116b2de9d7b1e7aa4e9f"
+    },
+    "code_mode_host": {
+      "path": ".build/custom-goal-impl/root/final-v9-release/bin/codex-code-mode-host",
+      "sha256": "3062b09d807c146984352ceb69efb3b3b6bd7d95b784bf568bd05f0d1accd299",
+      "scope": "matching pinned development fixture; full release rebuild remains required"
+    },
+    "official_daemon": {
+      "path": ".build/upstream-0163/official-x86/bin/codex",
+      "sha256": "399ff69c431c066e40de318fba45c2b07f45a76b19939d247ee4828fc70c4215"
+    }
+  },
+  "root_checks": [
+    {
+      "name": "goals-stock",
+      "exit_code": 0,
+      "count": null,
+      "seconds": 132.09,
+      "log": ".build/custom-goal-impl/root/final-v9-release/gates/goals-stock.log",
+      "command": [
+        "/usr/local/Python-3.12.11/bin/python3",
+        "tests/test_custom_goals_stock.py",
+        "--runtime",
+        "/home/liupan/Aerius/codex-plus/.build/custom-goal-impl/root/final-v9-release/bin/codex-plus-runtime",
+        "--stock-binary",
+        "/home/liupan/Aerius/codex-plus/.build/upstream-0163/official-x86/bin/codex",
+        "--evidence",
+        "/home/liupan/Aerius/codex-plus/.build/custom-goal-impl/root/final-v9-release/goals",
+        "--scenario",
+        "all"
+      ]
+    },
+    {
+      "name": "goals-tui",
+      "exit_code": 0,
+      "count": null,
+      "seconds": 6.831,
+      "log": ".build/custom-goal-impl/root/final-v9-release/gates/goals-tui.log",
+      "command": [
+        "/tmp/codex-hud-native-smoke-venv/bin/python",
+        "tests/test_custom_goal_tui.py",
+        "--binary",
+        "/home/liupan/Aerius/codex-plus/.build/custom-goal-impl/root/final-v9-release/bin/codex",
+        "--runtime",
+        "/home/liupan/Aerius/codex-plus/.build/custom-goal-impl/root/final-v9-release/bin/codex-plus-runtime",
+        "--stock-binary",
+        "/home/liupan/Aerius/codex-plus/.build/upstream-0163/official-x86/bin/codex",
+        "--evidence",
+        "/home/liupan/Aerius/codex-plus/.build/custom-goal-impl/root/final-v9-release/goal-tui",
+        "--scenario",
+        "all"
+      ]
+    },
+    {
+      "name": "launcher",
+      "exit_code": 0,
+      "count": 11,
+      "seconds": 0.715,
+      "log": ".build/custom-goal-impl/root/final-v9-release/gates/launcher.log",
+      "command": [
+        "/tmp/codex-hud-native-smoke-venv/bin/python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-p",
+        "test_launcher.py",
+        "-v"
+      ]
+    },
+    {
+      "name": "native-smoke",
+      "exit_code": 0,
+      "count": null,
+      "seconds": 110.806,
+      "log": ".build/custom-goal-impl/root/final-v9-release/gates/native-smoke.log",
+      "command": [
+        "/tmp/codex-hud-native-smoke-venv/bin/python",
+        "tests/native_smoke.py",
+        "/home/liupan/Aerius/codex-plus/.build/custom-goal-impl/root/final-v9-release/bin/codex",
+        "--evidence",
+        "/home/liupan/Aerius/codex-plus/.build/custom-goal-impl/root/final-v9-release/native-smoke"
+      ]
+    },
+    {
+      "name": "park-regressions",
+      "exit_code": 0,
+      "count": 27,
+      "seconds": 42.337,
+      "log": ".build/custom-goal-impl/root/final-v9-release/gates/park-regressions.log",
+      "command": [
+        "/usr/local/Python-3.12.11/bin/python3",
+        "tests/test_rust_runtime_acceptance.py",
+        "--runtime",
+        "/home/liupan/Aerius/codex-plus/.build/custom-goal-impl/root/final-v9-release/bin/codex-plus-runtime",
+        "--evidence",
+        "/home/liupan/Aerius/codex-plus/.build/custom-goal-impl/root/final-v9-release/park-regressions",
+        "-v"
+      ]
+    },
+    {
+      "name": "runtime-release-unit",
+      "exit_code": 0,
+      "count": 112,
+      "seconds": 9.985,
+      "log": ".build/custom-goal-impl/root/final-v9-release/gates/runtime-release-unit.log",
+      "command": [
+        "cargo",
+        "+1.99.1",
+        "test",
+        "--locked",
+        "--release",
+        "--manifest-path",
+        "rust-runtime/Cargo.toml",
+        "--target-dir",
+        ".build/runtime-target",
+        "--lib"
+      ]
+    },
+    {
+      "name": "rust-chatwidget__tests__exec_flow",
+      "exit_code": 0,
+      "count": 53,
+      "seconds": 0.865,
+      "log": ".build/custom-goal-impl/root/final-v8/gates/rust-chatwidget__tests__exec_flow.log",
+      "command": [
+        "cargo",
+        "+1.99.1",
+        "test",
+        "--locked",
+        "-p",
+        "codex-tui",
+        "--lib",
+        "chatwidget::tests::exec_flow",
+        "--profile",
+        "dev-small",
+        "-j",
+        "12"
+      ]
+    },
+    {
+      "name": "rust-goal",
+      "exit_code": 0,
+      "count": 69,
+      "seconds": 1.317,
+      "log": ".build/custom-goal-impl/root/final-v8/gates/rust-goal.log",
+      "command": [
+        "cargo",
+        "+1.99.1",
+        "test",
+        "--locked",
+        "-p",
+        "codex-tui",
+        "--lib",
+        "goal",
+        "--profile",
+        "dev-small",
+        "-j",
+        "12"
+      ]
+    },
+    {
+      "name": "rust-shell_policy",
+      "exit_code": 0,
+      "count": 18,
+      "seconds": 0.866,
+      "log": ".build/custom-goal-impl/root/final-v8/gates/rust-shell_policy.log",
+      "command": [
+        "cargo",
+        "+1.99.1",
+        "test",
+        "--locked",
+        "-p",
+        "codex-tui",
+        "--lib",
+        "shell_policy",
+        "--profile",
+        "dev-small",
+        "-j",
+        "12"
+      ]
+    },
+    {
+      "name": "rust-status_surface",
+      "exit_code": 0,
+      "count": 38,
+      "seconds": 0.815,
+      "log": ".build/custom-goal-impl/root/final-v8/gates/rust-status_surface.log",
+      "command": [
+        "cargo",
+        "+1.99.1",
+        "test",
+        "--locked",
+        "-p",
+        "codex-tui",
+        "--lib",
+        "status_surface",
+        "--profile",
+        "dev-small",
+        "-j",
+        "12"
+      ]
+    },
+    {
+      "name": "rust-thread_transcript__tools__tests",
+      "exit_code": 0,
+      "count": 6,
+      "seconds": 0.815,
+      "log": ".build/custom-goal-impl/root/final-v8/gates/rust-thread_transcript__tools__tests.log",
+      "command": [
+        "cargo",
+        "+1.99.1",
+        "test",
+        "--locked",
+        "-p",
+        "codex-tui",
+        "--lib",
+        "thread_transcript::tools::tests",
+        "--profile",
+        "dev-small",
+        "-j",
+        "12"
+      ]
+    },
+    {
+      "name": "rust-worker_hud",
+      "exit_code": 0,
+      "count": 42,
+      "seconds": 0.966,
+      "log": ".build/custom-goal-impl/root/final-v8/gates/rust-worker_hud.log",
+      "command": [
+        "cargo",
+        "+1.99.1",
+        "test",
+        "--locked",
+        "-p",
+        "codex-tui",
+        "--lib",
+        "worker_hud",
+        "--profile",
+        "dev-small",
+        "-j",
+        "12"
+      ]
+    },
+    {
+      "name": "stock-lifecycle",
+      "exit_code": 0,
+      "count": null,
+      "seconds": 28.708,
+      "log": ".build/custom-goal-impl/root/final-v9-release/gates/stock-lifecycle.log",
+      "command": [
+        "/usr/local/Python-3.12.11/bin/python3",
+        "tests/test_rust_runtime_stock_lifecycle.py",
+        "--runtime",
+        "/home/liupan/Aerius/codex-plus/.build/custom-goal-impl/root/final-v9-release/bin/codex-plus-runtime",
+        "--stock-binary",
+        "/home/liupan/Aerius/codex-plus/.build/upstream-0163/official-x86/bin/codex",
+        "--evidence",
+        "/home/liupan/Aerius/codex-plus/.build/custom-goal-impl/root/final-v9-release/stock-lifecycle",
+        "--scenario",
+        "all"
+      ]
+    },
+    {
+      "name": "test_build_native",
+      "exit_code": 0,
+      "count": 11,
+      "seconds": 1.968,
+      "log": ".build/custom-goal-impl/root/final-v8/gates/test_build_native.log",
+      "command": [
+        "/tmp/codex-hud-native-smoke-venv/bin/python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-p",
+        "test_build_native.py",
+        "-v"
+      ]
+    },
+    {
+      "name": "test_packaging",
+      "exit_code": 0,
+      "count": 40,
+      "seconds": 1.567,
+      "log": ".build/custom-goal-impl/root/final-v9-release/gates/test_packaging.log",
+      "command": [
+        "/tmp/codex-hud-native-smoke-venv/bin/python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-p",
+        "test_packaging.py",
+        "-v"
+      ]
+    },
+    {
+      "name": "test_terminal_fixture",
+      "exit_code": 0,
+      "count": 18,
+      "seconds": 0.114,
+      "log": ".build/custom-goal-impl/root/final-v8/gates/test_terminal_fixture.log",
+      "command": [
+        "/tmp/codex-hud-native-smoke-venv/bin/python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-p",
+        "test_terminal_fixture.py",
+        "-v"
+      ]
+    },
+    {
+      "name": "upgrade-regressions",
+      "exit_code": 0,
+      "count": 7,
+      "seconds": 9.58,
+      "log": ".build/custom-goal-impl/root/final-v9-release/gates/upgrade-regressions.log",
+      "command": [
+        "/usr/local/Python-3.12.11/bin/python3",
+        "tests/test_rust_runtime_upgrade.py",
+        "--runtime",
+        "/home/liupan/Aerius/codex-plus/.build/custom-goal-impl/root/final-v9-release/bin/codex-plus-runtime",
+        "--evidence",
+        "/home/liupan/Aerius/codex-plus/.build/custom-goal-impl/root/final-v9-release/upgrade-regressions",
+        "-v"
+      ]
+    },
+    {
+      "name": "upstream-tui",
+      "exit_code": 0,
+      "count": null,
+      "seconds": 9.682,
+      "log": ".build/custom-goal-impl/root/final-v8/gates/upstream-tui.log",
+      "command": [
+        "/tmp/codex-hud-native-smoke-venv/bin/python",
+        "tests/test_upstream_0163_tui.py",
+        "/home/liupan/Aerius/codex-plus/.build/custom-goal-impl/root/final-v8/bin/codex",
+        "--evidence",
+        "/home/liupan/Aerius/codex-plus/.build/custom-goal-impl/root/final-v8/upstream-tui"
+      ]
+    }
+  ],
+  "goal_scenarios": [
+    {
+      "scenario": "accepted-before-admission",
+      "passed": true,
+      "evidence": ".build/custom-goal-impl/root/final-v9-release/goals/accepted-before-admission/report.json"
+    },
+    {
+      "scenario": "active-edit-replace",
+      "passed": true,
+      "evidence": ".build/custom-goal-impl/root/final-v9-release/goals/active-edit-replace/report.json"
+    },
+    {
+      "scenario": "already-finished-wait",
+      "passed": true,
+      "evidence": ".build/custom-goal-impl/root/final-v9-release/goals/already-finished-wait/report.json"
+    },
+    {
+      "scenario": "checkpoint-before-eos-crash",
+      "passed": true,
+      "evidence": ".build/custom-goal-impl/root/final-v9-release/goals/checkpoint-before-eos-crash/report.json"
+    },
+    {
+      "scenario": "cli-transactions",
+      "passed": true,
+      "evidence": ".build/custom-goal-impl/root/final-v9-release/goals/cli-transactions/report.json"
+    },
+    {
+      "scenario": "cold-provenance-gap",
+      "passed": true,
+      "evidence": ".build/custom-goal-impl/root/final-v9-release/goals/cold-provenance-gap/report.json"
+    },
+    {
+      "scenario": "completion-before-eos",
+      "passed": true,
+      "evidence": ".build/custom-goal-impl/root/final-v9-release/goals/completion-before-eos/report.json"
+    },
+    {
+      "scenario": "input-epoch",
+      "passed": true,
+      "evidence": ".build/custom-goal-impl/root/final-v9-release/goals/input-epoch/report.json"
+    },
+    {
+      "scenario": "interrupted-old-origin",
+      "passed": true,
+      "evidence": ".build/custom-goal-impl/root/final-v9-release/goals/interrupted-old-origin/report.json"
+    },
+    {
+      "scenario": "lost-ack-replacement",
+      "passed": true,
+      "evidence": ".build/custom-goal-impl/root/final-v9-release/goals/lost-ack-replacement/report.json"
+    },
+    {
+      "scenario": "managed-isolation",
+      "passed": true,
+      "evidence": ".build/custom-goal-impl/root/final-v9-release/goals/managed-isolation/report.json"
+    },
+    {
+      "scenario": "mixed-independent-priority",
+      "passed": true,
+      "evidence": ".build/custom-goal-impl/root/final-v9-release/goals/mixed-independent-priority/report.json"
+    },
+    {
+      "scenario": "model-checkpoint",
+      "passed": true,
+      "evidence": ".build/custom-goal-impl/root/final-v9-release/goals/model-checkpoint/report.json"
+    },
+    {
+      "scenario": "partial-two-job-completion",
+      "passed": true,
+      "evidence": ".build/custom-goal-impl/root/final-v9-release/goals/partial-two-job-completion/report.json"
+    },
+    {
+      "scenario": "pause-admission-lock",
+      "passed": true,
+      "evidence": ".build/custom-goal-impl/root/final-v9-release/goals/pause-admission-lock/report.json"
+    },
+    {
+      "scenario": "paused-recovery",
+      "passed": true,
+      "evidence": ".build/custom-goal-impl/root/final-v9-release/goals/paused-recovery/report.json"
+    },
+    {
+      "scenario": "paused-results",
+      "passed": true,
+      "evidence": ".build/custom-goal-impl/root/final-v9-release/goals/paused-results/report.json"
+    },
+    {
+      "scenario": "pending-input-before-turn",
+      "passed": true,
+      "evidence": ".build/custom-goal-impl/root/final-v9-release/goals/pending-input-before-turn/report.json"
+    },
+    {
+      "scenario": "progress-guard",
+      "passed": true,
+      "evidence": ".build/custom-goal-impl/root/final-v9-release/goals/progress-guard/report.json"
+    },
+    {
+      "scenario": "read-only-plan-checkpoint",
+      "passed": true,
+      "evidence": ".build/custom-goal-impl/root/final-v9-release/goals/read-only-plan-checkpoint/report.json"
+    },
+    {
+      "scenario": "reconnect-restarts-observer",
+      "passed": true,
+      "evidence": ".build/custom-goal-impl/root/final-v9-release/goals/reconnect-restarts-observer/report.json"
+    },
+    {
+      "scenario": "replaced-recovery",
+      "passed": true,
+      "evidence": ".build/custom-goal-impl/root/final-v9-release/goals/replaced-recovery/report.json"
+    },
+    {
+      "scenario": "report-barrier",
+      "passed": true,
+      "evidence": ".build/custom-goal-impl/root/final-v9-release/goals/report-barrier/report.json"
+    },
+    {
+      "scenario": "shell-completion",
+      "passed": true,
+      "evidence": ".build/custom-goal-impl/root/final-v9-release/goals/shell-completion/report.json"
+    },
+    {
+      "scenario": "starting-before-rpc",
+      "passed": true,
+      "evidence": ".build/custom-goal-impl/root/final-v9-release/goals/starting-before-rpc/report.json"
+    },
+    {
+      "scenario": "stock-admitted-replay",
+      "passed": true,
+      "evidence": ".build/custom-goal-impl/root/final-v9-release/goals/stock-admitted-replay/report.json"
+    },
+    {
+      "scenario": "stock-isolation",
+      "passed": true,
+      "evidence": ".build/custom-goal-impl/root/final-v9-release/goals/stock-isolation/report.json"
+    },
+    {
+      "scenario": "unloaded-goal",
+      "passed": true,
+      "evidence": ".build/custom-goal-impl/root/final-v9-release/goals/unloaded-goal/report.json"
+    },
+    {
+      "scenario": "unproven-isolation",
+      "passed": true,
+      "evidence": ".build/custom-goal-impl/root/final-v9-release/goals/unproven-isolation/report.json"
+    },
+    {
+      "scenario": "worker-completion",
+      "passed": true,
+      "evidence": ".build/custom-goal-impl/root/final-v9-release/goals/worker-completion/report.json"
+    },
+    {
+      "scenario": "workspace-plan-checkpoint",
+      "passed": true,
+      "evidence": ".build/custom-goal-impl/root/final-v9-release/goals/workspace-plan-checkpoint/report.json"
+    }
+  ],
+  "counts_are_overlapping": true,
+  "terminal": {
+    "goal_pty_scenarios": 2,
+    "native_smoke_stages": 23,
+    "upstream_ui_scenarios": 2,
+    "max_activity_rows": 3,
+    "display_model_requests": 0,
+    "remote_acceptance_provider_requests": 0,
+    "actual_resume_restarts_observer": true
+  },
+  "fault_scope": {
+    "wire_protocol_fixtures": [
+      "lost-ack-replacement",
+      "pause-admission-lock",
+      "starting-before-rpc"
+    ],
+    "seeded_windows": [
+      "checkpoint-before-eos-crash",
+      "accepted-before-admission",
+      "starting-before-rpc",
+      "cold-provenance-gap",
+      "custom-goal-tui-restart"
+    ],
+    "restriction_cases": [
+      "read-only-plan-checkpoint",
+      "workspace-plan-checkpoint"
+    ],
+    "note": "Wire fixtures and seeded gaps are not official-daemon crash-at-instruction proofs. Restriction cases prove safe denial and NeedsInput, not sandbox write capability."
+  },
+  "reviews": {
+    "astra": {
+      "model": "gpt-6-astra",
+      "effort": "xhigh",
+      "result": ".build/custom-goal-impl/advisor/review.json",
+      "source_findings_addressed": 6,
+      "review_ran_tests": false
+    },
+    "additional_fixes": [
+      "shared mutation/admission lock",
+      "pending input identity and exact receipt",
+      "strict pre-bound goal jobs",
+      "superseded uncertain binding retirement",
+      "frozen accepted partial-result identities",
+      "independent callback versus goal EOS accounting"
+    ]
+  },
+  "preserved_failures": [
+    {
+      "evidence": ".build/custom-goal-impl/root/final-v8/summary.json",
+      "status": "failed historical run retained",
+      "causes": [
+        "compact notice fixture expected omitted reason",
+        "old supervisor fixture expected a blocked lock contender",
+        "68 MB debug helper validation exceeded fixed eight-second upgrade deadline"
+      ]
+    },
+    {
+      "evidence": ".build/custom-goal-impl/relative-home-process-v8/processes.json",
+      "resolution": "Same source optimized helper passes original upgrade deadlines; no timeout relaxation."
+    },
+    {
+      "evidence": ".build/custom-goal-impl/root/final-v8-release/summary.json",
+      "status": "failed historical optimized run retained",
+      "cause": "Independent callback admitted after origin EOS but before goal terminal accounting.",
+      "resolution": "Repeat shared positive-terminal accounting before ordinary queue/add and queue/start. A deterministic regression fails without the boundary checks; unchanged official-daemon mixed scenario passes."
+    }
+  ],
+  "rollout": {
+    "daemon_source_changed": false,
+    "daemon_restart": true,
+    "quiet_checkpoint": true,
+    "session_restart": "required",
+    "native_goal_setting": "app-server-daemon/settings.json featureOverrides.goals=false; verify actual daemon -c features.goals=false and controlled root load",
+    "wrapper_dispatch_addition": "goal",
+    "global_instructions": "Proposed exact pointer in docs/goals.md; fleet-config owns applying it.",
+    "quiet_query": "Include goal_dispatches ready/submitting/pending/starting/accepted/uncertain; goal_owned open, goal_settled settled.",
+    "rollback": "Quiet only; preserve ledger and last qualified package, leave native goals disabled, do not dispatch goal markers with old helpers."
+  },
+  "limits": [
+    "No ARM build or complete extracted x86/ARM archive qualification for this feature.",
+    "Full upstream test suite and long-duration soak not run.",
+    "No publish, commit, merge, install, global policy edit, production callback replay or production goal migration.",
+    "Read-only/Plan or workspace sandbox can deny model checkpoints; NeedsInput preserves permissions.",
+    "Stock daemon may independently replay already-admitted interrupted turns before Plus reconnects (approved Q18).",
+    "Arbitrary same-user clients can re-enable native runtime overrides; Plus controls its own paths.",
+    "No exactly-once model/tool side effects after ambiguous queue admission and no reboot scheduler service.",
+    "Evidence reference relevance and completion quality remain agent/user judgments."
+  ],
+  "final_document_checks": {
+    "packaging_tests": 40,
+    "relative_links_checked": 44,
+    "rust_format_passed": true,
+    "repository_whitespace_passed": true,
+    "upstream_source_whitespace_passed": true,
+    "changed_files_binary_or_common_secret_pattern_matches": 0,
+    "log": "/home/liupan/.codex/codex-plus/logs/4fba9391-f172-4b2c-93b1-46b23ccd041e.log"
+  }
+}

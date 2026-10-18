@@ -170,7 +170,8 @@ class AppServer:
             assert params.get('limit') == 1 and params.get('itemsView') == 'notLoaded', params
             if self.reject_turn_metadata:
                 return {'error': {'code': -32603, 'message': 'intentional metadata failure'}}
-            result = {'data': self.turns[params['threadId']], 'nextCursor': None, 'backwardsCursor': None}
+            turns = [] if params['threadId'] == self.root else self.turns[params['threadId']]
+            result = {'data': turns, 'nextCursor': None, 'backwardsCursor': None}
         elif method == 'thread/backgroundTerminals/list':
             assert params.get('threadId') == self.root, params
             assert 1 <= params.get('limit', 100) <= 100, params

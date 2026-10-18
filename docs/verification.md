@@ -6,6 +6,175 @@ Rust 1.99.1. Keep the ordinary installed Codex and global configuration intact.
 
 ## Current release acceptance
 
+### Short background topics
+
+[Source evidence](evidence/shell-topics.json) records 127 passing native filter
+invocations (overlapping coverage), five topic PTY stages plus a real native
+shell, all 23 terminal smoke stages and eight detached-HUD stages. The original
+long-label reproduction failed before the change. Full commands remain in
+history; display refresh adds no model requests. This frontend is not installed.
+
+Use `tests/test_shell_topics_tui.py` with the smoke-test Python environment and
+a complete private candidate (matching Code Mode host and Rust helper beside
+the client). The test covers explicit labels, narrow editable input, reconnect,
+legacy script-name fallback and row disappearance. A real native shell verifies
+that its label survives transport while the full command remains in history.
+Display refresh must add no model requests.
+
+Run native `shell_policy`, `worker_hud`, `chatwidget::tests::exec_flow` and
+`thread_transcript::tools::tests` filters, the full terminal smoke suite and the
+detached HUD cases. Raw command controls must remain safe after label shortening;
+an unrelated background shell must remain separate from an active advisor.
+Regenerate and reconstruct the complete frontend patch before recording the
+new candidate identity. These frontend checks do not require a helper rebuild.
+
+### Reviewed detached jobs (development candidate)
+
+The [job handoff workflow](detached-jobs.md) uses an independent execution store,
+root admission, and the existing observer. Qualify the native helper against an
+official stock daemon; a mock or detached-process prototype alone is insufficient.
+
+[Source qualification](evidence/detached-jobs.json) passed on x86 and ARM: 173
+Rust tests, 27 park tests, seven upgrade tests, six stock lifecycle scenarios,
+32 goal scenarios and 22 detached-job scenarios on each architecture. The x86
+client passed 45 HUD and four execution-HUD filter invocations (overlapping),
+eight projection PTY cases, 23 terminal smoke stages and a real-job TUI reconnect.
+Dedicated SSH login closure, admission after closure and both daemon restart
+modes also passed with the production helper on both architectures. Packaging
+checks passed 41 tests. Complete release archives and the new ARM TUI are not
+qualified by these source checks.
+
+```sh
+cargo +1.99.1 test --locked --manifest-path rust-runtime/Cargo.toml --lib
+python3 tests/test_detached_jobs_stock.py --runtime /absolute/candidate/runtime \
+  --stock-binary /absolute/official/codex --scenario completion \
+  --evidence .build/detached-completion
+# Repeat for each SCENARIOS entry in that test. Use the smoke interpreter with pyte:
+python3 tests/test_detached_job_tui.py --binary /absolute/candidate/codex \
+  --runtime /absolute/candidate/runtime --stock-binary /absolute/official/codex \
+  --evidence .build/detached-tui
+python3 tests/test_detached_execution_hud_tui.py --binary /absolute/candidate/codex \
+  --evidence .build/detached-hud
+```
+
+Cover actual graceful/abrupt daemon replacement, no-TUI wake, root input/goal
+fences, restricted-context refusal, duplicate UUIDs, monitoring failure after
+spawn, report-only recovery, cancellation/cleanup, exclusive resources and
+maintenance. Unit fault boundaries cover missing identities and receipts;
+continuous descendant output must not prevent cleanup. Verified cleanup may
+allow maintenance without turning an unknown command outcome into success.
+
+The real TUI test names its thread to isolate display from upstream automatic
+title generation, reconnects during one execution and checks editable input,
+one completion wake and no display requests. Projection-only fixtures separately
+cover malformed/stale status and the three-row limit. Run existing park, goals,
+upgrade and terminal suites as regressions. Synthetic same-payload package
+switches test the mechanism, not arbitrary release compatibility or fleet pruning.
+Complete per-target archives and fleet rollout require their separate gates.
+
+### Parallel MCP and web activity
+
+Source/development acceptance is recorded in
+[parallel-tool-rows.json](evidence/parallel-tool-rows.json). Root checks passed
+195 native filter invocations (overlapping coverage), all nine targeted PTY cases,
+all 23 terminal smoke stages, both upstream UI scenarios and 53 source-guard,
+packaging and fixture checks. This fix is not part of installed 0.3.2.
+
+Overlapping tool calls must settle their original transcript rows by call ID,
+including calls that finish out of order or after another activity replaces the
+active row. After completion, neither `Calling` nor `Browsing the web` may remain
+active, and each call's result appears once. Preserve success, failure, image
+output and full transcript details. Interrupted calls settle without claiming
+success; a late result updates the same retained row. If ordinary terminal
+scrollback already printed the interruption, print the authoritative late result
+as a correction without adding a second retained transcript entry.
+
+Check both the owned transcript and ordinary terminal fallback. Pending terminal
+history waits for settlement instead of permanently printing an unfinished row.
+Cover mixed MCP/web calls, completion-only replay, unrelated shell output,
+turn-end cleanup and composer editing, using private homes and loopback fixtures.
+These checks do not require a model request or a daemon change.
+
+```sh
+# Use the native-smoke interpreter with pyte installed:
+python3 tests/test_tool_activity_tui.py /absolute/candidate/codex \
+  --evidence .build/tool-activity
+```
+
+The nine PTY cases cover completion, interruption and late results in owned,
+terminal-owned and no-alternate-screen modes. Native filters `tool_activity_tests`
+and `native_history::tests` cover the same call ownership and scrollback ordering.
+
+### Plus-owned goals for 0.3.2
+
+Use [the approved design](custom-goals.md) and [the goal workflow](goals.md).
+The implementation evidence is [custom-goals.json](evidence/custom-goals.json);
+it identifies the tested x86 frontend and optimized Rust helper separately from
+release packages. Tests use private homes, an official stock 0.163.0 daemon and
+loopback providers. They do not modify the installed daemon or global policy.
+
+Root acceptance passed 112 optimized-runtime unit tests, all 31 goal scenarios,
+both actual goal TUI cases, 27 park regressions, seven upgrade cases, six stock
+lifecycle scenarios and all 23 terminal smoke stages. The focused native filters
+passed 69 goal, 38 status, 42 HUD, 18 shell-policy, 53 execution-flow and six
+transcript tests, with overlapping coverage. Packaging, launcher, source-guard
+and terminal-fixture checks passed 40, 11, 11 and 18 tests respectively; both
+upstream UI scenarios passed. Preserved failed runs and their fixes are recorded
+in the evidence, including the final independent-callback/EOS regression.
+
+Subsequent ARM release qualification exposed an acknowledged queue-to-history
+visibility gap. Its deterministic regression went red before the fix; additional
+root checks passed 120 Rust tests and the pre-report recovery-barrier stock case.
+Goal fixtures wait for positive attribution rather than equating provider/Idle
+visibility with coordinator acknowledgement. The advisor fixture retains its
+narrow live checks and restores normal height for completed transcript history.
+The release companion note records the final per-target archive reruns; the
+earlier source evidence does not qualify those new archive bytes.
+
+```sh
+cargo +1.99.1 test --locked --release --manifest-path rust-runtime/Cargo.toml --lib
+python3 tests/test_custom_goals_stock.py --runtime /absolute/candidate/runtime \
+  --stock-binary /absolute/official/codex --evidence .build/goals --scenario all
+# Use the native-smoke interpreter with pyte installed:
+python3 tests/test_custom_goal_tui.py --binary /absolute/candidate/codex \
+  --runtime /absolute/candidate/runtime --stock-binary /absolute/official/codex \
+  --evidence .build/goal-tui --scenario all
+```
+
+Cover exact-turn dispositions and positive EOS, input priority/receipt races,
+partial shell and worker completion, missing/repeated progress, pause/edit/clear,
+replaced goals, queue ambiguity, report-only renewal, controlled isolation,
+unloaded roots and actual TUI resume restarting observation. Check an independent
+park callback racing goal EOS before admitting the next goal turn. Healthy job
+waiting and display refresh must add no model requests. The right goal indicator
+must preserve editable input, narrow layouts and the three-row activity budget.
+Run the existing park, upgrade, stock lifecycle, terminal, packaging and focused
+native goal/status/HUD/shell/transcript checks as regressions.
+
+Wire fault fixtures and seeded crash windows are labeled separately from official
+daemon cases. Restrictive read-only/Plan and workspace policies verify denied
+checkpoint writes lead to NeedsInput, without widening permissions; they do not
+establish automatic checkpointing under those policies. The approved stock
+already-admitted recovery exception remains. Complete x86 and ARM archives need
+their own native qualification before release; these source checks are not that.
+
+### Worker time and token scopes
+
+Standalone rows pair the latest turn's elapsed time with that exact turn's
+reported usage. Regression fixtures reuse a worker with 342,740,535 lifetime
+tokens and 679,013 current-turn tokens: the row must show `679K`, then reset
+when its turn ID changes. Reloading the TUI must recover the same reported turn
+count. Missing matching usage shows `?`; lifetime counters are not a fallback.
+Cached input remains included in input rather than being added again.
+
+Local reads are bounded, read-only, and match both thread and turn identity.
+Check incomplete/malformed records, oversized tails, zero/negative values,
+forks, and unavailable files. Remote fixtures include local rollout and SQLite
+decoys and must still show unknown usage. Explicit groups keep their batch
+elapsed time and all-member lifetime totals, including finished members.
+The terminal smoke also checks editable input, the three-row budget and zero
+model calls while these metrics refresh.
+
 ### Audit regression checks
 
 The post-0.3.0 audit fixes are source changes, not a qualified release. In
@@ -91,9 +260,37 @@ bundled zsh is no longer a package resource. Run coordinator lifecycle and
 affected isolated integration gates from [background verification](background-work.md#verification)
 against an official 0.163.0 daemon in private homes with loopback providers.
 
+When reusing a Cargo target cache across upstream checkouts, set
+`INSTA_WORKSPACE_ROOT` to the current checkout's `codex-rs` directory. Otherwise
+Insta can resolve snapshots against a previously cached workspace; review snapshot
+updates in the intended source tree before regenerating the frontend patch.
+
 The companion release note and evidence record the checks actually run and any
 remaining limits. The 0.162.1 results below are historical and do not qualify
 the 0.163.0 port.
+
+### Ultracode
+
+Run `cargo +1.99.1 test --locked --manifest-path rust-runtime/Cargo.toml --lib`
+for state/admission invariants. In the patched upstream checkout, use the TUI
+filters `ultracode`, `worker_hud`, `plus_goal`, `slash_commands`, and `status_line`.
+Run these private Python fixtures from the repository root:
+
+- `tests/test_ultracode_bootstrap.py --binary OFFICIAL --evidence DIRECTORY`,
+  for each combination of `--remote` and `--pressure`: complete startup text,
+  compaction, cold load and the negative control without restored instructions.
+- `tests/test_ultracode_admission.py --binary OFFICIAL --runtime RUNTIME --evidence DIRECTORY`:
+  turn binding, lost ACK, steering, both observer callback paths and cold recovery.
+- `tests/test_ultracode_tui.py --binary PATCHED --evidence DIRECTORY`: actual
+  PTY controls and layout with explicitly identified helper/server stubs.
+- `tests/test_ultracode_contracts.py`: scripted harness checks; its `prepare`,
+  `accept`, `integrate` and `finish` commands run the separate real-worker trials.
+
+Also run the ordinary native smoke, park, goal, lifecycle, execution and upgrade
+regressions. Upgrade timing tests use a stripped helper, matching package shape;
+an unstripped debug ELF may spend the timeout hashing debug data. Preserve the
+original executable for diagnostics. See [recorded evidence](evidence/ultracode.json)
+for the qualified paths and remaining release limits.
 
 ### Hidden navigation hints for Plus 0.3
 

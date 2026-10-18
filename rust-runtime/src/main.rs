@@ -38,6 +38,10 @@ fn main() {
             codex_plus_runtime::background::main(&args, &root)
         }
         Some("advisor") => codex_plus_runtime::advisor::main(&args, &root),
+        Some("goal") => codex_plus_runtime::goal_command::main(&args, &root),
+        Some("ultracode") => codex_plus_runtime::ultracode_command::main(&args),
+        Some("job") => codex_plus_runtime::job_command::main(&args, &root),
+        Some("execution-executor") => codex_plus_runtime::job_command::executor(&args, &root),
         Some("--version") if args.len() == 1 => match std::fs::read(root.join("codex-plus.json"))
             .map_err(anyhow::Error::from)
             .and_then(|bytes| Ok(serde_json::from_slice::<serde_json::Value>(&bytes)?))
@@ -68,7 +72,9 @@ fn main() {
             }
         },
         _ => {
-            eprintln!("usage: codex-plus-runtime run|park|advisor|observe|supervise …");
+            eprintln!(
+                "usage: codex-plus-runtime run|park|goal|ultracode|job|advisor|observe|supervise …"
+            );
             2
         }
     };

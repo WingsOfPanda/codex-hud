@@ -1,0 +1,317 @@
+{
+  "schema": 1,
+  "feature": "Plus Ultracode",
+  "status": "implemented; privately qualified on x86_64; not released or installed",
+  "upstream": "0.163.0",
+  "source_base": "a42b456",
+  "coordinator_protocol": 5,
+  "execution_record_format": 1,
+  "review": {
+    "model": "gpt-6-astra",
+    "effort": "xhigh",
+    "initial_verdict": "revise",
+    "artifact": "/home/liupan/Aerius/codex-plus/.build/ultracode/review/result.json",
+    "addressed": [
+      "fixed complete startup bootstrap replaces evictable toggle injection",
+      "immutable root/submission/turn/daemon-generation snapshots",
+      "private full developer-instruction restoration across cold loads and compaction",
+      "actual worker model and effort verified",
+      "explicit expiry, uncertainty and authorization boundaries"
+    ]
+  },
+  "source": {
+    "upstream": "83086188ae0614bd882818ff1aa23f3194962012",
+    "patch_sha256": "771cfe504f8d22ef558f4f7ed6f98887094153d048e7c3cf81261b173e98a190",
+    "source_tree": "e7757c17b3ef441bd22f0198503ccc0b4f4cb750",
+    "clean_application": true,
+    "matches_native_source": true,
+    "files_sha256": {
+      "bin/codex-plus": "3b4e81133e7e35a08b067ead0f7a79f6a150d31e1842c6d265e1e3a7a82808ef",
+      "rust-runtime/src/ultracode.rs": "6dad35308fc17f29379a040c11cb1c7a76a41a274232d410ca46e0f3a274a19d",
+      "rust-runtime/src/ultracode_command.rs": "23705c8bbd5a8df299ab1b1a2e9d4ef54c2193956889d0ea7f182748aea611f5",
+      "rust-runtime/src/background.rs": "3484f2bc8bcdce1f952f1ffb48b5c1f076f370e2a39611866298523f3b35557e",
+      "rust-runtime/src/goal_command.rs": "81557e547f4c052edd5981f3f1b3c8c99fb298d68cb2fc9bc8b1d67b53b03d73",
+      "rust-runtime/src/lib.rs": "5f5f8f2cb45849ec229b64aaa3c700b6193842524d50c75722ea28581119ac78",
+      "rust-runtime/src/main.rs": "b83e4ea6368ea073ff409248eee10bad76e453a9911c29e47eb8d3d9ba142983",
+      "rust-runtime/src/upgrade.rs": "18ff66eb623c72d52f2e6943bee03b21266ba13ea46970fa1c0b519917cdc752",
+      "docs/ultracode-policy.md": "9290ac9821395021c5dd00a9ede4e4d5e5817673d221af6aeb6e6a9d1f3e38f5",
+      "docs/ultracode-bootstrap.txt": "521d563b280999e64ca21ab300038c38fdb8280678405af88e50620afe2ce799",
+      "patches/codex-0.163.0-worker-hud.patch": "771cfe504f8d22ef558f4f7ed6f98887094153d048e7c3cf81261b173e98a190"
+    }
+  },
+  "binaries": {
+    "native": {
+      "path": "/home/liupan/Aerius/codex-plus/.build/ultracode/native/codex",
+      "sha256": "4ec467b64b54fd20a52fbc54e01daa2e5021ccf19d8a2c622fb4bc8c36d36cfa"
+    },
+    "runtime_debug": {
+      "path": "/home/liupan/Aerius/codex-plus/.build/ultracode/native/codex-plus-runtime",
+      "sha256": "f0d57462b98044717369466253a9d4458be32fbba5a094b634ee9cef799ccdbc"
+    },
+    "runtime_stripped": {
+      "path": "/home/liupan/Aerius/codex-plus/.build/ultracode/qualified/bin/codex-plus-runtime",
+      "sha256": "8b68b79693d246e00c48ce705dc1e92ed670c47c2fa4885840173ef714c11919"
+    }
+  },
+  "qualification": {
+    "runtime_unit_tests": 183,
+    "park_tests": 27,
+    "upgrade_tests": 7,
+    "upgrade_log": "/home/liupan/.codex/codex-plus/logs/173d801a-9d47-4c36-bba7-816db3aa1f49.log",
+    "stock_lifecycle_cases": 6,
+    "goal_cases": 32,
+    "affected_execution_cases": [
+      "completion",
+      "daemon-abrupt",
+      "changed-input",
+      "maintenance",
+      "goal-wait",
+      "package-switch"
+    ],
+    "launcher_tests": 11,
+    "package_tests": 41,
+    "contract_harness_scripted_tests": 4,
+    "native_filters": [
+      {
+        "filter": "ultracode",
+        "passed": 12,
+        "log": "/home/liupan/Aerius/codex-plus/.build/ultracode/root-checks/native-ultracode.log"
+      },
+      {
+        "filter": "worker_hud",
+        "passed": 47,
+        "log": "/home/liupan/Aerius/codex-plus/.build/ultracode/root-checks/native-worker_hud.log"
+      },
+      {
+        "filter": "plus_goal",
+        "passed": 17,
+        "log": "/home/liupan/Aerius/codex-plus/.build/ultracode/root-checks/native-plus_goal.log"
+      },
+      {
+        "filter": "slash_commands",
+        "passed": 160,
+        "log": "/home/liupan/Aerius/codex-plus/.build/ultracode/root-checks/native-slash_commands.log"
+      },
+      {
+        "filter": "status_line",
+        "passed": 90,
+        "log": "/home/liupan/Aerius/codex-plus/.build/ultracode/root-checks/native-status_line.log"
+      }
+    ],
+    "native_counts_overlap": true,
+    "terminal_smoke_stages": 23,
+    "terminal_report": "/home/liupan/Aerius/codex-plus/.build/ultracode/root-checks/native-smoke-final/report.json",
+    "terminal_controls_report": "/home/liupan/Aerius/codex-plus/.build/ultracode/root-checks/tui-final/report.json",
+    "terminal_controls_use_stubs": true,
+    "bootstrap_matrix": [
+      {
+        "route": "local",
+        "checks": 9,
+        "report": "/home/liupan/Aerius/codex-plus/.build/ultracode/root-checks/local/report.json",
+        "passed": true,
+        "bootstrap_sha256": "521d563b280999e64ca21ab300038c38fdb8280678405af88e50620afe2ce799"
+      },
+      {
+        "route": "local-pressure",
+        "checks": 14,
+        "report": "/home/liupan/Aerius/codex-plus/.build/ultracode/root-checks/local-pressure/report.json",
+        "passed": true,
+        "bootstrap_sha256": "521d563b280999e64ca21ab300038c38fdb8280678405af88e50620afe2ce799"
+      },
+      {
+        "route": "remote",
+        "checks": 9,
+        "report": "/home/liupan/Aerius/codex-plus/.build/ultracode/root-checks/remote/report.json",
+        "passed": true,
+        "bootstrap_sha256": "521d563b280999e64ca21ab300038c38fdb8280678405af88e50620afe2ce799"
+      },
+      {
+        "route": "remote-pressure",
+        "checks": 14,
+        "report": "/home/liupan/Aerius/codex-plus/.build/ultracode/root-checks/remote-pressure/report.json",
+        "passed": true,
+        "bootstrap_sha256": "521d563b280999e64ca21ab300038c38fdb8280678405af88e50620afe2ce799"
+      }
+    ],
+    "mode_admission_report": "/home/liupan/Aerius/codex-plus/.build/ultracode/root-checks/admission/report.json",
+    "mode_observer_report": "/home/liupan/Aerius/codex-plus/.build/ultracode/root-checks/admission/observer/report.json",
+    "mode_direct_checks": 7,
+    "mode_observer_checks": [
+      "actual observer prior-qualified cold load preserves original text",
+      "actual goal callback reserves snapshot before queue/add",
+      "automatic mid-turn compaction retains complete original bootstrap",
+      "status excludes private developer text",
+      "toggle off preserves in-flight observer turn snapshot",
+      "actual ordinary park callback reserves before queue/add",
+      "ordinary callback keeps frozen initial client snapshot across toggle"
+    ],
+    "lifecycle_summary": "/home/liupan/Aerius/codex-plus/.build/ultracode/root-checks/lifecycle-summary.json"
+  },
+  "real_worker_acceptance": {
+    "cases": [
+      "honest",
+      "altered assertions rejected before tests",
+      "ignored autouse conftest rejected before collection",
+      "two parallel pieces followed by dependent integration"
+    ],
+    "workers": [
+      {
+        "piece": "assertions",
+        "effort": "medium",
+        "kind": "genuine Codex native worker",
+        "model": "gpt-6.1-sol",
+        "native_metadata": "/home/liupan/.codex/sessions/2026/10/18/rollout-2026-10-18T20-12-39-01a14eed-a389-7493-abcb-fc8481e2d478.jsonl",
+        "thread": "01a14eed-a389-7493-abcb-fc8481e2d478",
+        "turn": "01a14eed-a3aa-7290-85b8-833aad3a3b61",
+        "accepted": false,
+        "rejected_at": "contract_hash",
+        "tests_started": false,
+        "reported_usage_updates": 7,
+        "reported_total_token_usage": {
+          "input_tokens": 215846,
+          "cached_input_tokens": 208896,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 1292,
+          "reasoning_output_tokens": 77,
+          "total_tokens": 217138
+        }
+      },
+      {
+        "piece": "conftest",
+        "effort": "medium",
+        "kind": "genuine Codex native worker",
+        "model": "gpt-6.1-sol",
+        "native_metadata": "/home/liupan/.codex/sessions/2026/10/18/rollout-2026-10-18T20-12-46-01a14eed-c089-71d3-8527-33f9df1a894d.jsonl",
+        "thread": "01a14eed-c089-71d3-8527-33f9df1a894d",
+        "turn": "01a14eed-c0aa-74b1-923d-2503c698ea50",
+        "accepted": false,
+        "rejected_at": "protected_files",
+        "tests_started": false,
+        "reported_usage_updates": 6,
+        "reported_total_token_usage": {
+          "input_tokens": 180802,
+          "cached_input_tokens": 175360,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 867,
+          "reasoning_output_tokens": 51,
+          "total_tokens": 181669
+        }
+      },
+      {
+        "piece": "honest",
+        "effort": "medium",
+        "kind": "genuine Codex native worker",
+        "model": "gpt-6.1-sol",
+        "native_metadata": "/home/liupan/.codex/sessions/2026/10/18/rollout-2026-10-18T20-13-40-01a14eee-9313-7ab3-9916-916d55fb4dd5.jsonl",
+        "thread": "01a14eee-9313-7ab3-9916-916d55fb4dd5",
+        "turn": "01a14eee-9334-73f1-9dd8-cf23c982af1b",
+        "accepted": true,
+        "rejected_at": null,
+        "tests_started": true,
+        "reported_usage_updates": 7,
+        "reported_total_token_usage": {
+          "input_tokens": 213068,
+          "cached_input_tokens": 207104,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 1136,
+          "reasoning_output_tokens": 56,
+          "total_tokens": 214204
+        }
+      },
+      {
+        "piece": "left",
+        "effort": "medium",
+        "kind": "genuine Codex native worker",
+        "model": "gpt-6.1-sol",
+        "native_metadata": "/home/liupan/.codex/sessions/2026/10/18/rollout-2026-10-18T20-12-03-01a14eed-17eb-7bf0-b54d-70d12314ec65.jsonl",
+        "thread": "01a14eed-17eb-7bf0-b54d-70d12314ec65",
+        "turn": "01a14eed-180b-7241-a90a-d78459864598",
+        "accepted": true,
+        "rejected_at": null,
+        "tests_started": true,
+        "reported_usage_updates": 8,
+        "reported_total_token_usage": {
+          "input_tokens": 252788,
+          "cached_input_tokens": 218624,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 1489,
+          "reasoning_output_tokens": 58,
+          "total_tokens": 254277
+        }
+      },
+      {
+        "piece": "pipeline",
+        "effort": "medium",
+        "kind": "genuine Codex native worker",
+        "model": "gpt-6.1-sol",
+        "native_metadata": "/home/liupan/.codex/sessions/2026/10/18/rollout-2026-10-18T20-14-42-01a14eef-858c-7fc1-b901-4a0b83ada2f4.jsonl",
+        "thread": "01a14eef-858c-7fc1-b901-4a0b83ada2f4",
+        "turn": "01a14eef-85ad-7833-9ce5-df4bac799a02",
+        "accepted": true,
+        "rejected_at": null,
+        "tests_started": true,
+        "reported_usage_updates": 7,
+        "reported_total_token_usage": {
+          "input_tokens": 218838,
+          "cached_input_tokens": 211712,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 1193,
+          "reasoning_output_tokens": 92,
+          "total_tokens": 220031
+        }
+      },
+      {
+        "piece": "right",
+        "effort": "medium",
+        "kind": "genuine Codex native worker",
+        "model": "gpt-6.1-sol",
+        "native_metadata": "/home/liupan/.codex/sessions/2026/10/18/rollout-2026-10-18T20-12-32-01a14eed-87b1-7562-813b-a0280929dcea.jsonl",
+        "thread": "01a14eed-87b1-7562-813b-a0280929dcea",
+        "turn": "01a14eed-87d0-74b2-9273-784383ff5518",
+        "accepted": true,
+        "rejected_at": null,
+        "tests_started": true,
+        "reported_usage_updates": 7,
+        "reported_total_token_usage": {
+          "input_tokens": 232818,
+          "cached_input_tokens": 222464,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 1606,
+          "reasoning_output_tokens": 84,
+          "total_tokens": 234424
+        }
+      }
+    ],
+    "default_branch_unchanged": true,
+    "default_branch_commit": "23ccbf6aae00015f2909a00c95f7b782c5581df5",
+    "integration_commit": "8a99251198ee15859db87bab66c0ceca948d76f7",
+    "final_contracts_passed": 8,
+    "root_trials_ran_during_independent_implementation": true,
+    "idle_root_wakes_for_these_trials": 0,
+    "root_model_request_and_token_cost_attributable_to_trials": null,
+    "cost_note": "Worker usage is reported API usage including cached input, not context length or currency. Root cost was interleaved with implementation; no isolated cost comparison was performed."
+  },
+  "resolved_test_findings": [
+    "Stripped identical helper passes original upgrade timeouts; large unstripped debug ELF timed out hashing. No production timeout changed.",
+    "New /ultracode popup entries required reviewed slash completion snapshots. INSTA_WORKSPACE_ROOT pins snapshots to the intended checkout.",
+    "Terminal fixture now returns the fresh root empty turn history for startup provenance reads."
+  ],
+  "limits": [
+    "No ARM build or complete release package qualification in this change.",
+    "No publication, merge, installation, fleet pin or global configuration changes.",
+    "Legacy roots without qualified bootstrap remain unavailable; loaded resume is not an installation API.",
+    "Native leaf and worktree behavior is instructional, not enforced sandbox/depth isolation.",
+    "Per-completion wakes remain; no final-only fan-in or automatic whole-workflow replay.",
+    "Real workers validate the acceptance procedure; automatic model compliance with the whole mode is not a statistical benchmark.",
+    "Loopback provider fixtures establish stock transport/lifecycle behavior, not live provider compaction qualification."
+  ],
+  "rollout_requirements": {
+    "coordinator_protocol": 5,
+    "quiet_checkpoint": true,
+    "session_restart": "required",
+    "new_wrapper_route": "ultracode",
+    "daemon_source_patch": false,
+    "version_selected": false,
+    "legacy_roots": "Start a fresh qualified Plus root to enable mode."
+  }
+}

@@ -1,0 +1,176 @@
+{
+  "schema": 1,
+  "candidate": "0.163.0-plus.0.4.0",
+  "coordinator_protocol": 4,
+  "execution_record_format": 1,
+  "branch": "feat/detached-jobs",
+  "base_commit": "a005f40eac03c47dd7b75d185aeb932d39d1116b",
+  "upstream": {
+    "version": "0.163.0",
+    "commit": "83086188ae0614bd882818ff1aa23f3194962012",
+    "daemon": "official stock, private CODEX_HOME and loopback provider"
+  },
+  "qualification": {
+    "x86_64": {
+      "runtime_unit_tests": 173,
+      "park_tests": 27,
+      "upgrade_tests": 7,
+      "official_stock_lifecycle_scenarios": 6,
+      "official_stock_goal_scenarios": 32,
+      "official_stock_detached_scenarios": 22,
+      "groups": 26,
+      "summary": ".build/detached-jobs/root-final-r2/summary.json",
+      "summary_sha256": "70cafaf5df1b6ef2e8441fa0e521097a9d11a8769aad9fd538140c6002397c56",
+      "runtime_sha256": "85893399d5c8195401b60e84d9825dbd8f90363b8aed2c1e2fbaec0c692cfd04"
+    },
+    "aarch64": {
+      "runtime_unit_tests": 173,
+      "park_tests": 27,
+      "upgrade_tests": 7,
+      "official_stock_lifecycle_scenarios": 6,
+      "official_stock_goal_scenarios": 32,
+      "official_stock_detached_scenarios": 22,
+      "groups": 26,
+      "summary": ".build/detached-jobs/arm-qualified-evidence/final/summary.json",
+      "summary_sha256": "d32d30b993f2134c331c5b196ba611a7e2e66b1dd5c353d5ea2cdcef15ca8ba1",
+      "runtime_sha256": "12be8b4ae6dc432286d7f324c4e5a26d021a9965b9e5c2bca0941d8d5ecc4b22"
+    }
+  },
+  "native_x86": {
+    "profile": "dev-small",
+    "binary_sha256": "1d5f3fbd00a2891568e19297265fb616862851aa3fa7300e1f5348ef50a5fb8c",
+    "worker_hud_filter": 45,
+    "execution_hud_filter": 4,
+    "filter_counts_overlap": true,
+    "projection_pty_stages": 8,
+    "terminal_smoke_stages": 23,
+    "real_job_tui_attachments": 2,
+    "real_job_display_model_requests": 0,
+    "real_job_completion_model_requests": 1,
+    "patch": {
+      "forward": true,
+      "reverse": true,
+      "tree": "a717d6fa49c585c01bed7e5bd97d209722c848ac",
+      "patch_sha256": "e1e7ae767d0eaebe559742ab98fe3e986af41d9986c2f49e3fc5d2344dd64e00"
+    }
+  },
+  "ssh_session_closure": {
+    "x86_64": {
+      "session_id": "4779",
+      "login_before": "active",
+      "login_after": "closing",
+      "kill_user_processes": false,
+      "stages": [
+        "ready-before-logout",
+        "login-closed",
+        "admitted-after-logout",
+        "graceful-daemon-restart",
+        "abrupt-daemon-restart"
+      ],
+      "completion_wakes": 2,
+      "remote_model_requests": 0,
+      "report": ".build/detached-jobs/session-x86/session-result.json",
+      "sha256": "187ab9213a0829c56f67be2ed01b2bd1d9ebdd6f38b33e78e9c40450ddd7e958",
+      "controller_sha256": "6a32c10959f0e90d271e547d9388ba1cf7a8f89a203e7633180673c4bc5ca1a3"
+    },
+    "aarch64": {
+      "session_id": "4385",
+      "login_before": "active",
+      "login_after": "closing",
+      "kill_user_processes": false,
+      "stages": [
+        "ready-before-logout",
+        "login-closed",
+        "admitted-after-logout",
+        "graceful-daemon-restart",
+        "abrupt-daemon-restart"
+      ],
+      "completion_wakes": 2,
+      "remote_model_requests": 0,
+      "report": ".build/detached-jobs/session-arm/session-result.json",
+      "sha256": "896437c476ae32426f7ae243f7360ffdadfbf8437aab40a3a728f09284a20a60",
+      "controller_sha256": "54da413bbd94e7999c85fb30ad40c396cf82469c86a6b51a22997ac000ab1a16"
+    }
+  },
+  "packaging_tests": 41,
+  "review": {
+    "model": "gpt-6-astra",
+    "effort": "xhigh",
+    "verdict_at_review": "revise",
+    "report_sha256": "b506917000285384d1203ee887abddbf195cef83ef3521c6ae2e4ab8b5233fc9",
+    "resolved": [
+      "Original turn/epoch and input/report fences apply to ordinary execution watches; later-turn LIVE park bypass regression was red then green.",
+      "Post-exit output drain is bounded even for a continuous writer, so reviewed cleanup runs.",
+      "Verified cleanup permits execution quiet while unknown outcome remains unknown."
+    ],
+    "additional_fixed": [
+      "Explicit recovery keeps REPORT ONLY after normal observation.",
+      "Post-spawn identity gaps preserve UNKNOWN, owned waiting and reservations.",
+      "Terminal cleanup or monitoring uncertainty remains visible; settled projections do not accumulate.",
+      "Clean executor environment honors explicit references only.",
+      "Offline operator cancellation and read-only all-root package inventory.",
+      "64 MiB capture cap continues draining without workload cancellation."
+    ]
+  },
+  "preserved_failures": [
+    {
+      "path": ".build/detached-jobs/root-final/jobs-monitoring-registration-failure.log",
+      "reason": "Proved later-turn ordinary park bypass before fix."
+    },
+    {
+      "path": "/home/liupan/.codex/codex-plus/logs/ed96d45b-0bcd-4ce1-a023-e78c493a8fdc.log",
+      "reason": "Verified UNKNOWN cleanup still blocked quiet before fix."
+    },
+    {
+      "path": ".build/detached-jobs/root-job-tui/report.json",
+      "reason": "Unrelated stock automatic title request; named fixture isolates display counting."
+    },
+    {
+      "path": ".build/detached-jobs/arm-qualification.log",
+      "reason": "Overlong test TMPDIR exceeded Unix socket limit; moved private fixtures to short /data path."
+    },
+    {
+      "path": ".build/detached-jobs/arm-final-qualification.log",
+      "reason": "Fixture compared serialized timestamp floats exactly; compare all other fields exactly and timestamp within1e-5."
+    },
+    {
+      "path": ".build/detached-jobs/core/failed-test-cleanup.json",
+      "reason": "Cancellation fixture raced persisted Prepared state; persist Launching and retain pidfd cleanup on assertion failure."
+    }
+  ],
+  "limits": [
+    "No published or installed candidate; complete per-target release archives and ARM TUI compilation are separate release gates.",
+    "Package-switch qualification uses synthetic higher versions of identical helper payload, not arbitrary release or upstream compatibility.",
+    "SSH proof covers the launching login closing with KillUserProcesses=false; explicit cgroup/session termination, last-user-service shutdown, reboot and executor crash are not survival promises.",
+    "Rollback to protocol3/0.3.2 after execution records exist is not qualified.",
+    "Resource reservations cover participating roots in the same CODEX_HOME; external workloads and same-UID adversaries are outside that enforcement.",
+    "No automatic record pruning; operator archive/deletion needs user authorization.",
+    "Secrets remain accessible to same UID/root through executor process environment; private workload logs may contain program output secrets."
+  ],
+  "source_sha256": {
+    "bin/codex-plus": "5c3093b783e754a6fc850043476b5607bf416819f0c442776a22ae8ed81d7261",
+    "patches/codex-0.163.0-worker-hud.patch": "e1e7ae767d0eaebe559742ab98fe3e986af41d9986c2f49e3fc5d2344dd64e00",
+    "rust-runtime/src/background.rs": "468af538e5e6e997af7f2853dea2b0bc31dadf2d06a659a0c1ee5c09c62cda1d",
+    "rust-runtime/src/execution_admission.rs": "50d5a7640990ee49ccf2f8d0b4f22eb0f506f50ffd67778225eba7321c69ee82",
+    "rust-runtime/src/executions/executor.rs": "ef880fc1db95ab33dedde90b803aa61b5bce1b01b38585e0830d4583aedc81c4",
+    "rust-runtime/src/executions/tests.rs": "600b9f33a7109ab8422433e4eef4d794e0e3eb1c8327cbb09396a1451d101a63",
+    "rust-runtime/src/executions.rs": "4b5c9891d1a40bbfb936414cb76bdb4075491255ca149a1f60c0935173c78ca2",
+    "rust-runtime/src/goals.rs": "a39fac528168367bcf0e658cc7bd713e9a879db1522c215ad4549f52a7205b65",
+    "rust-runtime/src/job_command.rs": "3c7539eff0fc55996d4d4e41d67df1112b2c583066a37d71c4bee3521a314f65",
+    "rust-runtime/src/ledger.rs": "1900e6603a976c10938a44b4ddb978823d9796573fb9b3bad78796239fb62688",
+    "rust-runtime/src/lib.rs": "52f3f1f446a42030b5ff0fa13046e26ac727b3d4ee45c1a3fb0fa5f6008776b8",
+    "rust-runtime/src/local.rs": "3dad7df8a1278f1f74739576500e558c330dc507f5fd63d5dfc1340d20c18171",
+    "rust-runtime/src/main.rs": "06895f8086194bc121c5d5e08187311fca9a8390d5693d97f20fb1e41b1c6525",
+    "rust-runtime/src/maintenance.rs": "0773f5fe4b01249f46d067c991b450eff1b0484ba1dc9862c550940f7631bf11",
+    "rust-runtime/src/upgrade.rs": "9b367e35d143d0b92c540080dbd840ce506a84939fff64a15343ea077d8e24ba",
+    "scripts/package-release.py": "ed59e6be72ce7bd3ee561c144ef9782d173b638014fe155399c0034ef589480f",
+    "tests/fixtures/detached_jobs.py": "ed6cff7f9fb368fe9ca89138467893e7707dd5049b8a88f2ec5ea694ff7b69f8",
+    "tests/native_smoke.py": "14b86c296b4da476b760109f50100629239c7fefa1052ad79b1faf3cb23615a1",
+    "tests/test_detached_execution_hud_tui.py": "ff1faec3933a08c8bba6f9b350d07b03e9473f394d570a5083c173d5014cfa32",
+    "tests/test_detached_job_session.py": "b4dce9905b974ca7d071faf1d1e211678cf7f4984eca08801b1a0cf13645c1ce",
+    "tests/test_detached_job_tui.py": "4b7cab907be564c5454a834fcbdd60a6f4e322e32f2ee37dc9696a1cc4e78fa2",
+    "tests/test_detached_jobs_stock.py": "1e39cb1b4f40b745d5592b6526ebfbb047050eb5d74c1d202829f130bcc1851d",
+    "tests/test_packaging.py": "47ee5c27b41f91183edd434bfdf5e6e519f4b5ce1b2982c1dbc6bb154dfc1d26",
+    "tests/test_rust_runtime_upgrade.py": "daa0d07ce933168b393fa7ed0f4df3eca18d34cc352f7964364118393fe7b394"
+  }
+}

@@ -13,6 +13,12 @@ updates; increment its patch component for Plus fixes and its minor component
 for Plus features. Every new combination still needs qualified target packages.
 Existing published `plus.N` releases retain their original identities.
 
+The current detached-job/Ultracode patch release is `0.163.0-plus.0.4.1`: coordinator protocol 5 and
+package `execution_record_format: 1`, with the same pinned official 0.163.0 daemon.
+The execution format describes durable executor records separately from
+coordinator/upstream compatibility. These identities do not establish package
+qualification, publication or installation.
+
 ## Native binaries
 
 Build natively on each target with Rust 1.99.1, the pinned upstream source and only
@@ -132,7 +138,8 @@ fleet-config's `codex-plus/RELEASING.md`, section 2, step 3:
 {
   "release": "<tag>",
   "plus_commit": "<the manifest's plus_commit>",
-  "coordinator_protocol": 2,
+  "coordinator_protocol": 5,
+  "execution_record_format": 1,
   "upstream": {"version": "<X>", "tag": "rust-v<X>", "commit": "<sha>"},
   "note": "docs/releases/<release>.md",
   "targets": {
@@ -142,6 +149,7 @@ fleet-config's `codex-plus/RELEASING.md`, section 2, step 3:
   "rollout": {
     "daemon_restart": false,
     "quiet_checkpoint": true,
+    "executions": "wait",
     "session_restart": "none | optional | required",
     "agents_md": null,
     "notes": "<anything else the rollout must do or watch>"
@@ -159,10 +167,19 @@ and verify the installed manifest as well as its payload tree.
 Choose exactly one `session_restart` value. Set `daemon_restart` for an upstream
 bump; assess it explicitly for other changes. With `quiet_checkpoint: true`, a
 box with live park helpers waits until no helper, armed park, or open callback
-remains. `agents_md` is the exact replacement park/shell Markdown block when it
+remains. Detached executors and unresolved execution/cleanup records also block
+a quiet cutover or rollback; inspect them even when no process remains.
+`agents_md` is the exact replacement park/shell Markdown block when it
 changes, otherwise `null`. Put additional rollout requirements in `notes`, and
 keep test results, failures, skipped checks, and accepted limits in the companion
 note referenced by `note`.
+
+For protocol-5 releases also copy `execution_record_format` from both manifests.
+`rollout.executions` is `wait` for the initial cutover, incompatible changes,
+OpenAI bumps and rollbacks. Qualified compatible higher revisions may use
+`continue` with the [maintenance and retention contract](detached-jobs-fleet.md).
+Do not apply the legacy zero-helper/zero-armed-park test to those execution
+watches, or skip unresolved queue admission merely because it belongs to one.
 
 When replacing the global block, use the current approved advisor section from
 [advisor.md](advisor.md) and compare the complete replacement with fleet-config's
@@ -170,7 +187,8 @@ live policy. Preserve its foreground wait wording; copying an older release's
 `agents_md` would restore the superseded background default. Published handoffs
 remain immutable.
 
-For cooperative Rust upgrades, manifests advertise `coordinator_protocol: 2`.
+The current candidate manifests advertise `coordinator_protocol: 5` and
+`execution_record_format: 1`.
 Set `quiet_checkpoint: false` only when the installed observers and candidate
 support the same protocol, upstream identity and target, the candidate's Plus
 `M.m.p` version is strictly higher, and cooperative upgrade/recovery acceptance
@@ -184,6 +202,52 @@ directories while any process still references them. The installer switches
 `current`; it does not signal observers. A compatible helper upgrade follows the
 link independently of the TUI. Set `session_restart` according to the actual
 client change, rather than using a restart as an observer-handoff command.
+
+The first combined detached-job/Ultracode rollout from protocol 3 requires a
+quiet protocol-5 cutover. The detached-only protocol-4 candidate was unreleased.
+Use `quiet_checkpoint: true`, `executions: wait`, `session_restart: required`
+and `daemon_restart: false` with the unchanged stock 0.163.0 daemon.
+An operator maintenance hold fences new Plus launch/model admissions
+and reconciles known queued work. `admission_quiet` does not imply
+`execution_quiet`: existing executors continue during the hold. Fleet quiet
+checks must account for both, plus native/AP work outside the Plus ledger.
+No process is killed or command replayed to make an upgrade quiet.
+
+Fleet helper scans must recognize `codex-plus-runtime execution-executor`,
+including its leading concrete `--package-root` pin, owning root and execution
+UUID. Executors retain their original executable and package directory through
+cwd/open descriptors; they do not follow `current` with the coordinator.
+Retain those immutable packages while executions run or remain unresolved.
+Later upgrades with running jobs require separately qualified executor-format,
+coordinator, upstream and target compatibility plus fleet retention/reconnect
+support. Do not treat format 1 alone as that qualification. Every rollback still
+requires a quiet checkpoint.
+
+The TUI must load the new frontend for detached-job display and Ultracode controls.
+This candidate adds no daemon patch and retains the existing native-goal disabling
+requirement. Fleet-config must route both `job` and `ultracode` through the helper
+and owns process/quiet checks, package retention and global worker-handoff policy.
+Legacy roots without the startup bootstrap need a fresh qualified root to use
+Ultracode; resuming them alone does not qualify them. Rollback to 0.3.2 after
+execution or mode rows exist is not qualified. Retain the first qualified combined
+protocol-5 package as the rollback floor until explicitly retired by tested
+qualification. Private feature evidence does not qualify complete combined
+archives; record final qualification for each architecture in the companion note.
+See the [reviewed handoff contract](detached-jobs.md): workers prepare expected
+runs over eight minutes for root review; the estimate never imposes a timeout.
+
+The earlier custom-goal cutover requires a quiet protocol-2 to protocol-3 transition,
+`daemon_restart: true` and `session_restart: required`, even though the upstream
+version remains 0.163.0. Follow the [goal isolation/rollback contract](goals.md#stock-daemon-isolation-and-rollout-contract):
+native goals must be effectively disabled at stock daemon startup, and the fleet
+wrapper must dispatch `goal` to the helper. The reviewed native objective must
+be captured before native goal APIs are disabled. Include these requirements
+and explicit rollback package retention in the handoff's rollout notes. Preserve
+the existing updater-disable setting, shared daemon identity and live ledger.
+No automatic native-goal conversion or re-enabling on rollback is permitted.
+Fleet quiet checks must recognize settled goal callback markers and open goal
+dispatches as specified in the linked contract; the pre-goal callback-only query
+does not qualify a goal-aware cutover or rollback.
 
 For the Python-to-Rust cutover, fleet helper scans must include native
 `codex-plus-runtime supervise|observe` and legacy Python processes. Preserve

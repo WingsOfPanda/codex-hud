@@ -46,6 +46,22 @@ main turn is part of this agent workflow, recorded in this repository's AGENTS.m
 There are no global instruction changes. The stock daemon supports the workflow
 with the delivery limits described below.
 
+### Process selection in long sessions
+
+For `--process`, registration first uses the stock daemon's live background
+terminal mapping. If the process has already left that list, it checks command
+items in the current parent turn before searching older history. An exact,
+unique current-turn match takes precedence over an older reuse of the same
+process ID. Finished work returns `already_finished` and needs immediate review,
+without creating a completion callback.
+
+If the current turn has no match, the existing historical lookup still requires
+a unique command item. Pagination remains bounded at 32 pages of 100 items;
+incomplete history, ambiguous matches, or RPC failures are not completion
+evidence. Registration fails without partially arming a batch. This avoids
+scanning thousands of unrelated old items for a command just completed in the
+current turn; it does not turn a history limit into permission to guess.
+
 ## Shell display versus completion delivery
 
 The HUD lists this root session's native background commands automatically through
@@ -235,7 +251,8 @@ job is stopped, no callback is recreated, and no daemon restart or model polling
 is involved. The TUI can be exited and resumed normally; it does not perform the
 observer transfer and need not stay open for it.
 
-The Rust package manifest declares `coordinator_protocol: 2`. Automatic transfer
+The detached-job candidate declares `coordinator_protocol: 4`; installed 0.3.2
+uses protocol 3. The first transition is quiet. Automatic transfer
 requires the same protocol, upstream identity, and CPU target on both sides.
 The target must also have a strictly higher Plus `M.m.p` version, compared as
 three numeric components. A lower or equal version in a different directory,
@@ -331,6 +348,13 @@ python3 tests/test_rust_runtime_stock_lifecycle.py \
   --runtime .build/codex-plus-runtime --stock-binary /path/to/official/codex \
   --evidence .build/rust-stock-lifecycle --scenario all
 ```
+
+Registration regressions cover more than 3,200 unrelated historical items,
+current-turn completion and process-ID reuse, batch lookup reuse, older-item
+fallback, and fail-closed ownership, pagination and transport failures. The
+official-daemon lifecycle suite also finishes a yielded shell before registering
+it during the still-active parent turn: the result must be `already_finished`,
+with no park, job, callback or extra model turn.
 
 The preserved Python 0.2 interruption suite uses real native workers and a private official daemon.
 It injects a selected RPC projection and, when needed, unavailable evidence to

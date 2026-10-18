@@ -19,6 +19,7 @@ import tempfile
 import threading
 import time
 import unittest
+import uuid
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
@@ -88,16 +89,25 @@ class PagedHistoryFake(Fake):
     def __init__(self):
         super().__init__()
         self.history_error = False
+        self.item_replies = {}
 
     def call(self, method, params):
-        if method == 'thread/items/list' and not params.get('turnId'):
+        if method == 'thread/items/list':
             self.calls.append((method, dict(params)))
-            if self.history_error:
+            turn = params.get('turnId')
+            if self.history_error and not turn:
                 raise ConnectionError('history transport failed')
+            key = (turn, params.get('cursor'))
+            if key in self.item_replies:
+                reply = self.item_replies[key]
+                if isinstance(reply, Exception):
+                    raise reply
+                return reply
+            entries = [entry for entry in self.entries if not turn or entry['turnId'] == turn]
             start = int(params.get('cursor', '0'))
             end = start + params['limit']
-            return {'data': self.entries[start:end],
-                    'nextCursor': str(end) if end < len(self.entries) else None}
+            return {'data': entries[start:end],
+                    'nextCursor': str(end) if end < len(entries) else None}
         return super().call(method, params)
 
 
@@ -215,6 +225,168 @@ class RuntimeAcceptance(unittest.TestCase):
         finally:
             fixture.close()
 
+    def test_input_settle_retries_only_temporary_turn_history_unavailability(self):
+        unsupported = {'code': -32601, 'message': 'list_turns is not supported yet'}
+        origin, other = str(uuid.uuid4()), str(uuid.uuid4())
+        cases = [
+            ('recovers', unsupported, 2, origin, True),
+            ('persistent', unsupported, 100, origin, False),
+            ('wrong_code', dict(unsupported, code=-32603), 1, origin, False),
+            ('other_error', dict(unsupported, message='permission denied'), 1, origin, False),
+            ('wrong_turn', unsupported, 2, other, False),
+            ('unknown_turn', unsupported, 0, other, False),
+        ]
+        for label, error, failures, known_turn, accepted in cases:
+            with self.subTest(label=label), self.fixture(label=label) as f:
+                f.env.pop('CODEX_THREAD_ID')
+                f.fake.parent_turns = []
+                result = subprocess.run([
+                    str(f.runtime), 'ultracode', 'provenance', '--thread', PARENT,
+                    '--load-kind', 'fresh', '--developer-instructions-stdin', '--json',
+                ], env=f.env, input=(REPO / 'docs/ultracode-bootstrap.txt').read_text(),
+                    capture_output=True, text=True, timeout=10)
+                self.assertEqual(result.returncode, 0, (result.stdout, result.stderr))
+                f.cli('ultracode', 'on', '--thread', PARENT, '--json')
+                submission = str(uuid.uuid4())
+                f.cli('goal', 'input', '--thread', PARENT, '--submission-id', submission, '--json')
+                f.fake.parent_turns = [{'id': known_turn, 'status': 'inProgress'}]
+                f.fake.entries = [{'turnId': known_turn, 'item': {
+                    'type': 'userMessage', 'clientId': submission,
+                }}]
+                original_reply = f.server.reply
+                reads = []
+
+                def reply(method, params):
+                    if method == 'thread/turns/list':
+                        reads.append(dict(params))
+                        if len(reads) <= failures:
+                            return {'error': error}
+                    return original_reply(method, params)
+
+                f.server.reply = reply
+                before = len(f.server.requests)
+                started = time.monotonic()
+                result = f.cli('goal', 'input-settle', '--thread', PARENT,
+                    '--submission-id', submission, '--turn', origin, '--accepted', '--json', ok=False)
+                elapsed = time.monotonic() - started
+                self.assertEqual(result.returncode == 0, accepted, (result.stdout, result.stderr))
+                self.assertLess(elapsed, 3, 'readiness retries exceeded the short admission budget')
+                self.assertTrue(all(p['threadId'] == PARENT for p in reads))
+                if label == 'persistent':
+                    self.assertGreater(len(reads), 1)
+                    self.assertLessEqual(len(reads), 6)
+                    self.assertIn(unsupported['message'], result.stdout)
+                else:
+                    self.assertEqual(len(reads), 3 if label in ('recovers', 'wrong_turn') else 1)
+                self.assertTrue(all(r.get('method') in (
+                    'initialize', 'initialized', 'thread/turns/list', 'thread/items/list',
+                ) for r in f.server.requests[before:]), 'settlement replayed a mutation')
+                status = json.loads(f.cli('goal', 'history', '--thread', PARENT, '--json').stdout)
+                projection = json.loads((f.home / 'codex-plus/ultracode' / f'{PARENT}.json').read_text())
+                if accepted:
+                    self.assertEqual(result.stderr, '')
+                    self.assertIsNone(status['pending_input'])
+                    self.assertEqual(projection['effective']['submission'], submission)
+                    self.assertEqual(projection['effective']['turn'], origin)
+                    self.assertTrue(projection['effective']['enabled'])
+                else:
+                    self.assertEqual(status['pending_input']['submission_id'], submission)
+                    self.assertIsNone(projection['effective'])
+
+    def test_ultracode_item_readiness_preserves_input_and_reports_unavailable(self):
+        unsupported = {'code': -32601, 'message': 'list_items is not supported yet'}
+        cases = [
+            ('recovers', {'error': unsupported}, 2, True),
+            ('persistent', {'error': unsupported}, 100, False),
+            ('wrong_code', {'error': dict(unsupported, code=-32603)}, 1, False),
+            ('other_error', {'error': dict(unsupported, message='permission denied')}, 1, False),
+            ('empty_items', {'result': {'data': [], 'nextCursor': None}}, 1, False),
+            ('foreign_item', {'result': {'data': [{'turnId': str(uuid.uuid4()),
+                'item': {'type': 'userMessage', 'clientId': str(uuid.uuid4())}}],
+                'nextCursor': None}}, 1, False),
+        ]
+        for label, response, failures, recovered in cases:
+            with self.subTest(label=label), self.fixture(label=label) as f:
+                f.env.pop('CODEX_THREAD_ID')
+                f.fake.parent_turns = []
+                result = subprocess.run([
+                    str(f.runtime), 'ultracode', 'provenance', '--thread', PARENT,
+                    '--load-kind', 'fresh', '--developer-instructions-stdin', '--json',
+                ], env=f.env, input=(REPO / 'docs/ultracode-bootstrap.txt').read_text(),
+                    capture_output=True, text=True, timeout=10)
+                self.assertEqual(result.returncode, 0, (result.stdout, result.stderr))
+                f.cli('ultracode', 'on', '--thread', PARENT, '--json')
+                submission, turn = str(uuid.uuid4()), str(uuid.uuid4())
+                f.cli('goal', 'input', '--thread', PARENT, '--submission-id', submission, '--json')
+                f.fake.parent_turns = [{'id': turn, 'status': 'inProgress'}]
+                f.fake.entries = [{'turnId': turn, 'item': {
+                    'type': 'userMessage', 'clientId': submission,
+                }}]
+                original_reply = f.server.reply
+                reads = []
+
+                def reply(method, params):
+                    if method == 'thread/items/list':
+                        reads.append(dict(params))
+                        if len(reads) <= failures:
+                            return response
+                    return original_reply(method, params)
+
+                f.server.reply = reply
+                before = len(f.server.requests)
+                started = time.monotonic()
+                result = f.cli('goal', 'input-settle', '--thread', PARENT,
+                    '--submission-id', submission, '--turn', turn, '--accepted', '--json')
+                self.assertLess(time.monotonic() - started, 3)
+                self.assertIsNone(json.loads(result.stdout)['pending_input'])
+                projection_path = f.home / 'codex-plus/ultracode' / f'{PARENT}.json'
+                projection = json.loads(projection_path.read_text())
+                self.assertTrue(all(p['threadId'] == PARENT and p['turnId'] == turn for p in reads))
+                if recovered:
+                    self.assertEqual(result.stderr, '')
+                    self.assertEqual(len(reads), 3)
+                    self.assertEqual(projection['availability'], 'available')
+                    self.assertEqual(projection['effective']['submission'], submission)
+                    self.assertEqual(projection['effective']['turn'], turn)
+                else:
+                    self.assertEqual(projection['availability'], 'unavailable')
+                    self.assertTrue(projection['unavailable_reason'])
+                    self.assertIsNone(projection['effective'])
+                    self.assertEqual(projection['instructions'], '')
+                    self.assertIn(submission, [p['submission'] for p in projection['pending']])
+                    if label == 'persistent':
+                        self.assertGreater(len(reads), 1)
+                        self.assertLessEqual(len(reads), 6)
+                        # A status read must not conceal the still-unresolved error.
+                        status = json.loads(f.cli('ultracode', 'status', '--thread', PARENT, '--json').stdout)
+                        self.assertEqual(status['availability'], 'unavailable')
+                        self.assertIn(unsupported['message'], status['unavailable_reason'])
+                    else:
+                        self.assertEqual(len(reads), 1)
+                self.assertTrue(all(r.get('method') in (
+                    'initialize', 'initialized', 'thread/read', 'thread/turns/list', 'thread/items/list',
+                ) for r in f.server.requests[before:]), 'mode confirmation replayed a mutation')
+                f.server.reply = original_reply
+                status = json.loads(f.cli('ultracode', 'status', '--thread', PARENT, '--json').stdout)
+                self.assertEqual(status['availability'], 'available')
+                self.assertNotIn('unavailable_reason', status)
+                self.assertEqual(status['effective']['submission'], submission)
+                self.assertEqual(status['effective']['turn'], turn)
+                self.assertTrue(status['effective']['enabled'])
+                self.assertEqual(status['pending'], [])
+                # Steering a confirmed turn must retain its original mode without rereading items.
+                f.cli('ultracode', 'off', '--thread', PARENT, '--json')
+                steer = str(uuid.uuid4())
+                f.cli('goal', 'input', '--thread', PARENT, '--submission-id', steer, '--json')
+                reads.clear()
+                f.server.reply = reply
+                f.cli('goal', 'input-settle', '--thread', PARENT, '--submission-id', steer,
+                    '--turn', turn, '--accepted', '--json')
+                self.assertEqual(reads, [])
+                projection = json.loads(projection_path.read_text())
+                self.assertEqual(projection['availability'], 'available')
+                self.assertEqual(projection['effective'], status['effective'])
+
     def test_exact_worker_process_ids_and_python_reopen_deduplicate(self):
         with self.fixture() as f:
             f.fake.running = [{'processId': '23091', 'itemId': 'command-item'}]
@@ -258,6 +430,128 @@ class RuntimeAcceptance(unittest.TestCase):
             result = f.cli('park', '--process', '42', '--reason', 'ambiguous process', ok=False)
             self.assertNotEqual(result.returncode, 0)
             self.assertFalse(f.state()['parks'])
+
+    def test_current_completed_process_ignores_long_older_history(self):
+        with self.fixture(PagedHistoryFake()) as f:
+            f.fake.entries = [{'turnId': 'old-history', 'item': {
+                'type': 'userMessage', 'id': f'old-{index}'}} for index in range(3300)]
+            f.fake.entries.append({'turnId': 'origin', 'item': {
+                'type': 'commandExecution', 'id': 'finished-current', 'processId': '60257',
+                'status': 'completed', 'exitCode': 0}})
+            self.assertEqual(f.park('--process', '60257')['state'], 'already_finished')
+            self.assertFalse(f.state()['parks'])
+            self.assertFalse(f.state()['jobs'])
+            self.assertFalse(f.state()['callbacks'])
+            items = [params for method, params in f.fake.calls if method == 'thread/items/list']
+            self.assertEqual(len(items), 1)
+            self.assertEqual(items[0]['turnId'], 'origin')
+            self.assertEqual(f.fake.enqueues, 0)
+
+    def test_current_process_match_scans_pages_and_wins_over_historical_id_reuse(self):
+        for duplicate in (False, True):
+            with self.subTest(duplicate=duplicate), self.fixture(PagedHistoryFake(), label=str(duplicate)) as f:
+                command = {'turnId': 'origin', 'item': {
+                    'type': 'commandExecution', 'id': 'finished-current', 'processId': '42',
+                    'status': 'completed', 'exitCode': 0}}
+                f.fake.entries = [{'turnId': 'old-turn', 'item': {
+                    **command['item'], 'id': 'reused-old'}}]
+                f.fake.entries.extend({'turnId': 'origin', 'item': {
+                    'type': 'userMessage', 'id': f'prefix-{index}'}} for index in range(100))
+                f.fake.entries.extend([command, {'turnId': 'origin', 'item': {
+                    'type': 'userMessage', 'id': 'wrong-type', 'processId': '42'}},
+                    {'turnId': 'origin', 'item': {**command['item'], 'id': 'wrong-process',
+                                               'processId': '420'}}])
+                f.fake.entries.extend({'turnId': 'origin', 'item': {
+                    'type': 'userMessage', 'id': f'suffix-{index}'}} for index in range(100))
+                if duplicate:
+                    f.fake.entries.append({'turnId': 'origin', 'item': {
+                        **command['item'], 'id': 'duplicate-current'}})
+                    result = f.cli('park', '--process', '42', '--reason', 'duplicate current', ok=False)
+                    self.assertNotEqual(result.returncode, 0)
+                else:
+                    self.assertEqual(f.park('--process', '42')['state'], 'already_finished')
+                items = [params for method, params in f.fake.calls if method == 'thread/items/list']
+                self.assertEqual(len(items), 3)
+                self.assertTrue(all(params.get('turnId') == 'origin' for params in items))
+                self.assertFalse(f.state()['parks'])
+                self.assertFalse(f.state()['jobs'])
+                self.assertFalse(f.state()['callbacks'])
+
+    def test_process_batch_reuses_current_snapshot_and_falls_back_for_older_job(self):
+        with self.fixture(PagedHistoryFake()) as f:
+            f.fake.running = [{'processId': '11', 'itemId': 'running-command'}]
+            f.fake.entries = [{'turnId': turn, 'item': {
+                'type': 'commandExecution', 'id': item, 'processId': process,
+                'status': 'completed', 'exitCode': 0}}
+                for turn, item, process in [('origin', 'current-command', '42'),
+                                            ('old-turn', 'older-command', '43')]]
+            result = f.park('--process', '11', '--process', '42', '--process', '43')
+            self.assertEqual(result['state'], 'armed')
+            self.assertEqual({job['item']: job['status'] for job in f.state()['jobs']}, {
+                'running-command': 'armed'})
+            self.assertEqual({job['id']: job['status'] for job in result['already_finished']}, {
+                f'{PARENT}:process:item:current-command': 'completed',
+                f'{PARENT}:process:item:older-command': 'completed'})
+            items = [params for method, params in f.fake.calls if method == 'thread/items/list']
+            self.assertEqual([params.get('turnId') for params in items], ['origin', None])
+            self.assertFalse(f.state()['callbacks'])
+            self.assertEqual(f.fake.enqueues, 0)
+
+    def test_old_process_beyond_history_bound_does_not_partially_register_batch(self):
+        with self.fixture(PagedHistoryFake()) as f:
+            f.fake.running = [{'processId': '11', 'itemId': 'running-command'}]
+            f.fake.entries = [{'turnId': 'old-history', 'item': {
+                'type': 'userMessage', 'id': f'old-{index}'}} for index in range(3300)]
+            f.fake.entries.append({'turnId': 'old-turn', 'item': {
+                'type': 'commandExecution', 'id': 'older-command', 'processId': '42',
+                'status': 'completed', 'exitCode': 0}})
+            result = f.cli('park', '--worker', CHILD, '--process', '11', '--process', '42',
+                           '--reason', 'bounded old selection', ok=False)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn('32 pages', result.stderr)
+            items = [params for method, params in f.fake.calls if method == 'thread/items/list']
+            self.assertEqual(sum(params.get('turnId') == 'origin' for params in items), 1)
+            self.assertEqual(sum(not params.get('turnId') for params in items), 32)
+            self.assertFalse(f.state()['parks'])
+            self.assertFalse(f.state()['jobs'])
+            self.assertFalse(f.state()['callbacks'])
+            self.assertEqual(f.fake.enqueues, 0)
+
+    def test_current_process_lookup_errors_do_not_accept_partial_or_unowned_evidence(self):
+        command = {'turnId': 'origin', 'item': {
+            'type': 'commandExecution', 'id': 'current-command', 'processId': '42',
+            'status': 'completed', 'exitCode': 0}}
+        faults = {
+            'repeated-cursor': {'data': [], 'nextCursor': 'fault'},
+            'malformed-data': {'data': {}},
+            'malformed-cursor': {'data': [], 'nextCursor': 42},
+            'transport': ConnectionError('current history transport failed'),
+            'wrong-turn': {'data': [{**command, 'turnId': 'other-turn'}], 'nextCursor': None},
+            'missing-turn': {'data': [{'item': command['item']}], 'nextCursor': None},
+            'bounded-current': None,
+        }
+        for label, reply in faults.items():
+            with self.subTest(fault=label), self.fixture(PagedHistoryFake(), label=label) as f:
+                f.fake.running = [{'processId': '11', 'itemId': 'running-command'}]
+                f.fake.entries = [command]
+                if label == 'bounded-current':
+                    f.fake.entries.extend({'turnId': 'origin', 'item': {
+                        'type': 'userMessage', 'id': f'current-{index}'}} for index in range(3300))
+                else:
+                    f.fake.item_replies = {
+                        ('origin', None): {'data': [command], 'nextCursor': 'fault'},
+                        ('origin', 'fault'): reply,
+                    }
+                result = f.cli('park', '--process', '11', '--process', '42',
+                               '--reason', 'unverified current selection', ok=False)
+                self.assertNotEqual(result.returncode, 0)
+                items = [params for method, params in f.fake.calls if method == 'thread/items/list']
+                self.assertEqual(len(items), 32 if label == 'bounded-current' else 2)
+                self.assertTrue(all(params.get('turnId') == 'origin' for params in items))
+                self.assertFalse(f.state()['parks'])
+                self.assertFalse(f.state()['jobs'])
+                self.assertFalse(f.state()['callbacks'])
+                self.assertEqual(f.fake.enqueues, 0)
 
     def test_live_delivery_waits_for_idle_and_preserves_python_dedup(self):
         with self.fixture() as f:
@@ -698,23 +992,17 @@ class RuntimeAcceptance(unittest.TestCase):
                 register(store, f.fake, PARENT, [CHILD], [], '0.2 inherited supervisor budget')
             finally:
                 store.close()
+            # The supervisor now exits if its role is owned; test the inherited
+            # final attempt using a loaded copy and a missing observer executable.
+            supervisor_binary = f.runtime.with_name('supervisor-budget-fixture')
+            shutil.copy2(f.runtime, supervisor_binary)
+            f.runtime.unlink()
+            f.supervisor_lock.close()
             log = (f.home / 'supervisor-budget.log').open('w+')
-            supervisor = subprocess.Popen([str(f.runtime), 'supervise', '--parent', PARENT],
+            supervisor = subprocess.Popen([str(supervisor_binary), 'supervise', '--parent', PARENT],
                 cwd=REPO, env=dict(f.env, CODEX_PLUS_SUPERVISOR_FAILURES='5'),
                 stdin=subprocess.DEVNULL, stdout=log, stderr=log, start_new_session=True)
             f.children.append((supervisor, log))
-            expected_lock = f.home / 'codex-plus' / f'{PARENT}.supervisor.lock'
-
-            def opened_role_lock():
-                try:
-                    return any(path.readlink() == expected_lock
-                               for path in Path(f'/proc/{supervisor.pid}/fd').iterdir())
-                except (FileNotFoundError, ProcessLookupError):
-                    return False
-
-            wait(opened_role_lock, 'supervisor did not reach its held role lock')
-            f.runtime.unlink()  # The loaded supervisor survives; its observer exec must fail.
-            f.supervisor_lock.close()
             supervisor.wait(timeout=6)
             self.assertEqual(supervisor.returncode, 0)
             state = f.state()

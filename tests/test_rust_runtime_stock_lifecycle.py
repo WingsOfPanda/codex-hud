@@ -21,7 +21,8 @@ from test_rust_runtime_stock_integration import stop_rust_observers
 from test_upstream_0163_integration import PrivateServer, spawn_worker
 from fixtures.upstream_0163 import execute, function, message
 
-SCENARIOS = ('observer-completed', 'observer-running', 'daemon-restart', 'origin-abort', 'worker-reuse')
+SCENARIOS = ('observer-completed', 'observer-running', 'daemon-restart', 'origin-abort', 'worker-reuse',
+             'registration-completed')
 
 
 def run_worker(runtime, binary, evidence):
@@ -156,6 +157,21 @@ def run(runtime, binary, evidence, scenario):
         origin = f.start()
         process_id = f.process()
         wait(lambda: f.provider.count == 2 and f.runs.exists(), 'held native command did not yield')
+        if scenario == 'registration-completed':
+            f.release.touch()
+            wait(lambda: not f.terminals(), 'command did not finish before registration')
+            registration = cli('park', '--process', process_id, '--reason', 'already finished in current turn')
+            assert registration['state'] == 'already_finished', registration
+            state = f.state()
+            assert not state['jobs'] and not state['parks'] and not state['callbacks'], state
+            assert f.provider.count == 2, 'registration invoked the model'
+            gate.set()
+            assert f.terminal(origin)['status'] == 'completed'
+            f.report.update(origin=origin, process=process_id, registration=registration,
+                            final_runtime_state=state)
+            passed = True
+            print(json.dumps({'passed': True, 'scenario': scenario, 'remote_model_requests': 0}))
+            return
         registration = cli('park', '--process', process_id, '--reason', 'Rust stock lifecycle')
         assert registration['state'] == 'armed', registration
         first = observer()

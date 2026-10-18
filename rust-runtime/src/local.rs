@@ -33,8 +33,12 @@ unsafe impl Send for ExactExec {}
 unsafe impl Sync for ExactExec {}
 
 impl ExactExec {
-    fn capture(command: &Command) -> io::Result<Self> {
-        let mut environment: BTreeMap<_, _> = env::vars_os().collect();
+    fn capture(command: &Command, inherit_environment: bool) -> io::Result<Self> {
+        let mut environment: BTreeMap<_, _> = if inherit_environment {
+            env::vars_os().collect()
+        } else {
+            BTreeMap::new()
+        };
         for (name, value) in command.get_envs() {
             if let Some(value) = value {
                 environment.insert(name.to_owned(), value.to_owned());
@@ -118,8 +122,8 @@ impl ExactExec {
     }
 }
 
-fn prepare_exact(command: &mut Command) -> io::Result<()> {
-    let execution = ExactExec::capture(command)?;
+fn prepare_exact(command: &mut Command, inherit_environment: bool) -> io::Result<()> {
+    let execution = ExactExec::capture(command, inherit_environment)?;
     // Run after the caller's hooks and std's descriptor/cwd setup; never reach execvp's shell fallback.
     unsafe {
         command.pre_exec(move || execution.exec());
@@ -129,12 +133,18 @@ fn prepare_exact(command: &mut Command) -> io::Result<()> {
 
 /// Configure the command fully before calling; product commands inherit their environment.
 pub fn spawn_exact(command: &mut Command) -> io::Result<Child> {
-    prepare_exact(command)?;
+    prepare_exact(command, true)?;
+    command.spawn()
+}
+
+/// Use only explicitly configured environment entries; Command::get_envs omits env_clear state.
+pub fn spawn_exact_clean(command: &mut Command) -> io::Result<Child> {
+    prepare_exact(command, false)?;
     command.spawn()
 }
 
 pub fn exec_exact(command: &mut Command) -> io::Error {
-    if let Err(error) = prepare_exact(command) {
+    if let Err(error) = prepare_exact(command, true) {
         return error;
     }
     command.exec()
@@ -393,6 +403,20 @@ mod tests {
             spawn_exact(&mut command).unwrap_err().raw_os_error(),
             Some(libc::EACCES)
         );
+    }
+    #[test]
+    fn exact_clean_spawn_does_not_inherit_the_callers_environment() {
+        let mut command = Command::new("/usr/bin/env");
+        command
+            .env_clear()
+            .env("EXECUTION_ENV_TEST", "declared")
+            .stdout(Stdio::piped());
+        let output = spawn_exact_clean(&mut command)
+            .unwrap()
+            .wait_with_output()
+            .unwrap();
+        assert!(output.status.success());
+        assert_eq!(output.stdout, b"EXECUTION_ENV_TEST=declared\n");
     }
     #[test]
     fn inventory_json_matches_python() {

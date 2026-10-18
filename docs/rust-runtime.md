@@ -3,7 +3,9 @@
 Plus 0.3 replaces the installed Python helper with one native executable,
 `bin/codex-plus-runtime`, behind the existing Bash launcher. It owns managed
 shell execution, advisor consultations, registration, observation, supervision,
-and cooperative upgrade. The TUI and official daemon remain separate processes.
+and cooperative upgrade. The 0.4.0 detached-job candidate adds reviewed execution
+ownership without changing the official daemon. The TUI, daemon and executor
+remain separate processes.
 The preserved `codex_plus/` source is the Python 0.2 compatibility oracle;
 packaging rejects Python source and bytecode in the product tree.
 
@@ -20,6 +22,26 @@ WebSocket messages and aggregate call deadlines. `evidence.rs` reads bounded
 exact-turn evidence. `local.rs` owns private files and child execution.
 `runner.rs` and `advisor.rs` preserve command I/O and cancellation contracts.
 `upgrade.rs` validates the adjacent immutable package before re-execution.
+
+Plus 0.3.2 added `goals.rs` for durable goal policy and
+`goal_command.rs` for the root CLI, using this same store. Goal admission and
+user mutations share a bounded local lock around queue submission; SQLite
+transactions still do not span network calls. The [goal workflow](goals.md)
+defines the protocol-3 cutover, pending user-input fence and recovery barrier.
+
+The combined `0.163.0-plus.0.4.0` candidate uses coordinator protocol 5 and package
+`execution_record_format: 1`. `execution_admission.rs` verifies the exact root/turn's
+effective permissions and qualified Linux containment. `job_command.rs` binds
+root review to current input/goal authority; `executions.rs` and its executor
+module own immutable inputs, resource reservations, process identity and durable
+outcomes. `maintenance.rs` fences new admission. Execution truth is separate
+from the watch/callback ledger, so observation loss cannot authorize replay or
+erase a result. The [handoff workflow](detached-jobs.md) owns the CLI and manifest
+contract; this document does not duplicate their schema.
+
+Native workers prepare expected runs over eight minutes and hand them to the
+root before launch. An allowed quick check that overruns finishes in a bounded
+local wait. Eight minutes is an estimate, not an execution deadline or transfer.
 
 The migration preserves ledger schema and status JSON version 1, exact job and
 callback identities, frozen payloads, uncertainty, and cancellation provenance.
@@ -42,6 +64,9 @@ python3 tests/test_rust_runtime_stock_integration.py \
 python3 tests/test_rust_runtime_stock_lifecycle.py \
   --runtime .build/codex-plus-runtime --stock-binary /absolute/official/codex \
   --evidence .build/rust-stock-lifecycle --scenario all
+python3 tests/test_detached_jobs_stock.py \
+  --runtime .build/codex-plus-runtime --stock-binary /absolute/official/codex \
+  --evidence .build/detached-stock/completion --scenario completion
 ```
 
 Python drivers run outside the tested product, reuse the 0.2 ledger oracle,
@@ -54,13 +79,20 @@ no interpreter or `libpython`. These functional filesystem fixtures do not
 establish a production security boundary. Complete release archives still need
 [extracted-package qualification](releasing.md#qualification-and-handoff).
 
+Repeat detached-job acceptance for the affected scenarios and each target;
+the [acceptance matrix](detached-jobs.md#acceptance-gates) includes real daemon
+restarts, restricted admission, uncertain outcomes, monitoring and cancellation.
+Private source/prototype results do not qualify an untested complete archive,
+fleet service lifetime or live upgrade.
+
 ## Fleet contract
 
-This is a protocol-2 bootstrap from Python protocol 1: use the
+The original Rust migration was a protocol-2 bootstrap from Python protocol 1: use the
 [quiet cutover and rollback procedure](background-work.md#cooperative-package-upgrades).
 The shared daemon stays stock 0.163.0. Fleet helper scans must recognize both
 `python3 -m codex_plus.background` and native `codex-plus-runtime` process roles.
-Both native roles retain a concrete `--package-root /absolute/package/` pin.
+Observer and supervisor roles retain a concrete
+`--package-root /absolute/package/` pin.
 The ledger location and callback-state names are unchanged. Wrapper commands and
 global model workflow instructions need no syntax change for the migration.
 
@@ -68,3 +100,30 @@ Preserve the last qualified Python package and its interpreter explicitly until
 that rollback is retired. Rust helpers do not transfer to older or protocol-1
 packages; every rollback uses a quiet checkpoint. Build/test-only Python remains
 permitted, and removing system Python is outside this change.
+
+Custom goals require protocol 3, effective native-goal disabling and a stock
+daemon restart at quiet cutover, despite keeping upstream 0.163.0 unchanged.
+The wrapper adds `goal`; quiet checks also inspect goal dispatches and distinguish
+active versus settled goal-owned callback markers. Preserve the goal ledger and
+a qualified rollback package without dispatching its goal records through older
+helpers. See the [goal rollout contract](goals.md#stock-daemon-isolation-and-rollout-contract).
+
+Combined detached jobs and Ultracode require a quiet initial protocol-3 to
+protocol-5 cutover; the detached-only protocol-4 candidate was unreleased.
+This cutover waits for executions, requires the new TUI, and retains the unchanged
+stock daemon and effective native-goal disabling.
+Fleet scans must additionally recognize the private `execution-executor` role,
+its root/execution identity and leading package pin. Each executor keeps the
+original package executable, cwd and open descriptors while the coordinator may
+change packages. Retain old packages for running and unresolved executions;
+executor record-format compatibility does not waive coordinator/upstream/target
+checks or quiet rollback.
+
+An operator maintenance hold blocks new Plus launch/model admission while
+existing executions continue. Its `admission_quiet` result is separate from
+`execution_quiet`, and neither replaces native/AP fleet quiet checks. Restricted
+or unknown launch environments refuse admission; there is no host-service
+sandbox bypass. Restart continuity is limited to qualified unrestricted user
+session/tmux contexts and excludes reboot or executor failure. Installation,
+global policy and fleet retention/reconnect support remain separately owned by
+fleet-config; this source change does not activate them.

@@ -53,8 +53,8 @@ def seal(package, runtime, release, *, broken_exec=False, invalid_elf=False):
     files = {'bin/codex-plus-runtime': {
         'sha256': hashlib.sha256(target.read_bytes()).hexdigest(),
         'size': target.stat().st_size, 'mode': '0755'}}
-    manifest = {'schema_version': 1, 'coordinator_protocol': 2,
-                'release': f'0.163.0-plus.0.3.{release}', 'plus_commit': str(release) * 40,
+    manifest = {'schema_version': 1, 'coordinator_protocol': 5, 'execution_record_format': 1,
+                'release': f'0.163.0-plus.0.4.{release}', 'plus_commit': str(release) * 40,
                 'upstream': {'version': '0.163.0', 'tag': 'private-stock-proof', 'commit': '0' * 40},
                 'target': f'{architecture}-unknown-linux-gnu', 'files': files,
                 'tree_sha256': hashlib.sha256(json.dumps(files, sort_keys=True,

@@ -14,7 +14,7 @@ use std::{
     process::Command,
 };
 
-pub const COORDINATOR_PROTOCOL: u64 = 2;
+pub const COORDINATOR_PROTOCOL: u64 = 5;
 pub const UPGRADE_EXIT: i32 = 75;
 const RUNTIME: &str = "bin/codex-plus-runtime";
 
@@ -186,6 +186,8 @@ pub fn select_package(root: &Path) -> Result<Option<PathBuf>> {
     if manifest["schema_version"].as_u64() != Some(1)
         || manifest["coordinator_protocol"].as_u64() != Some(COORDINATOR_PROTOCOL)
         || installed["coordinator_protocol"].as_u64() != Some(COORDINATOR_PROTOCOL)
+        || manifest["execution_record_format"].as_u64() != Some(1)
+        || installed["execution_record_format"].as_u64() != Some(1)
         || installed["upstream"]
             .as_object()
             .is_none_or(|u| u.is_empty())
@@ -279,7 +281,7 @@ mod tests {
         fs::write(root.join(RUNTIME), payload).unwrap();
         fs::set_permissions(root.join(RUNTIME), fs::Permissions::from_mode(0o755)).unwrap();
         let files = json!({RUNTIME:{"size":payload.len(),"mode":"0755","sha256":format!("{:x}",Sha256::digest(payload))}});
-        let manifest = json!({"schema_version":1,"coordinator_protocol":2,"release":release,"upstream":{"version":"fixture"},"target":"x86_64-unknown-linux-gnu","tree_sha256":format!("{:x}",Sha256::digest(crate::local::ascii_json(&files).unwrap().as_bytes())),"files":files});
+        let manifest = json!({"schema_version":1,"coordinator_protocol":COORDINATOR_PROTOCOL,"execution_record_format":1,"release":release,"upstream":{"version":"fixture"},"target":"x86_64-unknown-linux-gnu","tree_sha256":format!("{:x}",Sha256::digest(crate::local::ascii_json(&files).unwrap().as_bytes())),"files":files});
         fs::write(
             root.join("codex-plus.json"),
             serde_json::to_vec(&manifest).unwrap(),
@@ -322,6 +324,23 @@ mod tests {
         assert!(select_package(&old).is_err());
     }
     #[test]
+    fn protocol_three_requires_a_quiet_cutover_before_detached_observation() {
+        let temp = tempfile::tempdir().unwrap();
+        let old = temp.path().join("old");
+        let new = temp.path().join("new");
+        seal(&old, "fixture-plus.0.3.0", &elf());
+        seal(&new, "fixture-plus.0.3.1", &elf());
+        std::os::unix::fs::symlink("new", temp.path().join("current")).unwrap();
+        let mut installed = manifest(&old).unwrap();
+        installed["coordinator_protocol"] = json!(3);
+        fs::write(
+            old.join("codex-plus.json"),
+            serde_json::to_vec(&installed).unwrap(),
+        )
+        .unwrap();
+        assert!(select_package(&old).is_err());
+    }
+    #[test]
     fn refuses_incompatible_identity_and_noncanonical_or_older_releases() {
         let temp = tempfile::tempdir().unwrap();
         let old = temp.path().join("old");
@@ -332,7 +351,11 @@ mod tests {
         let valid = manifest(&new).unwrap();
         for (key, value) in [
             ("coordinator_protocol", json!(1)),
+            ("coordinator_protocol", json!(2)),
+            ("coordinator_protocol", json!(3)),
             ("coordinator_protocol", json!(true)),
+            ("execution_record_format", json!(2)),
+            ("execution_record_format", Value::Null),
             ("target", json!("different")),
             ("upstream", json!({"version":"other"})),
             ("release", json!("fixture-plus.0.3.0")),

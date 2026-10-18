@@ -1,0 +1,141 @@
+{
+  "schema": 1,
+  "feature": "Short background shell topics",
+  "base_commit": "46522be91f5f2959e361f54040b64084a89d5798",
+  "candidate": "0.163.0-plus.0.4.0",
+  "binary_sha256": "22ca69cb4d25e4028b471908f3f174eb85904bd0d7ae45f87abe362a81d6f7e5",
+  "profile": "dev-small x86_64",
+  "patch": {
+    "forward": true,
+    "reverse": true,
+    "source_tree": "2e2dfdbfd829581371e1378327784be73d26a90f",
+    "changed_files": [
+      "codex-rs/tui/src/bottom_pane/worker_hud.rs",
+      "codex-rs/tui/src/chatwidget/shell_policy.rs",
+      "codex-rs/tui/src/chatwidget/tests/shell_policy.rs"
+    ],
+    "patch_sha256": "b90e716987a9d0f5951b6e0349809d75dc6aa7dd0b0dd0bb4e3e9fd9072f3d80"
+  },
+  "root_native_filters": [
+    {
+      "command": [
+        "cargo",
+        "+1.99.1",
+        "test",
+        "--locked",
+        "-p",
+        "codex-tui",
+        "--lib",
+        "shell_policy",
+        "--profile",
+        "dev-small",
+        "-j",
+        "12"
+      ],
+      "cwd": "/home/liupan/Aerius/codex-plus/.build/release030/x86/source/codex-rs",
+      "exit_code": 0,
+      "seconds": 0.85,
+      "log": "/home/liupan/Aerius/codex-plus/.build/shell-topics/root-shell-policy.log",
+      "passing_invocations": 21
+    },
+    {
+      "command": [
+        "cargo",
+        "+1.99.1",
+        "test",
+        "--locked",
+        "-p",
+        "codex-tui",
+        "--lib",
+        "worker_hud",
+        "--profile",
+        "dev-small",
+        "-j",
+        "12"
+      ],
+      "cwd": "/home/liupan/Aerius/codex-plus/.build/release030/x86/source/codex-rs",
+      "exit_code": 0,
+      "seconds": 0.95,
+      "log": "/home/liupan/Aerius/codex-plus/.build/shell-topics/root-worker-hud.log",
+      "passing_invocations": 47
+    },
+    {
+      "command": [
+        "cargo",
+        "+1.99.1",
+        "test",
+        "--locked",
+        "-p",
+        "codex-tui",
+        "--lib",
+        "chatwidget::tests::exec_flow",
+        "--profile",
+        "dev-small",
+        "-j",
+        "12"
+      ],
+      "cwd": "/home/liupan/Aerius/codex-plus/.build/release030/x86/source/codex-rs",
+      "exit_code": 0,
+      "seconds": 0.86,
+      "log": "/home/liupan/Aerius/codex-plus/.build/shell-topics/root-exec-flow.log",
+      "passing_invocations": 53
+    },
+    {
+      "command": [
+        "cargo",
+        "+1.99.1",
+        "test",
+        "--locked",
+        "-p",
+        "codex-tui",
+        "--lib",
+        "thread_transcript::tools::tests",
+        "--profile",
+        "dev-small",
+        "-j",
+        "12"
+      ],
+      "cwd": "/home/liupan/Aerius/codex-plus/.build/release030/x86/source/codex-rs",
+      "exit_code": 0,
+      "seconds": 0.78,
+      "log": "/home/liupan/Aerius/codex-plus/.build/shell-topics/root-transcript.log",
+      "passing_invocations": 6
+    }
+  ],
+  "filter_counts_overlap": true,
+  "topic_pty": {
+    "stages": [
+      "named",
+      "narrow-editable",
+      "reconnect",
+      "legacy-script",
+      "complete"
+    ],
+    "actual_native": true,
+    "full_command_history_verified": true,
+    "display_model_requests": 0,
+    "report_sha256": "f618b285ff43679af550f2dcdc88097f85ae7551bf65dbdfe7d65b73701d2123"
+  },
+  "terminal_smoke_stages": 23,
+  "detached_hud_stages": 8,
+  "reproduction": {
+    "path": ".build/shell-topics/before/last-screen.txt",
+    "result": "Original build displayed both long commands; explicit topic assertion failed."
+  },
+  "expected_test_updates": [
+    "The raw malicious compound now has Shell task fallback; Unicode rendering is checked through a valid topic, with terminal-control injection checks retained.",
+    "Unrelated advisor-adjacent shell now uses Shell task, rather than raw bash -c text; it remains a separate background row."
+  ],
+  "source_sha256": {
+    "patches/codex-0.163.0-worker-hud.patch": "b90e716987a9d0f5951b6e0349809d75dc6aa7dd0b0dd0bb4e3e9fd9072f3d80",
+    "tests/test_shell_topics_tui.py": "25360bc7c5b4ffec3155ff5a33d5f9a0470f1d4d2765246cc82250d4672ac0a0",
+    "tests/native_smoke.py": "28a45c3f6cc9549ee47fc6c603947506f12ce9b1b96adf54fea509a59625a649"
+  },
+  "limits": [
+    "No installation or publication; the running frontend needs a later deployed build.",
+    "ARM client compilation and complete per-target archive qualification remain release gates.",
+    "Semantic topics are supplied at launch; legacy unnamed scripts use compact mechanical labels, not model-generated summaries.",
+    "Native seen time still measures local observation; detached jobs retain their existing durable elapsed time.",
+    "Coordinator/runtime code did not change; prior runtime qualification is retained."
+  ]
+}
