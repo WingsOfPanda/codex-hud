@@ -51,11 +51,31 @@ pub(crate) fn reconcile_turn(
     if store.ultracode_status(root, Some(&rpc.generation), Some(turn))?["effective"].is_object() {
         return Ok(());
     }
-    let items = background::pages(
-        rpc,
-        "thread/items/list",
-        json!({"threadId":root,"turnId":turn,"sortDirection":"asc"}),
-    )?;
+    let mut retries = 0;
+    let items = loop {
+        match background::pages(
+            rpc,
+            "thread/items/list",
+            json!({"threadId":root,"turnId":turn,"sortDirection":"asc"}),
+        ) {
+            Ok(items) => break items,
+            Err(error) => {
+                let temporary = error
+                    .downcast_ref::<crate::rpc::RpcError>()
+                    .is_some_and(|rpc| {
+                        rpc.method == "thread/items/list"
+                            && rpc.error["code"].as_i64() == Some(-32601)
+                            && rpc.error["message"].as_str()
+                                == Some("list_items is not supported yet")
+                    });
+                if !temporary || retries == 3 {
+                    return Err(error);
+                }
+                retries += 1;
+                std::thread::sleep(Duration::from_millis(100));
+            }
+        }
+    };
     let submission =
         initial_submission(&items, turn)?.context("initial user submission is not yet visible")?;
     store.ultracode_bind(root, submission, &rpc.generation, turn)?;
@@ -107,6 +127,26 @@ pub(crate) fn input_optional(
     };
     if let Err(error) = result {
         eprintln!("codex-plus: Ultracode input snapshot unavailable: {error:#}");
+        if outcome == "accepted" {
+            let projection = store
+                .ultracode_status(root, Some(&rpc.generation), turn)
+                .and_then(|mut status| {
+                    admission_unavailable(&mut status, &error);
+                    publish(store, root, &status)
+                });
+            if let Err(error) = projection {
+                eprintln!("codex-plus: Ultracode status projection unavailable: {error:#}");
+            }
+        }
+    }
+}
+
+fn admission_unavailable(status: &mut Value, error: &anyhow::Error) {
+    if !status["effective"].is_object() {
+        status["availability"] = json!("unavailable");
+        status["unavailable_reason"] = json!(format!(
+            "Exact turn admission could not be established: {error:#}; no replay."
+        ));
     }
 }
 
@@ -247,9 +287,7 @@ fn execute(args: &Arguments) -> Result<Value> {
     let error = turn.and_then(|turn| reconcile_turn(&mut store, &mut rpc, &root, turn).err());
     let mut status = store.ultracode_status(&root, Some(&rpc.generation), turn)?;
     if let Some(error) = error {
-        status["unavailable_reason"] = json!(format!(
-            "Exact turn admission could not be established: {error:#}; no replay."
-        ));
+        admission_unavailable(&mut status, &error);
     } else if let Some(error) = current_error {
         status["unavailable_reason"] = json!(error);
     } else if turn.is_none() {
