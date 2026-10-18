@@ -7,6 +7,13 @@ stays unchanged. Fleet-config owns installation and the shared agent policy.
 
 ## Choose before launching
 
+For interactive roots and their native workers, first apply
+[reviewed job handoff](detached-jobs.md#agent-workflow). Expected runs over eight
+minutes, hardware trials, serving experiments and service restarts are prepared
+by workers and reviewed/launched by the root as detached executions. This is a
+planning boundary, separate from the two-second display yield below. Independent
+AP sessions retain the native-shell workflow.
+
 | Command | Mode |
 | --- | --- |
 | Finite, noninteractive; duration uncertain or expected short | `auto`: request a 2,000 ms initial yield |
@@ -96,7 +103,13 @@ save model turns. Ending the main turn and avoiding repeated model polling do.
 
 ## Native subagent waits
 
-A native subagent keeps its turn open until its command finishes. Ending the
+The root's worker brief names preparation outputs, permitted quick checks and
+the handoff point. Workers return expected-long execution recipes before launch,
+then finish their turns. Eight minutes is an estimate, not a kill deadline.
+
+An allowed short check that unexpectedly overruns stays with that worker until
+it finishes, using a bounded local wait without repeated model polling. Do not
+transfer its native session ID to the root or launch another copy. Ending the
 child turn immediately marks it completed and delivers its result to the parent;
 the root-only park coordinator cannot hold that child open.
 

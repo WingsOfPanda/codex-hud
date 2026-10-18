@@ -251,7 +251,8 @@ job is stopped, no callback is recreated, and no daemon restart or model polling
 is involved. The TUI can be exited and resumed normally; it does not perform the
 observer transfer and need not stay open for it.
 
-The Rust package manifest declares `coordinator_protocol: 2`. Automatic transfer
+The detached-job candidate declares `coordinator_protocol: 4`; installed 0.3.2
+uses protocol 3. The first transition is quiet. Automatic transfer
 requires the same protocol, upstream identity, and CPU target on both sides.
 The target must also have a strictly higher Plus `M.m.p` version, compared as
 three numeric components. A lower or equal version in a different directory,

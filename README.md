@@ -6,10 +6,12 @@ tracks its own parent thread in ordinary terminals and split tmux panes.
 Release builds patch the frontend and keep upstream daemon code unchanged.
 The HUD and Rust completion coordinator work with the official stock daemon.
 
-The 0.3.2 development candidate adds [Plus-owned goals](docs/goals.md), with
-genuine Idle waiting and event-driven continuation. It requires a qualified
-native-goal disable setting and a stock-daemon restart at rollout; it is not
-enabled by merely rebuilding this checkout. Fleet-config owns that cutover.
+The 0.4.0 development candidate adds [reviewed detached jobs](docs/detached-jobs.md):
+workers prepare expensive work, the root reviews and launches it, and local
+executors preserve results across qualified TUI and stock-daemon restarts.
+It retains [Plus-owned goals](docs/goals.md) and genuine Idle waiting.
+This checkout is not a fleet installation; fleet-config owns the quiet initial
+protocol transition and later qualified upgrades.
 
 The patch targets **Codex 0.163.0**, upstream commit
 `83086188ae0614bd882818ff1aa23f3194962012`.

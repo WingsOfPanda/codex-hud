@@ -25,6 +25,63 @@ mod tests {
         (home, store, Uuid::new_v4().to_string())
     }
     #[test]
+    fn recovered_execution_keeps_its_original_goal_and_ordinary_execution_stays_unbound() {
+        let (home, mut store, root) = fixture();
+        let snapshot = store
+            .goal_start(&root, "original", None, false, 1.0)
+            .unwrap();
+        let id = snapshot["goal"]["id"].as_str().unwrap();
+        let ordinary = crate::executions::prepare(
+            home.path(),
+            &root,
+            &json!({"root":root,"turn":"origin","goal":null}),
+            &json!({"schema":1,"topic":"ordinary","argv":["/usr/bin/true"],"cwd":home.path()}),
+        )
+        .unwrap();
+        store.goal_admit(&root, id, 1, "origin", 1, 2.0).unwrap();
+        let bound = crate::executions::prepare(
+            home.path(),
+            &root,
+            &json!({"root":root,"turn":"origin","input_epoch":1,"goal":{"id":id,"revision":1}}),
+            &json!({"schema":1,"topic":"bound","argv":["/usr/bin/true"],"cwd":home.path()}),
+        )
+        .unwrap();
+        store
+            .goal_replace(&root, id, 1, "replacement", None, false, 3.0)
+            .unwrap();
+        let jobs: Vec<_> = [ordinary, bound]
+            .iter()
+            .enumerate()
+            .map(|(index, record)| ResolvedJob {
+                id: format!("job-{index}"),
+                kind: "execution".into(),
+                thread: root.clone(),
+                turn: None,
+                item: None,
+                process: None,
+                execution: Some(record["id"].as_str().unwrap().into()),
+                status: "armed".into(),
+                exit_code: None,
+            })
+            .collect();
+        store
+            .register_resolved(
+                &root,
+                "origin",
+                "recover without rebinding",
+                &jobs,
+                &HashMap::new(),
+                None,
+                &HashSet::new(),
+            )
+            .unwrap();
+        let rows = store.rows("SELECT * FROM goal_jobs", &[]).unwrap();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0]["job"], "job-1");
+        assert_eq!(rows[0]["goal"], id);
+        assert_ne!(store.goal_status(&root).unwrap()["goal"]["id"], id);
+    }
+    #[test]
     fn settlement_time_tracks_acknowledgement_and_start_not_intent_creation() {
         let (home, mut store, root) = fixture();
         let snapshot = store
@@ -125,6 +182,7 @@ mod tests {
                 turn: Some(turn.into()),
                 item: Some(name.into()),
                 process: Some(name.into()),
+                execution: None,
                 status: "armed".into(),
                 exit_code: None,
             }],
@@ -2139,7 +2197,12 @@ impl Store {
         };
         let args = [goal["id"].clone(), json!(jobs.to_string())];
         let total=self.first("SELECT COUNT(*) AS count FROM goal_jobs g JOIN jobs j ON j.id=g.job WHERE g.goal=? AND g.notified=0 AND j.status IN ('completed','failed','interrupted') AND j.id IN (SELECT value FROM json_each(?))",&args)?.unwrap()["count"].clone();
-        let results=self.rows("SELECT j.id,j.kind,j.thread,j.turn,j.item,j.status,j.exit_code FROM goal_jobs g JOIN jobs j ON j.id=g.job WHERE g.goal=? AND g.notified=0 AND j.status IN ('completed','failed','interrupted') AND j.id IN (SELECT value FROM json_each(?)) ORDER BY j.id LIMIT 20",&args)?;
+        let mut results=self.rows("SELECT j.id,j.kind,j.thread,j.turn,j.item,j.execution,j.status,j.exit_code FROM goal_jobs g JOIN jobs j ON j.id=g.job WHERE g.goal=? AND g.notified=0 AND j.status IN ('completed','failed','interrupted') AND j.id IN (SELECT value FROM json_each(?)) ORDER BY j.id LIMIT 20",&args)?;
+        crate::ledger::add_execution_refs(
+            &self.directory,
+            goal["root"].as_str().unwrap(),
+            &mut results,
+        );
         Ok(json!({"total":total,"results":results}))
     }
 
@@ -2777,7 +2840,8 @@ impl Store {
 
     pub fn goal_report_results(&mut self, root: &str, report_id: &str) -> Result<Value> {
         let total=self.first("SELECT COUNT(*) AS count FROM goal_job_reports JOIN jobs ON jobs.id=goal_job_reports.job JOIN goal_jobs ON goal_jobs.job=jobs.id JOIN goals ON goals.id=goal_jobs.goal WHERE goals.root=? AND goal_job_reports.report_id=?",&[json!(root),json!(report_id)])?.unwrap()["count"].clone();
-        let results=self.rows("SELECT goal_jobs.goal,jobs.id,jobs.kind,jobs.thread,jobs.turn,jobs.item,jobs.status,jobs.exit_code FROM goal_job_reports JOIN jobs ON jobs.id=goal_job_reports.job JOIN goal_jobs ON goal_jobs.job=jobs.id JOIN goals ON goals.id=goal_jobs.goal WHERE goals.root=? AND goal_job_reports.report_id=? ORDER BY jobs.id LIMIT 20",&[json!(root),json!(report_id)])?;
+        let mut results=self.rows("SELECT goal_jobs.goal,jobs.id,jobs.kind,jobs.thread,jobs.turn,jobs.item,jobs.execution,jobs.status,jobs.exit_code FROM goal_job_reports JOIN jobs ON jobs.id=goal_job_reports.job JOIN goal_jobs ON goal_jobs.job=jobs.id JOIN goals ON goals.id=goal_jobs.goal WHERE goals.root=? AND goal_job_reports.report_id=? ORDER BY jobs.id LIMIT 20",&[json!(root),json!(report_id)])?;
+        crate::ledger::add_execution_refs(&self.directory, root, &mut results);
         Ok(json!({"report_id":report_id,"total":total,"results":results}))
     }
 
@@ -2943,7 +3007,34 @@ impl Store {
         origin: &str,
         jobs: &[&crate::ledger::ResolvedJob],
     ) -> Result<()> {
-        let Some(turn)=self.first("SELECT * FROM goal_turns WHERE root=? AND turn=? AND finalized=0 ORDER BY input_epoch DESC LIMIT 1", &[json!(root),json!(origin)])? else {return Ok(())};
+        let turn=self.first("SELECT * FROM goal_turns WHERE root=? AND turn=? AND finalized=0 ORDER BY input_epoch DESC LIMIT 1", &[json!(root),json!(origin)])?;
+        let mut bindings = Vec::new();
+        for job in jobs {
+            let binding = if let Some(execution) = &job.execution {
+                let home = self
+                    .directory
+                    .parent()
+                    .ok_or_else(|| anyhow::anyhow!("state directory has no home"))?;
+                let record = crate::executions::read(home, root, execution)?;
+                let saved = &record["origin"];
+                if !saved["goal"].is_object() {
+                    continue;
+                }
+                ensure!(
+                    saved["turn"] == origin,
+                    "execution origin differs from its watch"
+                );
+                Some(self.first("SELECT * FROM goal_turns WHERE root=? AND goal=? AND revision=? AND turn=? AND input_epoch=?", &[json!(root),saved["goal"]["id"].clone(),saved["goal"]["revision"].clone(),saved["turn"].clone(),saved["input_epoch"].clone()])?.ok_or_else(||anyhow::anyhow!("execution goal origin has no exact admitted turn"))?)
+            } else {
+                turn.clone()
+            };
+            if let Some(binding) = binding {
+                bindings.push((job, binding));
+            }
+        }
+        if bindings.is_empty() {
+            return Ok(());
+        }
         // Legacy coordinators cannot dispatch or batch these result markers on rollback.
         let callback = Uuid::new_v4().to_string();
         self.execute(
@@ -2955,7 +3046,7 @@ impl Store {
                 json!("Plus goal-owned results; continuation requires the goal-aware protocol"),
             ],
         )?;
-        for job in jobs {
+        for (job, turn) in bindings {
             self.execute(
                 "INSERT OR IGNORE INTO goal_jobs(goal,job,turn,input_epoch) VALUES (?,?,?,?)",
                 &[

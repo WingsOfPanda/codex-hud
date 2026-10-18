@@ -40,6 +40,7 @@ pub struct ResolvedJob {
     pub turn: Option<String>,
     pub item: Option<String>,
     pub process: Option<String>,
+    pub execution: Option<String>,
     pub status: String,
     pub exit_code: Option<i64>,
 }
@@ -96,6 +97,29 @@ fn unsettled(final_states: &str) -> String {
     format!(
         "NOT EXISTS (SELECT 1 FROM goal_jobs WHERE goal_jobs.job=jobs.id AND {JOB_TERMINAL}) AND (jobs.status='armed' OR ({JOB_TERMINAL} AND (jobs.callback IS NULL OR callbacks.state NOT IN ({final_states}))))"
     )
+}
+
+pub(crate) fn execution_refs(directory: &Path, root: &str, execution: &str) -> Value {
+    let directory = directory.join("executions/v1").join(root).join(execution);
+    json!({"state":directory.join("state.json"),"result":directory.join("result.json"),"log":directory.join("stdout.log"),"cleanup_log":directory.join("cleanup.log")})
+}
+
+pub(crate) fn execution_cleanup_unresolved(record: &Value) -> bool {
+    record["result"].is_object()
+        && !matches!(
+            record["result"]["cleanup"]["status"].as_str(),
+            Some("not_required" | "completed")
+        )
+        && record["resolution"]["cleanup_verified"] != true
+}
+
+pub(crate) fn add_execution_refs(directory: &Path, root: &str, results: &mut [Value]) {
+    for result in results {
+        if let Some(id) = result["execution"].as_str() {
+            let refs = execution_refs(directory, root, id);
+            result["result_refs"] = refs;
+        }
+    }
 }
 
 impl Store {
@@ -163,6 +187,7 @@ impl Store {
                 (
                     "jobs",
                     vec![
+                        ("execution", "TEXT"),
                         ("observer_run", "TEXT"),
                         ("recovery_pending", "INTEGER NOT NULL DEFAULT 1"),
                         ("report", "INTEGER NOT NULL DEFAULT 0"),
@@ -270,10 +295,11 @@ impl Store {
 
     pub fn status(&mut self, parent: &str) -> Result<Value> {
         let mut parks = self.rows("SELECT * FROM parks WHERE parent=?", &[json!(parent)])?;
-        let jobs = self.rows(
+        let mut jobs = self.rows(
             "SELECT jobs.* FROM jobs JOIN parks ON parks.id=jobs.park WHERE parks.parent=?",
             &[json!(parent)],
         )?;
+        add_execution_refs(&self.directory, parent, &mut jobs);
         let callbacks = self.rows("SELECT * FROM callbacks WHERE parent=?", &[json!(parent)])?;
         for park in &mut parks {
             let reason = if truth(&park["origin_pending"]) {
@@ -382,6 +408,11 @@ impl Store {
             for job in unique {
                 let prior = s.first("SELECT jobs.status,parks.state,callbacks.state AS delivery FROM jobs JOIN parks ON parks.id=jobs.park LEFT JOIN callbacks ON callbacks.id=jobs.callback WHERE jobs.id=?", &[json!(job.id)])?;
                 let mut report = json!({"id":job.id,"kind":job.kind,"turn":job.turn,"status":job.status});
+                if let Some(execution) = &job.execution {
+                    report["execution"] = json!(execution);
+                    report["exit_code"] = json!(job.exit_code);
+                    report["result_refs"] = execution_refs(&s.directory, parent, execution);
+                }
                 if let Some(prior) = prior {
                     if ["cancelled","expired"].contains(&text(&prior["state"])) || ["cancelled","expired"].contains(&text(&prior["status"])) {
                         return Err(RegistrationError("Selected job was cancelled or expired; it cannot be rearmed. Select a new worker turn or command item.".into()).into());
@@ -394,8 +425,8 @@ impl Store {
             if let Some(park) = &park {
                 s.execute("INSERT INTO parks (id,parent,origin,reason,state,deadline,generation) VALUES (?,?,?,?,?,?,?)", &[json!(park),json!(parent),json!(origin),json!(reason),json!("armed"),json!(crate::local::now()+MAX_SECONDS),json!(generation)])?;
                 for job in &armed {
-                    let source = if job.kind == "worker" { json!(labels.get(&job.thread).and_then(|x| x.as_ref()).filter(|x| !x.is_empty()).unwrap_or(&job.thread)) } else { json!(job.process) };
-                    s.execute("INSERT INTO jobs (id,park,kind,thread,turn,item,process,status,exit_code,callback,recovery_pending,label) VALUES (?,?,?,?,?,?,?,?,?,NULL,0,?)", &[json!(job.id),json!(park),json!(job.kind),json!(job.thread),json!(job.turn),json!(job.item),json!(job.process),json!(job.status),json!(job.exit_code),json!(label(&source))])?;
+                    let source = if job.kind == "worker" { json!(labels.get(&job.thread).and_then(|x| x.as_ref()).filter(|x| !x.is_empty()).unwrap_or(&job.thread)) } else if job.kind == "execution" { json!(job.execution) } else { json!(job.process) };
+                    s.execute("INSERT INTO jobs (id,park,kind,thread,turn,item,process,execution,status,exit_code,callback,recovery_pending,label) VALUES (?,?,?,?,?,?,?,?,?,?,NULL,0,?)", &[json!(job.id),json!(park),json!(job.kind),json!(job.thread),json!(job.turn),json!(job.item),json!(job.process),json!(job.execution),json!(job.status),json!(job.exit_code),json!(label(&source))])?;
                     if pending.contains(&job.id) { s.execute("UPDATE jobs SET interruption_pending=1 WHERE id=?", &[json!(job.id)])?; }
                 }
                 s.goal_bind_jobs(parent,origin,&armed)?;
@@ -447,6 +478,22 @@ impl Store {
             s.execute(&format!("UPDATE callbacks SET state=CASE WHEN state='ready' THEN 'cancelled' ELSE 'cancel_requested' END WHERE id IN (SELECT callback FROM jobs WHERE park IN (SELECT id FROM parks WHERE {scope})) AND state IN ('ready','in_flight','uncertain','pending','starting')"), &args)?;
             Ok(())
         })?;
+        let mut args = vec![json!(parent)];
+        if let Some(origin) = origin {
+            args.push(json!(origin));
+        }
+        let cancelled = self.rows(&format!("SELECT jobs.execution,jobs.park FROM jobs JOIN parks ON parks.id=jobs.park WHERE parks.state='cancelled' AND jobs.execution IS NOT NULL AND {}", if origin.is_some() {"parks.parent=? AND parks.origin=?"} else {"parks.parent=?"}), &args)?;
+        for job in cancelled {
+            crate::executions::mark_observation(
+                self.directory
+                    .parent()
+                    .ok_or_else(|| anyhow!("state directory has no home"))?,
+                parent,
+                text(&job["execution"]),
+                "cancelled",
+                &json!({"source":"watch_cancelled","park":job["park"]}),
+            )?;
+        }
         self.publish(parent)?;
         Ok(())
     }
@@ -517,13 +564,16 @@ impl Store {
     }
     pub fn expire_registration(&mut self, park: &str) -> Result<()> {
         self.transaction(false, |s| {
-            s.execute("UPDATE parks SET state='expired',error='Registration duration expired; completion remains unknown.' WHERE id=? AND state='armed'", &[json!(park)])?;
-            s.execute("UPDATE jobs SET status='expired',interruption_pending=0 WHERE park=? AND status='armed'", &[json!(park)])?;
-            s.execute("UPDATE callbacks SET state=CASE WHEN state='ready' THEN 'expired' ELSE 'cancel_requested' END WHERE id IN (SELECT callback FROM jobs WHERE park=?) AND state IN ('ready','pending','starting','in_flight')", &[json!(park)])
+            s.execute("UPDATE parks SET state='expired',error='Registration duration expired; completion remains unknown.' WHERE id=? AND state='armed' AND NOT EXISTS(SELECT 1 FROM jobs WHERE jobs.park=parks.id AND kind='execution')", &[json!(park)])?;
+            s.execute("UPDATE jobs SET status='expired',interruption_pending=0 WHERE park=? AND status='armed' AND kind<>'execution'", &[json!(park)])?;
+            s.execute("UPDATE callbacks SET state=CASE WHEN state='ready' THEN 'expired' ELSE 'cancel_requested' END WHERE id IN (SELECT callback FROM jobs WHERE park=?) AND state IN ('ready','pending','starting','in_flight') AND NOT EXISTS(SELECT 1 FROM jobs WHERE jobs.callback=callbacks.id AND kind='execution')", &[json!(park)])
         })
     }
     pub fn jobs_to_observe(&mut self, parent: &str) -> Result<Vec<Value>> {
         self.rows("SELECT jobs.*,parks.recovery_generation IS NOT NULL AS verify_running FROM jobs JOIN parks ON parks.id=jobs.park WHERE parks.parent=? AND parks.state='armed' AND jobs.status='armed'", &[json!(parent)])
+    }
+    pub fn has_execution_watches(&mut self, parent: &str) -> Result<bool> {
+        self.exists("SELECT 1 FROM jobs JOIN parks ON parks.id=jobs.park WHERE parks.parent=? AND parks.state='armed' AND jobs.kind='execution' LIMIT 1", &[json!(parent)])
     }
     pub fn observe_job(
         &mut self,
@@ -551,7 +601,7 @@ impl Store {
             (status, exit_code)
         };
         if status.is_some_and(|v| TERMINAL.contains(&v)) {
-            self.execute("UPDATE jobs SET status=?,exit_code=?,turn=COALESCE(turn,?),report=recovery_pending,recovery_pending=0 WHERE id=? AND status='armed'", &[json!(status),json!(exit_code),json!(turn),job["id"].clone()])?;
+            self.execute("UPDATE jobs SET status=?,exit_code=?,turn=COALESCE(turn,?),report=CASE WHEN ?='lost' AND kind='execution' THEN 1 ELSE MAX(report,recovery_pending) END,recovery_pending=0 WHERE id=? AND status='armed'", &[json!(status),json!(exit_code),json!(turn),json!(status),job["id"].clone()])?;
         }
         Ok(())
     }
@@ -596,10 +646,39 @@ impl Store {
                 text(&row["status"])
             );
             if row["status"] == "lost" {
-                detail.push_str(" outcome=UNKNOWN");
+                let known_receipt = if let Some(execution) = row["execution"].as_str() {
+                    let home = self
+                        .directory
+                        .parent()
+                        .ok_or_else(|| anyhow!("state directory has no home"))?;
+                    let record = crate::executions::read(home, parent, execution)?;
+                    if record["result"].is_object()
+                        && matches!(
+                            record["state"].as_str(),
+                            Some("completed" | "failed" | "cancelled")
+                        )
+                    {
+                        Some(execution_cleanup_unresolved(&record))
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                };
+                detail.push_str(match known_receipt {
+                    Some(true) => " cleanup=UNRESOLVED command_receipt=KNOWN",
+                    Some(false) => " cleanup=RESOLVED command_receipt=KNOWN",
+                    None => " outcome=UNKNOWN",
+                });
             }
             if !row["exit_code"].is_null() {
                 detail.push_str(&format!(" exit={}", row["exit_code"]));
+            }
+            if let Some(execution) = row["execution"].as_str() {
+                detail.push_str(&format!(
+                    " result_refs={}",
+                    execution_refs(&self.directory, parent, execution)
+                ));
             }
             details.push(detail);
         }
@@ -795,9 +874,9 @@ impl Store {
     }
     pub fn expire_observation(&mut self, parent: &str) -> Result<()> {
         self.transaction(false, |s| {
-            s.execute("UPDATE parks SET state='expired',error='Observer duration expired; completion remains unknown.' WHERE parent=? AND state='armed'", &[json!(parent)])?;
-            s.execute("UPDATE jobs SET status='expired',interruption_pending=0 WHERE status='armed' AND park IN (SELECT id FROM parks WHERE parent=? AND state='expired')", &[json!(parent)])?;
-            s.execute("UPDATE callbacks SET state=CASE WHEN state='ready' THEN 'expired' ELSE 'uncertain' END,error='Observer duration expired; delivery needs positive reconciliation.' WHERE parent=? AND state IN ('ready','pending','starting','in_flight')", &[json!(parent)])
+            s.execute("UPDATE parks SET state='expired',error='Observer duration expired; completion remains unknown.' WHERE parent=? AND state='armed' AND NOT EXISTS(SELECT 1 FROM jobs WHERE jobs.park=parks.id AND jobs.kind='execution')", &[json!(parent)])?;
+            s.execute("UPDATE jobs SET status='expired',interruption_pending=0 WHERE status='armed' AND kind<>'execution' AND park IN (SELECT id FROM parks WHERE parent=? AND state IN ('armed','expired'))", &[json!(parent)])?;
+            s.execute("UPDATE callbacks SET state=CASE WHEN state='ready' THEN 'expired' ELSE 'uncertain' END,error='Observer duration expired; delivery needs positive reconciliation.' WHERE parent=? AND state IN ('ready','pending','starting','in_flight') AND NOT EXISTS(SELECT 1 FROM jobs WHERE jobs.callback=callbacks.id AND jobs.kind='execution')", &[json!(parent)])
         })?;
         self.publish(parent)?;
         Ok(())
@@ -824,6 +903,7 @@ mod tests {
             turn: Some(format!("turn-{id}")),
             item: None,
             process: None,
+            execution: None,
             status: "armed".into(),
             exit_code: None,
         }
@@ -849,6 +929,68 @@ mod tests {
     }
     fn callback(store: &mut Store) -> Value {
         store.status(PARENT).unwrap()["callbacks"][0].clone()
+    }
+
+    #[test]
+    fn an_explicit_recovery_report_survives_positive_running_and_terminal_observation() {
+        let home = tempfile::tempdir().unwrap();
+        let mut store = Store::open(home.path()).unwrap();
+        register(&mut store, &[job("report")]);
+        store
+            .execute("UPDATE jobs SET report=1 WHERE id='report'", &[])
+            .unwrap();
+        store
+            .observe_job(&json!({"id":"report"}), None, None, None, true)
+            .unwrap();
+        complete(&mut store, "report");
+        let ready = callback(&mut store);
+        assert!(
+            store
+                .message(PARENT, &ready)
+                .unwrap()
+                .starts_with("REPORT ONLY")
+        );
+    }
+
+    #[test]
+    fn detached_watch_survives_expiry_without_extending_native_watch_or_repurposing_ids() {
+        let home = tempfile::tempdir().unwrap();
+        let mut store = Store::open(home.path()).unwrap();
+        let record = crate::executions::prepare(
+            home.path(),
+            PARENT,
+            &json!({"root":PARENT,"turn":"origin","goal":null}),
+            &json!({"schema":1,"topic":"expiry","argv":["/usr/bin/true"],"cwd":home.path()}),
+        )
+        .unwrap();
+        let mut execution = job("detached");
+        execution.kind = "execution".into();
+        execution.thread = PARENT.into();
+        execution.turn = None;
+        execution.execution = Some(record["id"].as_str().unwrap().into());
+        let registration = register(&mut store, &[execution, job("native")]);
+        let park = registration["park"].as_str().unwrap();
+        store.expire_registration(park).unwrap();
+        store.expire_observation(PARENT).unwrap();
+        let status = store.status(PARENT).unwrap();
+        assert_eq!(status["parks"][0]["state"], "armed");
+        assert_eq!(status["jobs"][0]["status"], "armed");
+        assert!(status["jobs"][0]["process"].is_null());
+        assert!(status["jobs"][0]["item"].is_null());
+        assert!(status["jobs"][0]["execution"].is_string());
+        assert_eq!(status["jobs"][1]["status"], "expired");
+        assert!(store.has_execution_watches(PARENT).unwrap());
+        store
+            .observe_job(&json!({"id":"detached"}), Some("lost"), None, None, false)
+            .unwrap();
+        store.batch(PARENT).unwrap();
+        let ready = callback(&mut store);
+        let message = store.message(PARENT, &ready).unwrap();
+        assert!(message.starts_with("REPORT ONLY"));
+        assert!(message.contains("outcome=UNKNOWN"));
+        assert!(message.contains("stdout.log"));
+        store.cancel(PARENT, None, None).unwrap();
+        assert!(!store.has_execution_watches(PARENT).unwrap());
     }
 
     #[test]

@@ -166,7 +166,7 @@ def assert_compact_hud(text, *, rows=None, idle=True):
     lines = [line.strip() for line in text.splitlines() if line.strip()]
     activities = worker_rows(text) + shell_rows(text) + advisor_rows(text)
     alerts = [line for line in lines if line.startswith(('Workers stale', 'Workers unavailable',
-              'Shells stale', 'Shells unavailable', 'Watcher ', 'Wake pending', 'Wake delivery ', 'Restart report '))]
+              'Shells stale', 'Shells unavailable', 'Background status unavailable', 'Watcher ', 'Wake pending', 'Wake delivery ', 'Restart report '))]
     overflow = [line for line in lines if re.match(r'^\+\d+ more$', line)]
     hud = activities + alerts + overflow
     assert len(hud) <= 3, f'HUD exceeded three total rows\n{text}'

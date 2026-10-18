@@ -34,7 +34,15 @@ working directory; do not assume the command is installed on PATH.
 Before launching shell work, follow [the shell workflow](docs/shell-workflow.md):
 classify noninteractive work explicitly, capture logs with the managed runner,
 and request a two-second foreground yield. Keep interactive and unclassified
-commands visible. Use the background mode immediately for known long jobs.
+commands visible. Use background display for long work that remains on the
+native-shell path, including independent AP sessions.
+
+Before assigning or launching expensive work, read the
+[reviewed job workflow](docs/detached-jobs.md#agent-workflow). Interactive roots
+plan preparation, allowed quick checks and the worker's handoff point. Workers
+hand back expected runs over eight minutes and hardware/service operations;
+unexpected overruns finish normally. The root reviews and launches detached
+jobs, seeking safe parallelism after checking resources and worktrees.
 
 When dispatching related workers, use the explicit topic/batch naming rule in
 [Worker groups](README.md#worker-groups).

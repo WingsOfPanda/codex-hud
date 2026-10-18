@@ -1529,7 +1529,7 @@ index ea0894b3e..90d3aa931 100644
  strum_macros = { workspace = true }
  supports-color = { workspace = true }
 diff --git a/codex-rs/tui/src/app.rs b/codex-rs/tui/src/app.rs
-index 1b07e9826..e7d2c0e2f 100644
+index 1b07e9826..cb9e4d6db 100644
 --- a/codex-rs/tui/src/app.rs
 +++ b/codex-rs/tui/src/app.rs
 @@ -196,6 +196,7 @@ use tokio_util::sync::CancellationToken;
@@ -1540,15 +1540,16 @@ index 1b07e9826..e7d2c0e2f 100644
  mod agent_message_consolidation;
  mod agent_navigation;
  mod agent_picker;
-@@ -208,6 +209,7 @@ pub(crate) mod agents_overview_discovery;
+@@ -208,6 +209,8 @@ pub(crate) mod agents_overview_discovery;
  mod agents_overview_threads;
  mod agents_overview_usage;
  mod agents_overview_view;
++mod execution_hud;
 +pub(crate) mod worker_hud;
  pub(crate) use agents_overview::AGENTS_OVERVIEW_VIEW_ID;
  mod activity_groups;
  mod app_server_event_targets;
-@@ -633,6 +635,7 @@ pub(crate) struct App {
+@@ -633,6 +636,7 @@ pub(crate) struct App {
      pending_thread_titles: HashMap<(ThreadId, ThreadTitleDestination), CancellationToken>,
      thread_event_listener_tasks: HashMap<ThreadId, JoinHandle<()>>,
      agent_navigation: AgentNavigationState,
@@ -1556,7 +1557,7 @@ index 1b07e9826..e7d2c0e2f 100644
      agents_overview: agents_overview::AgentsOverviewState,
      side_threads: HashMap<ThreadId, SideThreadState>,
      abandoned_side_threads: HashSet<ThreadId>,
-@@ -1154,6 +1157,7 @@ impl App {
+@@ -1154,6 +1158,7 @@ impl App {
                      }
                      self.chat_widget.pre_draw_tick();
                      self.refresh_agents_overview_usage(app_server, tui.frame_requester());
@@ -2385,7 +2386,7 @@ index 049849509..a60190597 100644
 +    Ok(())
  }
 diff --git a/codex-rs/tui/src/app/event_dispatch.rs b/codex-rs/tui/src/app/event_dispatch.rs
-index a7f7f1e82..52e86d920 100644
+index a7f7f1e82..e5531b274 100644
 --- a/codex-rs/tui/src/app/event_dispatch.rs
 +++ b/codex-rs/tui/src/app/event_dispatch.rs
 @@ -79,6 +79,7 @@ impl App {
@@ -2490,13 +2491,349 @@ index a7f7f1e82..52e86d920 100644
 +                self.finish_shell_hud(primary_thread_id, request_id, result);
 +                tui.frame_requester().schedule_frame();
 +            }
-+            AppEvent::WatcherHealthLoaded { primary_thread_id, request_id, health, advisor, goal } => {
-+                self.finish_watcher_health(primary_thread_id, request_id, health, advisor, goal);
++            AppEvent::WatcherHealthLoaded { primary_thread_id, request_id, health, advisor, goal, executions } => {
++                self.finish_watcher_health(primary_thread_id, request_id, health, advisor, goal, executions);
 +                tui.frame_requester().schedule_frame();
 +            }
              AppEvent::SelectAgentThread(thread_id) => {
                  self.select_agent_thread(tui, app_server, thread_id)
                      .await?;
+diff --git a/codex-rs/tui/src/app/execution_hud.rs b/codex-rs/tui/src/app/execution_hud.rs
+new file mode 100644
+index 000000000..d1f989afc
+--- /dev/null
++++ b/codex-rs/tui/src/app/execution_hud.rs
+@@ -0,0 +1,330 @@
++//! Bounded, read-only projection of this local root's detached executions.
++
++use crate::bottom_pane::worker_hud::ExecutionHud;
++use crate::bottom_pane::worker_hud::ExecutionRow;
++use codex_protocol::ThreadId;
++use std::path::Path;
++
++const MAX_FILES: usize = 128;
++const MAX_BYTES: u64 = 16 * 1024;
++const STALE_SECS: f64 = 15.0;
++
++#[derive(serde::Deserialize)]
++struct Status {
++    schema: u32,
++    id: uuid::Uuid,
++    root: ThreadId,
++    topic: String,
++    state: String,
++    started_at: f64,
++    updated_at: f64,
++    stage: Option<String>,
++    error: Option<String>,
++}
++
++pub(super) fn read(home: &Path, root: ThreadId, now: f64) -> ExecutionHud {
++    let mut hud = ExecutionHud::default();
++    if read_inner(home, root, now, &mut hud).is_err() {
++        hud.unavailable = true;
++    }
++    hud
++}
++
++#[cfg(unix)]
++fn read_inner(
++    home: &Path,
++    root: ThreadId,
++    now: f64,
++    hud: &mut ExecutionHud,
++) -> std::io::Result<()> {
++    use std::ffi::CStr;
++    use std::ffi::CString;
++    use std::fs::File;
++    use std::io::Read;
++    use std::os::fd::AsRawFd;
++    use std::os::fd::FromRawFd;
++    use std::os::unix::ffi::OsStrExt;
++    use std::os::unix::fs::OpenOptionsExt;
++
++    fn open_at(directory: &File, name: &CStr, flags: i32) -> std::io::Result<File> {
++        let fd = unsafe {
++            libc::openat(
++                directory.as_raw_fd(),
++                name.as_ptr(),
++                flags | libc::O_CLOEXEC | libc::O_NOFOLLOW | libc::O_NONBLOCK,
++            )
++        };
++        if fd < 0 {
++            return Err(std::io::Error::last_os_error());
++        }
++        Ok(unsafe { File::from_raw_fd(fd) })
++    }
++
++    struct Entries(*mut libc::DIR);
++    impl Drop for Entries {
++        fn drop(&mut self) {
++            unsafe {
++                libc::closedir(self.0);
++            }
++        }
++    }
++
++    let mut directory = std::fs::OpenOptions::new()
++        .read(true)
++        .custom_flags(libc::O_DIRECTORY | libc::O_NOFOLLOW | libc::O_NONBLOCK)
++        .open(home)?;
++    // Open each component relative to its verified directory, including across replacements.
++    for component in [
++        "codex-plus".to_string(),
++        "execution-status".to_string(),
++        root.to_string(),
++    ] {
++        match open_at(
++            &directory,
++            &CString::new(component).unwrap(),
++            libc::O_RDONLY | libc::O_DIRECTORY,
++        ) {
++            Ok(next) => directory = next,
++            Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(()),
++            Err(error) => return Err(error),
++        }
++    }
++    let duplicate = unsafe { libc::dup(directory.as_raw_fd()) };
++    if duplicate < 0 {
++        return Err(std::io::Error::last_os_error());
++    }
++    let entries = unsafe { libc::fdopendir(duplicate) };
++    if entries.is_null() {
++        unsafe {
++            libc::close(duplicate);
++        }
++        return Err(std::io::Error::last_os_error());
++    }
++    let entries = Entries(entries);
++    let mut count = 0;
++    loop {
++        #[cfg(any(target_os = "linux", target_os = "android"))]
++        unsafe {
++            *libc::__errno_location() = 0;
++        }
++        #[cfg(any(target_os = "macos", target_os = "ios", target_os = "freebsd"))]
++        unsafe {
++            *libc::__error() = 0;
++        }
++        let entry = unsafe { libc::readdir(entries.0) };
++        if entry.is_null() {
++            #[cfg(any(
++                target_os = "linux",
++                target_os = "android",
++                target_os = "macos",
++                target_os = "ios",
++                target_os = "freebsd"
++            ))]
++            {
++                let error = std::io::Error::last_os_error();
++                if error.raw_os_error() != Some(0) {
++                    return Err(error);
++                }
++            }
++            break;
++        }
++        let name = unsafe { CStr::from_ptr((*entry).d_name.as_ptr()) };
++        if matches!(name.to_bytes(), b"." | b"..") {
++            continue;
++        }
++        count += 1;
++        if count > MAX_FILES {
++            return Err(std::io::Error::other("execution status count exceeded"));
++        }
++        // Atomic writers may leave a temporary file; only UUID.json is a published record.
++        let path = Path::new(std::ffi::OsStr::from_bytes(name.to_bytes()));
++        if path.extension().is_none_or(|extension| extension != "json") {
++            continue;
++        }
++        let status = (|| {
++            let id = uuid::Uuid::parse_str(path.file_stem()?.to_str()?).ok()?;
++            let file = open_at(&directory, name, libc::O_RDONLY).ok()?;
++            let metadata = file.metadata().ok()?;
++            if !metadata.is_file() || metadata.len() > MAX_BYTES {
++                return None;
++            }
++            let mut bytes = Vec::new();
++            file.take(MAX_BYTES + 1).read_to_end(&mut bytes).ok()?;
++            if bytes.len() as u64 > MAX_BYTES {
++                return None;
++            }
++            let status = serde_json::from_slice::<Status>(&bytes).ok()?;
++            (status.schema == 1
++                && status.id == id
++                && status.root == root
++                && now.is_finite()
++                && status.started_at.is_finite()
++                && status.updated_at.is_finite()
++                && status.started_at >= 0.0
++                && status.started_at <= status.updated_at
++                && status.updated_at <= now + 5.0)
++                .then_some(status)
++        })();
++        let Some(status) = status else {
++            hud.unavailable = true;
++            continue;
++        };
++        let mut problem = match status.state.as_str() {
++            "launching" | "running" => None,
++            "cancel_requested" => Some("cancel requested".to_string()),
++            "unknown" => Some("unknown".to_string()),
++            "completed" | "failed" | "cancelled" => continue,
++            _ => {
++                hud.unavailable = true;
++                continue;
++            }
++        };
++        if now - status.updated_at > STALE_SECS {
++            problem = Some("stale".to_string());
++        }
++        hud.unavailable |=
++            matches!(problem.as_deref(), Some("unknown" | "stale")) || status.error.is_some();
++        hud.rows.push(ExecutionRow {
++            topic: status.topic,
++            stage: status.stage.filter(|stage| !stage.trim().is_empty()),
++            elapsed_secs: (now - status.started_at).max(0.0) as u64,
++            problem,
++        });
++    }
++    hud.rows.sort_by(|a, b| a.topic.cmp(&b.topic));
++    Ok(())
++}
++
++#[cfg(not(unix))]
++fn read_inner(
++    home: &Path,
++    root: ThreadId,
++    _now: f64,
++    _hud: &mut ExecutionHud,
++) -> std::io::Result<()> {
++    if home
++        .join("codex-plus/execution-status")
++        .join(root.to_string())
++        .exists()
++    {
++        return Err(std::io::Error::other("local execution status unsupported"));
++    }
++    Ok(())
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    pub(super) fn status(root: ThreadId, id: uuid::Uuid) -> serde_json::Value {
++        serde_json::json!({"schema":1, "root":root, "id":id, "topic":"build 模型\nprogress",
++            "state":"running", "started_at":100.0, "updated_at":155.0})
++    }
++
++    #[test]
++    fn execution_hud_bounds_and_validates_each_published_record() {
++        let home = tempfile::tempdir().unwrap();
++        let root = ThreadId::new();
++        let id = uuid::Uuid::new_v4();
++        let directory = home
++            .path()
++            .join("codex-plus/execution-status")
++            .join(root.to_string());
++        std::fs::create_dir_all(&directory).unwrap();
++        let path = directory.join(format!("{id}.json"));
++        let original = status(root, id);
++        std::fs::write(&path, original.to_string()).unwrap();
++        let hud = read(home.path(), root, 160.0);
++        assert!(!hud.unavailable);
++        assert_eq!(hud.rows[0].elapsed_secs, 60);
++        assert_eq!(hud.rows[0].stage, None);
++        assert!(read(home.path(), ThreadId::new(), 160.0).rows.is_empty());
++        // A new read after reconnect retains the durable start time.
++        assert_eq!(read(home.path(), root, 165.0).rows[0].elapsed_secs, 65);
++        let mut reported = original.clone();
++        reported["stage"] = "compile".into();
++        std::fs::write(&path, reported.to_string()).unwrap();
++        assert_eq!(
++            read(home.path(), root, 160.0).rows[0].stage.as_deref(),
++            Some("compile")
++        );
++        for (field, value) in [
++            ("schema", serde_json::json!(2)),
++            ("root", serde_json::json!(ThreadId::new())),
++            ("id", serde_json::json!(uuid::Uuid::new_v4())),
++            ("state", serde_json::json!("invented")),
++            ("started_at", serde_json::json!(-1)),
++            ("started_at", serde_json::json!(156)),
++            ("updated_at", serde_json::json!(999)),
++            ("updated_at", serde_json::json!("NaN")),
++        ] {
++            let mut invalid = original.clone();
++            invalid[field] = value;
++            std::fs::write(&path, invalid.to_string()).unwrap();
++            let hud = read(home.path(), root, 160.0);
++            assert!(hud.unavailable, "{field}");
++            assert!(hud.rows.is_empty(), "{field}");
++        }
++        for contents in ["{".to_string(), "x".repeat(MAX_BYTES as usize + 1)] {
++            std::fs::write(&path, contents).unwrap();
++            assert!(read(home.path(), root, 160.0).unavailable);
++        }
++        std::fs::write(&path, original.to_string()).unwrap();
++        let stale = read(home.path(), root, 171.0);
++        assert!(stale.unavailable);
++        assert_eq!(stale.rows[0].problem.as_deref(), Some("stale"));
++        for state in [
++            "unknown",
++            "cancel_requested",
++            "launching",
++            "completed",
++            "failed",
++            "cancelled",
++        ] {
++            let mut record = original.clone();
++            record["state"] = state.into();
++            std::fs::write(&path, record.to_string()).unwrap();
++            let hud = read(home.path(), root, 160.0);
++            assert_eq!(
++                hud.rows.is_empty(),
++                matches!(state, "completed" | "failed" | "cancelled")
++            );
++            assert_eq!(hud.unavailable, state == "unknown");
++        }
++        std::fs::remove_file(&path).unwrap();
++        assert_eq!(read(home.path(), root, 160.0), ExecutionHud::default());
++        for index in 0..=MAX_FILES {
++            std::fs::write(directory.join(format!("tmp-{index}")), "").unwrap();
++        }
++        assert!(read(home.path(), root, 160.0).unavailable);
++    }
++
++    #[cfg(unix)]
++    #[test]
++    fn execution_hud_rejects_symlink_directories_files_and_fifo() {
++        use std::os::unix::fs::symlink;
++        let home = tempfile::tempdir().unwrap();
++        let root = ThreadId::new();
++        let id = uuid::Uuid::new_v4();
++        let parent = home.path().join("codex-plus/execution-status");
++        let directory = parent.join(root.to_string());
++        std::fs::create_dir_all(&directory).unwrap();
++        let path = directory.join(format!("{id}.json"));
++        let target = home.path().join("target");
++        std::fs::write(&target, status(root, id).to_string()).unwrap();
++        symlink(&target, &path).unwrap();
++        assert!(read(home.path(), root, 160.0).unavailable);
++        std::fs::remove_file(&path).unwrap();
++        let fifo = std::ffi::CString::new(path.as_os_str().as_encoded_bytes()).unwrap();
++        assert_eq!(unsafe { libc::mkfifo(fifo.as_ptr(), 0o600) }, 0);
++        assert!(read(home.path(), root, 160.0).unavailable);
++        std::fs::remove_file(&path).unwrap();
++        std::fs::remove_dir(&directory).unwrap();
++        symlink(home.path(), &directory).unwrap();
++        assert!(read(home.path(), root, 160.0).unavailable);
++        std::fs::remove_file(&directory).unwrap();
++        std::fs::remove_dir(&parent).unwrap();
++        symlink(home.path(), &parent).unwrap();
++        assert!(read(home.path(), root, 160.0).unavailable);
++    }
++}
 diff --git a/codex-rs/tui/src/app/history_ui.rs b/codex-rs/tui/src/app/history_ui.rs
 index ca29929c1..6487d3ca1 100644
 --- a/codex-rs/tui/src/app/history_ui.rs
@@ -5011,10 +5348,10 @@ index c8d16dc9c..6cf52a01c 100644
                  self.handle_skills_list_result(
 diff --git a/codex-rs/tui/src/app/worker_hud.rs b/codex-rs/tui/src/app/worker_hud.rs
 new file mode 100644
-index 000000000..15afc4f7d
+index 000000000..81261662b
 --- /dev/null
 +++ b/codex-rs/tui/src/app/worker_hud.rs
-@@ -0,0 +1,1748 @@
+@@ -0,0 +1,1866 @@
 +//! Per-client worker metadata refresh. These requests never start or steer a turn.
 +
 +use super::*;
@@ -5065,6 +5402,7 @@ index 000000000..15afc4f7d
 +    watcher_attempted_at: Option<Instant>,
 +    watcher: Option<WatcherHealth>,
 +    advisor: Option<crate::bottom_pane::worker_hud::AdvisorRow>,
++    executions: crate::bottom_pane::worker_hud::ExecutionHud,
 +    pub(super) goal: Option<(String, String)>,
 +    pub(super) dismissed_complete: Option<String>,
 +}
@@ -5490,8 +5828,12 @@ index 000000000..15afc4f7d
 +            self.worker_hud.advisor = None;
 +            self.worker_hud.goal = None;
 +            self.chat_widget.set_advisor(None);
++            self.worker_hud.executions = Default::default();
++            self.chat_widget.set_executions(Default::default());
 +            return;
 +        }
++        self.chat_widget
++            .set_executions(self.worker_hud.executions.clone());
 +        self.chat_widget
 +            .set_watcher_health(self.worker_hud.watcher.clone());
 +        self.chat_widget
@@ -5538,6 +5880,7 @@ index 000000000..15afc4f7d
 +                    .unwrap_or_default()
 +                    .as_secs_f64();
 +                (
++                    super::execution_hud::read(goal_home.as_path(), root, now),
 +                    read_watcher_health(path.as_path(), root, now),
 +                    super::advisor::read_advisor(&advisor_path, root, now, ready),
 +                    match crate::plus_goals::read(goal_home.as_path(), root) {
@@ -5561,11 +5904,15 @@ index 000000000..15afc4f7d
 +                    },
 +                )
 +            });
-+            let (health, advisor, goal) = tokio::time::timeout(WATCHER_TIMEOUT, read)
++            let (executions, health, advisor, goal) = tokio::time::timeout(WATCHER_TIMEOUT, read)
 +                .await
 +                .ok()
 +                .and_then(Result::ok)
 +                .unwrap_or((
++                    crate::bottom_pane::worker_hud::ExecutionHud {
++                        unavailable: true,
++                        ..Default::default()
++                    },
 +                    Some(WatcherHealth::Unavailable),
 +                    Some(super::advisor::unavailable()),
 +                    fallback_goal,
@@ -5576,6 +5923,7 @@ index 000000000..15afc4f7d
 +                health,
 +                advisor,
 +                goal,
++                executions,
 +            });
 +        });
 +    }
@@ -5587,12 +5935,16 @@ index 000000000..15afc4f7d
 +        health: Option<WatcherHealth>,
 +        advisor: Option<crate::bottom_pane::worker_hud::AdvisorRow>,
 +        goal: Option<(String, String)>,
++        executions: crate::bottom_pane::worker_hud::ExecutionHud,
 +    ) {
 +        if self.primary_thread_id == Some(root)
 +            && self.worker_hud.finish_watcher(root, request_id, health)
 +        {
 +            self.chat_widget
 +                .set_watcher_health(self.worker_hud.watcher.clone());
++            self.worker_hud.executions = executions;
++            self.chat_widget
++                .set_executions(self.worker_hud.executions.clone());
 +            self.worker_hud.advisor = advisor;
 +            self.worker_hud.goal = goal;
 +            self.chat_widget
@@ -6168,6 +6520,100 @@ index 000000000..15afc4f7d
 +    }
 +
 +    #[tokio::test]
++    async fn worker_hud_execution_refresh_uses_local_root_and_cached_watcher_tick() {
++        let mut app = crate::app::test_support::make_test_app().await;
++        let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
++        app.app_event_tx = AppEventSender::new(tx);
++        let root = ThreadId::new();
++        let id = Uuid::new_v4();
++        app.primary_thread_id = Some(root);
++        app.worker_hud.bind(Some(root));
++        let directory = app
++            .config
++            .codex_home
++            .join("codex-plus/execution-status")
++            .join(root.to_string());
++        std::fs::create_dir_all(&directory).unwrap();
++        let path = directory.join(format!("{id}.json"));
++        let now = SystemTime::now()
++            .duration_since(UNIX_EPOCH)
++            .unwrap()
++            .as_secs_f64();
++        std::fs::write(
++            &path,
++            serde_json::json!({
++                "schema":1, "id":id, "root":root, "topic":"compile", "state":"running",
++                "started_at":now - 65.0, "updated_at":now
++            })
++            .to_string(),
++        )
++        .unwrap();
++        app.refresh_watcher_health(false);
++        let event = tokio::time::timeout(Duration::from_secs(2), rx.recv())
++            .await
++            .unwrap()
++            .unwrap();
++        let AppEvent::WatcherHealthLoaded {
++            primary_thread_id,
++            request_id,
++            health,
++            advisor,
++            goal,
++            executions,
++        } = event
++        else {
++            panic!("expected local watcher refresh");
++        };
++        assert_eq!(executions.rows.len(), 1);
++        assert!(executions.rows[0].elapsed_secs >= 65);
++        app.finish_watcher_health(
++            primary_thread_id,
++            request_id,
++            health,
++            advisor,
++            goal,
++            executions,
++        );
++        assert_eq!(app.worker_hud.executions.rows[0].topic, "compile");
++        std::fs::remove_file(&path).unwrap();
++        app.refresh_watcher_health(false);
++        assert!(rx.try_recv().is_err());
++        assert_eq!(app.worker_hud.executions.rows.len(), 1);
++        app.worker_hud.watcher_attempted_at = None;
++        app.refresh_watcher_health(false);
++        let event = tokio::time::timeout(Duration::from_secs(2), rx.recv())
++            .await
++            .unwrap()
++            .unwrap();
++        let AppEvent::WatcherHealthLoaded {
++            primary_thread_id,
++            request_id,
++            health,
++            advisor,
++            goal,
++            executions,
++        } = event
++        else {
++            panic!("expected completion refresh");
++        };
++        assert!(executions.rows.is_empty());
++        app.finish_watcher_health(
++            primary_thread_id,
++            request_id,
++            health,
++            advisor,
++            goal,
++            executions,
++        );
++        assert!(app.worker_hud.executions.rows.is_empty());
++        // A local decoy and a late local response must not leak into a remote workspace.
++        app.worker_hud.executions.unavailable = true;
++        app.refresh_watcher_health(true);
++        assert_eq!(app.worker_hud.executions, Default::default());
++        assert!(rx.try_recv().is_err());
++    }
++
++    #[tokio::test]
 +    async fn worker_hud_watcher_refresh_is_independent_of_offline_worker_request() {
 +        let mut app = crate::app::test_support::make_test_app().await;
 +        let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
@@ -6196,12 +6642,20 @@ index 000000000..15afc4f7d
 +            health,
 +            advisor,
 +            goal,
++            executions,
 +        } = event
 +        else {
 +            panic!("expected independent watcher refresh");
 +        };
 +        assert_eq!(health, Some(WatcherHealth::Uncertain(1)));
-+        app.finish_watcher_health(primary_thread_id, request_id, health, advisor, goal);
++        app.finish_watcher_health(
++            primary_thread_id,
++            request_id,
++            health,
++            advisor,
++            goal,
++            executions,
++        );
 +        assert_eq!(app.worker_hud.watcher, Some(WatcherHealth::Uncertain(1)));
 +        assert_eq!(app.worker_hud.pending, Some(worker_request));
 +        assert!(app.worker_hud.rows.is_empty());
@@ -6228,6 +6682,7 @@ index 000000000..15afc4f7d
 +            Some(WatcherHealth::Uncertain(1)),
 +            Some(super::super::advisor::unavailable()),
 +            None,
++            Default::default(),
 +        );
 +        assert_eq!(app.worker_hud.watcher, None);
 +        assert_eq!(app.worker_hud.advisor, None);
@@ -6764,7 +7219,7 @@ index 000000000..15afc4f7d
 +    }
 +}
 diff --git a/codex-rs/tui/src/app_event.rs b/codex-rs/tui/src/app_event.rs
-index a20193149..1d5c09423 100644
+index a20193149..5ab17346c 100644
 --- a/codex-rs/tui/src/app_event.rs
 +++ b/codex-rs/tui/src/app_event.rs
 @@ -295,6 +295,16 @@ pub(crate) struct AgentPickerThreadRefresh {
@@ -6784,7 +7239,7 @@ index a20193149..1d5c09423 100644
      AccountEmailLoaded {
          request_id: uuid::Uuid,
          email: Option<String>,
-@@ -414,6 +424,23 @@ pub(crate) enum AppEvent {
+@@ -414,6 +424,24 @@ pub(crate) enum AppEvent {
          request_id: Uuid,
          result: Result<AgentPickerThreadRefresh, String>,
      },
@@ -6804,11 +7259,12 @@ index a20193149..1d5c09423 100644
 +        health: Option<crate::bottom_pane::worker_hud::WatcherHealth>,
 +        advisor: Option<crate::bottom_pane::worker_hud::AdvisorRow>,
 +        goal: Option<(String, String)>,
++        executions: crate::bottom_pane::worker_hud::ExecutionHud,
 +    },
      /// Switch the active thread to the selected agent.
      SelectAgentThread(ThreadId),
  
-@@ -1166,6 +1193,8 @@ pub(crate) enum AppEvent {
+@@ -1166,6 +1194,8 @@ pub(crate) enum AppEvent {
      FollowTranscript,
  
      InsertHistoryCell(Box<dyn HistoryCell>),
@@ -7706,7 +8162,7 @@ index f0b809ce5..f9b2d456f 100644
      let mut line: Option<Line<'static>> = None;
  
 diff --git a/codex-rs/tui/src/bottom_pane/mod.rs b/codex-rs/tui/src/bottom_pane/mod.rs
-index ae9405e9f..83b819811 100644
+index ae9405e9f..9f3f2d911 100644
 --- a/codex-rs/tui/src/bottom_pane/mod.rs
 +++ b/codex-rs/tui/src/bottom_pane/mod.rs
 @@ -169,6 +169,8 @@ pub(crate) use footer::CollaborationModeIndicator;
@@ -7742,7 +8198,7 @@ index ae9405e9f..83b819811 100644
              esc_backtrack_hint: false,
              animations_enabled,
              effects,
-@@ -1732,6 +1737,40 @@ impl BottomPane {
+@@ -1732,6 +1737,46 @@ impl BottomPane {
          self.request_redraw();
      }
  
@@ -7774,6 +8230,12 @@ index ae9405e9f..83b819811 100644
 +        }
 +    }
 +
++    pub(crate) fn set_executions(&mut self, executions: worker_hud::ExecutionHud) {
++        if self.worker_hud.set_executions(executions) {
++            self.request_redraw();
++        }
++    }
++
 +    pub(crate) fn set_watcher_health(&mut self, health: Option<worker_hud::WatcherHealth>) {
 +        if self.worker_hud.set_watcher(health) {
 +            self.request_redraw();
@@ -7783,7 +8245,7 @@ index ae9405e9f..83b819811 100644
      /// Update the inactive-thread approval list shown above the composer.
      pub(crate) fn set_pending_thread_approvals(&mut self, threads: Vec<String>) {
          if self.pending_thread_approvals.set_threads(threads) {
-@@ -2495,6 +2534,7 @@ impl BottomPane {
+@@ -2495,6 +2540,7 @@ impl BottomPane {
                  }))
              };
              flex2.push(/*flex*/ 0, composer);
@@ -7791,7 +8253,7 @@ index ae9405e9f..83b819811 100644
              RenderableItem::Owned(Box::new(flex2))
          }
      }
-@@ -2729,6 +2769,95 @@ mod tests {
+@@ -2729,6 +2775,95 @@ mod tests {
          assert_eq!(pane.composer_text(), "main draft");
      }
  
@@ -8179,10 +8641,10 @@ index f717e2426..7a49ebb6a 100644
 +                                                   100% context left
 diff --git a/codex-rs/tui/src/bottom_pane/worker_hud.rs b/codex-rs/tui/src/bottom_pane/worker_hud.rs
 new file mode 100644
-index 000000000..6e0bafe33
+index 000000000..9b0ec3c8a
 --- /dev/null
 +++ b/codex-rs/tui/src/bottom_pane/worker_hud.rs
-@@ -0,0 +1,1338 @@
+@@ -0,0 +1,1515 @@
 +//! Read-only worker summary; clipping never takes space from the composer.
 +
 +use crate::line_truncation::truncate_line_with_ellipsis_if_overflow;
@@ -8256,6 +8718,20 @@ index 000000000..6e0bafe33
 +    pub(crate) seen_secs: Option<u64>,
 +}
 +
++#[derive(Clone, Debug, Default, PartialEq, Eq)]
++pub(crate) struct ExecutionHud {
++    pub(crate) rows: Vec<ExecutionRow>,
++    pub(crate) unavailable: bool,
++}
++
++#[derive(Clone, Debug, PartialEq, Eq)]
++pub(crate) struct ExecutionRow {
++    pub(crate) topic: String,
++    pub(crate) stage: Option<String>,
++    pub(crate) elapsed_secs: u64,
++    pub(crate) problem: Option<String>,
++}
++
 +#[derive(Default)]
 +pub(crate) struct WorkerHud {
 +    rows: Vec<WorkerRow>,
@@ -8266,6 +8742,7 @@ index 000000000..6e0bafe33
 +    shells_visible: bool,
 +    watcher: Option<WatcherHealth>,
 +    advisor: Option<AdvisorRow>,
++    executions: ExecutionHud,
 +}
 +
 +#[derive(Clone, Debug, PartialEq, Eq)]
@@ -8329,6 +8806,14 @@ index 000000000..6e0bafe33
 +}
 +
 +impl WorkerHud {
++    pub(crate) fn set_executions(&mut self, executions: ExecutionHud) -> bool {
++        if self.executions == executions {
++            return false;
++        }
++        self.executions = executions;
++        true
++    }
++
 +    pub(crate) fn set_advisor(&mut self, advisor: Option<AdvisorRow>) -> bool {
 +        if self.advisor == advisor {
 +            return false;
@@ -8409,6 +8894,9 @@ index 000000000..6e0bafe33
 +        if self.shells_visible && self.shells_stale {
 +            alerts.push("Shells stale · counts unavailable".to_string());
 +        }
++        if self.executions.unavailable {
++            alerts.push("Background status unavailable".to_string());
++        }
 +        let mut lines = Vec::new();
 +        if !alerts.is_empty() {
 +            lines.push(Line::from(format!("  {}", alerts.join(" · "))).not_dim());
@@ -8418,17 +8906,25 @@ index 000000000..6e0bafe33
 +        }
 +        // Alerts, advisor and overflow share the three-line budget with activity.
 +        let available = 3 - lines.len();
-+        let total = display_rows.len() + shells.len();
++        let total = display_rows.len() + shells.len() + self.executions.rows.len();
 +        let activity_limit = available - usize::from(total > available);
 +        display_rows.sort_by_key(|members| {
 +            !members
 +                .iter()
 +                .any(|row| matches!(row.state, WorkerState::Approval | WorkerState::Input))
 +        });
-+        let worker_limit = display_rows
-+            .len()
-+            .min(activity_limit - usize::from(!shells.is_empty() && activity_limit > 1));
++        let worker_limit = display_rows.len().min(
++            activity_limit
++                - usize::from(
++                    (!shells.is_empty() || !self.executions.rows.is_empty()) && activity_limit > 1,
++                ),
++        );
 +        let shell_limit = shells.len().min(activity_limit - worker_limit);
++        let execution_limit = self
++            .executions
++            .rows
++            .len()
++            .min(activity_limit - worker_limit - shell_limit);
 +        for members in display_rows.iter().take(worker_limit) {
 +            let row = members[0];
 +            let current: Vec<_> = members.iter().filter(|row| row.state.is_active()).collect();
@@ -8533,7 +9029,29 @@ index 000000000..6e0bafe33
 +            );
 +            lines.push(Line::from(format!("{prefix}{command}{metrics}")).dim());
 +        }
-+        let more = display_rows.len() + shells.len() - worker_limit - shell_limit;
++        for execution in self.executions.rows.iter().take(execution_limit) {
++            let secs = execution.elapsed_secs;
++            let metrics = format!(" · {}:{:02}", secs / 60, secs % 60);
++            let prefix = "  Background · ";
++            let mut label = sanitize_label(&execution.topic, 160);
++            if let Some(stage) = &execution.stage {
++                label.push_str(&format!(" · {}", sanitize_label(stage, 80)));
++            }
++            if let Some(problem) = &execution.problem {
++                label.push_str(&format!(" · {problem}"));
++            }
++            let label = truncate_line_with_ellipsis_if_overflow(
++                Line::from(label),
++                usize::from(width).saturating_sub(display_width(prefix) + display_width(&metrics)),
++            );
++            let line = Line::from(format!("{prefix}{label}{metrics}"));
++            lines.push(if execution.problem.is_some() {
++                line.not_dim()
++            } else {
++                line.dim()
++            });
++        }
++        let more = total - worker_limit - shell_limit - execution_limit;
 +        if more > 0 {
 +            lines.push(Line::from(format!("  +{more} more")).dim());
 +        }
@@ -8629,6 +9147,127 @@ index 000000000..6e0bafe33
 +        "shell".to_string()
 +    } else {
 +        label.to_string()
++    }
++}
++
++#[cfg(test)]
++mod execution_tests {
++    use super::*;
++
++    #[test]
++    fn execution_hud_shares_worker_advisor_native_warning_and_overflow_budget() {
++        let mut hud = WorkerHud::default();
++        hud.set(
++            vec![WorkerRow {
++                group: None,
++                dispatch_elapsed_secs: None,
++                task: "prepare next job".into(),
++                state: WorkerState::Active,
++                elapsed_secs: Some(20),
++                total_tokens: Some(10),
++                model: None,
++                reasoning_effort: None,
++            }],
++            false,
++            true,
++        );
++        hud.set_shells(
++            vec![ShellRow {
++                command: "unrelated native".into(),
++                job_id: "42".into(),
++                seen_secs: Some(20),
++            }],
++            false,
++            true,
++        );
++        hud.set_advisor(Some(AdvisorRow {
++            started_at_ms: None,
++            model: None,
++            state: AdvisorState::Running(20),
++        }));
++        let executions = ExecutionHud {
++            rows: vec![
++                ExecutionRow {
++                    topic: "detached build".into(),
++                    stage: None,
++                    elapsed_secs: 125,
++                    problem: Some("unknown".into()),
++                };
++                4
++            ],
++            unavailable: true,
++        };
++        hud.set_executions(executions);
++        for width in [8, 30, 100] {
++            let lines = hud.lines(width);
++            assert_eq!(lines.len(), 3);
++            assert!(
++                lines[0]
++                    .to_string()
++                    .contains("Background status unavailable")
++            );
++            assert!(lines[1].to_string().contains("Advisor"));
++            assert!(lines[2].to_string().contains("+6 more"));
++        }
++    }
++
++    #[test]
++    fn execution_hud_shares_three_rows_and_preserves_native_shells() {
++        for native in 0..4 {
++            for detached in 0..4 {
++                for warning in [false, true] {
++                    let mut hud = WorkerHud::default();
++                    hud.set_shells(
++                        (0..native)
++                            .map(|index| ShellRow {
++                                command: format!("native {index}"),
++                                job_id: index.to_string(),
++                                seen_secs: Some(10),
++                            })
++                            .collect(),
++                        false,
++                        true,
++                    );
++                    hud.set_advisor(Some(AdvisorRow {
++                        started_at_ms: None,
++                        model: None,
++                        state: AdvisorState::Ready,
++                    }));
++                    hud.set_executions(ExecutionHud {
++                        rows: (0..detached)
++                            .map(|_| ExecutionRow {
++                                topic: "compile 模型\nnext".into(),
++                                stage: Some("check\tstage".into()),
++                                elapsed_secs: 65,
++                                problem: None,
++                            })
++                            .collect(),
++                        unavailable: warning,
++                    });
++                    let lines = hud.lines(100);
++                    let text = lines
++                        .iter()
++                        .map(ToString::to_string)
++                        .collect::<Vec<_>>()
++                        .join("\n");
++                    assert!(lines.len() <= 3, "{text}");
++                    assert_eq!(
++                        text.matches("Background status unavailable").count(),
++                        usize::from(warning)
++                    );
++                    if native == 0 && detached == 1 && !warning {
++                        assert!(
++                            text.contains("Background · compile 模型 next · check stage · 1:05"),
++                            "{text}"
++                        );
++                        assert!(!text.contains("seen"));
++                    }
++                    if native > 0 && !warning {
++                        assert!(text.contains("native 0"), "{text}");
++                    }
++                }
++            }
++        }
 +    }
 +}
 +
@@ -9522,7 +10161,7 @@ index 000000000..6e0bafe33
 +    }
 +}
 diff --git a/codex-rs/tui/src/chatwidget.rs b/codex-rs/tui/src/chatwidget.rs
-index 2f74f843d..8f7aa5581 100644
+index 2f74f843d..97efb602c 100644
 --- a/codex-rs/tui/src/chatwidget.rs
 +++ b/codex-rs/tui/src/chatwidget.rs
 @@ -263,6 +263,7 @@ mod connectors;
@@ -9593,7 +10232,7 @@ index 2f74f843d..8f7aa5581 100644
          if let Some(mut cell) = self.transcript.take_active_cell() {
              // Insert finalized cell into history and keep grouping consistent.
              if let Some(exec) = cell.as_any_mut().downcast_mut::<ExecCell>() {
-@@ -1452,6 +1464,56 @@ impl ChatWidget {
+@@ -1452,6 +1464,63 @@ impl ChatWidget {
          }
      }
  
@@ -9647,10 +10286,17 @@ index 2f74f843d..8f7aa5581 100644
 +        self.bottom_pane.set_watcher_health(health);
 +    }
 +
++    pub(crate) fn set_executions(
++        &mut self,
++        executions: crate::bottom_pane::worker_hud::ExecutionHud,
++    ) {
++        self.bottom_pane.set_executions(executions);
++    }
++
      pub(crate) fn set_pending_thread_approvals(&mut self, threads: Vec<String>) {
          self.bottom_pane.set_pending_thread_approvals(threads);
      }
-@@ -1498,6 +1560,8 @@ impl ChatWidget {
+@@ -1498,6 +1567,8 @@ impl ChatWidget {
      fn clean_background_terminals(&mut self) {
          self.submit_op(AppCommand::clean_background_terminals());
          self.unified_exec_processes.clear();
@@ -9659,7 +10305,7 @@ index 2f74f843d..8f7aa5581 100644
          self.sync_unified_exec_footer();
          self.add_info_message(
              "Stopping all background terminals.".to_string(),
-@@ -1813,6 +1877,14 @@ impl ChatWidget {
+@@ -1813,6 +1884,14 @@ impl ChatWidget {
          self.blocks_direct_input = true;
          self.external_writer_view = true;
          self.pause_unavailable_thread();

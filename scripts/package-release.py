@@ -30,9 +30,10 @@ from urllib.request import urlopen
 ROOT = Path(__file__).resolve().parents[1]
 UPSTREAM_COMMIT = '83086188ae0614bd882818ff1aa23f3194962012'
 UPSTREAM_VERSION = '0.163.0'
-PLUS_VERSION = '0.3.2'
+PLUS_VERSION = '0.4.0'
 RELEASE = f'{UPSTREAM_VERSION}-plus.{PLUS_VERSION}'
-COORDINATOR_PROTOCOL = 3
+COORDINATOR_PROTOCOL = 4
+EXECUTION_RECORD_FORMAT = 1
 PATCH = 'patches/codex-0.163.0-worker-hud.patch'
 TARGETS = {'x86_64-unknown-linux-gnu': 62, 'aarch64-unknown-linux-gnu': 183}
 DOCS = ('README.md', 'GLOSSARY.md', 'docs/background-work.md',
@@ -41,7 +42,9 @@ DOCS = ('README.md', 'GLOSSARY.md', 'docs/background-work.md',
         'docs/audit-fixes.md', 'docs/notice-resolution.md',
         'docs/evidence/audit-fixes.json', 'docs/evidence/advisor-topic.json',
         'docs/evidence/notice-resolution.json', 'docs/goals.md',
-        'docs/custom-goals.md', 'docs/evidence/custom-goals.json')
+        'docs/custom-goals.md', 'docs/evidence/custom-goals.json',
+        'docs/detached-jobs.md', 'docs/detached-jobs-fleet.md',
+        'docs/evidence/parallel-tool-rows.json', 'docs/evidence/detached-jobs.json')
 
 
 def runtime_source_files(root):
@@ -223,6 +226,9 @@ def verify_package(package):
     if (type(manifest.get('coordinator_protocol')) is not int or
             manifest['coordinator_protocol'] != COORDINATOR_PROTOCOL):
         raise ValueError('Invalid coordinator compatibility protocol')
+    if (type(manifest.get('execution_record_format')) is not int or
+            manifest['execution_record_format'] != EXECUTION_RECORD_FORMAT):
+        raise ValueError('Invalid detached execution record format')
     if (manifest.get('schema_version') != 1 or manifest.get('release') != RELEASE or
             manifest.get('target') not in TARGETS or
             manifest.get('upstream') != {'version': UPSTREAM_VERSION, 'tag': 'rust-v0.163.0',
@@ -401,6 +407,7 @@ def build(args):
         manifest = {
             'schema_version': 1, 'release': RELEASE, 'plus_commit': args.plus_commit,
             'coordinator_protocol': COORDINATOR_PROTOCOL,
+            'execution_record_format': EXECUTION_RECORD_FORMAT,
             'upstream': {'version': UPSTREAM_VERSION, 'tag': 'rust-v0.163.0',
                          'commit': UPSTREAM_COMMIT},
             'frontend_patch_sha256': sha256(ROOT / PATCH), 'target': args.target,

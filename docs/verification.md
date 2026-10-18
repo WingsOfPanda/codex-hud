@@ -6,6 +6,50 @@ Rust 1.99.1. Keep the ordinary installed Codex and global configuration intact.
 
 ## Current release acceptance
 
+### Reviewed detached jobs (development candidate)
+
+The [job handoff workflow](detached-jobs.md) uses an independent execution store,
+root admission, and the existing observer. Qualify the native helper against an
+official stock daemon; a mock or detached-process prototype alone is insufficient.
+
+[Source qualification](evidence/detached-jobs.json) passed on x86 and ARM: 173
+Rust tests, 27 park tests, seven upgrade tests, six stock lifecycle scenarios,
+32 goal scenarios and 22 detached-job scenarios on each architecture. The x86
+client passed 45 HUD and four execution-HUD filter invocations (overlapping),
+eight projection PTY cases, 23 terminal smoke stages and a real-job TUI reconnect.
+Dedicated SSH login closure, admission after closure and both daemon restart
+modes also passed with the production helper on both architectures. Packaging
+checks passed 41 tests. Complete release archives and the new ARM TUI are not
+qualified by these source checks.
+
+```sh
+cargo +1.99.1 test --locked --manifest-path rust-runtime/Cargo.toml --lib
+python3 tests/test_detached_jobs_stock.py --runtime /absolute/candidate/runtime \
+  --stock-binary /absolute/official/codex --scenario completion \
+  --evidence .build/detached-completion
+# Repeat for each SCENARIOS entry in that test. Use the smoke interpreter with pyte:
+python3 tests/test_detached_job_tui.py --binary /absolute/candidate/codex \
+  --runtime /absolute/candidate/runtime --stock-binary /absolute/official/codex \
+  --evidence .build/detached-tui
+python3 tests/test_detached_execution_hud_tui.py --binary /absolute/candidate/codex \
+  --evidence .build/detached-hud
+```
+
+Cover actual graceful/abrupt daemon replacement, no-TUI wake, root input/goal
+fences, restricted-context refusal, duplicate UUIDs, monitoring failure after
+spawn, report-only recovery, cancellation/cleanup, exclusive resources and
+maintenance. Unit fault boundaries cover missing identities and receipts;
+continuous descendant output must not prevent cleanup. Verified cleanup may
+allow maintenance without turning an unknown command outcome into success.
+
+The real TUI test names its thread to isolate display from upstream automatic
+title generation, reconnects during one execution and checks editable input,
+one completion wake and no display requests. Projection-only fixtures separately
+cover malformed/stale status and the three-row limit. Run existing park, goals,
+upgrade and terminal suites as regressions. Synthetic same-payload package
+switches test the mechanism, not arbitrary release compatibility or fleet pruning.
+Complete per-target archives and fleet rollout require their separate gates.
+
 ### Parallel MCP and web activity
 
 Source/development acceptance is recorded in
