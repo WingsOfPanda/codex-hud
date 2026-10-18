@@ -377,7 +377,7 @@ def package_switch(f):
     f.report["package_switch"] = dict(old_package=str(old_package), candidate=str(candidate),
         installed_manifest=installed_manifest, candidate_manifest=candidate_manifest,
         executor=executor, old_package_pins=sorted(pinned), coordinator_processes=upgraded_processes,
-        qualification="same native payload in compatible protocol-4 sibling packages; no upstream migration")
+        qualification="same native payload in compatible protocol-5 sibling packages; no upstream migration")
 
 
 def deadline(f):

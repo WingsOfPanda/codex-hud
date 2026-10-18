@@ -65,8 +65,7 @@ work is pending until execution acceptance passes.
 ## Qualification and rollout
 
 The implementation has private x86 qualification recorded in
-[the evidence](evidence/ultracode.json). Current installed Plus 0.3.2 does not
-provide these controls. The four contract scenarios used genuine Codex workers;
+[the evidence](evidence/ultracode.json). Older Plus releases such as 0.3.2 do not provide these controls. The four contract scenarios used genuine Codex workers;
 provider/compaction tests use an official daemon and loopback responses, and
 terminal transport tests explicitly identify their stubs.
 
@@ -75,8 +74,10 @@ must identify the supported bootstrap paths, coordinator compatibility, worker
 dry-run results and required TUI restart. Publishing, merging and installation
 remain separate actions; this work changes no installed wrapper or global policy.
 
-The new admission behavior uses coordinator protocol **5**, distinct from the
-detached-job candidate's protocol 4; execution records remain format 1. The first
-cutover needs a quiet checkpoint, including unresolved executions. Protocol 4
-observers do not reserve these mode snapshots and cannot live-upgrade into this
-contract. A release version and full fleet handoff are not selected by this change.
+The combined `0.163.0-plus.0.4.0` candidate uses coordinator protocol **5**;
+execution records remain format 1. The detached-only protocol-4 candidate was
+unreleased. The first protocol-3 to protocol-5 cutover requires a quiet checkpoint,
+`executions: wait` and a TUI restart; the unchanged stock daemon needs no restart.
+Protocol-4 observers do not reserve these mode snapshots and cannot live-upgrade
+into this contract. Complete combined archive qualification, including ARM, remains
+a release gate. See the [fleet contract](detached-jobs-fleet.md).

@@ -1,9 +1,13 @@
-# Codex Plus 0.163.0-plus.0.4.0 candidate
+# Codex Plus 0.163.0-plus.0.4.0
 
-This candidate adds reviewed detached jobs to the Rust helper and native HUD.
+This combined candidate adds reviewed detached jobs, default-off Ultracode,
+short shell topics and an optional weekly-reset countdown. It also retains the
+parallel MCP/web activity-row fix: original Calling/Browsing rows settle by call
+identity, interruption stops pending indicators, and late authoritative results
+update retained history.
 It retains official OpenAI Codex 0.163.0, upstream commit
 `83086188ae0614bd882818ff1aa23f3194962012`, and Rust 1.99.1. Package manifests
-declare coordinator protocol 4 and `execution_record_format: 1`. The shared daemon
+declare coordinator protocol 5 and `execution_record_format: 1`. The shared daemon
 remains OpenAI's binary; no daemon patch or native-database migration is added.
 Source implementation, package qualification, publication and installation are
 separate steps.
@@ -49,9 +53,31 @@ after their mode marker. The HUD shows this purpose rather than long command
 arguments; unlabelled jobs use a compact fallback. Full commands remain in native
 history. The topic is supplied at launch and needs no extra model request.
 
+## Ultracode and status line
+
+`/ultracode on|off|status` controls a default-off root mode with phased native
+workers, sealed acceptance contracts, root-created worktrees and root-run checks.
+These are workflow instructions, not a hard worker sandbox. Mode changes apply
+to the next unadmitted turn; steering and compaction preserve the admitted
+root/submission/turn/daemon-generation snapshot. The complete original startup
+developer text is stored privately and restored on qualified cold loads.
+
+Fresh qualified roots receive the bootstrap; qualified roots can resume it.
+Legacy roots cannot acquire the mode merely by resuming: start a fresh qualified
+root. The status line places mode beside model and effort, for example
+`GPT-6-Astra high ultracode`, without adding a footer row.
+
+Select **Weekly reset** in `/statusline` (`weekly-reset`) to show
+`resets in 2d 5h`. Missing timestamps show `reset unknown`; expired ones show
+`reset due`. The countdown uses existing quota data and local refresh without
+extra model or quota requests.
+
 ## Cutover and qualification
 
-The first protocol-3 to protocol-4 rollout requires a quiet checkpoint.
+The first protocol-3 to protocol-5 rollout requires a quiet checkpoint.
+The earlier detached-only protocol-4 candidate was not released. Use
+`quiet_checkpoint: true`, `executions: wait`, `session_restart: required` and
+`daemon_restart: false` for this combined cutover with the unchanged stock daemon.
 Maintenance fences new Plus launch/model admission while existing executors
 continue; `admission_quiet` and `execution_quiet` are distinct. Fleet-config must
 qualify executor process scans, immutable package retention, quiet checks and
@@ -59,11 +85,20 @@ monitor reconnection before rollout. Format 1 alone does not establish live
 upgrade compatibility. Every rollback requires quiet coordination; no upgrade
 kills or replays a job to pass its gate.
 
-The new TUI must be loaded for detached-job display. The existing native-goal
-disabling requirement remains; stock daemon restart needs its own assessment.
+The new TUI must be loaded for these controls and displays. Fleet wrappers must
+route both `job` and `ultracode` to the helper. The existing native-goal disabling
+requirement remains. Rollback to 0.3.2 after execution or mode rows exist is not
+qualified; retain the first qualified combined protocol-5 package as the rollback
+floor until a later tested release explicitly retires it.
 Fleet installation and global handoff instructions remain separate authorized
 work. Voice remains omitted as in prior Plus packages.
 
+Private feature evidence is recorded for [detached jobs](evidence/detached-jobs.json),
+[Ultracode](evidence/ultracode.json), [shell topics](evidence/shell-topics.json),
+[parallel tool rows](evidence/parallel-tool-rows.json) and
+[weekly reset](evidence/weekly-reset.json). These feature checks do not qualify
+complete combined archives; the companion release note records final qualification
+on each architecture.
 Qualification must record exact source/package identities, executed checks,
 failures and limits on each target. Private official-daemon fixtures use isolated
 homes and loopback providers; mock/prototype checks do not qualify unrun service

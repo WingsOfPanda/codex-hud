@@ -80,7 +80,8 @@ def manifest_check(package):
     upstream = json.loads((package / 'codex-package.json').read_text())
     assert manifest['schema_version'] == 1 and manifest['voice'] is False, manifest
     protocol = manifest.get('coordinator_protocol')
-    assert type(protocol) is int and protocol == 3, 'unsupported coordinator protocol'
+    assert type(protocol) is int and protocol == 5, 'unsupported coordinator protocol'
+    assert type(manifest.get('execution_record_format')) is int and manifest['execution_record_format'] == 1
     assert manifest['upstream'] == {'version': '0.163.0', 'tag': 'rust-v0.163.0',
         'commit': '83086188ae0614bd882818ff1aa23f3194962012'}, manifest['upstream']
     assert manifest['build']['rust'] == '1.99.1' and manifest['build']['cargo_profile'] == 'release'
@@ -92,7 +93,10 @@ def manifest_check(package):
     required = ['bin/codex', 'bin/codex-plus', 'bin/codex-plus-runtime', 'bin/codex-code-mode-host', 'codex-path/rg',
         'codex-resources/bwrap', 'codex-package.json',
         'docs/shell-workflow.md', 'docs/background-work.md', 'docs/rust-runtime.md',
-        'docs/goals.md', 'docs/custom-goals.md', 'docs/evidence/custom-goals.json', 'LICENSE', 'NOTICE',
+        'docs/goals.md', 'docs/custom-goals.md', 'docs/evidence/custom-goals.json',
+        'docs/detached-jobs.md', 'docs/detached-jobs-fleet.md', 'docs/ultracode.md',
+        'docs/ultracode-bootstrap.txt', 'docs/ultracode-policy.md', 'docs/evidence/weekly-reset.json',
+        'LICENSE', 'NOTICE',
         'licenses/bubblewrap-COPYING', 'licenses/ripgrep-LICENSE-MIT',
         'licenses/ripgrep-LICENSE-UNLICENSE',
         'licenses/rusty-v8-LICENSE', 'licenses/v8-LICENSE', 'licenses/v8-LICENSE.v8',
@@ -143,6 +147,12 @@ def public_commands(package, root):
     link.symlink_to(package / 'bin/codex-plus')
     assert command([link, '--version'], cwd, env).strip() == plus
     assert 'Usage:' in command([link, '--help'], cwd, env)
+    assert 'maintenance' in command([link, 'job', '--help'], cwd, env)
+    assert 'status' in command([link, 'ultracode', '--help'], cwd, env)
+    operator_env = dict(env)
+    operator_env.pop('CODEX_THREAD_ID', None)
+    inventory = json.loads(command([link, 'job', 'list', '--all'], cwd, operator_env))
+    assert inventory['execution_record_format'] == 1 and inventory['unresolved'] == [], inventory
     runner = command([link, 'run', '--', '/bin/echo', 'PACKAGE_RUN'], cwd, env)
     assert 'PACKAGE_RUN' in runner and 'exit=0' in runner, runner
     logs = list((Path(env['CODEX_HOME']) / 'codex-plus/logs').glob('*'))

@@ -29,7 +29,7 @@ user mutations share a bounded local lock around queue submission; SQLite
 transactions still do not span network calls. The [goal workflow](goals.md)
 defines the protocol-3 cutover, pending user-input fence and recovery barrier.
 
-The `0.163.0-plus.0.4.0` candidate uses coordinator protocol 4 and package
+The combined `0.163.0-plus.0.4.0` candidate uses coordinator protocol 5 and package
 `execution_record_format: 1`. `execution_admission.rs` verifies the exact root/turn's
 effective permissions and qualified Linux containment. `job_command.rs` binds
 root review to current input/goal authority; `executions.rs` and its executor
@@ -108,7 +108,10 @@ active versus settled goal-owned callback markers. Preserve the goal ledger and
 a qualified rollback package without dispatching its goal records through older
 helpers. See the [goal rollout contract](goals.md#stock-daemon-isolation-and-rollout-contract).
 
-Detached jobs require a quiet initial protocol-3 to protocol-4 cutover.
+Combined detached jobs and Ultracode require a quiet initial protocol-3 to
+protocol-5 cutover; the detached-only protocol-4 candidate was unreleased.
+This cutover waits for executions, requires the new TUI, and retains the unchanged
+stock daemon and effective native-goal disabling.
 Fleet scans must additionally recognize the private `execution-executor` role,
 its root/execution identity and leading package pin. Each executor keeps the
 original package executable, cwd and open descriptors while the coordinator may

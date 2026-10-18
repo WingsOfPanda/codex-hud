@@ -13,7 +13,7 @@ updates; increment its patch component for Plus fixes and its minor component
 for Plus features. Every new combination still needs qualified target packages.
 Existing published `plus.N` releases retain their original identities.
 
-The detached-job candidate is `0.163.0-plus.0.4.0`: coordinator protocol 4 and
+The combined detached-job/Ultracode candidate is `0.163.0-plus.0.4.0`: coordinator protocol 5 and
 package `execution_record_format: 1`, with the same pinned official 0.163.0 daemon.
 The execution format describes durable executor records separately from
 coordinator/upstream compatibility. These identities do not establish package
@@ -138,7 +138,7 @@ fleet-config's `codex-plus/RELEASING.md`, section 2, step 3:
 {
   "release": "<tag>",
   "plus_commit": "<the manifest's plus_commit>",
-  "coordinator_protocol": 4,
+  "coordinator_protocol": 5,
   "execution_record_format": 1,
   "upstream": {"version": "<X>", "tag": "rust-v<X>", "commit": "<sha>"},
   "note": "docs/releases/<release>.md",
@@ -174,7 +174,7 @@ changes, otherwise `null`. Put additional rollout requirements in `notes`, and
 keep test results, failures, skipped checks, and accepted limits in the companion
 note referenced by `note`.
 
-For protocol-4 releases also copy `execution_record_format` from both manifests.
+For protocol-5 releases also copy `execution_record_format` from both manifests.
 `rollout.executions` is `wait` for the initial cutover, incompatible changes,
 OpenAI bumps and rollbacks. Qualified compatible higher revisions may use
 `continue` with the [maintenance and retention contract](detached-jobs-fleet.md).
@@ -187,7 +187,7 @@ live policy. Preserve its foreground wait wording; copying an older release's
 `agents_md` would restore the superseded background default. Published handoffs
 remain immutable.
 
-The current candidate manifests advertise `coordinator_protocol: 4` and
+The current candidate manifests advertise `coordinator_protocol: 5` and
 `execution_record_format: 1`.
 Set `quiet_checkpoint: false` only when the installed observers and candidate
 support the same protocol, upstream identity and target, the candidate's Plus
@@ -203,8 +203,11 @@ directories while any process still references them. The installer switches
 link independently of the TUI. Set `session_restart` according to the actual
 client change, rather than using a restart as an observer-handoff command.
 
-The first detached-job rollout from protocol 3 requires a quiet protocol-4
-cutover. An operator maintenance hold fences new Plus launch/model admissions
+The first combined detached-job/Ultracode rollout from protocol 3 requires a
+quiet protocol-5 cutover. The detached-only protocol-4 candidate was unreleased.
+Use `quiet_checkpoint: true`, `executions: wait`, `session_restart: required`
+and `daemon_restart: false` with the unchanged stock 0.163.0 daemon.
+An operator maintenance hold fences new Plus launch/model admissions
 and reconciles known queued work. `admission_quiet` does not imply
 `execution_quiet`: existing executors continue during the hold. Fleet quiet
 checks must account for both, plus native/AP work outside the Plus ledger.
@@ -220,10 +223,16 @@ coordinator, upstream and target compatibility plus fleet retention/reconnect
 support. Do not treat format 1 alone as that qualification. Every rollback still
 requires a quiet checkpoint.
 
-The TUI must load the new frontend to display detached jobs. Assess any stock
-daemon restart separately; this candidate adds no daemon patch and retains the
-existing native-goal disabling requirement. Fleet-config owns the new helper
-routes, process/quiet checks, package retention and global worker-handoff policy.
+The TUI must load the new frontend for detached-job display and Ultracode controls.
+This candidate adds no daemon patch and retains the existing native-goal disabling
+requirement. Fleet-config must route both `job` and `ultracode` through the helper
+and owns process/quiet checks, package retention and global worker-handoff policy.
+Legacy roots without the startup bootstrap need a fresh qualified root to use
+Ultracode; resuming them alone does not qualify them. Rollback to 0.3.2 after
+execution or mode rows exist is not qualified. Retain the first qualified combined
+protocol-5 package as the rollback floor until explicitly retired by tested
+qualification. Private feature evidence does not qualify complete combined
+archives; record final qualification for each architecture in the companion note.
 See the [reviewed handoff contract](detached-jobs.md): workers prepare expected
 runs over eight minutes for root review; the estimate never imposes a timeout.
 

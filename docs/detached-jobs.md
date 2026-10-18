@@ -1,12 +1,13 @@
 # Reviewed long-job handoff
 
 Source implementation and private acceptance are recorded in
-[the evidence](evidence/detached-jobs.json). This is a development candidate;
+[the evidence](evidence/detached-jobs.json). This is part of the combined
+`0.163.0-plus.0.4.0` candidate;
 complete release archives, publication and installation remain separate gates.
 
 ## Agent workflow
 
-These commands require the detached-job candidate. Until its quiet rollout,
+These commands require the combined protocol-5 candidate. Until its quiet rollout,
 exercise the candidate only with a private `CODEX_HOME`; keep live protocol-3
 registrations on the installed helper. Building a binary is not a live migration.
 
@@ -182,7 +183,9 @@ its durable exit receipt remains available. Settled activity projections disappe
 
 ## Upgrade contract
 
-This lifecycle requires a new coordinator protocol and a quiet initial cutover.
+The combined release uses coordinator protocol 5 and execution record format 1,
+with a quiet initial protocol-3 to protocol-5 cutover. The earlier detached-only
+protocol-4 candidate was unreleased.
 Protocol-3 observers must not interpret detached records as native terminals.
 Executor record-format compatibility is separate from coordinator protocol,
 upstream and CPU compatibility. A stable job format alone waives none of the

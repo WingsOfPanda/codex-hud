@@ -1,26 +1,30 @@
 # Detached-job fleet contract
 
-Development contract for `0.163.0-plus.0.4.0`; not an installation instruction or
+Combined detached-job/Ultracode contract for `0.163.0-plus.0.4.0`; not an installation instruction or
 claim that release archives are qualified. Fleet-config owns its installer and
 rollout. Use the release's qualification evidence before applying this contract.
 
 ## Identity and upgrade decision
 
 Both `codex-plus.json` and the release's `handoff.json` carry
-`coordinator_protocol: 4` and `execution_record_format: 1`. The latter describes
+`coordinator_protocol: 5` and `execution_record_format: 1`. The latter describes
 `codex-plus/executions/v1`, independently of the coordinator SQLite schema.
 `rollout.executions` is either `wait` or `continue`:
 
 | Change | Executions | Required conditions |
 | --- | --- | --- |
-| Initial protocol 3 → 4 | `wait` | Existing full quiet checkpoint; no unresolved executions |
+| Initial protocol 3 → 5 | `wait` | Existing full quiet checkpoint; no unresolved executions |
 | Higher Plus revision, same protocol, record format, upstream and target | `continue` only when qualified by that release | Maintenance admission quiet, owner-confirmed quiet for work outside the hold, retained executor packages, compatible observer reconnect |
 | Protocol, record format or upstream change | `wait` | All executions resolved, no armed execution watches/open callbacks, full quiet checkpoint |
 | Rollback | `wait` | Same strict quiet checks; a separately qualified rollback target |
 
 A field value alone grants no compatibility. In particular, an OpenAI bump
 waits; old-upstream observers are not qualified against a new daemon. Preserve
-all existing native-goal isolation and daemon-restart requirements.
+all existing native-goal isolation requirements. The detached-only protocol-4
+candidate was unreleased. This initial combined rollout sets
+`quiet_checkpoint: true`, `executions: wait`, `session_restart: required` and
+`daemon_restart: false`, retaining the stock 0.163.0 daemon. The companion release note records final archive qualification on each architecture;
+private feature tests alone are not archive acceptance.
 
 For a `continue` rollout, armed execution watches and their supervisors are
 expected. Do not require them to exit and do not merely ignore all execution
@@ -58,8 +62,8 @@ Executors use `codex-plus-runtime --package-root PACKAGE execution-executor
 supervisors may transfer only through the qualified compatible upgrade path.
 Do not delete a mismatched package while an execution still depends on it.
 
-Rollback to 0.3.2 after execution rows exist is **not qualified**. Retain the
-first qualified protocol-4 release as the rollback floor until a later release
+Rollback to 0.3.2 after execution or mode rows exist is **not qualified**. Retain the
+first qualified combined protocol-5 release as the rollback floor until a later release
 explicitly retires it. A settled row's backward compatibility must not be inferred
 from an additive SQLite migration or from format-1 compatibility alone.
 
@@ -142,7 +146,9 @@ managed detached launches there: AP workers finish their brief within the turn.
 The detached-job workflow is for interactive roots and their native workers;
 it is not a hostile-same-UID or universal shell-tool prohibition.
 
-Install the wrapper's `job` route before applying the new global instructions.
+Install the wrapper's `job` and `ultracode` routes before applying the new global
+instructions. Load the new TUI; legacy roots without Ultracode's startup bootstrap
+need a fresh qualified root, rather than merely resuming an older thread.
 `docs/detached-jobs.md` is included in the candidate package DOCS list; use its
 exact workflow block and preserve the current advisor/goal sections. No global
 file or installed package is changed by this source implementation.
