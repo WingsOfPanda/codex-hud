@@ -2386,7 +2386,7 @@ index 049849509..a60190597 100644
 +    Ok(())
  }
 diff --git a/codex-rs/tui/src/app/event_dispatch.rs b/codex-rs/tui/src/app/event_dispatch.rs
-index a7f7f1e82..e5531b274 100644
+index a7f7f1e82..01d12df06 100644
 --- a/codex-rs/tui/src/app/event_dispatch.rs
 +++ b/codex-rs/tui/src/app/event_dispatch.rs
 @@ -79,6 +79,7 @@ impl App {
@@ -2466,10 +2466,35 @@ index a7f7f1e82..e5531b274 100644
                              err.downcast_ref::<TypedRequestError>(),
                              Some(TypedRequestError::Server { method, .. })
                                  if method == "turn/start"
-@@ -1790,6 +1768,12 @@ impl App {
+@@ -1790,6 +1768,37 @@ impl App {
              AppEvent::RefreshStatusLineWorkspaceHeadline { request_id } => {
                  self.refresh_status_line_workspace_headline(app_server, request_id);
              }
++            AppEvent::PlusUltracodeCommand { thread_id, action } => {
++                if self.primary_thread_id != Some(thread_id) || app_server.uses_remote_workspace() {
++                    self.chat_widget.add_error_message(
++                        "Ultracode is available only in a local root session.".into(),
++                    );
++                } else {
++                    match crate::plus_ultracode::command(
++                        self.config.codex_home.as_path(),
++                        thread_id,
++                        &[action.as_str()],
++                    )
++                    .await
++                    {
++                        Ok(snapshot) => {
++                            self.chat_widget.add_info_message(
++                                "Plus Ultracode".into(),
++                                Some(snapshot.summary()),
++                            );
++                        }
++                        Err(error) => self.chat_widget.add_error_message(error),
++                    }
++                    self.chat_widget.refresh_status_line();
++                }
++                self.chat_widget.maybe_send_next_queued_input();
++            }
 +            AppEvent::PlusGoalCommand { thread_id, command } => {
 +                self.plus_goal_command(thread_id, command).await;
 +            }
@@ -2479,7 +2504,7 @@ index a7f7f1e82..e5531b274 100644
              AppEvent::OpenThreadGoalMenu { thread_id } => {
                  self.open_thread_goal_menu(app_server, thread_id).await;
              }
-@@ -3025,6 +3009,18 @@ impl App {
+@@ -3025,6 +3034,18 @@ impl App {
                      result,
                  );
              }
@@ -5348,10 +5373,10 @@ index c8d16dc9c..6cf52a01c 100644
                  self.handle_skills_list_result(
 diff --git a/codex-rs/tui/src/app/worker_hud.rs b/codex-rs/tui/src/app/worker_hud.rs
 new file mode 100644
-index 000000000..81261662b
+index 000000000..71da99ad6
 --- /dev/null
 +++ b/codex-rs/tui/src/app/worker_hud.rs
-@@ -0,0 +1,1866 @@
+@@ -0,0 +1,1867 @@
 +//! Per-client worker metadata refresh. These requests never start or steer a turn.
 +
 +use super::*;
@@ -5603,6 +5628,7 @@ index 000000000..81261662b
 +                crate::bottom_pane::GoalStatusIndicator::Plus(label)
 +            });
 +        self.chat_widget.set_plus_goal_indicator(goal_indicator);
++        self.chat_widget.refresh_ultracode_status();
 +        self.refresh_watcher_health(app_server.uses_remote_workspace());
 +        self.refresh_shell_hud(app_server);
 +        let Some(root) = self.primary_thread_id else {
@@ -7219,13 +7245,17 @@ index 000000000..81261662b
 +    }
 +}
 diff --git a/codex-rs/tui/src/app_event.rs b/codex-rs/tui/src/app_event.rs
-index a20193149..5ab17346c 100644
+index a20193149..8c9b3d455 100644
 --- a/codex-rs/tui/src/app_event.rs
 +++ b/codex-rs/tui/src/app_event.rs
-@@ -295,6 +295,16 @@ pub(crate) struct AgentPickerThreadRefresh {
+@@ -295,6 +295,20 @@ pub(crate) struct AgentPickerThreadRefresh {
  #[allow(clippy::large_enum_variant)]
  #[derive(Debug, IntoStaticStr)]
  pub(crate) enum AppEvent {
++    PlusUltracodeCommand {
++        thread_id: ThreadId,
++        action: crate::plus_ultracode::Action,
++    },
 +    PlusGoalCommand {
 +        thread_id: ThreadId,
 +        command: String,
@@ -7239,7 +7269,7 @@ index a20193149..5ab17346c 100644
      AccountEmailLoaded {
          request_id: uuid::Uuid,
          email: Option<String>,
-@@ -414,6 +424,24 @@ pub(crate) enum AppEvent {
+@@ -414,6 +428,24 @@ pub(crate) enum AppEvent {
          request_id: Uuid,
          result: Result<AgentPickerThreadRefresh, String>,
      },
@@ -7264,7 +7294,7 @@ index a20193149..5ab17346c 100644
      /// Switch the active thread to the selected agent.
      SelectAgentThread(ThreadId),
  
-@@ -1166,6 +1194,8 @@ pub(crate) enum AppEvent {
+@@ -1166,6 +1198,8 @@ pub(crate) enum AppEvent {
      FollowTranscript,
  
      InsertHistoryCell(Box<dyn HistoryCell>),
@@ -7274,10 +7304,10 @@ index a20193149..5ab17346c 100644
      TurnTipReady {
          thread_id: ThreadId,
 diff --git a/codex-rs/tui/src/app_server_session.rs b/codex-rs/tui/src/app_server_session.rs
-index 837fcb13c..aa36470b3 100644
+index 837fcb13c..84171b254 100644
 --- a/codex-rs/tui/src/app_server_session.rs
 +++ b/codex-rs/tui/src/app_server_session.rs
-@@ -895,6 +895,7 @@ impl AppServerSession {
+@@ -895,9 +895,11 @@ impl AppServerSession {
          if self.history_support == ThreadHistorySupport::LegacyOnly {
              params.history_mode = None;
          }
@@ -7285,7 +7315,19 @@ index 837fcb13c..aa36470b3 100644
          self.thread_tool_transport().validate_config(config)?;
          self.thread_tool_transport().configure(&mut params);
          let request_handle = self.request_handle();
-@@ -1037,6 +1038,7 @@ impl AppServerSession {
++        let ultracode_developer_instructions = params.developer_instructions.clone();
+         let (response, history_support, task_tools_available) =
+             request_thread_start_with_history_fallback(&request_handle, request_id, params)
+                 .await
+@@ -919,6 +921,7 @@ impl AppServerSession {
+             local_settings,
+             config,
+             self.thread_params_mode(),
++            ultracode_developer_instructions.as_deref(),
+         )
+         .await?;
+         if let Some(permissions) = selected_permissions {
+@@ -1037,6 +1040,7 @@ impl AppServerSession {
          permission_mode: ForkPermissionMode,
          config_source: ForkConfigSource,
      ) -> Result<AppServerStartedThread> {
@@ -7293,7 +7335,7 @@ index 837fcb13c..aa36470b3 100644
          self.thread_tool_transport().validate_config(&config)?;
          let fork_parent = match presentation {
              ForkPresentation::Regular => self
-@@ -1830,6 +1832,7 @@ pub(crate) async fn start_thread_with_request_handle(
+@@ -1830,19 +1834,26 @@ pub(crate) async fn start_thread_with_request_handle(
          remote_cwd_override.as_deref(),
          /*session_start_source*/ None,
      );
@@ -7301,7 +7343,29 @@ index 837fcb13c..aa36470b3 100644
      thread_tool_transport.validate_config(&config)?;
      launch_choices.configure(&mut params);
      params.daybreak_enabled = (config.daybreak_enabled && !config.ephemeral).then_some(true);
-@@ -2019,6 +2022,9 @@ fn config_request_overrides_from_config(
+     thread_tool_transport.configure(&mut params);
++    let ultracode_developer_instructions = params.developer_instructions.clone();
+     let (response, _history_support, task_tools_available) =
+         request_thread_start_with_history_fallback(&request_handle, request_id, params)
+             .await
+             .map_err(|err| {
+                 bootstrap_request_error("thread/start failed during TUI bootstrap", err)
+             })?;
+-    let mut started =
+-        started_thread_from_start_response(response, local_settings, &config, thread_params_mode)
+-            .await?;
++    let mut started = started_thread_from_start_response(
++        response,
++        local_settings,
++        &config,
++        thread_params_mode,
++        ultracode_developer_instructions.as_deref(),
++    )
++    .await?;
+     started.task_tools_available = task_tools_available;
+     Ok(started)
+ }
+@@ -2019,6 +2030,9 @@ fn config_request_overrides_from_config(
      if config.bypass_hook_trust {
          overrides.insert("bypass_hook_trust".to_string(), true.into());
      }
@@ -7311,7 +7375,7 @@ index 837fcb13c..aa36470b3 100644
      Some(overrides)
  }
  
-@@ -2193,6 +2199,10 @@ fn thread_resume_params_from_config(
+@@ -2193,6 +2207,10 @@ fn thread_resume_params_from_config(
      if model_settings == ResumeModelSettings::PreserveExistingThread {
          return ThreadResumeParams {
              thread_id: thread_id.to_string(),
@@ -7322,9 +7386,11 @@ index 837fcb13c..aa36470b3 100644
              ..ThreadResumeParams::default()
          };
      }
-@@ -2321,6 +2331,15 @@ async fn started_thread_from_start_response(
+@@ -2320,7 +2338,24 @@ async fn started_thread_from_start_response(
+     local_settings: &LocalSettings,
      config: &Config,
      thread_params_mode: ThreadParamsMode,
++    ultracode_developer_instructions: Option<&str>,
  ) -> Result<AppServerStartedThread> {
 +    if thread_params_mode == ThreadParamsMode::Embedded {
 +        crate::plus_goals::attest(
@@ -7334,11 +7400,18 @@ index 837fcb13c..aa36470b3 100644
 +            "fresh",
 +        )
 +        .await;
++        crate::plus_ultracode::attest(
++            config.codex_home.as_path(),
++            &response.thread.id,
++            "fresh",
++            ultracode_developer_instructions,
++        )
++        .await;
 +    }
      let blocks_direct_input = thread_blocks_direct_input(&response.thread);
      let session = thread_session_state_from_thread_start_response(
          &response,
-@@ -2365,6 +2384,15 @@ async fn started_thread_from_fork_response(
+@@ -2365,6 +2400,15 @@ async fn started_thread_from_fork_response(
      config: &Config,
      thread_params_mode: ThreadParamsMode,
  ) -> Result<AppServerStartedThread> {
@@ -7354,10 +7427,42 @@ index 837fcb13c..aa36470b3 100644
      let blocks_direct_input = thread_blocks_direct_input(&response.thread);
      let session = thread_session_state_from_thread_fork_response(
          &response,
-@@ -3677,6 +3705,46 @@ mod tests {
+@@ -3677,6 +3721,78 @@ mod tests {
          Ok(())
      }
  
++    #[tokio::test]
++    async fn ultracode_bootstrap_preserves_developer_policy_and_reasoning() {
++        let home = tempfile::tempdir().unwrap();
++        let mut config = build_config(&home).await;
++        config.developer_instructions = Some("Existing developer policy.".into());
++        let before_effort = config.model_reasoning_effort.clone();
++        for enabled in [false, true] {
++            if enabled {
++                let _ = config
++                    .features
++                    .enable(Feature::TerminalVisualizationInstructions);
++            } else {
++                let _ = config
++                    .features
++                    .disable(Feature::TerminalVisualizationInstructions);
++            }
++            let start =
++                thread_start_params_from_config(&config, ThreadParamsMode::Embedded, None, None);
++            let instructions = start.developer_instructions.unwrap();
++            assert!(instructions.starts_with("Existing developer policy."));
++            assert!(instructions.contains(crate::plus_goals::INSTRUCTIONS));
++            assert!(instructions.contains(crate::plus_ultracode::INSTRUCTIONS));
++            assert_eq!(
++                instructions.contains(
++                    crate::terminal_visualization_instructions::TERMINAL_VISUALIZATION_INSTRUCTIONS
++                ),
++                enabled
++            );
++            assert_eq!(config.model_reasoning_effort, before_effort);
++        }
++    }
++
 +    #[tokio::test]
 +    async fn plus_goal_loading_paths_disable_native_scheduler() {
 +        let home = tempfile::tempdir().unwrap();
@@ -7402,7 +7507,7 @@ index 837fcb13c..aa36470b3 100644
      async fn thread_resume_params_can_restore_persisted_model_settings() {
          let temp_dir = tempfile::tempdir().expect("tempdir");
 diff --git a/codex-rs/tui/src/app_server_session/rollout_history.rs b/codex-rs/tui/src/app_server_session/rollout_history.rs
-index cfe049959..ce54c5ae2 100644
+index cfe049959..f49923739 100644
 --- a/codex-rs/tui/src/app_server_session/rollout_history.rs
 +++ b/codex-rs/tui/src/app_server_session/rollout_history.rs
 @@ -155,6 +155,17 @@ impl AppServerSession {
@@ -7423,7 +7528,35 @@ index cfe049959..ce54c5ae2 100644
          self.thread_tool_transport().validate_config(&config)?;
          let session_config = if matches!(
              model_settings,
-@@ -236,6 +247,15 @@ impl AppServerSession {
+@@ -172,6 +183,27 @@ impl AppServerSession {
+             model_settings,
+             permission_overrides,
+         );
++        let ultracode_developer_instructions = if cold_plus_runtime {
++            match crate::plus_ultracode::load_instructions(config.codex_home.as_path(), thread_id)
++                .await
++            {
++                Ok(instructions) => instructions,
++                Err(error) => {
++                    crate::plus_ultracode::check_cold_load_fallback(
++                        config.codex_home.as_path(),
++                        thread_id,
++                    )
++                    .map_err(|reason| color_eyre::eyre::eyre!("{reason} Helper error: {error}"))?;
++                    tracing::debug!(%error, "Ultracode cold-load instructions unavailable");
++                    None
++                }
++            }
++        } else {
++            None
++        };
++        if let Some(instructions) = &ultracode_developer_instructions {
++            params.developer_instructions = Some(instructions.clone());
++        }
+         if model_settings == ResumeModelSettings::OverrideFromCurrentConfig {
+             params.model_provider = self.explicit_model_provider(&config);
+         }
+@@ -236,6 +268,22 @@ impl AppServerSession {
                  ));
              }
          };
@@ -7433,6 +7566,13 @@ index cfe049959..ce54c5ae2 100644
 +                &response.thread.id,
 +                response.cwd.as_path(),
 +                "cold-resume",
++            )
++            .await;
++            crate::plus_ultracode::attest(
++                config.codex_home.as_path(),
++                &response.thread.id,
++                "cold-resume",
++                ultracode_developer_instructions.as_deref(),
 +            )
 +            .await;
 +        }
@@ -11207,12 +11347,46 @@ index 000000000..94210ced0
 +    }
 +}
 diff --git a/codex-rs/tui/src/chatwidget/slash_dispatch.rs b/codex-rs/tui/src/chatwidget/slash_dispatch.rs
-index 5327f805c..c7ecc716b 100644
+index 5327f805c..6fed7ce63 100644
 --- a/codex-rs/tui/src/chatwidget/slash_dispatch.rs
 +++ b/codex-rs/tui/src/chatwidget/slash_dispatch.rs
-@@ -382,9 +382,6 @@ impl ChatWidget {
+@@ -41,6 +41,22 @@ const RAW_USAGE: &str = "Usage: /raw [on|off]";
+ const USAGE_CHATGPT_LOGIN_REQUIRED: &str = "Sign in with ChatGPT to use /usage.";
+ 
+ impl ChatWidget {
++    fn request_ultracode(&mut self, text: &str, source: SlashCommandDispatchSource) {
++        if source == SlashCommandDispatchSource::Live {
++            self.clear_live_goal_submission();
++        }
++        let Some(action) = crate::plus_ultracode::Action::parse(text) else {
++            self.add_error_message("Usage: /ultracode on|off|status".into());
++            return;
++        };
++        if let Some(thread_id) = self.thread_id {
++            self.app_event_tx
++                .send(AppEvent::PlusUltracodeCommand { thread_id, action });
++        } else {
++            self.add_error_message("Ultracode requires an active root session.".into());
++        }
++    }
++
+     /// Dispatch a bare slash command and record its staged local-history entry.
+     ///
+     /// The composer stages history before returning `InputResult::Command`; this wrapper commits
+@@ -48,7 +64,7 @@ impl ChatWidget {
+     /// rule as normal text.
+     pub(super) fn handle_slash_command_dispatch(&mut self, cmd: SlashCommand) {
+         self.dispatch_command(cmd);
+-        if cmd == SlashCommand::Goal {
++        if matches!(cmd, SlashCommand::Goal | SlashCommand::Ultracode) {
+             self.bottom_pane.drain_pending_submission_state();
+         }
+         self.bottom_pane.record_pending_slash_command_history();
+@@ -381,10 +397,8 @@ impl ChatWidget {
+             SlashCommand::Plan => {
                  self.apply_plan_slash_command();
              }
++            SlashCommand::Ultracode => self.request_ultracode("status", source),
              SlashCommand::Goal => {
 -                if !self.config.features.enabled(Feature::Goals) {
 -                    return;
@@ -11220,7 +11394,24 @@ index 5327f805c..c7ecc716b 100644
                  if let Some(thread_id) = self.thread_id {
                      self.app_event_tx
                          .send(AppEvent::OpenThreadGoalMenu { thread_id });
-@@ -966,16 +963,39 @@ impl ChatWidget {
+@@ -702,7 +716,7 @@ impl ChatWidget {
+             return;
+         }
+ 
+-        if cmd == SlashCommand::Goal {
++        if matches!(cmd, SlashCommand::Goal | SlashCommand::Ultracode) {
+             self.dispatch_prepared_command_with_args(
+                 cmd,
+                 PreparedSlashCommandArgs {
+@@ -829,6 +843,7 @@ impl ChatWidget {
+                     }
+                 }
+             }
++            SlashCommand::Ultracode => self.request_ultracode(trimmed, source),
+             SlashCommand::Voice => match trimmed.to_ascii_lowercase().as_str() {
+                 "settings" => self.app_event_tx.send(AppEvent::OpenRealtimeSettings),
+                 "mute" => self.app_event_tx.send(AppEvent::VoiceControl {
+@@ -966,16 +981,39 @@ impl ChatWidget {
                  }
              }
              SlashCommand::Goal if !trimmed.is_empty() => {
@@ -11265,7 +11456,7 @@ index 5327f805c..c7ecc716b 100644
                  let control_command = match trimmed.to_ascii_lowercase().as_str() {
                      "clear" => Some(GoalControlCommand::Clear),
                      "edit" => {
-@@ -1004,22 +1024,37 @@ impl ChatWidget {
+@@ -1004,22 +1042,37 @@ impl ChatWidget {
                          }
                          return;
                      };
@@ -11313,7 +11504,19 @@ index 5327f805c..c7ecc716b 100644
                  let draft = GoalDraft {
                      objective: args,
                      text_elements,
-@@ -1243,7 +1278,7 @@ impl ChatWidget {
+@@ -1221,6 +1274,11 @@ impl ChatWidget {
+                 source: SlashCommandDispatchSource::Queued,
+             },
+         );
++        if cmd == SlashCommand::Ultracode
++            && crate::plus_ultracode::Action::parse(trimmed_rest).is_none()
++        {
++            return QueueDrain::Continue;
++        }
+         self.queued_command_drain_result(cmd)
+     }
+ 
+@@ -1243,7 +1301,7 @@ impl ChatWidget {
              connectors_enabled: self.connectors_enabled(),
              plugins_command_enabled: self.config.features.enabled(Feature::Plugins),
              token_activity_command_enabled: self.has_codex_backend_auth,
@@ -11322,6 +11525,14 @@ index 5327f805c..c7ecc716b 100644
              service_tier_commands_enabled: !self.current_model_service_tier_commands().is_empty(),
              daybreak_command_description: self.daybreak_command_description(),
              voice_command_enabled: self.realtime_conversation_available_for_thread,
+@@ -1317,6 +1375,7 @@ impl ChatWidget {
+             | SlashCommand::Model
+             | SlashCommand::Plan
+             | SlashCommand::Goal
++            | SlashCommand::Ultracode
+             | SlashCommand::Side
+             | SlashCommand::Btw
+             | SlashCommand::Keymap
 diff --git a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__esc_interrupt_goal_paused_footer.snap b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__esc_interrupt_goal_paused_footer.snap
 deleted file mode 100644
 index d9aaa4e57..000000000
@@ -11376,6 +11587,43 @@ index 10e1d6409..4c1e4e202 100644
  "                                                                                "
 -"  GPT-5.5                                           Goal achieved (2d 23h 42m)  "
 +"  GPT-5.5                                                        Goal complete  "
+diff --git a/codex-rs/tui/src/chatwidget/status_surfaces.rs b/codex-rs/tui/src/chatwidget/status_surfaces.rs
+index a3946abd1..d6b8f8fc9 100644
+--- a/codex-rs/tui/src/chatwidget/status_surfaces.rs
++++ b/codex-rs/tui/src/chatwidget/status_surfaces.rs
+@@ -216,6 +216,9 @@ impl ChatWidget {
+             }
+         }
+ 
++        if let Some(label) = self.ultracode_status_label() {
++            segments.push((StatusLineItem::Status, label));
++        }
+         self.set_status_line(status_line_from_segments(
+             segments,
+             self.local_settings.tui.status_line_use_colors,
+@@ -293,6 +296,22 @@ impl ChatWidget {
+         }
+     }
+ 
++    fn ultracode_status_label(&self) -> Option<String> {
++        self.thread_id.and_then(|root| {
++            match crate::plus_ultracode::read(self.config.codex_home.as_path(), root) {
++                Ok(Some(snapshot)) => snapshot.label(),
++                Ok(None) => None,
++                Err(_) => Some("Ultracode unavailable".into()),
++            }
++        })
++    }
++
++    /// Reads local mode state without initiating model or app-server requests.
++    pub(crate) fn refresh_ultracode_status(&mut self) {
++        let selections = self.status_surface_selections();
++        self.refresh_status_line_from_selections(&selections);
++    }
++
+     /// Recomputes both status surfaces from one shared config snapshot.
+     ///
+     /// This is the common refresh entrypoint for the footer status line and the
 diff --git a/codex-rs/tui/src/chatwidget/tests.rs b/codex-rs/tui/src/chatwidget/tests.rs
 index 8534d753f..0df6d0931 100644
 --- a/codex-rs/tui/src/chatwidget/tests.rs
@@ -11983,7 +12231,7 @@ index 000000000..374da3b50
 +    }
 +}
 diff --git a/codex-rs/tui/src/chatwidget/tests/slash_commands.rs b/codex-rs/tui/src/chatwidget/tests/slash_commands.rs
-index f867a24d5..6f749b7c0 100644
+index f867a24d5..4084beb06 100644
 --- a/codex-rs/tui/src/chatwidget/tests/slash_commands.rs
 +++ b/codex-rs/tui/src/chatwidget/tests/slash_commands.rs
 @@ -4,6 +4,90 @@ use crate::bottom_pane::slash_commands::ServiceTierCommand;
@@ -12148,8 +12396,175 @@ index f867a24d5..6f749b7c0 100644
  }
  
  #[tokio::test]
+@@ -3880,3 +3953,136 @@ async fn owned_copy_guard_defers_queued_input_until_released() {
+         assert!(chat.input_queue.queued_user_messages.is_empty());
+     }
+ }
++
++#[tokio::test]
++async fn ultracode_controls_stay_local_and_preserve_effort_while_busy() {
++    let (mut chat, mut rx, mut op_rx) = make_chatwidget_manual(None).await;
++    let root = ThreadId::new();
++    chat.thread_id = Some(root);
++    let effort = chat.current_reasoning_effort();
++    let model = chat.current_model().to_string();
++    let mode = chat.active_mode_kind();
++    chat.on_task_started();
++    for (text, action) in [
++        ("/ultracode on", crate::plus_ultracode::Action::On),
++        ("/ultracode off", crate::plus_ultracode::Action::Off),
++        ("/ultracode status", crate::plus_ultracode::Action::Status),
++        ("/ultracode", crate::plus_ultracode::Action::Status),
++    ] {
++        submit_composer_text(&mut chat, text);
++        let actual = std::iter::from_fn(|| rx.try_recv().ok()).find_map(|event| {
++            if let AppEvent::PlusUltracodeCommand { thread_id, action } = event {
++                Some((thread_id, action))
++            } else {
++                None
++            }
++        });
++        assert_eq!(actual, Some((root, action)));
++        assert_eq!(chat.current_reasoning_effort(), effort);
++        assert_eq!(chat.current_model(), model);
++        assert_eq!(chat.active_mode_kind(), mode);
++        assert_no_submit_op(&mut op_rx);
++    }
++    submit_composer_text(&mut chat, "/ultracode on extra");
++    assert!(
++        !std::iter::from_fn(|| rx.try_recv().ok())
++            .any(|event| matches!(event, AppEvent::PlusUltracodeCommand { .. }))
++    );
++    assert_no_submit_op(&mut op_rx);
++}
++
++#[tokio::test]
++async fn ultracode_controls_are_unavailable_in_side_conversations() {
++    let (mut chat, mut rx, mut op_rx) = make_chatwidget_manual(None).await;
++    chat.thread_id = Some(ThreadId::new());
++    chat.active_side_conversation = true;
++    submit_composer_text(&mut chat, "/ultracode on");
++    assert!(
++        !std::iter::from_fn(|| rx.try_recv().ok())
++            .any(|event| matches!(event, AppEvent::PlusUltracodeCommand { .. }))
++    );
++    assert_no_submit_op(&mut op_rx);
++}
++
++#[tokio::test]
++async fn ultracode_queued_controls_preserve_newer_draft_metadata() {
++    let (mut chat, mut rx, mut op_rx) = make_chatwidget_manual(None).await;
++    let root = ThreadId::new();
++    chat.thread_id = Some(root);
++    let draft = "Keep this newer draft";
++    let remote = "https://example.com/current-draft.png".to_string();
++    let local = PathBuf::from("/tmp/current-draft.png");
++    chat.set_remote_image_urls(vec![remote.clone()]);
++    chat.bottom_pane
++        .set_composer_text(draft.into(), vec![], vec![local.clone()]);
++    for command in [
++        "/ultracode",
++        "/ultracode on",
++        "/ultracode off",
++        "/ultracode status",
++    ] {
++        assert_eq!(
++            chat.submit_queued_slash_prompt(UserMessage::from(command).into()),
++            QueueDrain::Stop,
++        );
++        assert!(
++            std::iter::from_fn(|| rx.try_recv().ok()).any(|event| matches!(
++                event, AppEvent::PlusUltracodeCommand { thread_id, .. } if thread_id == root
++            ))
++        );
++        assert_eq!(chat.bottom_pane.composer_text(), draft);
++        assert_eq!(chat.remote_image_urls(), vec![remote.clone()]);
++        assert_eq!(
++            chat.bottom_pane.composer_local_image_paths(),
++            vec![local.clone()]
++        );
++        assert_no_submit_op(&mut op_rx);
++    }
++}
++
++#[tokio::test]
++async fn ultracode_invalid_queued_control_does_not_strand_later_input_or_clear_draft() {
++    let (mut chat, mut rx, mut op_rx) = make_chatwidget_manual(None).await;
++    chat.thread_id = Some(ThreadId::new());
++    handle_turn_started(&mut chat, "turn-1");
++    queue_composer_text_with_tab(&mut chat, "/ultracode on extra");
++    queue_composer_text_with_tab(&mut chat, "An unrelated queued follow-up");
++    chat.bottom_pane
++        .set_composer_text("A newer draft".into(), vec![], vec![]);
++
++    complete_turn_with_message(&mut chat, "turn-1", Some("done"));
++
++    assert!(chat.input_queue.queued_user_messages.is_empty());
++    assert_eq!(chat.bottom_pane.composer_text(), "A newer draft");
++    match next_submit_op(&mut op_rx) {
++        Op::UserTurn { items, .. } => assert_eq!(
++            items,
++            vec![UserInput::Text {
++                text: "An unrelated queued follow-up".into(),
++                text_elements: vec![],
++            }]
++        ),
++        other => panic!("expected unrelated queued follow-up, got {other:?}"),
++    }
++    let events = std::iter::from_fn(|| rx.try_recv().ok()).collect::<Vec<_>>();
++    assert!(
++        !events
++            .iter()
++            .any(|event| matches!(event, AppEvent::PlusUltracodeCommand { .. }))
++    );
++    let cells = events
++        .into_iter()
++        .filter_map(|event| {
++            if let AppEvent::InsertHistoryCell(cell) = event {
++                Some(cell)
++            } else {
++                None
++            }
++        })
++        .collect::<Vec<_>>();
++    assert!(cells.iter().any(|cell| {
++        cell.display_lines(100)
++            .iter()
++            .any(|line| line.to_string().contains("Usage: /ultracode on|off|status"))
++    }));
++}
+diff --git a/codex-rs/tui/src/chatwidget/tests/snapshots/codex_tui__chatwidget__tests__slash_commands__ultrafast_command_allowed.snap b/codex-rs/tui/src/chatwidget/tests/snapshots/codex_tui__chatwidget__tests__slash_commands__ultrafast_command_allowed.snap
+index 6505ef3a2..b0d34b6cc 100644
+--- a/codex-rs/tui/src/chatwidget/tests/snapshots/codex_tui__chatwidget__tests__slash_commands__ultrafast_command_allowed.snap
++++ b/codex-rs/tui/src/chatwidget/tests/snapshots/codex_tui__chatwidget__tests__slash_commands__ultrafast_command_allowed.snap
+@@ -1,8 +1,9 @@
+ ---
+ source: tui/src/chatwidget/tests/slash_commands.rs
+-expression: "render_bottom_popup(&chat, 80)"
++expression: "normalize_snapshot_paths(render_bottom_popup(&chat, 80))"
+ ---
+ › /ultrafast  ultrafast processing
++  /ultracode  set Plus workflow mode: on, off, or status
+ 
+ › /ultra
+ 
+diff --git a/codex-rs/tui/src/chatwidget/tests/snapshots/codex_tui__chatwidget__tests__slash_commands__ultrafast_command_denied.snap b/codex-rs/tui/src/chatwidget/tests/snapshots/codex_tui__chatwidget__tests__slash_commands__ultrafast_command_denied.snap
+index 25210e0ac..08c79bad7 100644
+--- a/codex-rs/tui/src/chatwidget/tests/snapshots/codex_tui__chatwidget__tests__slash_commands__ultrafast_command_denied.snap
++++ b/codex-rs/tui/src/chatwidget/tests/snapshots/codex_tui__chatwidget__tests__slash_commands__ultrafast_command_denied.snap
+@@ -1,7 +1,9 @@
+ ---
+ source: tui/src/chatwidget/tests/slash_commands.rs
+-expression: "render_bottom_popup(&chat, 80)"
++expression: "normalize_snapshot_paths(render_bottom_popup(&chat, 80))"
+ ---
++› /ultracode  set Plus workflow mode: on, off, or status
++
+ › /ultra
+ 
+   GPT-5.5 default · /tmp/project
 diff --git a/codex-rs/tui/src/chatwidget/tests/status_and_layout.rs b/codex-rs/tui/src/chatwidget/tests/status_and_layout.rs
-index 301b55c2c..9533921f6 100644
+index 301b55c2c..1e518ee33 100644
 --- a/codex-rs/tui/src/chatwidget/tests/status_and_layout.rs
 +++ b/codex-rs/tui/src/chatwidget/tests/status_and_layout.rs
 @@ -2253,18 +2253,18 @@ async fn answer_phase_controls_working_status_snapshot() {
@@ -12304,6 +12719,68 @@ index 301b55c2c..9533921f6 100644
      );
      chat.turn_lifecycle
          .budget_limited_turn_ids
+@@ -5883,3 +5853,61 @@ async fn chatwidget_tall() {
+         normalize_snapshot_paths(term.backend().vt100().screen().contents())
+     );
+ }
++
++#[tokio::test]
++async fn ultracode_footer_reads_projection_without_adding_activity_rows() {
++    let (mut chat, mut rx, mut op_rx) = make_chatwidget_manual(None).await;
++    let home = tempfile::tempdir().unwrap();
++    chat.config.codex_home =
++        codex_utils_absolute_path::AbsolutePathBuf::from_absolute_path(home.path()).unwrap();
++    let root = ThreadId::new();
++    chat.thread_id = Some(root);
++    chat.show_welcome_banner = false;
++    chat.local_settings.tui.status_line = Some(vec!["model".into()]);
++    chat.set_plus_goal_indicator(Some(GoalStatusIndicator::Plus("Goal active".into())));
++    chat.refresh_status_line();
++    let height = chat.desired_height(100);
++    let directory = home.path().join("codex-plus/ultracode");
++    std::fs::create_dir_all(&directory).unwrap();
++    let path = directory.join(format!("{root}.json"));
++    let mut projection = serde_json::json!({
++        "version":1,"root":root,"requested":{"enabled":true,"revision":1,"policy_version":1},
++        "effective":{"enabled":true,"revision":1,"policy_version":1,"submission":"s","turn":"t","generation":"g"},
++        "availability":"available","pending":[]
++    });
++    for (availability, revision, expected) in [
++        ("available", 1, "Ultracode"),
++        ("available", 2, "Ultracode on pending"),
++        ("unavailable", 2, "Ultracode unavailable"),
++    ] {
++        projection["availability"] = availability.into();
++        projection["requested"]["revision"] = revision.into();
++        std::fs::write(&path, projection.to_string()).unwrap();
++        let before = std::fs::read(&path).unwrap();
++        chat.refresh_ultracode_status();
++        assert!(status_line_text(&chat).unwrap().contains(expected));
++        assert_eq!(std::fs::read(&path).unwrap(), before);
++        assert_eq!(chat.desired_height(100), height);
++        let mut terminal = Terminal::new(TestBackend::new(100, height)).unwrap();
++        terminal
++            .draw(|frame| chat.render(frame.area(), frame.buffer_mut()))
++            .unwrap();
++        let rendered = terminal
++            .backend()
++            .buffer()
++            .content()
++            .iter()
++            .map(|cell| cell.symbol())
++            .collect::<String>();
++        assert!(rendered.contains(expected), "{rendered:?}");
++        assert!(rendered.contains("Goal active"), "{rendered:?}");
++        assert_no_submit_op(&mut op_rx);
++        assert!(
++            !std::iter::from_fn(|| rx.try_recv().ok())
++                .any(|event| matches!(event, AppEvent::CodexOp(_)))
++        );
++    }
++    chat.local_settings.tui.status_line = Some(vec![]);
++    chat.refresh_ultracode_status();
++    assert!(chat.configured_status_line_items().is_empty());
++}
 diff --git a/codex-rs/tui/src/chatwidget/tests/terminal_title.rs b/codex-rs/tui/src/chatwidget/tests/terminal_title.rs
 index abf13c778..3f7487966 100644
 --- a/codex-rs/tui/src/chatwidget/tests/terminal_title.rs
@@ -13362,14 +13839,15 @@ index e32ccd918..fb9d7eed7 100644
          let bullet = if self.completed {
              "•".dim()
 diff --git a/codex-rs/tui/src/lib.rs b/codex-rs/tui/src/lib.rs
-index a3fb5447b..bfbccfea6 100644
+index a3fb5447b..b3ee0ef09 100644
 --- a/codex-rs/tui/src/lib.rs
 +++ b/codex-rs/tui/src/lib.rs
-@@ -166,6 +166,7 @@ mod inline_visualization;
+@@ -166,6 +166,8 @@ mod inline_visualization;
  pub(crate) mod insert_history;
  mod managed_worktree_tool_specs;
  mod managed_worktree_tools;
 +mod plus_goals;
++mod plus_ultracode;
  mod terminal_program_status;
  pub use insert_history::insert_history_lines;
  mod footer_hint;
@@ -13689,6 +14167,481 @@ index 000000000..557176b27
 +    }
 +    Ok(())
 +}
+diff --git a/codex-rs/tui/src/plus_ultracode.rs b/codex-rs/tui/src/plus_ultracode.rs
+new file mode 100644
+index 000000000..934ef151d
+--- /dev/null
++++ b/codex-rs/tui/src/plus_ultracode.rs
+@@ -0,0 +1,426 @@
++//! Mode state belongs to the helper; footer refresh only reads its projection.
++use codex_protocol::ThreadId;
++use serde::Deserialize;
++use serde_json::Value;
++use std::path::Path;
++
++pub(crate) const INSTRUCTIONS: &str = include_str!("plus_ultracode_instructions.txt");
++
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++pub(crate) enum Action {
++    On,
++    Off,
++    Status,
++}
++
++impl Action {
++    pub(crate) fn parse(text: &str) -> Option<Self> {
++        Some(match text.trim() {
++            "on" => Self::On,
++            "off" => Self::Off,
++            "status" | "" => Self::Status,
++            _ => return None,
++        })
++    }
++
++    pub(crate) fn as_str(self) -> &'static str {
++        match self {
++            Self::On => "on",
++            Self::Off => "off",
++            Self::Status => "status",
++        }
++    }
++}
++
++#[derive(Debug, Deserialize)]
++pub(crate) struct Snapshot {
++    version: u32,
++    root: String,
++    requested: Requested,
++    effective: Option<Effective>,
++    availability: Availability,
++    pending: Vec<Value>,
++    unavailable_reason: Option<String>,
++    #[serde(default)]
++    journal_directory: Option<String>,
++}
++
++#[derive(Debug, Deserialize)]
++struct Requested {
++    enabled: bool,
++    revision: u64,
++    policy_version: u32,
++}
++
++#[derive(Debug, Deserialize)]
++struct Effective {
++    enabled: bool,
++    revision: u64,
++    policy_version: u32,
++    submission: String,
++    turn: String,
++    generation: String,
++}
++
++#[derive(Debug, Deserialize, PartialEq, Eq)]
++#[serde(rename_all = "snake_case")]
++enum Availability {
++    Available,
++    Unavailable,
++}
++
++impl Snapshot {
++    fn validate(&self, root: ThreadId) -> Result<(), String> {
++        if self.version != 1 || self.root != root.to_string() {
++            return Err("Ultracode status ownership/version mismatch".into());
++        }
++        if self.effective.as_ref().is_some_and(|effective| {
++            effective.submission.is_empty()
++                || effective.turn.is_empty()
++                || effective.generation.is_empty()
++                || effective.policy_version != 1
++        }) || self.requested.policy_version != 1
++        {
++            return Err("Ultracode status has no qualified turn identity or policy".into());
++        }
++        Ok(())
++    }
++
++    pub(crate) fn label(&self) -> Option<String> {
++        if !self.requested.enabled
++            && self.pending.is_empty()
++            && !self
++                .effective
++                .as_ref()
++                .is_some_and(|effective| effective.enabled)
++        {
++            return None;
++        }
++        if self.availability == Availability::Unavailable {
++            return Some("Ultracode unavailable".into());
++        }
++        let pending = !self.pending.is_empty()
++            || self
++                .effective
++                .as_ref()
++                .map_or(self.requested.enabled, |effective| {
++                    effective.revision != self.requested.revision
++                        || effective.enabled != self.requested.enabled
++                });
++        if pending {
++            return Some(format!(
++                "Ultracode {} pending",
++                if self.requested.enabled { "on" } else { "off" }
++            ));
++        }
++        self.effective
++            .as_ref()
++            .is_some_and(|effective| effective.enabled)
++            .then(|| "Ultracode".into())
++    }
++
++    pub(crate) fn summary(&self) -> String {
++        let requested = if self.requested.enabled { "on" } else { "off" };
++        let mut text = format!(
++            "{}\nRequested: {requested}, revision {}.",
++            self.label().unwrap_or_else(|| "Ultracode off".into()),
++            self.requested.revision,
++        );
++        if let Some(effective) = &self.effective {
++            text.push_str(&format!(
++                "\nAdmitted turn: {} at revision {} (turn {}).",
++                if effective.enabled { "on" } else { "off" },
++                effective.revision,
++                effective.turn,
++            ));
++        } else {
++            text.push_str("\nNo admitted effective turn.");
++        }
++        if self.availability == Availability::Unavailable {
++            if let Some(reason) = &self.unavailable_reason {
++                text.push_str(&format!("\nUnavailable: {reason}"));
++            } else {
++                text.push_str(
++                    "\nThis session has no qualified startup bootstrap. Start a new Plus root session.",
++                );
++            }
++        }
++        if let Some(directory) = &self.journal_directory {
++            text.push_str(&format!("\nPhase artifacts: {directory}"));
++        }
++        text
++    }
++}
++
++pub(crate) fn read(home: &Path, root: ThreadId) -> Result<Option<Snapshot>, String> {
++    let path = home
++        .join("codex-plus/ultracode")
++        .join(format!("{root}.json"));
++    let bytes = match crate::app::worker_hud::read_status_bytes_with_limit(&path, 64 * 1024) {
++        Ok(Some(bytes)) => bytes,
++        Ok(None) => return Ok(None),
++        Err(error) => return Err(error.to_string()),
++    };
++    let snapshot: Snapshot = serde_json::from_slice(&bytes).map_err(|error| error.to_string())?;
++    snapshot.validate(root)?;
++    Ok(Some(snapshot))
++}
++
++pub(crate) fn check_cold_load_fallback(home: &Path, root: ThreadId) -> Result<(), String> {
++    if matches!(read(home, root), Ok(None)) {
++        return Ok(());
++    }
++    Err("Cannot safely resume this session: its saved Ultracode startup instructions could not be read. Check the local Codex Plus helper and retry this resume so the original developer instructions can be restored.".into())
++}
++
++pub(crate) async fn command(
++    home: &Path,
++    root: ThreadId,
++    args: &[&str],
++) -> Result<Snapshot, String> {
++    let bytes = helper_output(home, root, args, None).await?;
++    let snapshot: Snapshot = serde_json::from_slice(&bytes).map_err(|error| error.to_string())?;
++    snapshot.validate(root)?;
++    Ok(snapshot)
++}
++
++async fn helper_output(
++    home: &Path,
++    root: ThreadId,
++    args: &[&str],
++    instructions: Option<&str>,
++) -> Result<Vec<u8>, String> {
++    use tokio::io::AsyncWriteExt;
++
++    let helper = std::env::current_exe()
++        .map_err(|error| error.to_string())?
++        .with_file_name("codex-plus-runtime");
++    let mut command = tokio::process::Command::new(helper);
++    command
++        .arg("ultracode")
++        .args(args)
++        .arg("--thread")
++        .arg(root.to_string())
++        .arg("--json")
++        .env("CODEX_HOME", home)
++        .env_remove("CODEX_THREAD_ID")
++        .stdin(if instructions.is_some() {
++            std::process::Stdio::piped()
++        } else {
++            std::process::Stdio::null()
++        })
++        .stdout(std::process::Stdio::piped())
++        .stderr(std::process::Stdio::piped())
++        .kill_on_drop(true);
++    let result = tokio::time::timeout(std::time::Duration::from_secs(30), async {
++        let mut child = command.spawn()?;
++        if let Some(instructions) = instructions {
++            let mut stdin = child
++                .stdin
++                .take()
++                .expect("piped Ultracode provenance input");
++            stdin.write_all(instructions.as_bytes()).await?;
++        }
++        child.wait_with_output().await
++    })
++    .await
++    .map_err(|_| "Ultracode helper timed out".to_string())?
++    .map_err(|error| format!("Ultracode helper unavailable: {error}"))?;
++    if !result.status.success() {
++        let json = serde_json::from_slice::<Value>(&result.stdout).ok();
++        return Err(json
++            .as_ref()
++            .and_then(|value| value.get("error"))
++            .and_then(Value::as_str)
++            .map(str::to_owned)
++            .unwrap_or_else(|| {
++                format!(
++                    "Ultracode helper exited {}: {}",
++                    result.status,
++                    String::from_utf8_lossy(&result.stderr)
++                        .chars()
++                        .take(2048)
++                        .collect::<String>()
++                        .trim(),
++                )
++            }));
++    }
++    Ok(result.stdout)
++}
++
++pub(crate) async fn load_instructions(
++    home: &Path,
++    root: ThreadId,
++) -> Result<Option<String>, String> {
++    #[derive(Deserialize)]
++    struct Saved {
++        root: String,
++        developer_instructions: Option<String>,
++    }
++    let bytes = helper_output(home, root, &["load-instructions"], None).await?;
++    let saved: Saved = serde_json::from_slice(&bytes)
++        .map_err(|_| "Ultracode saved startup instructions unavailable".to_string())?;
++    if saved.root != root.to_string()
++        || saved
++            .developer_instructions
++            .as_ref()
++            .is_some_and(|text| text.len() > 1024 * 1024 || !text.contains(INSTRUCTIONS))
++    {
++        return Err("Ultracode saved startup instruction ownership/policy mismatch".into());
++    }
++    Ok(saved.developer_instructions)
++}
++
++pub(crate) async fn attest(home: &Path, root: &str, kind: &str, instructions: Option<&str>) {
++    let Ok(root) = ThreadId::from_string(root) else {
++        return;
++    };
++    let Some(instructions) =
++        instructions.filter(|text| text.len() <= 1024 * 1024 && text.contains(INSTRUCTIONS))
++    else {
++        return;
++    };
++    if let Err(error) = helper_output(
++        home,
++        root,
++        &[
++            "provenance",
++            "--load-kind",
++            kind,
++            "--developer-instructions-stdin",
++        ],
++        Some(instructions),
++    )
++    .await
++    {
++        tracing::debug!(%error, "Ultracode startup bootstrap not qualified");
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    fn snapshot(root: ThreadId) -> Value {
++        serde_json::json!({
++            "version": 1, "root": root,
++            "requested": {"enabled": false, "revision": 0, "policy_version": 1},
++            "effective": null, "availability": "available", "pending": [],
++        })
++    }
++
++    #[test]
++    fn ultracode_actions_do_not_parse_effort_or_extra_arguments() {
++        for (text, action) in [
++            ("on", Action::On),
++            ("off", Action::Off),
++            ("status", Action::Status),
++        ] {
++            assert_eq!(Action::parse(text), Some(action));
++            assert_eq!(action.as_str(), text);
++        }
++        for text in ["ultra", "high", "on extra", "enable"] {
++            assert_eq!(Action::parse(text), None);
++        }
++    }
++
++    #[test]
++    fn ultracode_labels_require_available_matching_effective_revision() {
++        let mut value = snapshot(ThreadId::new());
++        let label = |value: &Value| {
++            serde_json::from_value::<Snapshot>(value.clone())
++                .unwrap()
++                .label()
++        };
++        assert_eq!(label(&value), None);
++        value["requested"]["enabled"] = true.into();
++        value["requested"]["revision"] = 1.into();
++        assert_eq!(label(&value).as_deref(), Some("Ultracode on pending"));
++        value["effective"] = serde_json::json!({"enabled":true,"revision":1,"policy_version":1,"submission":"s","turn":"t","generation":"g"});
++        assert_eq!(label(&value).as_deref(), Some("Ultracode"));
++        value["requested"]["enabled"] = false.into();
++        value["requested"]["revision"] = 2.into();
++        assert_eq!(label(&value).as_deref(), Some("Ultracode off pending"));
++        value["availability"] = "unavailable".into();
++        assert_eq!(label(&value).as_deref(), Some("Ultracode unavailable"));
++        let summary = serde_json::from_value::<Snapshot>(value).unwrap().summary();
++        assert!(summary.contains("Admitted turn: on at revision 1"));
++        assert!(summary.contains("Start a new Plus root session"));
++    }
++
++    #[test]
++    fn ultracode_off_hides_an_unqualified_idle_root_but_status_explains_it() {
++        let mut value = snapshot(ThreadId::new());
++        value["availability"] = "unavailable".into();
++        value["unavailable_reason"] = "No qualified startup bootstrap".into();
++        let snapshot: Snapshot = serde_json::from_value(value.clone()).unwrap();
++        assert_eq!(snapshot.label(), None);
++        assert!(
++            snapshot
++                .summary()
++                .contains("No qualified startup bootstrap")
++        );
++        value["requested"]["enabled"] = true.into();
++        let snapshot: Snapshot = serde_json::from_value(value).unwrap();
++        assert_eq!(snapshot.label().as_deref(), Some("Ultracode unavailable"));
++    }
++
++    #[test]
++    fn ultracode_projection_is_read_only_and_rejects_untrusted_data() {
++        let home = tempfile::tempdir().unwrap();
++        let root = ThreadId::new();
++        assert!(read(home.path(), root).unwrap().is_none());
++        let directory = home.path().join("codex-plus/ultracode");
++        assert!(!directory.exists());
++        std::fs::create_dir_all(&directory).unwrap();
++        let path = directory.join(format!("{root}.json"));
++        let mut value = snapshot(root);
++        std::fs::write(&path, value.to_string()).unwrap();
++        let before = std::fs::read(&path).unwrap();
++        assert!(read(home.path(), root).unwrap().unwrap().label().is_none());
++        assert_eq!(std::fs::read(&path).unwrap(), before);
++        value["root"] = ThreadId::new().to_string().into();
++        std::fs::write(&path, value.to_string()).unwrap();
++        assert!(read(home.path(), root).is_err());
++        for bytes in [b"malformed".to_vec(), vec![b' '; 64 * 1024 + 1]] {
++            std::fs::write(&path, bytes).unwrap();
++            assert!(read(home.path(), root).is_err());
++        }
++    }
++
++    #[test]
++    fn ultracode_cold_load_fallback_requires_absence_of_root_mode_state() {
++        let home = tempfile::tempdir().unwrap();
++        let root = ThreadId::new();
++        assert!(check_cold_load_fallback(home.path(), root).is_ok());
++        let directory = home.path().join("codex-plus/ultracode");
++        std::fs::create_dir_all(&directory).unwrap();
++        let other_root = ThreadId::new();
++        std::fs::write(
++            directory.join(format!("{other_root}.json")),
++            snapshot(other_root).to_string(),
++        )
++        .unwrap();
++        assert!(check_cold_load_fallback(home.path(), root).is_ok());
++        let path = directory.join(format!("{root}.json"));
++        std::fs::write(&path, snapshot(root).to_string()).unwrap();
++        let error = check_cold_load_fallback(home.path(), root).unwrap_err();
++        assert!(error.contains("Cannot safely resume this session"));
++        assert!(error.contains("retry this resume"));
++        std::fs::write(path, "malformed").unwrap();
++        assert!(check_cold_load_fallback(home.path(), root).is_err());
++    }
++
++    #[cfg(unix)]
++    #[test]
++    fn ultracode_projection_rejects_symlinks() {
++        let home = tempfile::tempdir().unwrap();
++        let root = ThreadId::new();
++        let directory = home.path().join("codex-plus/ultracode");
++        std::fs::create_dir_all(&directory).unwrap();
++        let target = home.path().join("target");
++        std::fs::write(&target, snapshot(root).to_string()).unwrap();
++        std::os::unix::fs::symlink(target, directory.join(format!("{root}.json"))).unwrap();
++        assert!(read(home.path(), root).is_err());
++    }
++}
+diff --git a/codex-rs/tui/src/plus_ultracode_instructions.txt b/codex-rs/tui/src/plus_ultracode_instructions.txt
+new file mode 100644
+index 000000000..c9caa3226
+--- /dev/null
++++ b/codex-rs/tui/src/plus_ultracode_instructions.txt
+@@ -0,0 +1 @@
++Codex Plus Ultracode is a root-session workflow setting, independent of reasoning effort. At the start of every root turn and after compaction, read `codex-plus ultracode status --thread $CODEX_THREAD_ID --json`. Use only the effective snapshot bound to this exact admitted turn and daemon generation; requested or pending state does not activate the mode. When effective on, follow the complete policy returned by status. When off or unavailable, follow ordinary user and repository instructions. Native children follow their parent's bounded brief instead of calling this command. Mode changes apply to future unadmitted turns; steering keeps the current turn's snapshot. Existing goal checkpoints, report-only recovery and newer user direction retain priority. Ultracode never expands permission to publish, merge, install or change shared configuration.
+diff --git a/codex-rs/tui/src/slash_command.rs b/codex-rs/tui/src/slash_command.rs
+index afb372bb7..78fad6cd8 100644
+--- a/codex-rs/tui/src/slash_command.rs
++++ b/codex-rs/tui/src/slash_command.rs
+@@ -43,6 +43,7 @@ pub enum SlashCommand {
+     Plan,
+     Voice,
+     Goal,
++    Ultracode,
+     Agents,
+     Side,
+     Btw,
+@@ -139,6 +140,7 @@ impl SlashCommand {
+             SlashCommand::Plan => "switch to Plan mode",
+             SlashCommand::Voice => "start or stop voice; use /voice settings to choose a voice",
+             SlashCommand::Goal => "set or view the goal for a long-running task",
++            SlashCommand::Ultracode => "set Plus workflow mode: on, off, or status",
+             SlashCommand::Agents => "open the agent command center",
+             SlashCommand::MultiAgents => "switch between this session's subagents",
+             SlashCommand::Side | SlashCommand::Btw => {
+@@ -177,6 +179,7 @@ impl SlashCommand {
+                 | SlashCommand::Fork
+                 | SlashCommand::Plan
+                 | SlashCommand::Goal
++                | SlashCommand::Ultracode
+                 | SlashCommand::Voice
+                 | SlashCommand::Ide
+                 | SlashCommand::Keymap
+@@ -286,6 +289,7 @@ impl SlashCommand {
+             | SlashCommand::Stop
+             | SlashCommand::App
+             | SlashCommand::Goal
++            | SlashCommand::Ultracode
+             | SlashCommand::Voice
+             | SlashCommand::Mcp
+             | SlashCommand::Apps
 diff --git a/codex-rs/tui/src/snapshots/codex_tui__app__tests__replace_goal_confirmation.snap b/codex-rs/tui/src/snapshots/codex_tui__app__tests__replace_goal_confirmation.snap
 index 1aacd04c3..213e51a33 100644
 --- a/codex-rs/tui/src/snapshots/codex_tui__app__tests__replace_goal_confirmation.snap
@@ -13710,19 +14663,20 @@ index 1aacd04c3..213e51a33 100644
  
        enter select · esc back
 diff --git a/codex-rs/tui/src/terminal_visualization_instructions.rs b/codex-rs/tui/src/terminal_visualization_instructions.rs
-index eb59f2d15..6399f7977 100644
+index eb59f2d15..842173db0 100644
 --- a/codex-rs/tui/src/terminal_visualization_instructions.rs
 +++ b/codex-rs/tui/src/terminal_visualization_instructions.rs
-@@ -11,6 +11,13 @@ pub(crate) fn with_terminal_visualization_instructions(
+@@ -11,6 +11,14 @@ pub(crate) fn with_terminal_visualization_instructions(
      config: &Config,
      control_instructions: Option<String>,
  ) -> Option<String> {
 +    let control_instructions = Some(format!(
-+        "{}\n\n{}",
++        "{}\n\n{}\n\n{}",
 +        control_instructions
 +            .or_else(|| config.developer_instructions.clone())
 +            .unwrap_or_default(),
-+        crate::plus_goals::INSTRUCTIONS
++        crate::plus_goals::INSTRUCTIONS,
++        crate::plus_ultracode::INSTRUCTIONS
 +    ));
      if !config
          .features

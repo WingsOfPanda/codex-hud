@@ -14,7 +14,7 @@ use std::{
     process::Command,
 };
 
-pub const COORDINATOR_PROTOCOL: u64 = 4;
+pub const COORDINATOR_PROTOCOL: u64 = 5;
 pub const UPGRADE_EXIT: i32 = 75;
 const RUNTIME: &str = "bin/codex-plus-runtime";
 

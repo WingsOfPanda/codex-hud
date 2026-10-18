@@ -106,13 +106,13 @@ class PackageIntegrityTests(unittest.TestCase):
         return package_release.verify_package(self.package)
 
     def test_valid_package_and_declared_hash_recipe(self):
-        self.assertEqual(package_release.COORDINATOR_PROTOCOL, 4)
+        self.assertEqual(package_release.COORDINATOR_PROTOCOL, 5)
         self.assertEqual(package_release.EXECUTION_RECORD_FORMAT, 1)
         self.assertFalse((self.package / 'codex-resources/zsh').exists())
         self.assertEqual(self.verify()['tree_sha256'], self.manifest['tree_sha256'])
 
     def test_coordinator_protocol_must_be_explicit_and_supported(self):
-        for value in (None, True, 0, 1, 2, 3, '4'):
+        for value in (None, True, 0, 1, 2, 3, 4, '5'):
             with self.subTest(protocol=value):
                 self.manifest['coordinator_protocol'] = value
                 self.save_manifest()
@@ -127,6 +127,9 @@ class PackageIntegrityTests(unittest.TestCase):
         self.assertIn('docs/goals.md', package_release.DOCS)
         self.assertIn('docs/custom-goals.md', package_release.DOCS)
         self.assertIn('docs/detached-jobs.md', package_release.DOCS)
+        self.assertIn('docs/ultracode.md', package_release.DOCS)
+        self.assertIn('docs/ultracode-bootstrap.txt', package_release.SOURCE_FILES)
+        self.assertIn('docs/ultracode-policy.md', package_release.SOURCE_FILES)
         self.assertIn('docs/evidence/custom-goals.json', package_release.DOCS)
         (self.package / 'bin/codex-plus-runtime').unlink()
         self.seal()

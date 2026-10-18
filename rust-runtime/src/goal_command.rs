@@ -265,14 +265,15 @@ fn input_mutation(
     mut rpc: Option<&mut Client>,
 ) -> Result<Value> {
     if args.action == "input" {
-        return store.goal_input_submission(
-            parent,
-            args.submission_id
-                .as_deref()
-                .unwrap_or(&Uuid::new_v4().to_string()),
-            args.renew,
-            timestamp,
-        );
+        let submission = args
+            .submission_id
+            .clone()
+            .unwrap_or_else(|| Uuid::new_v4().to_string());
+        let result = store.goal_input_submission(parent, &submission, args.renew, timestamp)?;
+        if let Some(rpc) = rpc.as_mut() {
+            crate::ultracode_command::reserve_optional(store, parent, &submission, &rpc.generation);
+        }
+        return Ok(result);
     }
     let submission = args
         .submission_id
@@ -296,7 +297,19 @@ fn input_mutation(
             }
         }
     }
-    store.goal_input_settle(parent, submission, args.turn.as_deref(), outcome, timestamp)
+    let result =
+        store.goal_input_settle(parent, submission, args.turn.as_deref(), outcome, timestamp)?;
+    if let Some(rpc) = rpc.as_mut() {
+        crate::ultracode_command::input_optional(
+            store,
+            rpc,
+            parent,
+            submission,
+            args.turn.as_deref(),
+            outcome,
+        );
+    }
+    Ok(result)
 }
 
 fn execute(args: &Arguments, package_root: &Path) -> Result<Value> {
@@ -348,7 +361,17 @@ fn execute(args: &Arguments, package_root: &Path) -> Result<Value> {
     }
     // Embedded stock clients have no control socket; an inactive local ledger cannot schedule goals.
     if local_input_allowed(args, model_context, &store.goal_status(&parent)?) {
-        let result = input_mutation(args, &mut store, &parent, now(), None)?;
+        let mut mode_rpc = if store
+            .directory
+            .join("ultracode")
+            .join(format!("{parent}.json"))
+            .is_file()
+        {
+            client(&home).ok()
+        } else {
+            None
+        };
+        let result = input_mutation(args, &mut store, &parent, now(), mode_rpc.as_mut())?;
         store.publish(&parent)?;
         let mut snapshot = store.goal_status(&parent)?;
         snapshot["instructions"] = json!(instructions(&snapshot));

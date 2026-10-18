@@ -43,7 +43,7 @@ impl std::fmt::Display for HistoryLimitError {
 }
 impl std::error::Error for HistoryLimitError {}
 
-trait Calls {
+pub(crate) trait Calls {
     fn call(&mut self, method: &str, params: Value) -> Result<Value>;
 }
 impl Calls for Client {
@@ -107,7 +107,7 @@ fn scan_pages(
     Err(HistoryLimitError.into())
 }
 
-fn pages(client: &mut impl Calls, method: &str, params: Value) -> Result<Vec<Value>> {
+pub(crate) fn pages(client: &mut impl Calls, method: &str, params: Value) -> Result<Vec<Value>> {
     let mut rows = Vec::new();
     scan_pages(client, method, params, |row| {
         rows.push(row.clone());
@@ -875,7 +875,14 @@ impl<'a> Observer<'a> {
                     return Ok(());
                 }
                 let mut params = json!({"threadId":self.parent,"excludeTurns":true});
-                let _mutation_lock = if self.store.goal_provenance(self.parent, None)?.is_some() {
+                let mode_instructions = self
+                    .store
+                    .ultracode_load_instructions(self.parent)
+                    .ok()
+                    .flatten();
+                let _mutation_lock = if self.store.goal_provenance(self.parent, None)?.is_some()
+                    || mode_instructions.is_some()
+                {
                     Some(crate::goal_command::GoalLock::acquire(
                         &self.store.directory,
                         self.parent,
@@ -891,10 +898,25 @@ impl<'a> Observer<'a> {
                     )?;
                     params["config"] = json!({"features.goals":false});
                 }
+                if let Some(instructions) = &mode_instructions {
+                    params["developerInstructions"] = json!(instructions);
+                }
                 let Some(_admission) = self.admission()? else {
                     return Ok(());
                 };
                 self.call("thread/resume", params)?;
+                if mode_instructions.is_some() {
+                    if let Err(error) = self.store.ultracode_record_load(
+                        self.parent,
+                        &self.client.as_ref().unwrap().generation,
+                        "cold-resume",
+                        None,
+                    ) {
+                        eprintln!(
+                            "codex-plus: Ultracode cold-load qualification unavailable: {error:#}"
+                        );
+                    }
+                }
                 self.recovery_loaded = true;
             }
         }
@@ -1134,11 +1156,22 @@ impl<'a> Observer<'a> {
     }
 
     fn consumed(&mut self, callback: &Value) -> Result<bool> {
-        Ok(find_item(self, self.parent, None, |entry| {
+        let consumed = find_item(self, self.parent, None, |entry| {
             entry["item"]["type"] == "userMessage"
                 && entry["item"]["clientId"] == callback["client"]
-        })?
-        .is_some())
+        })?;
+        if let Some(entry) = &consumed {
+            let _lock = crate::goal_command::GoalLock::acquire(&self.store.directory, self.parent)?;
+            crate::ultracode_command::input_optional(
+                self.store,
+                self.client.as_mut().unwrap(),
+                self.parent,
+                text(callback, "client")?,
+                entry["turnId"].as_str(),
+                "accepted",
+            );
+        }
+        Ok(consumed.is_some())
     }
 
     fn reconcile(&mut self, callback: &Value, queue: &[Value]) -> Result<()> {
@@ -1242,6 +1275,8 @@ impl<'a> Observer<'a> {
                 return Ok(());
             }
             self.cancel_interrupted()?;
+            let _mutation_lock =
+                crate::goal_command::GoalLock::acquire(&self.store.directory, self.parent)?;
             let Some(_admission) = self.admission()? else {
                 return Ok(());
             };
@@ -1251,6 +1286,12 @@ impl<'a> Observer<'a> {
             else {
                 return Ok(());
             };
+            crate::ultracode_command::reserve_optional(
+                self.store,
+                self.parent,
+                text(&ready, "client")?,
+                &self.client.as_ref().unwrap().generation,
+            );
             let result = (|| -> Result<()> {
                 let mut params = json!({"threadId":self.parent,"clientUserMessageId":ready["client"],"input":[{"type":"text","text":ready["message"],"textElements":[]}]});
                 if self.native_queue() {
@@ -1271,6 +1312,14 @@ impl<'a> Observer<'a> {
             })();
             if let Err(error) = result {
                 self.store.dispatch_result(&ready, false, None, false)?;
+                crate::ultracode_command::input_optional(
+                    self.store,
+                    self.client.as_mut().unwrap(),
+                    self.parent,
+                    text(&ready, "client")?,
+                    None,
+                    "uncertain",
+                );
                 return Err(error);
             }
         }
@@ -1301,6 +1350,8 @@ impl<'a> Observer<'a> {
             return Ok(());
         }
         self.cancel_interrupted()?;
+        let _mutation_lock =
+            crate::goal_command::GoalLock::acquire(&self.store.directory, self.parent)?;
         let Some(_admission) = self.admission()? else {
             return Ok(());
         };
@@ -1312,10 +1363,19 @@ impl<'a> Observer<'a> {
             return Ok(());
         }
         let result = (|| -> Result<()> {
-            self.call(
+            let started = self.call(
                 "thread/queue/start",
                 json!({"threadId":self.parent,"queuedSubmissionId":pending["queue"]}),
             )?;
+            crate::ultracode_command::input_optional(
+                self.store,
+                self.client.as_mut().unwrap(),
+                self.parent,
+                text(&pending, "client")?,
+                started["turn"]["id"].as_str(),
+                "accepted",
+            );
+            drop(_mutation_lock);
             if flag(&pending, "idempotent") {
                 self.reconcile(&pending, &[])?;
             } else {
@@ -1325,6 +1385,16 @@ impl<'a> Observer<'a> {
         })();
         if let Err(error) = result {
             self.store.dispatch_result(&pending, true, None, false)?;
+            let _mode_lock =
+                crate::goal_command::GoalLock::acquire(&self.store.directory, self.parent)?;
+            crate::ultracode_command::input_optional(
+                self.store,
+                self.client.as_mut().unwrap(),
+                self.parent,
+                text(&pending, "client")?,
+                None,
+                "uncertain",
+            );
             return Err(error);
         }
         Ok(())
@@ -1361,6 +1431,16 @@ impl<'a> Observer<'a> {
                     turn,
                     now(),
                 )?;
+                let _lock =
+                    crate::goal_command::GoalLock::acquire(&self.store.directory, self.parent)?;
+                crate::ultracode_command::input_optional(
+                    self.store,
+                    self.client.as_mut().unwrap(),
+                    self.parent,
+                    text(&dispatch, "client")?,
+                    Some(turn),
+                    "accepted",
+                );
                 continue;
             }
             let consumed = find_item(self, self.parent, None, |entry| {
@@ -1375,6 +1455,16 @@ impl<'a> Observer<'a> {
                     turn,
                     now(),
                 )?;
+                let _lock =
+                    crate::goal_command::GoalLock::acquire(&self.store.directory, self.parent)?;
+                crate::ultracode_command::input_optional(
+                    self.store,
+                    self.client.as_mut().unwrap(),
+                    self.parent,
+                    text(&dispatch, "client")?,
+                    Some(turn),
+                    "accepted",
+                );
                 continue;
             }
             if dispatch["state"] == "starting" {
@@ -1486,6 +1576,16 @@ impl<'a> Observer<'a> {
                     text(&entry, "turnId")?,
                     now(),
                 )?;
+                let _lock =
+                    crate::goal_command::GoalLock::acquire(&self.store.directory, self.parent)?;
+                crate::ultracode_command::input_optional(
+                    self.store,
+                    self.client.as_mut().unwrap(),
+                    self.parent,
+                    text(dispatch, "client")?,
+                    entry["turnId"].as_str(),
+                    "accepted",
+                );
                 return Ok(true);
             }
         }
@@ -1621,7 +1721,28 @@ impl<'a> Observer<'a> {
             let Some(_admission) = self.admission()? else {
                 return Ok(());
             };
-            self.call("thread/resume",json!({"threadId":self.parent,"excludeTurns":true,"config":{"features.goals":false}}))?;
+            let mode_instructions = self
+                .store
+                .ultracode_load_instructions(self.parent)
+                .ok()
+                .flatten();
+            let mut params = json!({"threadId":self.parent,"excludeTurns":true,"config":{"features.goals":false}});
+            if let Some(instructions) = &mode_instructions {
+                params["developerInstructions"] = json!(instructions);
+            }
+            self.call("thread/resume", params)?;
+            if mode_instructions.is_some() {
+                if let Err(error) = self.store.ultracode_record_load(
+                    self.parent,
+                    &self.client.as_ref().unwrap().generation,
+                    "cold-resume",
+                    None,
+                ) {
+                    eprintln!(
+                        "codex-plus: Ultracode cold-load qualification unavailable: {error:#}"
+                    );
+                }
+            }
             return Ok(());
         }
         if meta["thread"]["status"]["type"] != "idle" {
@@ -1698,6 +1819,12 @@ impl<'a> Observer<'a> {
             let Some(claimed) = self.store.goal_claim_dispatch(text(&ready, "id")?)? else {
                 return Ok(());
             };
+            crate::ultracode_command::reserve_optional(
+                self.store,
+                self.parent,
+                text(&claimed, "client")?,
+                &self.client.as_ref().unwrap().generation,
+            );
             let result=self.call("thread/queue/add",json!({"threadId":self.parent,"clientUserMessageId":claimed["client"],"input":[{"type":"text","text":claimed["message"],"textElements":[]}]}));
             match result {
                 Ok(result)
@@ -1715,6 +1842,14 @@ impl<'a> Observer<'a> {
                 }
                 result => {
                     self.store.goal_dispatch_result(text(&claimed,"id")?,"uncertain",None,None,Some("Queue/add may have admitted work; reconcile before further continuation."),now())?;
+                    crate::ultracode_command::input_optional(
+                        self.store,
+                        self.client.as_mut().unwrap(),
+                        self.parent,
+                        text(&claimed, "client")?,
+                        None,
+                        "uncertain",
+                    );
                     if let Err(error) = result {
                         return Err(error);
                     } else {
@@ -1781,6 +1916,14 @@ impl<'a> Observer<'a> {
                     turn,
                     now(),
                 )?;
+                crate::ultracode_command::input_optional(
+                    self.store,
+                    self.client.as_mut().unwrap(),
+                    self.parent,
+                    text(&pending, "client")?,
+                    Some(turn),
+                    "accepted",
+                );
             }
             Err(error) => {
                 drop(_mutation_lock);
@@ -1795,6 +1938,16 @@ impl<'a> Observer<'a> {
                     Some("Queue/start outcome unknown; no blind retry."),
                     now(),
                 )?;
+                let _mode_lock =
+                    crate::goal_command::GoalLock::acquire(&self.store.directory, self.parent)?;
+                crate::ultracode_command::input_optional(
+                    self.store,
+                    self.client.as_mut().unwrap(),
+                    self.parent,
+                    text(&pending, "client")?,
+                    None,
+                    "uncertain",
+                );
                 return Err(error);
             }
         }

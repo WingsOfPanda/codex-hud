@@ -32,7 +32,7 @@ UPSTREAM_COMMIT = '83086188ae0614bd882818ff1aa23f3194962012'
 UPSTREAM_VERSION = '0.163.0'
 PLUS_VERSION = '0.4.0'
 RELEASE = f'{UPSTREAM_VERSION}-plus.{PLUS_VERSION}'
-COORDINATOR_PROTOCOL = 4
+COORDINATOR_PROTOCOL = 5
 EXECUTION_RECORD_FORMAT = 1
 PATCH = 'patches/codex-0.163.0-worker-hud.patch'
 TARGETS = {'x86_64-unknown-linux-gnu': 62, 'aarch64-unknown-linux-gnu': 183}
@@ -45,7 +45,9 @@ DOCS = ('README.md', 'GLOSSARY.md', 'docs/background-work.md',
         'docs/custom-goals.md', 'docs/evidence/custom-goals.json',
         'docs/detached-jobs.md', 'docs/detached-jobs-fleet.md',
         'docs/evidence/parallel-tool-rows.json', 'docs/evidence/detached-jobs.json',
-        'docs/evidence/shell-topics.json')
+        'docs/evidence/shell-topics.json', 'docs/ultracode.md',
+        'docs/ultracode-bootstrap.txt', 'docs/ultracode-policy.md',
+        'docs/evidence/ultracode.json')
 
 
 def runtime_source_files(root):

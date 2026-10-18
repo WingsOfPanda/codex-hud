@@ -260,9 +260,37 @@ bundled zsh is no longer a package resource. Run coordinator lifecycle and
 affected isolated integration gates from [background verification](background-work.md#verification)
 against an official 0.163.0 daemon in private homes with loopback providers.
 
+When reusing a Cargo target cache across upstream checkouts, set
+`INSTA_WORKSPACE_ROOT` to the current checkout's `codex-rs` directory. Otherwise
+Insta can resolve snapshots against a previously cached workspace; review snapshot
+updates in the intended source tree before regenerating the frontend patch.
+
 The companion release note and evidence record the checks actually run and any
 remaining limits. The 0.162.1 results below are historical and do not qualify
 the 0.163.0 port.
+
+### Ultracode
+
+Run `cargo +1.99.1 test --locked --manifest-path rust-runtime/Cargo.toml --lib`
+for state/admission invariants. In the patched upstream checkout, use the TUI
+filters `ultracode`, `worker_hud`, `plus_goal`, `slash_commands`, and `status_line`.
+Run these private Python fixtures from the repository root:
+
+- `tests/test_ultracode_bootstrap.py --binary OFFICIAL --evidence DIRECTORY`,
+  for each combination of `--remote` and `--pressure`: complete startup text,
+  compaction, cold load and the negative control without restored instructions.
+- `tests/test_ultracode_admission.py --binary OFFICIAL --runtime RUNTIME --evidence DIRECTORY`:
+  turn binding, lost ACK, steering, both observer callback paths and cold recovery.
+- `tests/test_ultracode_tui.py --binary PATCHED --evidence DIRECTORY`: actual
+  PTY controls and layout with explicitly identified helper/server stubs.
+- `tests/test_ultracode_contracts.py`: scripted harness checks; its `prepare`,
+  `accept`, `integrate` and `finish` commands run the separate real-worker trials.
+
+Also run the ordinary native smoke, park, goal, lifecycle, execution and upgrade
+regressions. Upgrade timing tests use a stripped helper, matching package shape;
+an unstripped debug ELF may spend the timeout hashing debug data. Preserve the
+original executable for diagnostics. See [recorded evidence](evidence/ultracode.json)
+for the qualified paths and remaining release limits.
 
 ### Hidden navigation hints for Plus 0.3
 

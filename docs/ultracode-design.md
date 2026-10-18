@@ -1,7 +1,9 @@
 # Plus Ultracode: proposed design and staged plan
 
-Status: design only, 2026-10-18. No implementation, configuration change, build,
-release, merge, installation or rollout is approved by this document.
+Status: implementation authorized, 2026-10-18, following Astra review. The user
+authorized design corrections, implementation and private builds/tests. Publication,
+merge, installation, fleet settings/pins and shared-daemon changes retain their
+separate gates. This document records the intended contract, not completed tests.
 
 Source baseline: Codex Plus `9a7474a` on `feat/detached-jobs`, pinned OpenAI
 0.163.0 (`83086188ae0614bd882818ff1aa23f3194962012`). The installed helper is still
@@ -19,10 +21,11 @@ Keep the official stock daemon and its permission boundaries.
 
 The MVP is useful only if mode instructions survive compaction and reach both
 ordinary turns and completion wakes. Make that a feasibility gate before UI or
-orchestration implementation. Source inspection found a supported injection
-interface, but also found that stock defaults can discard injected developer
-messages during remote compaction. A toggle backed only by a local boolean would
-not meet the requirement.
+orchestration implementation. Prefer a fixed startup developer bootstrap which
+reads a turn-bound snapshot from the helper. Existing Plus goal instructions use
+this startup path. Stock compaction rebuilds session developer instructions;
+private probes must confirm the complete bootstrap survives. An injected toggle
+message alone is insufficient, including with client-message retention enabled.
 
 ## User-facing contract
 
@@ -70,7 +73,9 @@ its identity, input-priority and report-only barriers remain authoritative.
 | Parent permissions/cwd are reapplied after role configuration. | A native explorer/reviewer role is not an enforced read-only sandbox under a writable parent. |
 | Ordinary `park --worker` watches direct children and exact turns for at most 24 hours. | Batch registration is usable, but it is neither indefinite monitoring nor a final-only phase barrier. |
 | Native child completion does not itself wake an idle parent. | Keep the Plus completion observer; do not replace it with repeated model status checks. |
-| Root `thread/inject_items` accepts trusted client items without starting a model turn. | Preferred stock interface for an additive mode instruction, subject to persistence and race qualification. |
+| Root `thread/inject_items` accepts trusted client items without starting a model turn. | An ACK establishes recording/queuing, not the effective mode of a turn; retained items share an eviction budget. |
+| Session developer instructions are reconstructed during compaction; Plus already appends its goal bootstrap there. | Qualify an additive fixed bootstrap first, preserving existing instructions. |
+| Role configuration is applied after requested spawn model/effort, including a configured default role. | Qualify a role compatible with the brief and record actual effective model/effort. |
 | Loaded/busy/subscribed `thread/resume` ignores instruction/config replacement; standalone settings updates can supersede continuation. | Do not implement toggles by pretending resume reconfigures a live root or by replacing collaboration instructions. |
 
 ## Small implementation shape
@@ -87,44 +92,57 @@ state/evidence. It is mode state, not a queue of commands. Unknown acknowledgeme
 or a mismatched revision must not be displayed as confirmed activation. Do not
 blindly replay an older on-request after a newer off-request.
 
-### Instruction delivery: unresolved feasibility gate
+### Instruction delivery and admitted-turn identity
 
-Prefer an additive developer item through stock `thread/inject_items`. It records
-immediately when idle and queues during active work. Reconcile mode before
-supported user-turn and observer-wake admissions, without creating a turn just to
-announce the toggle. Use a Plus-specific marker, not a spoofed native harness tag.
-Keep newer user direction and all existing goal/input/cancellation fences.
-For a busy-session toggle, store intent and defer synchronization to a safe
-next-turn admission. Queuing an injection into an active turn is not equivalent
-to next-turn activation. If that ordering cannot be established, remain pending.
+Qualify a fixed, root-scoped startup developer bootstrap first. It directs the
+root to read the authoritative Ultracode snapshot at each turn and after
+compaction. Preserve existing developer instructions. The returned snapshot
+contains the complete policy for its frozen revision, rather than relying on an
+old on/off message. Fresh and genuinely cold-resumed roots must establish loading
+provenance. A loaded/subscribed root cannot acquire new startup instructions by
+calling `thread/resume`; unsupported roots remain unavailable until a qualified
+fresh/cold load. No automatic daemon restart or forced eviction.
+
+Keep requested mode/revision separate from the effective snapshot. Freeze the
+snapshot at a supported Plus submission admission, identified by root, submission
+ID and daemon generation; bind the actual turn only with positive evidence.
+Mode requests and admissions share serialization. An already admitted submission
+keeps its snapshot even if queued; a change applies to the next unadmitted turn.
+Steering and mid-turn compaction preserve the current turn's snapshot. Lost ACKs
+remain unresolved until evidence identifies the outcome; they never authorize
+blind replay or an activation claim. Existing goal input, cancellation, maintenance
+and report-only fences retain precedence.
+
+The supported admissions are the Plus TUI and Plus observer. External clients
+which bypass those paths do not gain an automatic effective-mode guarantee.
+Status must distinguish unavailable, requested/pending and admitted effective
+state. Toggle/display/status reads do not initiate provider requests.
 
 Native child policy travels in the root's self-contained spawn/followup brief.
-Direct app-server injection/settings changes to V2 children are rejected. Do not
-use `subagent_developer_instructions` as a shortcut: it replaces inherited
-instructions. The brief includes leaf ownership, workspace, model, effort,
-contract, reporting and long-job handoff rules.
+Direct app-server injection/settings changes to V2 children are rejected. The
+brief includes leaf ownership, workspace, model, effort, contract, reporting and
+long-job handoff rules. A qualified role must preserve requested model/effort;
+capture the child's actual settings as acceptance evidence. Neither the role nor
+the brief enforces a separate sandbox or native V2 depth limit.
 
-Two alternatives were examined, not selected as the default:
+Other interfaces are fallback experiments, not MVP dependencies:
 
-- `turn/start.additionalContext` with `kind: application` is additive developer
-  context, but emits only changed values and replaces the complete context map.
-  It must preserve unrelated keys and cannot be assumed to solve compaction.
-- `multi_agent_mode_hint_text` can separate delegation policy from effort in
-  static configuration, but is shared with children, capped at 400 tokens, and
-  cannot reliably reconfigure an already loaded root. It cannot hold the full
-  acceptance procedure or be treated as a live per-thread toggle.
+- `thread/inject_items` can queue into active work and its ACK is not an effective
+  turn receipt. `retain_client_developer_messages` is off by default and shares
+  a 64,000-token newest-first retention budget; older items may be dropped or
+  truncated. Local compaction has a different reconstruction path. Enabling the
+  flag alone cannot establish durable policy.
+- `turn/start.additionalContext` emits only changed values and replaces the whole
+  context map; it must preserve unrelated keys and does not alone prove compaction
+  persistence.
+- `multi_agent_mode_hint_text` is capped at 400 tokens, shared with children and
+  cannot reliably reconfigure a loaded root. It is not the full phase procedure.
 
-Stock `retain_client_developer_messages` is under development and defaults false.
-A possible route is qualifying that existing feature for client-authored mode
-items. If a fleet setting or daemon restart is necessary, it is an explicit future
-rollout change requiring the user's go; no daemon source patch is proposed.
-Test existing versus newly loaded roots and actual retained provenance, not only
-`config/read`. Reinjection on each new turn alone does not prove preservation
-through a compaction in the middle of a turn.
-
-If no supported, qualified route preserves the effective mode, stop this stage
-and report the blocker. Do not ship a forgetful on-indicator, silently tie the
-feature to Ultra, force a user session reload, or broaden permissions as a fallback.
+The feasibility gate covers manual, automatic mid-turn, repeated and budget-pressure
+compaction on each advertised provider path; fresh, loaded and cold-resumed roots;
+daemon restart; on/off ordering; steering versus new turns; user and observer
+admissions; and lost acknowledgements. Unsupported paths remain unavailable.
+If the fixed bootstrap fails, report the concrete gap before choosing a fallback.
 
 ## Phase procedure
 
@@ -259,8 +277,9 @@ blindly. A stuck connection may require explicit operator interruption.
 
 Ordinary worker watches have a 24-hour bound. MVP phases should be bounded work,
 not overnight native-agent supervision. Surface expiry/uncertain monitoring and
-keep the journal for recovery; prove the actual expiry reporting path in phase 0
-rather than promising an unconditional wake. Local attention timers and final-only
+keep the journal for recovery. Ordinary expiry publishes local attention, not a
+guaranteed model wake, and the same expired job cannot simply be rearmed. Recovery
+requires exact-turn reconciliation and status inspection or renewed interaction. Local attention timers and final-only
 fan-in are possible follow-ons; model polling is not the fallback.
 
 Native roles cannot enforce read-only permissions under a writable parent. For
@@ -274,16 +293,16 @@ not a TUI-only spawn parameter the stock daemon does not understand.
 
 ## Staged plan and acceptance gates
 
-| Stage | Work after the user's implementation go | Exit evidence |
+| Stage | Authorized work | Exit evidence |
 | --- | --- | --- |
-| 0: stock feasibility | Private official0.163 loopback probes for idle/busy instruction injection, compaction retention, on/off revision ordering, resume, observer wakes, existing collaboration/permission/goal preservation, cap/expiry/error behavior. | Exact supported delivery mechanism, effective-state semantics and any required retention setting. Compaction or wake gaps block implementation claims. No production configuration change. |
+| 0: stock feasibility | Private official0.163 loopback probes for fixed startup bootstrap, all supported compaction paths, admitted-turn revisions, steer/new-turn ordering, fresh/cold/loaded resume, observer wakes, role precedence, permissions/goals and cap/expiry/error behavior. | Complete bootstrap/policy persistence and exact effective-turn receipts; no retention setting assumed. Compaction or wake gaps block implementation claims. No production configuration change. |
 | 1: mode only | Native per-thread control and existing-status-line indicator; one state/policy module shared by TUI and observer; no workflow engine. | On/off does not change effort, permissions or goal state; no model call merely for toggle/display; roots isolated; pending/failed synchronization visible; new and resumed roots qualified. |
 | 2: phased procedure | Self-contained leaf briefs, explicit workspaces, contract/baseline records, root acceptance and integration; existing event-driven park. | Honest worker; altered assertion rejected; ignored autouse-conftest detected; two parallel pieces then dependent piece; dirty baseline; unauthorized paths; no lost/skipped checks; no default-branch change. Use Codex workers, not only the prior Claude dry runs. |
 | 3: lifecycle integration | Connect qualified detached jobs, preserve worktree/job pins, input priority and goal checkpoints; qualify reconstruction without replay. | Before/after long-job handoff; unexpected overrun not killed; full capacity then completion; failure/usage-limit result; off with work in flight; restart and uncertain delivery; final-result verification remains pending until real evidence. |
-| 4: release candidate | Root review, both architectures, complete package/launcher/global-policy checks and the three-row/AP readiness checks. | Immutable artifacts and explicit handoff requirements. Build, publish, merge and fleet rollout retain their separate user gates. No automatic version/pin bump. |
+| 4: release candidate | Root review, both architectures, complete package/launcher/global-policy checks and the three-row/AP readiness checks. | Immutable artifacts and explicit handoff requirements. Private builds are authorized; publish, merge and fleet rollout retain their separate user gates. No automatic version/pin bump. |
 
-Design/research can proceed now. Those behavioral probes, implementation and
-release work are proposed stages, not actions taken by this brief. Assess any
+Behavioral probes, implementation and private qualification are authorized.
+Record fresh evidence as each gate passes; authorization is not test evidence. Assess any
 coordinator protocol change from altered admission semantics even if SQLite is
 unchanged; never infer live-upgrade safety from a matching job record format.
 
@@ -346,7 +365,10 @@ Source paths below refer to pinned OpenAI0.163.0, not unverified newer main:
 Plus behavior and qualification are in [background work](background-work.md),
 [detached jobs](detached-jobs.md), [fleet contract](detached-jobs-fleet.md),
 [advisor](advisor.md), and [source evidence](evidence/detached-jobs.json).
-No ultracode behavior, API mutation, compaction probe, denied-write trial, new
-model dry run, build or rollout was performed for this design. The two source
-readers were read-only; existing private qualification is not qualification of
-this proposed mode.
+The initial design used read-only source analysis. Astra subsequently reviewed
+it (local evidence: `.build/ultracode/review/result.json`, verdict `revise`). This
+revision incorporates retention-budget, admitted-turn, role-precedence, bootstrap
+and expiry findings. Private implementation evidence is recorded separately in
+[Ultracode qualification](evidence/ultracode.json). That evidence distinguishes
+stock-daemon fixtures, native terminal tests and genuine worker trials. ARM release
+builds, publication, installation and rollout are not established by these checks.

@@ -12,7 +12,9 @@ pub mod maintenance;
 pub mod python_text;
 pub mod rpc;
 pub mod runner;
+pub mod ultracode;
+pub mod ultracode_command;
 pub mod upgrade;
 
-pub const COORDINATOR_PROTOCOL: u64 = 4;
+pub const COORDINATOR_PROTOCOL: u64 = 5;
 pub const UPGRADE_EXIT: i32 = 75;

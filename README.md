@@ -13,6 +13,10 @@ It retains [Plus-owned goals](docs/goals.md) and genuine Idle waiting.
 This checkout is not a fleet installation; fleet-config owns the quiet initial
 protocol transition and later qualified upgrades.
 
+The `feat/ultracode` implementation adds a separate, default-off
+[Ultracode mode](docs/ultracode.md) for root-led worker phases. It is under private
+qualification and is not installed on the fleet.
+
 The patch targets **Codex 0.163.0**, upstream commit
 `83086188ae0614bd882818ff1aa23f3194962012`.
 
