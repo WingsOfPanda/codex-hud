@@ -108,9 +108,11 @@ and account for those consumers; do not kill them by blanket process matching.
 
 ## Q6 — Retention
 
-`0.163.0-plus.0.3.1` is the intended minimum rollback package. The release must
-verify its behavior on a quiet, goal-populated ledger before claiming that
-rollback qualified. Keep native goals disabled and Plus goals inert on rollback.
+`0.163.0-plus.0.3.1` is the qualified minimum rollback package. Both native
+architectures passed an actual quiet rollback on a goal-populated private ledger:
+goal tables and settled callback markers remained unchanged, with no additional
+model requests. Keep native goals disabled and Plus goals inert on rollback.
+This does not qualify a live downgrade or unresolved-dispatch rollback.
 
 Python 0.2.0 is **not a supported goal-ledger rollback target**: its protocol-1
 helper and pre-goal lifecycle have not been qualified against protocol-3 goal
