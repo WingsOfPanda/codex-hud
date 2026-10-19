@@ -101,7 +101,7 @@ def footer_rows(terminal):
 
 
 def item_colors(terminal, rows, branch=False):
-    labels = ['gpt-6-astra high ultracode', 'workspace', 'Main [default]',
+    labels = ['gpt-6-astra high ultracode on', 'workspace', 'Main [default]',
               'Context 75% left', 'weekly 45% left', 'resets in 5d 20h']
     if branch:
         labels.append('main')
@@ -138,7 +138,7 @@ def run_case(binary, directory, evidence, name):
                            'weekly-limit', 'weekly-reset'], 'stats-only': STATS,
                  'identity-only': ['model-with-reasoning', 'current-dir'],
                  'branch': ['model-with-reasoning', 'current-dir', 'git-branch', *STATS], 'empty': []}[name]
-    # No badge/agent exists in stats-only: a blank identity row would be a regression.
+    # A readable off setting still has an identity badge above the stats row.
     workers = 2 if name in ('mixed', 'branch') else 0
     config = ('model="gpt-6-astra"\nmodel_reasoning_effort="high"\n'
         'model_provider="openai"\ncheck_for_update_on_startup=false\n'
@@ -204,14 +204,15 @@ def run_case(binary, directory, evidence, name):
             assert len(rows) == 2, f'expected two physical footer rows, got {rows}'
             first, second = rows
             assert second[0] == first[0] + 1, f'footer rows not adjacent: {rows}'
-            assert all(value in first[1].lower() for value in ('gpt-6-astra high ultracode', 'workspace', 'main [default]')), rows
+            assert all(value in first[1].lower() for value in ('gpt-6-astra high ultracode on', 'workspace', 'main [default]')), rows
             if name == 'branch':
                 assert ' · main' in first[1], rows
             assert not any(value in first[1] for value in ('Context ', 'weekly ', 'resets ')), rows
             assert second[1] == 'Context 75% left · weekly 45% left · resets in 5d 20h', rows
         elif name == 'stats-only':
-            assert len(rows) == 1, f'stats-only reserved extra row: {rows}'
-            assert rows[0][1] == 'Context 75% left · weekly 45% left · resets in 5d 20h', rows
+            assert len(rows) == 2 and rows[0][1] == 'ultracode off', rows
+            assert rows[1][0] == rows[0][0] + 1, rows
+            assert rows[1][1] == 'Context 75% left · weekly 45% left · resets in 5d 20h', rows
         elif name == 'identity-only':
             assert len(rows) == 1 and 'workspace' in rows[0][1], rows
         else:
