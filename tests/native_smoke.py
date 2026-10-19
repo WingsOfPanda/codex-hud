@@ -744,7 +744,7 @@ stream_max_retries=0
         write_health(home, parents[0], 'uncertain', uncertain=1)
         wait(terminals, lambda: 'Wake delivery uncertain' in first.text and 'reviewing' in first.text,
              'advisor displaced existing warning priority')
-        assert_compact_hud(first.text, rows=4)
+        assert_compact_hud(first.text, rows=3)
         first.resize(10, 80)
         os.write(first.master, b'-small')
         wait(terminals, lambda: 'advisor-draft-0-fifo-small' in first.text and 'reviewing' in first.text,
