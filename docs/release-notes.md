@@ -17,11 +17,17 @@ and `execution_record_format: 1`. The shared daemon remains OpenAI's binary.
 - Give displayed status items distinct colors when status colors are enabled.
 - Place Plus goal status in one blue row above the editable input. Status and
   worker rows remain below input; terminals without color retain readable text.
+- Keep the prompt within AP's last six nonempty pane lines. With two status
+  rows, shortcut and history-search hints temporarily reduce the activity strip
+  to two rows, preserving the hidden activity count. Normal activity keeps its
+  three-row limit.
 
 Reviewed detached jobs, default-off Ultracode, shell topics, weekly-reset
 countdown, parallel tool activity rows and Plus-owned goals are retained.
 HUD refresh stays read-only and makes no model calls. Voice and a Python runtime
 remain omitted. No new coordinator protocol or execution-record format is added.
+Existing `tui.status_line` and `tui.status_line_use_colors` configuration remains
+valid without changes; the new layout and palette introduce no config key.
 
 ## Qualification and rollout
 
@@ -35,9 +41,17 @@ and qualification requirements; it is not an archive acceptance receipt.
 Rollout requires `quiet_checkpoint: true`, `executions: wait`,
 `daemon_restart: false` and `session_restart: required` to load the changed UI.
 Retain qualified 0.4.1 as the rollback floor, plus all packages referenced by
-processes or unresolved executions. Actual forward/rollback compatibility must
+processes or unresolved executions. Setting `retain` to
+`["0.163.0-plus.0.4.1"]` makes 0.4.0 removable once no process or unresolved
+execution references it. Actual forward/rollback compatibility must
 be tested; protocol 5 and format 1 alone are insufficient evidence. Preserve
 disabled native goals and the existing global AGENTS instructions.
+
+Restart loads the new frontend and its adjacent helper. An older running TUI
+keeps its old admission timing and reporting behavior even after the shell
+wrapper selects 0.4.2. The final handoff must distinguish qualified 0.4.0/0.4.2
+and 0.4.1/0.4.2 helper interoperability from simultaneous native TUI testing;
+old 0.3.x mixes remain unqualified.
 
 See [release packaging and handoff](releasing.md#qualification-and-handoff) for
 per-target requirements. No publication, fleet staging or installation is claimed.

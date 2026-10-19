@@ -8174,12 +8174,27 @@ index c35c2d93e..10a855cf9 100644
  
  
 diff --git a/codex-rs/tui/src/bottom_pane/chat_composer/status_surface.rs b/codex-rs/tui/src/bottom_pane/chat_composer/status_surface.rs
-index 60ee2e0fa..8063cfcf5 100644
+index 60ee2e0fa..9d5dc1b24 100644
 --- a/codex-rs/tui/src/bottom_pane/chat_composer/status_surface.rs
 +++ b/codex-rs/tui/src/bottom_pane/chat_composer/status_surface.rs
-@@ -6,7 +6,58 @@ use super::*;
+@@ -5,8 +5,73 @@
+ use super::*;
  
  impl ChatComposer {
++    pub(crate) fn worker_hud_row_budget(
++        &self,
++        width: u16,
++        options: ComposerRenderOptions<'_>,
++    ) -> u16 {
++        let options = self.resolve_render_options(options);
++        // Keep the prompt within the fleet idle detector's last six nonempty rows.
++        5u16.saturating_sub(
++            self.status_surface_height(options)
++                .saturating_add(self.footer_hint_height(width, options)),
++        )
++        .min(3)
++    }
++
      pub(super) fn status_surface_height(&self, options: ComposerRenderOptions<'_>) -> u16 {
 -        u16::from(options.separate_status_line && self.footer.status_line_enabled)
 +        if options.separate_status_line && self.footer.status_line_enabled {
@@ -8237,7 +8252,7 @@ index 60ee2e0fa..8063cfcf5 100644
      }
  
      pub(super) fn hint_footer_props(&self, options: ComposerRenderOptions<'_>) -> FooterProps {
-@@ -14,8 +65,12 @@ impl ChatComposer {
+@@ -14,8 +79,12 @@ impl ChatComposer {
          if self.status_surface_height(options) > 0 {
              props.status_line_enabled = false;
              props.status_line_value = None;
@@ -8250,7 +8265,7 @@ index 60ee2e0fa..8063cfcf5 100644
          props
      }
  
-@@ -28,21 +83,49 @@ impl ChatComposer {
+@@ -28,21 +97,49 @@ impl ChatComposer {
          if area.is_empty() {
              return;
          }
@@ -8314,7 +8329,7 @@ index 60ee2e0fa..8063cfcf5 100644
          let left_width = line
              .as_ref()
              .map_or(/*default*/ 0, |line| line.width() as u16);
-@@ -54,7 +137,7 @@ impl ChatComposer {
+@@ -54,7 +151,7 @@ impl ChatComposer {
          {
              full
          } else {
@@ -8324,13 +8339,52 @@ index 60ee2e0fa..8063cfcf5 100644
          let right_width = right
              .as_ref()
 diff --git a/codex-rs/tui/src/bottom_pane/chat_composer/status_surface_tests.rs b/codex-rs/tui/src/bottom_pane/chat_composer/status_surface_tests.rs
-index 03e761f4f..dda6ac416 100644
+index 03e761f4f..3891d8f83 100644
 --- a/codex-rs/tui/src/bottom_pane/chat_composer/status_surface_tests.rs
 +++ b/codex-rs/tui/src/bottom_pane/chat_composer/status_surface_tests.rs
-@@ -4,6 +4,37 @@ use super::*;
+@@ -4,6 +4,76 @@ use super::*;
  use pretty_assertions::assert_eq;
  use tokio::sync::mpsc::unbounded_channel;
  
++#[test]
++fn worker_hud_budget_tracks_status_hints_and_resolved_footer_options() {
++    let mut composer = composer();
++    composer.set_status_line_stats(Some("Context 75% left".into()));
++    let options = ComposerRenderOptions {
++        separate_status_line: true,
++        ..Default::default()
++    };
++    for width in [0, 12, 80] {
++        assert_eq!(composer.worker_hud_row_budget(width, options), 3);
++    }
++    composer.footer.mode = FooterMode::ShortcutOverlay;
++    assert_eq!(composer.worker_hud_row_budget(80, options), 2);
++    composer.footer.mode = FooterMode::ComposerEmpty;
++    composer.begin_history_search();
++    assert_eq!(composer.worker_hud_row_budget(80, options), 2);
++    composer.cancel_history_search();
++    for rows in 1..=6 {
++        let footer = TranscriptFooter {
++            text: ratatui::text::Text::from(vec![Line::from("hint"); rows]),
++            cursor_column: Some(0),
++            is_interactive: true,
++        };
++        let options = ComposerRenderOptions {
++            footer: Some(&footer),
++            ..options
++        };
++        for width in [12, 80] {
++            assert_eq!(
++                composer.worker_hud_row_budget(width, options),
++                3u16.saturating_sub(rows as u16)
++            );
++        }
++        composer.set_footer_hint_override(Some(Vec::new()));
++        assert_eq!(composer.worker_hud_row_budget(80, options), 3);
++        composer.set_footer_hint_override(None);
++    }
++}
++
 +#[test]
 +fn plus_goal_leaves_the_composer_footer_and_keeps_plan_suppressed() {
 +    for enabled in [true, false] {
@@ -8365,7 +8419,7 @@ index 03e761f4f..dda6ac416 100644
  fn composer() -> ChatComposer {
      let (tx, _rx) = unbounded_channel();
      let mut composer = ChatComposer::new(
-@@ -57,6 +88,53 @@ fn render_with_height(
+@@ -57,6 +127,53 @@ fn render_with_height(
      (text, composer.cursor_pos_with_options(area, options))
  }
  
@@ -8419,7 +8473,7 @@ index 03e761f4f..dda6ac416 100644
  #[test]
  fn passive_activity_keeps_shortcuts_only_when_the_complete_hint_fits() {
      let mut composer = composer();
-@@ -124,7 +202,7 @@ fn fullscreen_plan_indicator_keeps_the_cycle_hint_when_it_fits() {
+@@ -124,7 +241,7 @@ fn fullscreen_plan_indicator_keeps_the_cycle_hint_when_it_fits() {
      composer.set_status_line(/*status_line*/ None);
      let (empty_narrow, _) = render(&composer, /*width*/ 24, /*footer*/ None);
      assert_eq!(
@@ -8428,7 +8482,7 @@ index 03e761f4f..dda6ac416 100644
          Some("Plan mode")
      );
      let (empty_wide, _) = render(&composer, /*width*/ 100, /*footer*/ None);
-@@ -135,15 +213,12 @@ fn fullscreen_plan_indicator_keeps_the_cycle_hint_when_it_fits() {
+@@ -135,15 +252,12 @@ fn fullscreen_plan_indicator_keeps_the_cycle_hint_when_it_fits() {
  
      composer.set_input_enabled(/*enabled*/ false, /*placeholder*/ None);
      let (read_only, _) = render(&composer, /*width*/ 100, /*footer*/ None);
@@ -8446,7 +8500,7 @@ index 03e761f4f..dda6ac416 100644
          Some("Plan mode")
      );
  }
-@@ -195,7 +270,7 @@ fn shortcut_help_stays_above_the_prompt_and_bottom_status() {
+@@ -195,7 +309,7 @@ fn shortcut_help_stays_above_the_prompt_and_bottom_status() {
  }
  
  #[test]
@@ -8455,7 +8509,7 @@ index 03e761f4f..dda6ac416 100644
      let (width, available_height) = (40, 12);
      let mut composer = composer();
      let mut geometry = Vec::new();
-@@ -228,7 +303,10 @@ fn shortcut_help_keeps_bottom_anchored_composer_status_and_cursor_stable() {
+@@ -228,7 +342,10 @@ fn shortcut_help_keeps_bottom_anchored_composer_status_and_cursor_stable() {
              composer.cursor_pos_with_options(area, options),
          ));
      }
@@ -8467,7 +8521,7 @@ index 03e761f4f..dda6ac416 100644
  }
  
  #[test]
-@@ -446,3 +524,178 @@ fn activity_shortcut_help_follows_runtime_binding() {
+@@ -446,3 +563,178 @@ fn activity_shortcut_help_follows_runtime_binding() {
      }
      insta::assert_snapshot!(snapshots.join("\n---\n"));
  }
@@ -8930,7 +8984,7 @@ index f0b809ce5..ef0ab62a6 100644
              active_agent_label: None,
          };
 diff --git a/codex-rs/tui/src/bottom_pane/mod.rs b/codex-rs/tui/src/bottom_pane/mod.rs
-index ae9405e9f..ea8ef0f6a 100644
+index ae9405e9f..7d228eb88 100644
 --- a/codex-rs/tui/src/bottom_pane/mod.rs
 +++ b/codex-rs/tui/src/bottom_pane/mod.rs
 @@ -169,6 +169,8 @@ pub(crate) use footer::CollaborationModeIndicator;
@@ -9054,15 +9108,22 @@ index ae9405e9f..ea8ef0f6a 100644
              let mut flex2 = FlexRenderable::new();
              // Clip spacing and hints before activity and previews when the composer is tall.
              let above_composer = if let Some(gap) = options.composer_gap {
-@@ -2495,6 +2555,7 @@ impl BottomPane {
+@@ -2495,6 +2555,14 @@ impl BottomPane {
                  }))
              };
              flex2.push(/*flex*/ 0, composer);
-+            flex2.push(/*flex*/ 1, RenderableItem::Borrowed(&self.worker_hud));
++            flex2.push(
++                /*flex*/ 1,
++                RenderableItem::Owned(Box::new(WorkerHudPresentation {
++                    hud: &self.worker_hud,
++                    composer: &self.composer,
++                    options,
++                })),
++            );
              RenderableItem::Owned(Box::new(flex2))
          }
      }
-@@ -2515,6 +2576,12 @@ impl BottomPane {
+@@ -2515,6 +2583,12 @@ impl BottomPane {
          }
      }
  
@@ -9075,7 +9136,7 @@ index ae9405e9f..ea8ef0f6a 100644
      pub(crate) fn set_luna_reserve_active(&mut self, active: bool) {
          if self.composer.set_luna_reserve_active(active) {
              self.request_redraw();
-@@ -2550,6 +2617,22 @@ impl BottomPane {
+@@ -2550,6 +2624,49 @@ impl BottomPane {
      }
  }
  
@@ -9095,13 +9156,101 @@ index ae9405e9f..ea8ef0f6a 100644
 +    }
 +}
 +
++struct WorkerHudPresentation<'a> {
++    hud: &'a worker_hud::WorkerHud,
++    composer: &'a chat_composer::ChatComposer,
++    options: ComposerRenderOptions<'a>,
++}
++
++impl WorkerHudPresentation<'_> {
++    fn lines(&self, width: u16) -> Vec<Line<'static>> {
++        self.hud.lines_with_budget(
++            width,
++            self.composer.worker_hud_row_budget(width, self.options),
++        )
++    }
++}
++
++impl Renderable for WorkerHudPresentation<'_> {
++    fn render(&self, area: Rect, buf: &mut Buffer) {
++        if !area.is_empty() {
++            Paragraph::new(self.lines(area.width)).render(area, buf);
++        }
++    }
++
++    fn desired_height(&self, width: u16) -> u16 {
++        self.lines(width).len() as u16
++    }
++}
++
  struct ChatComposerPresentation<'a> {
      composer: &'a chat_composer::ChatComposer,
      options: ComposerRenderOptions<'a>,
-@@ -2729,6 +2812,96 @@ mod tests {
+@@ -2729,6 +2846,157 @@ mod tests {
          assert_eq!(pane.composer_text(), "main draft");
      }
  
++    #[test]
++    fn worker_hud_five_row_footer_budget_preserves_status_hints_and_editable_input() {
++        let (tx, _rx) = unbounded_channel();
++        let mut pane = test_pane_with_disable_paste_burst(AppEventSender::new(tx), true);
++        pane.set_status_line_enabled(true);
++        pane.set_status_line(Some("MODEL".into()));
++        pane.set_status_line_stats(Some("Context 75% left".into()));
++        pane.set_worker_hud(
++            (0..6)
++                .map(|n| worker_hud::WorkerRow {
++                    group: None,
++                    dispatch_elapsed_secs: None,
++                    task: format!("worker{n}"),
++                    state: worker_hud::WorkerState::Active,
++                    elapsed_secs: Some(60),
++                    total_tokens: Some(0),
++                    model: Some("gpt-6-sol".into()),
++                    reasoning_effort: None,
++                    agent_role: None,
++                })
++                .collect(),
++            false,
++            true,
++        );
++        pane.composer
++            .set_text_content("editable draft".into(), vec![], vec![]);
++        for hint in [false, true] {
++            pane.composer
++                .set_footer_hint_override(hint.then(|| vec![("key".into(), "hint".into())]));
++            for width in [40, 120] {
++                let presentation = pane.as_renderable_with_options(ComposerRenderOptions {
++                    separate_status_line: true,
++                    ..Default::default()
++                });
++                let area = Rect::new(0, 0, width, presentation.desired_height(width));
++                let mut buf = Buffer::empty(area);
++                presentation.render(area, &mut buf);
++                let (_, prompt_y) = presentation.cursor_pos(area).unwrap();
++                let below: Vec<_> = (prompt_y + 1..area.bottom())
++                    .map(|y| (0..width).map(|x| buf[(x, y)].symbol()).collect::<String>())
++                    .filter(|line| !line.trim().is_empty())
++                    .collect();
++                assert_eq!(below.len(), 5, "{below:?}");
++                assert!(below[0].contains("MODEL"), "{below:?}");
++                assert!(below[1].contains("Context 75% left"), "{below:?}");
++                assert_eq!(
++                    below
++                        .iter()
++                        .filter(|line| line.contains("GPT-6-Sol"))
++                        .count(),
++                    if hint { 1 } else { 2 }
++                );
++                assert_eq!(
++                    below.last().unwrap().trim(),
++                    if hint { "+5 more" } else { "+4 more" }
++                );
++                assert_eq!(pane.composer_text(), "editable draft");
++            }
++        }
++    }
++
 +    #[test]
 +    fn worker_hud_keeps_idle_and_running_composer_editable_on_resize() {
 +        let (tx, _rx) = unbounded_channel();
@@ -10220,10 +10369,10 @@ index f717e2426..7a49ebb6a 100644
 +                                                   100% context left
 diff --git a/codex-rs/tui/src/bottom_pane/worker_hud.rs b/codex-rs/tui/src/bottom_pane/worker_hud.rs
 new file mode 100644
-index 000000000..1c57acd32
+index 000000000..506f625e7
 --- /dev/null
 +++ b/codex-rs/tui/src/bottom_pane/worker_hud.rs
-@@ -0,0 +1,1667 @@
+@@ -0,0 +1,1798 @@
 +//! Read-only worker summary; clipping never takes space from the composer.
 +
 +use crate::line_truncation::truncate_line_with_ellipsis_if_overflow;
@@ -10449,6 +10598,14 @@ index 000000000..1c57acd32
 +    }
 +
 +    fn lines(&self, width: u16) -> Vec<Line<'static>> {
++        self.lines_with_budget(width, 3)
++    }
++
++    pub(crate) fn lines_with_budget(&self, width: u16, row_budget: u16) -> Vec<Line<'static>> {
++        let row_budget = usize::from(row_budget.min(3));
++        if width == 0 || row_budget == 0 {
++            return Vec::new();
++        }
 +        let mut display_rows = if self.visible {
 +            self.display_rows()
 +        } else {
@@ -10484,27 +10641,46 @@ index 000000000..1c57acd32
 +        if let Some(advisor) = &self.advisor {
 +            lines.push(advisor.line());
 +        }
-+        // Alerts, advisor and overflow share the three-line budget with activity.
-+        let available = 3 - lines.len();
 +        let total = display_rows.len() + shells.len() + self.executions.rows.len();
-+        let activity_limit = available - usize::from(total > available);
++        // Coalesce priority rows when necessary, retaining hidden activity counts.
++        if lines.len() > row_budget {
++            let extra = lines.split_off(row_budget);
++            let last = lines.last_mut().unwrap();
++            for line in extra {
++                last.push_span(" · ");
++                last.extend(line.spans);
++            }
++        }
++        let available = row_budget.saturating_sub(lines.len());
++        if available == 0 {
++            if total > 0 {
++                lines
++                    .last_mut()
++                    .unwrap()
++                    .spans
++                    .insert(0, format!("  +{total} more · ").into());
++            }
++            return lines;
++        }
++        let activity_limit = available.saturating_sub(usize::from(total > available));
 +        display_rows.sort_by_key(|members| {
 +            !members
 +                .iter()
 +                .any(|row| matches!(row.state, WorkerState::Approval | WorkerState::Input))
 +        });
-+        let worker_limit = display_rows.len().min(
-+            activity_limit
-+                - usize::from(
-+                    (!shells.is_empty() || !self.executions.rows.is_empty()) && activity_limit > 1,
-+                ),
-+        );
-+        let shell_limit = shells.len().min(activity_limit - worker_limit);
-+        let execution_limit = self
-+            .executions
-+            .rows
++        let worker_limit = display_rows
 +            .len()
-+            .min(activity_limit - worker_limit - shell_limit);
++            .min(activity_limit.saturating_sub(usize::from(
++                (!shells.is_empty() || !self.executions.rows.is_empty()) && activity_limit > 1,
++            )));
++        let shell_limit = shells
++            .len()
++            .min(activity_limit.saturating_sub(worker_limit));
++        let execution_limit = self.executions.rows.len().min(
++            activity_limit
++                .saturating_sub(worker_limit)
++                .saturating_sub(shell_limit),
++        );
 +        for members in display_rows.iter().take(worker_limit) {
 +            let row = members[0];
 +            let current: Vec<_> = members.iter().filter(|row| row.state.is_active()).collect();
@@ -10636,7 +10812,10 @@ index 000000000..1c57acd32
 +                line.dim()
 +            });
 +        }
-+        let more = total - worker_limit - shell_limit - execution_limit;
++        let more = total
++            .saturating_sub(worker_limit)
++            .saturating_sub(shell_limit)
++            .saturating_sub(execution_limit);
 +        if more > 0 {
 +            lines.push(Line::from(format!("  +{more} more")).dim());
 +        }
@@ -10927,6 +11106,107 @@ index 000000000..1c57acd32
 +mod tests {
 +    use super::*;
 +    use ratatui::style::Modifier;
++
++    #[test]
++    fn worker_hud_dynamic_budget_preserves_priority_rows_and_hidden_counts() {
++        for budget in 0..=3 {
++            for workers in 0..=4 {
++                for shells in 0..=4 {
++                    for executions in 0..=4 {
++                        for warning in [false, true] {
++                            for advisor in [false, true] {
++                                let mut hud = WorkerHud::default();
++                                hud.set(
++                                    (0..workers)
++                                        .map(|n| {
++                                            grouped_member(
++                                                &format!("batch{n}"),
++                                                WorkerState::Active,
++                                                120,
++                                                1000,
++                                            )
++                                        })
++                                        .collect(),
++                                    false,
++                                    true,
++                                );
++                                hud.set_shells((0..shells).map(shell_row).collect(), false, true);
++                                hud.set_executions(ExecutionHud {
++                                    rows: (0..executions)
++                                        .map(|_| ExecutionRow {
++                                            topic: "detached build".into(),
++                                            stage: None,
++                                            elapsed_secs: 10,
++                                            problem: None,
++                                        })
++                                        .collect(),
++                                    unavailable: warning,
++                                });
++                                if advisor {
++                                    hud.set_advisor(Some(AdvisorRow {
++                                        started_at_ms: None,
++                                        model: None,
++                                        state: AdvisorState::Ready,
++                                    }));
++                                }
++                                for width in [0, 8, 120] {
++                                    let lines = hud.lines_with_budget(width, budget);
++                                    assert!(lines.len() <= usize::from(budget));
++                                    if budget == 0 || width == 0 {
++                                        assert!(lines.is_empty());
++                                        continue;
++                                    }
++                                    let text = lines
++                                        .iter()
++                                        .map(ToString::to_string)
++                                        .collect::<Vec<_>>()
++                                        .join("\n");
++                                    assert_eq!(
++                                        text.contains("Background status unavailable"),
++                                        warning
++                                    );
++                                    assert_eq!(text.contains("Advisor"), advisor);
++                                    let shown = lines
++                                        .iter()
++                                        .filter(|line| {
++                                            let text = line.to_string();
++                                            text.starts_with("  GPT-")
++                                                || text.starts_with("  Background ·")
++                                        })
++                                        .count();
++                                    let hidden = workers + shells + executions - shown;
++                                    assert_eq!(text.contains(" more"), hidden > 0, "{text}");
++                                    if hidden > 0 {
++                                        assert!(
++                                            text.contains(&format!("+{hidden} more")),
++                                            "{text}"
++                                        );
++                                    }
++                                }
++                            }
++                        }
++                    }
++                }
++            }
++        }
++    }
++
++    #[test]
++    fn worker_hud_two_rows_show_one_worker_and_the_correct_overflow() {
++        let mut hud = WorkerHud::default();
++        hud.set(
++            (0..6)
++                .map(|n| grouped_member(&format!("batch{n}"), WorkerState::Active, 120, 1000))
++                .collect(),
++            false,
++            true,
++        );
++        let lines = hud.lines_with_budget(120, 2);
++        assert_eq!(lines.len(), 2);
++        assert!(lines[0].to_string().contains("hud styling"));
++        assert_eq!(lines[1].to_string(), "  +5 more");
++        assert_eq!(hud.lines_with_budget(120, 3)[2].to_string(), "  +4 more");
++    }
 +
 +    #[test]
 +    fn shell_task_topics_compact_the_reported_long_commands() {
