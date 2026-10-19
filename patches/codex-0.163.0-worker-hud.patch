@@ -7542,7 +7542,7 @@ index 837fcb13c..84171b254 100644
      async fn thread_resume_params_can_restore_persisted_model_settings() {
          let temp_dir = tempfile::tempdir().expect("tempdir");
 diff --git a/codex-rs/tui/src/app_server_session/rollout_history.rs b/codex-rs/tui/src/app_server_session/rollout_history.rs
-index cfe049959..f49923739 100644
+index cfe049959..431724f53 100644
 --- a/codex-rs/tui/src/app_server_session/rollout_history.rs
 +++ b/codex-rs/tui/src/app_server_session/rollout_history.rs
 @@ -155,6 +155,17 @@ impl AppServerSession {
@@ -7591,7 +7591,7 @@ index cfe049959..f49923739 100644
          if model_settings == ResumeModelSettings::OverrideFromCurrentConfig {
              params.model_provider = self.explicit_model_provider(&config);
          }
-@@ -236,6 +268,22 @@ impl AppServerSession {
+@@ -236,6 +268,28 @@ impl AppServerSession {
                  ));
              }
          };
@@ -7610,6 +7610,12 @@ index cfe049959..f49923739 100644
 +                ultracode_developer_instructions.as_deref(),
 +            )
 +            .await;
++        } else if !self.uses_remote_workspace()
++            && let Err(error) =
++                crate::plus_ultracode::command(config.codex_home.as_path(), thread_id, &["status"])
++                    .await
++        {
++            tracing::debug!(%error, "Ultracode warm-resume status unavailable");
 +        }
          self.hydrate_initial_thread_history(
              &mut response.thread,
