@@ -175,11 +175,11 @@ def run_case(binary, directory, evidence, name):
         report['stages'].append('narrow-editable-input')
         if name == 'mixed':
             os.write(terminal.master, b'\x15?')
-            wait([terminal], lambda: 'Keyboard shortcuts' in terminal.text, 'shortcuts overlay absent')
+            wait([terminal], lambda: '? / esc close' in terminal.text, 'shortcuts close hint absent')
             assert len([line for _, line in footer_rows(terminal) if 'Context 75% left' in line]) == 1
             (evidence / 'shortcuts.txt').write_text(terminal.text + '\n')
             os.write(terminal.master, b'\x1b')
-            wait([terminal], lambda: 'Keyboard shortcuts' not in terminal.text, 'shortcuts did not close')
+            wait([terminal], lambda: '? / esc close' not in terminal.text, 'shortcuts did not close')
             report['stages'].append('shortcuts-persistent-status')
         assert not server.errors, server.errors
         forbidden = ('turn/start', 'turn/steer', 'thread/queue/add', 'thread/queue/start')
