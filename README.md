@@ -99,12 +99,18 @@ The one-time Python-to-Rust rollout needs a
 
 ## Display behavior
 
-Select **Weekly reset** in `/statusline` to show `resets in 2d 5h` alongside
-your existing items (`weekly-reset` in `tui.status_line`). The countdown uses
+The status footer puts model, Ultracode, working directory and active agent on
+the first row. Selected **Context remaining**, **Weekly limit** and **Weekly reset**
+items appear on a second row, retaining their configured order and styling.
+The worker HUD follows both rows. A selection with only stats uses one row when
+there is no agent label or mode indicator; selections without stats keep one row.
+
+Select **Weekly reset** in `/statusline` to show `resets in 2d 5h`
+(`weekly-reset` in `tui.status_line`). The countdown uses
 Codex's reported weekly reset timestamp and the local clock; refreshing it makes
 no model calls or extra quota requests. Missing timestamps show `reset unknown`;
 an elapsed timestamp shows `reset due` until updated quota data arrives. This
-item is optional and adds no extra footer row.
+item is optional and shares the stats row with the other selected stats.
 
 The strip shows active and waiting direct workers without a count header:
 
