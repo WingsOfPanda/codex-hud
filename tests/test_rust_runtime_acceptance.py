@@ -872,7 +872,8 @@ class RuntimeAcceptance(unittest.TestCase):
                 'status': 'completed', 'exitCode': 0}})
             f.fake.parent_turns[0]['status'] = 'completed'
             f.fake.parent_status = 'idle'
-            wait(lambda: f.delivered() and len(f.state()['callbacks']) == 2,
+            wait(lambda: len(callbacks := f.state()['callbacks']) == 2
+                 and all(c['state'] == 'delivered' for c in callbacks),
                  'different registration origins were merged')
             state = f.state()
             self.assertEqual(len({j['callback'] for j in state['jobs']}), 2)

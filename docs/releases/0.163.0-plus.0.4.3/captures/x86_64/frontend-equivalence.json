@@ -1,0 +1,15 @@
+{
+  "accepted": true,
+  "exact_native_production_tree_comparison": true,
+  "old_source_commit": "3598e7a61543e9ae0f09c1da88b5ca89e27afe9b",
+  "new_source_commit": "ecddea18279ede7774749c150ded30e7ef3b1d87",
+  "architecture": "x86_64",
+  "manifest_sha256": "27950a50fac920eb5cbdbb4812608d0dc19de602cbd06c8e0e2f9139cd731200",
+  "old_patch_sha256": "140e16702e66da4a54e968539c6ca4cc4547f8dbcceeaba2bcbc78f1e4a34fd4",
+  "new_patch_sha256": "140e16702e66da4a54e968539c6ca4cc4547f8dbcceeaba2bcbc78f1e4a34fd4",
+  "old_native_production_tree_sha256": "91d3db77a763dc4b3a51c09e01c9239eeaacfc6e6bdb6a2ce39dcf7a6e08be24",
+  "new_native_production_tree_sha256": "91d3db77a763dc4b3a51c09e01c9239eeaacfc6e6bdb6a2ce39dcf7a6e08be24",
+  "package_manifest_path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/extracted/codex-plus-0.163.0-plus.0.4.3-x86_64-unknown-linux-gnu/codex-plus.json",
+  "binary_sha256": "4c326e422420f0478cf2d1960365b57b59be140dfe72efbd5601acff83717ce7",
+  "code_mode_host_sha256": "488c1ee7ac9ecf2348c7e544312ae8ff800309316c0e441195a72248c7a36f3c"
+}

@@ -1,0 +1,132 @@
+{
+  "bundle_version": 2,
+  "development_pre_package": false,
+  "candidate_acceptance": true,
+  "AP_policy": "cursor_flag=1 and positive bare composer on cursor row; whole-screen busy priority",
+  "binary_sha256": "37d3d5c03e8614a18b2bbbba54ce37702a78f7f30bcd14607c41041490de7da0",
+  "binary_source_commit": "3598e7a61543e9ae0f09c1da88b5ca89e27afe9b",
+  "source_commit": "ecddea18279ede7774749c150ded30e7ef3b1d87",
+  "fixtures": [
+    {
+      "id": "high-100x40-idle-empty",
+      "screen": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-100x40-idle-empty/screen.txt",
+      "look": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-100x40-idle-empty/look.txt",
+      "expected": "idle"
+    },
+    {
+      "id": "high-100x40-idle-help",
+      "screen": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-100x40-idle-help/screen.txt",
+      "look": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-100x40-idle-help/look.txt",
+      "expected": "idle"
+    },
+    {
+      "id": "high-100x40-busy-midturn-t0",
+      "screen": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-100x40-busy-midturn-t0/screen.txt",
+      "look": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-100x40-busy-midturn-t0/look.txt",
+      "expected": "busy"
+    },
+    {
+      "id": "high-100x40-busy-midturn-t5",
+      "screen": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-100x40-busy-midturn-t5/screen.txt",
+      "look": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-100x40-busy-midturn-t5/look.txt",
+      "expected": "busy"
+    },
+    {
+      "id": "high-100x40-busy-typed",
+      "screen": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-100x40-busy-typed/screen.txt",
+      "look": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-100x40-busy-typed/look.txt",
+      "expected": "busy"
+    },
+    {
+      "id": "high-100x40-idle-two-row-draft",
+      "screen": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-100x40-idle-two-row-draft/screen.txt",
+      "look": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-100x40-idle-two-row-draft/look.txt",
+      "expected": "unknown"
+    },
+    {
+      "id": "high-80-split-idle-empty",
+      "screen": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-80-split-idle-empty/screen.txt",
+      "look": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-80-split-idle-empty/look.txt",
+      "expected": "idle"
+    },
+    {
+      "id": "high-80-split-idle-help",
+      "screen": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-80-split-idle-help/screen.txt",
+      "look": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-80-split-idle-help/look.txt",
+      "expected": "idle"
+    },
+    {
+      "id": "high-80-split-busy-midturn-t0",
+      "screen": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-80-split-busy-midturn-t0/screen.txt",
+      "look": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-80-split-busy-midturn-t0/look.txt",
+      "expected": "busy"
+    },
+    {
+      "id": "high-80-split-busy-midturn-t5",
+      "screen": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-80-split-busy-midturn-t5/screen.txt",
+      "look": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-80-split-busy-midturn-t5/look.txt",
+      "expected": "busy"
+    },
+    {
+      "id": "high-80-split-busy-typed",
+      "screen": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-80-split-busy-typed/screen.txt",
+      "look": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-80-split-busy-typed/look.txt",
+      "expected": "busy"
+    },
+    {
+      "id": "high-80-split-idle-two-row-draft",
+      "screen": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-80-split-idle-two-row-draft/screen.txt",
+      "look": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-80-split-idle-two-row-draft/look.txt",
+      "expected": "unknown"
+    },
+    {
+      "id": "high-80-split-approval-dialog",
+      "screen": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-80-split-approval-dialog/screen.txt",
+      "look": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-80-split-approval-dialog/look.txt",
+      "expected": "unknown"
+    },
+    {
+      "id": "high-100x40-approval-dialog",
+      "screen": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-100x40-approval-dialog/screen.txt",
+      "look": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-100x40-approval-dialog/look.txt",
+      "expected": "unknown"
+    },
+    {
+      "id": "ultra-100x40-idle-empty",
+      "screen": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/ultra-100x40-idle-empty/screen.txt",
+      "look": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/ultra-100x40-idle-empty/look.txt",
+      "expected": "idle"
+    },
+    {
+      "id": "ultra-80-split-idle-empty",
+      "screen": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/ultra-80-split-idle-empty/screen.txt",
+      "look": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/ultra-80-split-idle-empty/look.txt",
+      "expected": "idle"
+    },
+    {
+      "id": "form-100x40-request-user-input-notes",
+      "screen": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/form-100x40-request-user-input-notes/screen.txt",
+      "look": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/form-100x40-request-user-input-notes/look.txt",
+      "expected": "unknown"
+    },
+    {
+      "id": "form-80-split-request-user-input-notes",
+      "screen": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/form-80-split-request-user-input-notes/screen.txt",
+      "look": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/form-80-split-request-user-input-notes/look.txt",
+      "expected": "unknown"
+    },
+    {
+      "id": "form-100x40-mcp-text-elicitation",
+      "screen": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/form-100x40-mcp-text-elicitation/screen.txt",
+      "look": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/form-100x40-mcp-text-elicitation/look.txt",
+      "expected": "unknown"
+    },
+    {
+      "id": "form-80-split-mcp-text-elicitation",
+      "screen": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/form-80-split-mcp-text-elicitation/screen.txt",
+      "look": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/form-80-split-mcp-text-elicitation/look.txt",
+      "expected": "unknown"
+    }
+  ],
+  "AP_replay_performed": false
+}

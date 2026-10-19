@@ -1,0 +1,946 @@
+{
+  "docs/releases/0.163.0-plus.0.4.3/aarch64-ap-replay.json": {
+    "sha256": "b03288a59af43f7fba7e6209d5a0de5126f9b40e5cc64eec5d3c1e0673ce5fb9",
+    "size": 3008
+  },
+  "docs/releases/0.163.0-plus.0.4.3/aarch64-ap-report.json": {
+    "sha256": "8cde5dcb3c0e354ab3322ec6a13e5cc69830c486791532473ff91b60a3a27e80",
+    "size": 4058
+  },
+  "docs/releases/0.163.0-plus.0.4.3/aarch64-build-summary.json": {
+    "sha256": "64041c4c87dca5af3c9e8538d7e66acf9330394c524e7e72a13b27b91b1cc76c",
+    "size": 5037
+  },
+  "docs/releases/0.163.0-plus.0.4.3/aarch64-compat042.json": {
+    "sha256": "e671d2e211e8d544f5a6a7dd1a018da1911c2ba49b33fe18d0c2e8e9bdb3d211",
+    "size": 296693
+  },
+  "docs/releases/0.163.0-plus.0.4.3/aarch64-frontend-equivalence.json": {
+    "sha256": "2ac6c96a8bca20f4773763cd05d195353477ac877e88d47597bb759e91951627",
+    "size": 1036
+  },
+  "docs/releases/0.163.0-plus.0.4.3/aarch64-qualification-summary.json": {
+    "sha256": "d2d42b100c259004ccaeeabec5a46cfbedd5ecbb8ff4a77716c1ce755e31a6d5",
+    "size": 16979
+  },
+  "docs/releases/0.163.0-plus.0.4.3/aarch64-root-acceptance.json": {
+    "sha256": "0fbed9b335451c2d58e8aaa9afaf30d2ebc557f3186394a3aae69497d4f4235c",
+    "size": 766
+  },
+  "docs/releases/0.163.0-plus.0.4.3/accepted-single-snapshot.patch": {
+    "sha256": "a03b535bddda5e7191c23d86de83bf910ef2914f118f22731e8e88a0313ea459",
+    "size": 664
+  },
+  "docs/releases/0.163.0-plus.0.4.3/accepted-test-correction.json": {
+    "sha256": "11ee34de216b2916ff5b81fbd463c5a6231abc27d18fff889e97bbcd7db7b423",
+    "size": 1491
+  },
+  "docs/releases/0.163.0-plus.0.4.3/accepted-test-correction.md": {
+    "sha256": "2f459c5644406216f6fd42edf84234e997d7a9c2d86ae9defd3e14fda3ac5876",
+    "size": 609
+  },
+  "docs/releases/0.163.0-plus.0.4.3/agents-block.md": {
+    "sha256": "f0f0e24b94a3c9617421ce96852ed8297b0ded29b080c3f9a9296c3c063fcadb",
+    "size": 4348
+  },
+  "docs/releases/0.163.0-plus.0.4.3/capture-harness-acceptance.json": {
+    "sha256": "053bf460324c64c8e2432feec35938845e67eec9bb950fd6b5e822a037701ec8",
+    "size": 636
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/ap-replay-index.json": {
+    "sha256": "fd5e5f93a8ba75f399bb90801d5fe9ae44810044ed4e196bc87faf2a93e1583e",
+    "size": 8713
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/form-100x40-mcp-text-elicitation/capture.json": {
+    "sha256": "a60a9adaa8f91cc03b06dab1e00f6d4bfc5f0b1dfa0e5a651524b29a8473b183",
+    "size": 1181
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/form-100x40-mcp-text-elicitation/look-after.txt": {
+    "sha256": "941a8fdd7e1443dce84a05228f5e941b8b6546d5b6f69c765bc8b36a8ed80ebb",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/form-100x40-mcp-text-elicitation/look-before.txt": {
+    "sha256": "941a8fdd7e1443dce84a05228f5e941b8b6546d5b6f69c765bc8b36a8ed80ebb",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/form-100x40-mcp-text-elicitation/look.txt": {
+    "sha256": "941a8fdd7e1443dce84a05228f5e941b8b6546d5b6f69c765bc8b36a8ed80ebb",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/form-100x40-mcp-text-elicitation/screen.txt": {
+    "sha256": "f8165180f850e3481d5926f5f4fda678c294c48d4e5743ded010f3b3849004a8",
+    "size": 285
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/form-100x40-request-user-input-notes/capture.json": {
+    "sha256": "028567193377903381713bf31bb530a989f961c9c1b4c8522f5a894762f8983e",
+    "size": 1185
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/form-100x40-request-user-input-notes/look-after.txt": {
+    "sha256": "941a8fdd7e1443dce84a05228f5e941b8b6546d5b6f69c765bc8b36a8ed80ebb",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/form-100x40-request-user-input-notes/look-before.txt": {
+    "sha256": "941a8fdd7e1443dce84a05228f5e941b8b6546d5b6f69c765bc8b36a8ed80ebb",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/form-100x40-request-user-input-notes/look.txt": {
+    "sha256": "941a8fdd7e1443dce84a05228f5e941b8b6546d5b6f69c765bc8b36a8ed80ebb",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/form-100x40-request-user-input-notes/screen.txt": {
+    "sha256": "e7ff4a250baa21284edfa5a66b4acce8bfc72f8f4885fee17c71453da207dfd6",
+    "size": 351
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/form-80-split-mcp-text-elicitation/capture.json": {
+    "sha256": "c73dd4e1c1ac990e8e42ad50ed916c845afa31919c40aaec2bad1547794a5463",
+    "size": 1182
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/form-80-split-mcp-text-elicitation/look-after.txt": {
+    "sha256": "da9db63c4d105795225815af1c5ff36351d6b10531795d801747bbda78d58c3f",
+    "size": 13
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/form-80-split-mcp-text-elicitation/look-before.txt": {
+    "sha256": "da9db63c4d105795225815af1c5ff36351d6b10531795d801747bbda78d58c3f",
+    "size": 13
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/form-80-split-mcp-text-elicitation/look.txt": {
+    "sha256": "da9db63c4d105795225815af1c5ff36351d6b10531795d801747bbda78d58c3f",
+    "size": 13
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/form-80-split-mcp-text-elicitation/screen.txt": {
+    "sha256": "f8165180f850e3481d5926f5f4fda678c294c48d4e5743ded010f3b3849004a8",
+    "size": 285
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/form-80-split-request-user-input-notes/capture.json": {
+    "sha256": "537fcde9ca7245804677693acb2d590d6ad2e76d2ae443caa298a3ed4112606b",
+    "size": 1186
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/form-80-split-request-user-input-notes/look-after.txt": {
+    "sha256": "da9db63c4d105795225815af1c5ff36351d6b10531795d801747bbda78d58c3f",
+    "size": 13
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/form-80-split-request-user-input-notes/look-before.txt": {
+    "sha256": "da9db63c4d105795225815af1c5ff36351d6b10531795d801747bbda78d58c3f",
+    "size": 13
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/form-80-split-request-user-input-notes/look.txt": {
+    "sha256": "da9db63c4d105795225815af1c5ff36351d6b10531795d801747bbda78d58c3f",
+    "size": 13
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/form-80-split-request-user-input-notes/screen.txt": {
+    "sha256": "e7ff4a250baa21284edfa5a66b4acce8bfc72f8f4885fee17c71453da207dfd6",
+    "size": 351
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/frontend-equivalence.json": {
+    "sha256": "2ac6c96a8bca20f4773763cd05d195353477ac877e88d47597bb759e91951627",
+    "size": 1036
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-100x40-approval-dialog/capture.json": {
+    "sha256": "6e8ae65e650b6fe6ea906a2cada1b46bfb6739f906f146131c38d57b3354ea80",
+    "size": 1179
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-100x40-approval-dialog/look-after.txt": {
+    "sha256": "696d44aef3e0c580896febcbedea00f82167d9e900bad0c1c14c926e7e47ef8e",
+    "size": 16
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-100x40-approval-dialog/look-before.txt": {
+    "sha256": "696d44aef3e0c580896febcbedea00f82167d9e900bad0c1c14c926e7e47ef8e",
+    "size": 16
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-100x40-approval-dialog/look.txt": {
+    "sha256": "696d44aef3e0c580896febcbedea00f82167d9e900bad0c1c14c926e7e47ef8e",
+    "size": 16
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-100x40-approval-dialog/screen.txt": {
+    "sha256": "c6f73a8d09dbd327fa23e0ec9bcc4a5181df34881a37d5af2a48d6e4f26615ed",
+    "size": 428
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-100x40-busy-midturn-t0/capture.json": {
+    "sha256": "995e00fceba9bbb2fa510700dfa8ef985b0e0e918f71d4f8da1baf16df942aeb",
+    "size": 1556
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-100x40-busy-midturn-t0/look-after.txt": {
+    "sha256": "1eb8bc56b645a0b798570ed2a6c226f08f43f4c312ec13aaddd2997d72677d99",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-100x40-busy-midturn-t0/look-before.txt": {
+    "sha256": "1eb8bc56b645a0b798570ed2a6c226f08f43f4c312ec13aaddd2997d72677d99",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-100x40-busy-midturn-t0/look.txt": {
+    "sha256": "1eb8bc56b645a0b798570ed2a6c226f08f43f4c312ec13aaddd2997d72677d99",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-100x40-busy-midturn-t0/screen.txt": {
+    "sha256": "a7f17caf74ad251772d551b4d79150de106579ab7cce9512616a118cce1afdbb",
+    "size": 577
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-100x40-busy-midturn-t5/capture.json": {
+    "sha256": "5e1e2db451581ade605870b0fe38c0d3c3fd9eaeebcf186b9c2ce0f980576066",
+    "size": 1556
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-100x40-busy-midturn-t5/look-after.txt": {
+    "sha256": "1eb8bc56b645a0b798570ed2a6c226f08f43f4c312ec13aaddd2997d72677d99",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-100x40-busy-midturn-t5/look-before.txt": {
+    "sha256": "1eb8bc56b645a0b798570ed2a6c226f08f43f4c312ec13aaddd2997d72677d99",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-100x40-busy-midturn-t5/look.txt": {
+    "sha256": "1eb8bc56b645a0b798570ed2a6c226f08f43f4c312ec13aaddd2997d72677d99",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-100x40-busy-midturn-t5/screen.txt": {
+    "sha256": "5405f2558dc1a5fda391ea47e3df6533a9bac0134009c7c205d3c47456e9179b",
+    "size": 577
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-100x40-busy-typed/capture.json": {
+    "sha256": "39ca5d3bd29f5bb0c524444965c9161c97e596801ee21fed3f183c9163b57b85",
+    "size": 1552
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-100x40-busy-typed/look-after.txt": {
+    "sha256": "1631dcf4ff3835a3f7084b3ecb05e3cd68fa6566149875062e5c8ff709a270de",
+    "size": 15
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-100x40-busy-typed/look-before.txt": {
+    "sha256": "1631dcf4ff3835a3f7084b3ecb05e3cd68fa6566149875062e5c8ff709a270de",
+    "size": 15
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-100x40-busy-typed/look.txt": {
+    "sha256": "1631dcf4ff3835a3f7084b3ecb05e3cd68fa6566149875062e5c8ff709a270de",
+    "size": 15
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-100x40-busy-typed/screen.txt": {
+    "sha256": "a1c447be42e8966a85b835077b2d7de380ad92e0874242065373854fe8f492d8",
+    "size": 578
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-100x40-idle-empty/capture.json": {
+    "sha256": "720d2b6db36addd7e9b475b88c0a4d0d5e71d8979d8fb785769b0eb7b38410c8",
+    "size": 1551
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-100x40-idle-empty/look-after.txt": {
+    "sha256": "1eb8bc56b645a0b798570ed2a6c226f08f43f4c312ec13aaddd2997d72677d99",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-100x40-idle-empty/look-before.txt": {
+    "sha256": "1eb8bc56b645a0b798570ed2a6c226f08f43f4c312ec13aaddd2997d72677d99",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-100x40-idle-empty/look.txt": {
+    "sha256": "1eb8bc56b645a0b798570ed2a6c226f08f43f4c312ec13aaddd2997d72677d99",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-100x40-idle-empty/screen.txt": {
+    "sha256": "a38bdd2e2a3133ebc7b2a2a00a308afee28d292b0da588b459411c6bf4c0652d",
+    "size": 540
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-100x40-idle-help/capture.json": {
+    "sha256": "8aea70b17b86751e2a037a03bfb5ac1725cc6f575ada63bcfc5428dd843befb9",
+    "size": 1550
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-100x40-idle-help/look-after.txt": {
+    "sha256": "4df936b445fb9a9bc15b4ca787eed7a96d3d8fe966393e738aee9a235a3e16b3",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-100x40-idle-help/look-before.txt": {
+    "sha256": "4df936b445fb9a9bc15b4ca787eed7a96d3d8fe966393e738aee9a235a3e16b3",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-100x40-idle-help/look.txt": {
+    "sha256": "4df936b445fb9a9bc15b4ca787eed7a96d3d8fe966393e738aee9a235a3e16b3",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-100x40-idle-help/screen.txt": {
+    "sha256": "af67510f69a544983113467d9eadaf6395d82f2e254c8443b17455dd764ed75e",
+    "size": 1561
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-100x40-idle-two-row-draft/capture.json": {
+    "sha256": "7d36d4cc55789deb907f0c6c2b37633323de76a4ca53b13593caca95321fd7f3",
+    "size": 1178
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-100x40-idle-two-row-draft/look-after.txt": {
+    "sha256": "6f04d3bc3cc430d776065a8d50a05af2ecc9c79d9b54ab4726bcc67e6a7cf5ac",
+    "size": 15
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-100x40-idle-two-row-draft/look-before.txt": {
+    "sha256": "6f04d3bc3cc430d776065a8d50a05af2ecc9c79d9b54ab4726bcc67e6a7cf5ac",
+    "size": 15
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-100x40-idle-two-row-draft/look.txt": {
+    "sha256": "6f04d3bc3cc430d776065a8d50a05af2ecc9c79d9b54ab4726bcc67e6a7cf5ac",
+    "size": 15
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-100x40-idle-two-row-draft/screen.txt": {
+    "sha256": "06661e410606b87fea6fa1cfe8c4a3690e55e7f96128a31a10570ed042e94748",
+    "size": 580
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-80-split-approval-dialog/capture.json": {
+    "sha256": "91f23438981bc41c63c8c2f532817c08c186bcbed3c386f5a7c9942330d74bcb",
+    "size": 1179
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-80-split-approval-dialog/look-after.txt": {
+    "sha256": "910438d0de797c917b3fae63b26e8d309627b145c3b02651f3808897be3cdacb",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-80-split-approval-dialog/look-before.txt": {
+    "sha256": "910438d0de797c917b3fae63b26e8d309627b145c3b02651f3808897be3cdacb",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-80-split-approval-dialog/look.txt": {
+    "sha256": "910438d0de797c917b3fae63b26e8d309627b145c3b02651f3808897be3cdacb",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-80-split-approval-dialog/screen.txt": {
+    "sha256": "c6f73a8d09dbd327fa23e0ec9bcc4a5181df34881a37d5af2a48d6e4f26615ed",
+    "size": 428
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-80-split-busy-midturn-t0/capture.json": {
+    "sha256": "3dc2e814d12fc676ad670a4f627c46b1db95815d2877b7309e42addf4d00b847",
+    "size": 1557
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-80-split-busy-midturn-t0/look-after.txt": {
+    "sha256": "59bbe94f5f7cac18b8c63a99139a4fb2729672dfcbc41d514bc0eb1d212bd238",
+    "size": 13
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-80-split-busy-midturn-t0/look-before.txt": {
+    "sha256": "59bbe94f5f7cac18b8c63a99139a4fb2729672dfcbc41d514bc0eb1d212bd238",
+    "size": 13
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-80-split-busy-midturn-t0/look.txt": {
+    "sha256": "59bbe94f5f7cac18b8c63a99139a4fb2729672dfcbc41d514bc0eb1d212bd238",
+    "size": 13
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-80-split-busy-midturn-t0/screen.txt": {
+    "sha256": "c525b86866b3d116fb8ee4f6349381ee68d10cf65c3d93c80ad04037e35c6288",
+    "size": 602
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-80-split-busy-midturn-t5/capture.json": {
+    "sha256": "2ffca64566cc9f2115a44fd4ee49f627077992931ff852fb81312d19731318c0",
+    "size": 1557
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-80-split-busy-midturn-t5/look-after.txt": {
+    "sha256": "59bbe94f5f7cac18b8c63a99139a4fb2729672dfcbc41d514bc0eb1d212bd238",
+    "size": 13
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-80-split-busy-midturn-t5/look-before.txt": {
+    "sha256": "59bbe94f5f7cac18b8c63a99139a4fb2729672dfcbc41d514bc0eb1d212bd238",
+    "size": 13
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-80-split-busy-midturn-t5/look.txt": {
+    "sha256": "59bbe94f5f7cac18b8c63a99139a4fb2729672dfcbc41d514bc0eb1d212bd238",
+    "size": 13
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-80-split-busy-midturn-t5/screen.txt": {
+    "sha256": "f7d0a6100c043e7a0ce075c4a1c0afc1d4e18dba500adecf7c6a6adf7cc725f5",
+    "size": 602
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-80-split-busy-typed/capture.json": {
+    "sha256": "bebca431db616d8fdea349213644d0d17919208c11d1c952bb0ce9bbbca7502b",
+    "size": 1553
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-80-split-busy-typed/look-after.txt": {
+    "sha256": "23629823f73a8848d732720ffaff87f205cfb0207e164061ce85223de3ba9e5f",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-80-split-busy-typed/look-before.txt": {
+    "sha256": "23629823f73a8848d732720ffaff87f205cfb0207e164061ce85223de3ba9e5f",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-80-split-busy-typed/look.txt": {
+    "sha256": "23629823f73a8848d732720ffaff87f205cfb0207e164061ce85223de3ba9e5f",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-80-split-busy-typed/screen.txt": {
+    "sha256": "a03d1734a233652672e0ef7b1ef886e39ce3a9d7ba75f74717fb816d6d4183be",
+    "size": 603
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-80-split-idle-empty/capture.json": {
+    "sha256": "b9d69750854591ce6daac9e8da72770d74e3aad51cfedd2dd52d712a07f83727",
+    "size": 1552
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-80-split-idle-empty/look-after.txt": {
+    "sha256": "59bbe94f5f7cac18b8c63a99139a4fb2729672dfcbc41d514bc0eb1d212bd238",
+    "size": 13
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-80-split-idle-empty/look-before.txt": {
+    "sha256": "59bbe94f5f7cac18b8c63a99139a4fb2729672dfcbc41d514bc0eb1d212bd238",
+    "size": 13
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-80-split-idle-empty/look.txt": {
+    "sha256": "59bbe94f5f7cac18b8c63a99139a4fb2729672dfcbc41d514bc0eb1d212bd238",
+    "size": 13
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-80-split-idle-empty/screen.txt": {
+    "sha256": "64cf8310ea28fcf0062ca30fbcd127df5c3d90dec844621b1e94b1bdb7d352aa",
+    "size": 565
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-80-split-idle-help/capture.json": {
+    "sha256": "4ec5c99a6f5a7264a0c5727ac2618f85c0c653f7077aafa6fe0cc993c5f3ba26",
+    "size": 1551
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-80-split-idle-help/look-after.txt": {
+    "sha256": "cd79485f2e79a279f4d2d3310ea2c246fe6f41b8a83512ada2d716d88b43aef1",
+    "size": 13
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-80-split-idle-help/look-before.txt": {
+    "sha256": "cd79485f2e79a279f4d2d3310ea2c246fe6f41b8a83512ada2d716d88b43aef1",
+    "size": 13
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-80-split-idle-help/look.txt": {
+    "sha256": "cd79485f2e79a279f4d2d3310ea2c246fe6f41b8a83512ada2d716d88b43aef1",
+    "size": 13
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-80-split-idle-help/screen.txt": {
+    "sha256": "83c1829de1465c479f6d4daa035b33ca02371c8d1d984c7dfc640c5676c4c281",
+    "size": 1586
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-80-split-idle-two-row-draft/capture.json": {
+    "sha256": "fc9234d30a56862b5e696b7bfa1b80fb326a51e03fb46ee1d95b9034d75ef19a",
+    "size": 1179
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-80-split-idle-two-row-draft/look-after.txt": {
+    "sha256": "426cbf2236f8213c09ac4ba209049146047a6cbc33f6661f31f93cd32ebf4c14",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-80-split-idle-two-row-draft/look-before.txt": {
+    "sha256": "426cbf2236f8213c09ac4ba209049146047a6cbc33f6661f31f93cd32ebf4c14",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-80-split-idle-two-row-draft/look.txt": {
+    "sha256": "426cbf2236f8213c09ac4ba209049146047a6cbc33f6661f31f93cd32ebf4c14",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/high-80-split-idle-two-row-draft/screen.txt": {
+    "sha256": "81abe0667be573a8ef3a221a5ed5fb20d58e325310f2727448fb22dce19dad80",
+    "size": 580
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/integrity.json": {
+    "sha256": "9c7a5db274e6d73adb47c9b97c87a9699c32bde2dd13097b5dd2d716424ef221",
+    "size": 876
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/manifest.json": {
+    "sha256": "3d07e1cc8cab488b8709ddb2b34249a37628d7d269bf7ca2be0e596e30a7192e",
+    "size": 34543
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/ultra-100x40-idle-empty/capture.json": {
+    "sha256": "dea914afb99e165b9e477d888d2be52da2adb4e1ecb302f23207c8e43e4b7e7e",
+    "size": 1552
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/ultra-100x40-idle-empty/look-after.txt": {
+    "sha256": "1eb8bc56b645a0b798570ed2a6c226f08f43f4c312ec13aaddd2997d72677d99",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/ultra-100x40-idle-empty/look-before.txt": {
+    "sha256": "1eb8bc56b645a0b798570ed2a6c226f08f43f4c312ec13aaddd2997d72677d99",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/ultra-100x40-idle-empty/look.txt": {
+    "sha256": "1eb8bc56b645a0b798570ed2a6c226f08f43f4c312ec13aaddd2997d72677d99",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/ultra-100x40-idle-empty/screen.txt": {
+    "sha256": "af820696b2f04ccb6894ded8f9548edbaad3bdea2555af2e756e8ede9132ef73",
+    "size": 540
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/ultra-80-split-idle-empty/capture.json": {
+    "sha256": "d4e785fe2fed005bdc1b55ced26de01adaa60270786c018a073b78f073eed2cb",
+    "size": 1553
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/ultra-80-split-idle-empty/look-after.txt": {
+    "sha256": "59bbe94f5f7cac18b8c63a99139a4fb2729672dfcbc41d514bc0eb1d212bd238",
+    "size": 13
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/ultra-80-split-idle-empty/look-before.txt": {
+    "sha256": "59bbe94f5f7cac18b8c63a99139a4fb2729672dfcbc41d514bc0eb1d212bd238",
+    "size": 13
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/ultra-80-split-idle-empty/look.txt": {
+    "sha256": "59bbe94f5f7cac18b8c63a99139a4fb2729672dfcbc41d514bc0eb1d212bd238",
+    "size": 13
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/aarch64/ultra-80-split-idle-empty/screen.txt": {
+    "sha256": "d2adc63995ce957278742b1b5db3871219ebde910192bf052746f690b4e3e9db",
+    "size": 540
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/ap-replay-index.json": {
+    "sha256": "d938a776fdd7d97005d3282f810205580d244b350cdcbd1d5abb3d2db8a0712d",
+    "size": 7473
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/form-100x40-mcp-text-elicitation/capture.json": {
+    "sha256": "1755b6df0db05ee7574b62b2ebf98544575ee94dfe6aeba3a73d11bed42d7ef3",
+    "size": 1133
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/form-100x40-mcp-text-elicitation/look-after.txt": {
+    "sha256": "941a8fdd7e1443dce84a05228f5e941b8b6546d5b6f69c765bc8b36a8ed80ebb",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/form-100x40-mcp-text-elicitation/look-before.txt": {
+    "sha256": "941a8fdd7e1443dce84a05228f5e941b8b6546d5b6f69c765bc8b36a8ed80ebb",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/form-100x40-mcp-text-elicitation/look.txt": {
+    "sha256": "941a8fdd7e1443dce84a05228f5e941b8b6546d5b6f69c765bc8b36a8ed80ebb",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/form-100x40-mcp-text-elicitation/screen.txt": {
+    "sha256": "ca375f24698bb26cd2e84b168b298a19b9f39a4313f6074456077af71faa351e",
+    "size": 261
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/form-100x40-request-user-input-notes/capture.json": {
+    "sha256": "02880d791373b2e1367f54a97692413288ff77234bc07e384468ab52aa08910c",
+    "size": 1137
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/form-100x40-request-user-input-notes/look-after.txt": {
+    "sha256": "941a8fdd7e1443dce84a05228f5e941b8b6546d5b6f69c765bc8b36a8ed80ebb",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/form-100x40-request-user-input-notes/look-before.txt": {
+    "sha256": "941a8fdd7e1443dce84a05228f5e941b8b6546d5b6f69c765bc8b36a8ed80ebb",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/form-100x40-request-user-input-notes/look.txt": {
+    "sha256": "941a8fdd7e1443dce84a05228f5e941b8b6546d5b6f69c765bc8b36a8ed80ebb",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/form-100x40-request-user-input-notes/screen.txt": {
+    "sha256": "1167a1317ef8b583f71d85ca5f610aab0dd53f1e05a5046804ebfacbe9b73a71",
+    "size": 327
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/form-80-split-mcp-text-elicitation/capture.json": {
+    "sha256": "b6f70f8dc50071fbc7a481768ef2d529fc61596c2143ccc7e293efaf60c2ef38",
+    "size": 1134
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/form-80-split-mcp-text-elicitation/look-after.txt": {
+    "sha256": "da9db63c4d105795225815af1c5ff36351d6b10531795d801747bbda78d58c3f",
+    "size": 13
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/form-80-split-mcp-text-elicitation/look-before.txt": {
+    "sha256": "da9db63c4d105795225815af1c5ff36351d6b10531795d801747bbda78d58c3f",
+    "size": 13
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/form-80-split-mcp-text-elicitation/look.txt": {
+    "sha256": "da9db63c4d105795225815af1c5ff36351d6b10531795d801747bbda78d58c3f",
+    "size": 13
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/form-80-split-mcp-text-elicitation/screen.txt": {
+    "sha256": "ca375f24698bb26cd2e84b168b298a19b9f39a4313f6074456077af71faa351e",
+    "size": 261
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/form-80-split-request-user-input-notes/capture.json": {
+    "sha256": "6b64b7243567f0e2334179432e8e05b8b4d53f4e40ec9fdb9c970063bca89779",
+    "size": 1138
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/form-80-split-request-user-input-notes/look-after.txt": {
+    "sha256": "da9db63c4d105795225815af1c5ff36351d6b10531795d801747bbda78d58c3f",
+    "size": 13
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/form-80-split-request-user-input-notes/look-before.txt": {
+    "sha256": "da9db63c4d105795225815af1c5ff36351d6b10531795d801747bbda78d58c3f",
+    "size": 13
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/form-80-split-request-user-input-notes/look.txt": {
+    "sha256": "da9db63c4d105795225815af1c5ff36351d6b10531795d801747bbda78d58c3f",
+    "size": 13
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/form-80-split-request-user-input-notes/screen.txt": {
+    "sha256": "1167a1317ef8b583f71d85ca5f610aab0dd53f1e05a5046804ebfacbe9b73a71",
+    "size": 327
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/frontend-equivalence.json": {
+    "sha256": "960f65155a33c9b3e5e732ede489e8645165b6ab1920054175fb13d199be1648",
+    "size": 1079
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-100x40-approval-dialog/capture.json": {
+    "sha256": "46224a16af39bab25877885f79110a2fe9d8f67e7d08b4964ea1d2941d9ff12a",
+    "size": 1131
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-100x40-approval-dialog/look-after.txt": {
+    "sha256": "696d44aef3e0c580896febcbedea00f82167d9e900bad0c1c14c926e7e47ef8e",
+    "size": 16
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-100x40-approval-dialog/look-before.txt": {
+    "sha256": "696d44aef3e0c580896febcbedea00f82167d9e900bad0c1c14c926e7e47ef8e",
+    "size": 16
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-100x40-approval-dialog/look.txt": {
+    "sha256": "696d44aef3e0c580896febcbedea00f82167d9e900bad0c1c14c926e7e47ef8e",
+    "size": 16
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-100x40-approval-dialog/screen.txt": {
+    "sha256": "9e5b1b8039cc98627ca00256ffdc51ac9df2a01549e88e7b855150872182cdfa",
+    "size": 404
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-100x40-busy-midturn-t0/capture.json": {
+    "sha256": "ede60d5948da0f21a6f350e8f009c5ac9def3a39424d4f16c83f7be986e28a7d",
+    "size": 1508
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-100x40-busy-midturn-t0/look-after.txt": {
+    "sha256": "1eb8bc56b645a0b798570ed2a6c226f08f43f4c312ec13aaddd2997d72677d99",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-100x40-busy-midturn-t0/look-before.txt": {
+    "sha256": "1eb8bc56b645a0b798570ed2a6c226f08f43f4c312ec13aaddd2997d72677d99",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-100x40-busy-midturn-t0/look.txt": {
+    "sha256": "1eb8bc56b645a0b798570ed2a6c226f08f43f4c312ec13aaddd2997d72677d99",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-100x40-busy-midturn-t0/screen.txt": {
+    "sha256": "e18e786579bced8c3153369140de9264b424ad0c9217c0b25ea8dd942ca6e865",
+    "size": 529
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-100x40-busy-midturn-t5/capture.json": {
+    "sha256": "38838507510be42a4e5fd582c0040168bc3459f40f135ef23bb924df773e3bfb",
+    "size": 1508
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-100x40-busy-midturn-t5/look-after.txt": {
+    "sha256": "1eb8bc56b645a0b798570ed2a6c226f08f43f4c312ec13aaddd2997d72677d99",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-100x40-busy-midturn-t5/look-before.txt": {
+    "sha256": "1eb8bc56b645a0b798570ed2a6c226f08f43f4c312ec13aaddd2997d72677d99",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-100x40-busy-midturn-t5/look.txt": {
+    "sha256": "1eb8bc56b645a0b798570ed2a6c226f08f43f4c312ec13aaddd2997d72677d99",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-100x40-busy-midturn-t5/screen.txt": {
+    "sha256": "420cf68e41dd29815c7c65cc53dc155eb21f9cc2f848e82b21a4c89a50c600a2",
+    "size": 529
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-100x40-busy-typed/capture.json": {
+    "sha256": "5b81b2b56f5b8719e74fe9e41503b543f98027fa61104d213eaac5faf154127f",
+    "size": 1504
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-100x40-busy-typed/look-after.txt": {
+    "sha256": "1631dcf4ff3835a3f7084b3ecb05e3cd68fa6566149875062e5c8ff709a270de",
+    "size": 15
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-100x40-busy-typed/look-before.txt": {
+    "sha256": "1631dcf4ff3835a3f7084b3ecb05e3cd68fa6566149875062e5c8ff709a270de",
+    "size": 15
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-100x40-busy-typed/look.txt": {
+    "sha256": "1631dcf4ff3835a3f7084b3ecb05e3cd68fa6566149875062e5c8ff709a270de",
+    "size": 15
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-100x40-busy-typed/screen.txt": {
+    "sha256": "970cfb7376db187d72c3237ffdd082541d67e5cfa64c5ab9eccc04bf763c2811",
+    "size": 530
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-100x40-idle-empty/capture.json": {
+    "sha256": "6eb42312c3ae8422defe3406356f14caa6e352c96fd258973344e1724e8efaeb",
+    "size": 1503
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-100x40-idle-empty/look-after.txt": {
+    "sha256": "1eb8bc56b645a0b798570ed2a6c226f08f43f4c312ec13aaddd2997d72677d99",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-100x40-idle-empty/look-before.txt": {
+    "sha256": "1eb8bc56b645a0b798570ed2a6c226f08f43f4c312ec13aaddd2997d72677d99",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-100x40-idle-empty/look.txt": {
+    "sha256": "1eb8bc56b645a0b798570ed2a6c226f08f43f4c312ec13aaddd2997d72677d99",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-100x40-idle-empty/screen.txt": {
+    "sha256": "ca96a15b8585ed7ea4d8d0c4d14861c4eec8de3504bbad7ec8d83fa5b43551d2",
+    "size": 492
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-100x40-idle-help/capture.json": {
+    "sha256": "2fbddf86cb6b9e3215d539bf26b49fe6ed6500aa3cc7948ebc4d917741fbe792",
+    "size": 1502
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-100x40-idle-help/look-after.txt": {
+    "sha256": "4df936b445fb9a9bc15b4ca787eed7a96d3d8fe966393e738aee9a235a3e16b3",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-100x40-idle-help/look-before.txt": {
+    "sha256": "4df936b445fb9a9bc15b4ca787eed7a96d3d8fe966393e738aee9a235a3e16b3",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-100x40-idle-help/look.txt": {
+    "sha256": "4df936b445fb9a9bc15b4ca787eed7a96d3d8fe966393e738aee9a235a3e16b3",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-100x40-idle-help/screen.txt": {
+    "sha256": "bb74ad580486c227a5b18f19357e36b9acf362a552121d6d831138567f8080c0",
+    "size": 1513
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-100x40-idle-two-row-draft/capture.json": {
+    "sha256": "d3eab4e0f51a1922875b42988b86311ea5b85d5c4ca5ede9366af9c0e413b4b9",
+    "size": 1130
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-100x40-idle-two-row-draft/look-after.txt": {
+    "sha256": "6f04d3bc3cc430d776065a8d50a05af2ecc9c79d9b54ab4726bcc67e6a7cf5ac",
+    "size": 15
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-100x40-idle-two-row-draft/look-before.txt": {
+    "sha256": "6f04d3bc3cc430d776065a8d50a05af2ecc9c79d9b54ab4726bcc67e6a7cf5ac",
+    "size": 15
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-100x40-idle-two-row-draft/look.txt": {
+    "sha256": "6f04d3bc3cc430d776065a8d50a05af2ecc9c79d9b54ab4726bcc67e6a7cf5ac",
+    "size": 15
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-100x40-idle-two-row-draft/screen.txt": {
+    "sha256": "180123922dea424925609f0a85163606e71675b077e7b3af0bd692c012135738",
+    "size": 532
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-80-split-approval-dialog/capture.json": {
+    "sha256": "7991b831f7940edfefe5bafe55e12b76cec30a5c8c95ebd3569c3fd87f427f25",
+    "size": 1131
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-80-split-approval-dialog/look-after.txt": {
+    "sha256": "910438d0de797c917b3fae63b26e8d309627b145c3b02651f3808897be3cdacb",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-80-split-approval-dialog/look-before.txt": {
+    "sha256": "910438d0de797c917b3fae63b26e8d309627b145c3b02651f3808897be3cdacb",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-80-split-approval-dialog/look.txt": {
+    "sha256": "910438d0de797c917b3fae63b26e8d309627b145c3b02651f3808897be3cdacb",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-80-split-approval-dialog/screen.txt": {
+    "sha256": "9e5b1b8039cc98627ca00256ffdc51ac9df2a01549e88e7b855150872182cdfa",
+    "size": 404
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-80-split-busy-midturn-t0/capture.json": {
+    "sha256": "d77f0a9702a179a4ffe66ca6a7f3366e9979cb4807c3692be0971357246b1004",
+    "size": 1509
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-80-split-busy-midturn-t0/look-after.txt": {
+    "sha256": "59bbe94f5f7cac18b8c63a99139a4fb2729672dfcbc41d514bc0eb1d212bd238",
+    "size": 13
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-80-split-busy-midturn-t0/look-before.txt": {
+    "sha256": "59bbe94f5f7cac18b8c63a99139a4fb2729672dfcbc41d514bc0eb1d212bd238",
+    "size": 13
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-80-split-busy-midturn-t0/look.txt": {
+    "sha256": "59bbe94f5f7cac18b8c63a99139a4fb2729672dfcbc41d514bc0eb1d212bd238",
+    "size": 13
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-80-split-busy-midturn-t0/screen.txt": {
+    "sha256": "c0fa4559afca34a286673bb85994703b0cae8178aea52e0f712d21375c8e6313",
+    "size": 554
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-80-split-busy-midturn-t5/capture.json": {
+    "sha256": "ec23e6baf872eb6a364b2618dbb06b2cc7b6bae7772e038b80b7840a896b3fa0",
+    "size": 1509
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-80-split-busy-midturn-t5/look-after.txt": {
+    "sha256": "59bbe94f5f7cac18b8c63a99139a4fb2729672dfcbc41d514bc0eb1d212bd238",
+    "size": 13
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-80-split-busy-midturn-t5/look-before.txt": {
+    "sha256": "59bbe94f5f7cac18b8c63a99139a4fb2729672dfcbc41d514bc0eb1d212bd238",
+    "size": 13
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-80-split-busy-midturn-t5/look.txt": {
+    "sha256": "59bbe94f5f7cac18b8c63a99139a4fb2729672dfcbc41d514bc0eb1d212bd238",
+    "size": 13
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-80-split-busy-midturn-t5/screen.txt": {
+    "sha256": "3c23b4501f983df40ce997f18ff1d01c52b0bb7f4f0f3fed4538725f5cbd1c59",
+    "size": 554
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-80-split-busy-typed/capture.json": {
+    "sha256": "7aaf7e4bda7919b231746772766a617cc63db2faa24b63f575f38d8ee761fb2c",
+    "size": 1505
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-80-split-busy-typed/look-after.txt": {
+    "sha256": "23629823f73a8848d732720ffaff87f205cfb0207e164061ce85223de3ba9e5f",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-80-split-busy-typed/look-before.txt": {
+    "sha256": "23629823f73a8848d732720ffaff87f205cfb0207e164061ce85223de3ba9e5f",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-80-split-busy-typed/look.txt": {
+    "sha256": "23629823f73a8848d732720ffaff87f205cfb0207e164061ce85223de3ba9e5f",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-80-split-busy-typed/screen.txt": {
+    "sha256": "6d849de0cf8a833689bb818eaaf4abe6016d7e47fb3fad03b2873322c37a2842",
+    "size": 555
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-80-split-idle-empty/capture.json": {
+    "sha256": "837589b19df3ba0690c1056775359b5b8441190120c44724d0e0f2ab303376c9",
+    "size": 1504
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-80-split-idle-empty/look-after.txt": {
+    "sha256": "59bbe94f5f7cac18b8c63a99139a4fb2729672dfcbc41d514bc0eb1d212bd238",
+    "size": 13
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-80-split-idle-empty/look-before.txt": {
+    "sha256": "59bbe94f5f7cac18b8c63a99139a4fb2729672dfcbc41d514bc0eb1d212bd238",
+    "size": 13
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-80-split-idle-empty/look.txt": {
+    "sha256": "59bbe94f5f7cac18b8c63a99139a4fb2729672dfcbc41d514bc0eb1d212bd238",
+    "size": 13
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-80-split-idle-empty/screen.txt": {
+    "sha256": "9b2f303100d63fcedb82416414a3cf72d772005422448fff55d5b61c576e6dff",
+    "size": 517
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-80-split-idle-help/capture.json": {
+    "sha256": "6c8f5a3af2d3d66c367f299fc75f114db080da6bea1eb8609ff0867eba36059f",
+    "size": 1503
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-80-split-idle-help/look-after.txt": {
+    "sha256": "cd79485f2e79a279f4d2d3310ea2c246fe6f41b8a83512ada2d716d88b43aef1",
+    "size": 13
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-80-split-idle-help/look-before.txt": {
+    "sha256": "cd79485f2e79a279f4d2d3310ea2c246fe6f41b8a83512ada2d716d88b43aef1",
+    "size": 13
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-80-split-idle-help/look.txt": {
+    "sha256": "cd79485f2e79a279f4d2d3310ea2c246fe6f41b8a83512ada2d716d88b43aef1",
+    "size": 13
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-80-split-idle-help/screen.txt": {
+    "sha256": "981da1a0220eb2aaa82efa6447c10f95902db6a0135c826bc7172c333ac87d04",
+    "size": 1538
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-80-split-idle-two-row-draft/capture.json": {
+    "sha256": "a60b304ad96fdd8cf7b3037e32744e2309cb295982d9a229539eee176b9dc21f",
+    "size": 1131
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-80-split-idle-two-row-draft/look-after.txt": {
+    "sha256": "426cbf2236f8213c09ac4ba209049146047a6cbc33f6661f31f93cd32ebf4c14",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-80-split-idle-two-row-draft/look-before.txt": {
+    "sha256": "426cbf2236f8213c09ac4ba209049146047a6cbc33f6661f31f93cd32ebf4c14",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-80-split-idle-two-row-draft/look.txt": {
+    "sha256": "426cbf2236f8213c09ac4ba209049146047a6cbc33f6661f31f93cd32ebf4c14",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/high-80-split-idle-two-row-draft/screen.txt": {
+    "sha256": "0614cb5cda39ffd442d346413c15b09a90bac4e93ed38a4b125bc8b0998769a0",
+    "size": 532
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/integrity.json": {
+    "sha256": "d833bbf5865a3fbd6aa371a082a65a5bb9c824e9c29b21d86a5f94d02df6b562",
+    "size": 875
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/manifest.json": {
+    "sha256": "07af6d7d746df9adcbe8c0783d14824197fd9b18baebd0d5b1671ecb425a4bdd",
+    "size": 33741
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/ultra-100x40-idle-empty/capture.json": {
+    "sha256": "86084df19bcdd8f47ed780606550ba8fd51211099b8a6a462d3d53c1112ac97c",
+    "size": 1504
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/ultra-100x40-idle-empty/look-after.txt": {
+    "sha256": "1eb8bc56b645a0b798570ed2a6c226f08f43f4c312ec13aaddd2997d72677d99",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/ultra-100x40-idle-empty/look-before.txt": {
+    "sha256": "1eb8bc56b645a0b798570ed2a6c226f08f43f4c312ec13aaddd2997d72677d99",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/ultra-100x40-idle-empty/look.txt": {
+    "sha256": "1eb8bc56b645a0b798570ed2a6c226f08f43f4c312ec13aaddd2997d72677d99",
+    "size": 14
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/ultra-100x40-idle-empty/screen.txt": {
+    "sha256": "cfa757229fed92870cd2bae920f2048d6333e9b4ec93fdaa0f3788898670b1cb",
+    "size": 492
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/ultra-80-split-idle-empty/capture.json": {
+    "sha256": "d074eab54a6c8d735e5e00e68a37eecb161f9aa102c0e2220bcf6e69a137f907",
+    "size": 1505
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/ultra-80-split-idle-empty/look-after.txt": {
+    "sha256": "59bbe94f5f7cac18b8c63a99139a4fb2729672dfcbc41d514bc0eb1d212bd238",
+    "size": 13
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/ultra-80-split-idle-empty/look-before.txt": {
+    "sha256": "59bbe94f5f7cac18b8c63a99139a4fb2729672dfcbc41d514bc0eb1d212bd238",
+    "size": 13
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/ultra-80-split-idle-empty/look.txt": {
+    "sha256": "59bbe94f5f7cac18b8c63a99139a4fb2729672dfcbc41d514bc0eb1d212bd238",
+    "size": 13
+  },
+  "docs/releases/0.163.0-plus.0.4.3/captures/x86_64/ultra-80-split-idle-empty/screen.txt": {
+    "sha256": "b22c57a9269b5a889c1adcb07f2190d490ba976866fd900714b4d7b419fdc79e",
+    "size": 492
+  },
+  "docs/releases/0.163.0-plus.0.4.3/companion-checks.json": {
+    "sha256": "18316691ad546937d8aecd3a66630c989d4f061e7a9ec8a8a00955785d6412fe",
+    "size": 820
+  },
+  "docs/releases/0.163.0-plus.0.4.3/compatibility-record-contract.md": {
+    "sha256": "d933339f665375b017cd24cebd7f3113799843e38e21c929f60cb99f04d7ef91",
+    "size": 3456
+  },
+  "docs/releases/0.163.0-plus.0.4.3/footer-proof.json": {
+    "sha256": "b2e05b47e216fddec323686fcc829ee57efb68eeabb7c0a29bc31ae3e6164ecf",
+    "size": 48121
+  },
+  "docs/releases/0.163.0-plus.0.4.3/handoff.json": {
+    "sha256": "77c4c1de010579819022cf6406c7ad671b08ec7c535f8f947f40354cba2e5a05",
+    "size": 6553
+  },
+  "docs/releases/0.163.0-plus.0.4.3/preserved-evidence.json": {
+    "sha256": "7416bd7715d99752556a328ae62b3dba3e258f4faf5ebfdbfff94435c92b98bc",
+    "size": 888
+  },
+  "docs/releases/0.163.0-plus.0.4.3/root-final-review.json": {
+    "sha256": "30da6b36eec536ed404118d26cb4c6c011189245be9b2059f09963e95ded688e",
+    "size": 596
+  },
+  "docs/releases/0.163.0-plus.0.4.3/upstream-baseline-failures.json": {
+    "sha256": "ad424450af9b0980fe2567bb2e3a02cd4ac85ecfd46e21e2f4dd2c1eb21dd10e",
+    "size": 1367
+  },
+  "docs/releases/0.163.0-plus.0.4.3/verification.json": {
+    "sha256": "7e3006e76fc4ce1bb4f3f7282163f86b268a616a76f1b1e31dbfb8edfcefd574",
+    "size": 2363
+  },
+  "docs/releases/0.163.0-plus.0.4.3/verify-mixes.py": {
+    "sha256": "605282f730691f7870b3adb3f7ced4192eda8315a9aa7855c0d0bd83530bedaf",
+    "size": 32922
+  },
+  "docs/releases/0.163.0-plus.0.4.3/x86_64-ap-replay.json": {
+    "sha256": "6719fd68251c724e4b07c64d32aeca97c48e26cad55f5fe48727dcad7fe62c3a",
+    "size": 3395
+  },
+  "docs/releases/0.163.0-plus.0.4.3/x86_64-ap-report.json": {
+    "sha256": "4b03a4ada0b9313928bb5d57da650dcef8e465baf7c368126af8e878cd217ac5",
+    "size": 4120
+  },
+  "docs/releases/0.163.0-plus.0.4.3/x86_64-compat042.json": {
+    "sha256": "e976e94272cedc99cee057775e39fbcd8266a34d9dfb7d20b5aff7e1ad86653b",
+    "size": 291610
+  },
+  "docs/releases/0.163.0-plus.0.4.3/x86_64-frontend-equivalence.json": {
+    "sha256": "960f65155a33c9b3e5e732ede489e8645165b6ab1920054175fb13d199be1648",
+    "size": 1079
+  },
+  "docs/releases/0.163.0-plus.0.4.3/x86_64-qualification-summary.json": {
+    "sha256": "7a0d9e01a86006cf83cd30da14c8d04739a616fc6511f7a5ac2d9343d6f4115b",
+    "size": 3053
+  },
+  "docs/releases/0.163.0-plus.0.4.3/x86_64-root-acceptance.json": {
+    "sha256": "209e109dd0a11162b820af18ce8597f016c9fa7df4c9d176f8809f03fdff1751",
+    "size": 1036
+  },
+  "docs/releases/0.163.0-plus.0.4.3/x86_64-sandbox-comparison.json": {
+    "sha256": "e6041e92783dd295136a6defaa68565f685dc9b6e7c9adda39bdd9a94b242cb6",
+    "size": 2513
+  }
+}

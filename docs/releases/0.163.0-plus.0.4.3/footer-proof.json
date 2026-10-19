@@ -1,0 +1,1021 @@
+{
+  "accepted": true,
+  "source": "ecddea18279ede7774749c150ded30e7ef3b1d87",
+  "actual_classifier_replay": true,
+  "targets": {
+    "x86_64": {
+      "manifest_sha256": "27950a50fac920eb5cbdbb4812608d0dc19de602cbd06c8e0e2f9139cd731200",
+      "archive_sha256": "d03b795fb8e7069c8697b3f3479ed32b881dd9517b0c147006ab67b8d89c83d4",
+      "native": true,
+      "passed": true,
+      "development_pre_package": false,
+      "candidate_acceptance": true,
+      "capture_source_commit": "ecddea18279ede7774749c150ded30e7ef3b1d87",
+      "binary_source_commit": "3598e7a61543e9ae0f09c1da88b5ca89e27afe9b",
+      "binary_sha256": "4c326e422420f0478cf2d1960365b57b59be140dfe72efbd5601acff83717ce7",
+      "code_mode_host_sha256": "488c1ee7ac9ecf2348c7e544312ae8ff800309316c0e441195a72248c7a36f3c",
+      "frontend_equivalence": {
+        "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/frontend-equivalence.json",
+        "sha256": "960f65155a33c9b3e5e732ede489e8645165b6ab1920054175fb13d199be1648"
+      },
+      "look_fields": 5,
+      "screen_v2": true,
+      "ultracode_badge_text": "ultracode",
+      "ultracode_badge_requested_on_only": true,
+      "tiny_clipping_passed": true,
+      "states": [
+        {
+          "id": "high-100x40-idle-empty",
+          "expected": "idle",
+          "footer_rows": 8,
+          "explicit_help_or_search": false,
+          "count_basis": "nonempty lines below last composer/cursor row; overlay rows retained as measured",
+          "nonempty_below_initial_prompt": 8
+        },
+        {
+          "id": "high-100x40-idle-help",
+          "expected": "idle",
+          "footer_rows": 9,
+          "explicit_help_or_search": true,
+          "count_basis": "nonempty lines below last composer/cursor row; overlay rows retained as measured",
+          "nonempty_below_initial_prompt": 9
+        },
+        {
+          "id": "high-100x40-busy-midturn-t0",
+          "expected": "busy",
+          "footer_rows": 8,
+          "explicit_help_or_search": false,
+          "count_basis": "nonempty lines below last composer/cursor row; overlay rows retained as measured",
+          "nonempty_below_initial_prompt": 8
+        },
+        {
+          "id": "high-100x40-busy-midturn-t5",
+          "expected": "busy",
+          "footer_rows": 8,
+          "explicit_help_or_search": false,
+          "count_basis": "nonempty lines below last composer/cursor row; overlay rows retained as measured",
+          "nonempty_below_initial_prompt": 8
+        },
+        {
+          "id": "high-100x40-busy-typed",
+          "expected": "busy",
+          "footer_rows": 8,
+          "explicit_help_or_search": false,
+          "count_basis": "nonempty lines below last composer/cursor row; overlay rows retained as measured",
+          "nonempty_below_initial_prompt": 8
+        },
+        {
+          "id": "high-100x40-idle-two-row-draft",
+          "expected": "unknown",
+          "footer_rows": 8,
+          "explicit_help_or_search": false,
+          "count_basis": "nonempty lines below last composer/cursor row; overlay rows retained as measured",
+          "nonempty_below_initial_prompt": 9
+        },
+        {
+          "id": "high-80-split-idle-empty",
+          "expected": "idle",
+          "footer_rows": 8,
+          "explicit_help_or_search": false,
+          "count_basis": "nonempty lines below last composer/cursor row; overlay rows retained as measured",
+          "nonempty_below_initial_prompt": 8
+        },
+        {
+          "id": "high-80-split-idle-help",
+          "expected": "idle",
+          "footer_rows": 9,
+          "explicit_help_or_search": true,
+          "count_basis": "nonempty lines below last composer/cursor row; overlay rows retained as measured",
+          "nonempty_below_initial_prompt": 9
+        },
+        {
+          "id": "high-80-split-busy-midturn-t0",
+          "expected": "busy",
+          "footer_rows": 8,
+          "explicit_help_or_search": false,
+          "count_basis": "nonempty lines below last composer/cursor row; overlay rows retained as measured",
+          "nonempty_below_initial_prompt": 8
+        },
+        {
+          "id": "high-80-split-busy-midturn-t5",
+          "expected": "busy",
+          "footer_rows": 8,
+          "explicit_help_or_search": false,
+          "count_basis": "nonempty lines below last composer/cursor row; overlay rows retained as measured",
+          "nonempty_below_initial_prompt": 8
+        },
+        {
+          "id": "high-80-split-busy-typed",
+          "expected": "busy",
+          "footer_rows": 8,
+          "explicit_help_or_search": false,
+          "count_basis": "nonempty lines below last composer/cursor row; overlay rows retained as measured",
+          "nonempty_below_initial_prompt": 8
+        },
+        {
+          "id": "high-80-split-idle-two-row-draft",
+          "expected": "unknown",
+          "footer_rows": 8,
+          "explicit_help_or_search": false,
+          "count_basis": "nonempty lines below last composer/cursor row; overlay rows retained as measured",
+          "nonempty_below_initial_prompt": 9
+        },
+        {
+          "id": "high-80-split-approval-dialog",
+          "expected": "unknown",
+          "footer_rows": 0,
+          "explicit_help_or_search": false,
+          "count_basis": "nonempty lines below last composer/cursor row; overlay rows retained as measured",
+          "nonempty_below_initial_prompt": null
+        },
+        {
+          "id": "high-100x40-approval-dialog",
+          "expected": "unknown",
+          "footer_rows": 0,
+          "explicit_help_or_search": false,
+          "count_basis": "nonempty lines below last composer/cursor row; overlay rows retained as measured",
+          "nonempty_below_initial_prompt": null
+        },
+        {
+          "id": "ultra-100x40-idle-empty",
+          "expected": "idle",
+          "footer_rows": 8,
+          "explicit_help_or_search": false,
+          "count_basis": "nonempty lines below last composer/cursor row; overlay rows retained as measured",
+          "nonempty_below_initial_prompt": 8
+        },
+        {
+          "id": "ultra-80-split-idle-empty",
+          "expected": "idle",
+          "footer_rows": 8,
+          "explicit_help_or_search": false,
+          "count_basis": "nonempty lines below last composer/cursor row; overlay rows retained as measured",
+          "nonempty_below_initial_prompt": 8
+        },
+        {
+          "id": "form-100x40-request-user-input-notes",
+          "expected": "unknown",
+          "footer_rows": 1,
+          "explicit_help_or_search": false,
+          "count_basis": "nonempty lines below last composer/cursor row; overlay rows retained as measured",
+          "nonempty_below_initial_prompt": null
+        },
+        {
+          "id": "form-80-split-request-user-input-notes",
+          "expected": "unknown",
+          "footer_rows": 1,
+          "explicit_help_or_search": false,
+          "count_basis": "nonempty lines below last composer/cursor row; overlay rows retained as measured",
+          "nonempty_below_initial_prompt": null
+        },
+        {
+          "id": "form-100x40-mcp-text-elicitation",
+          "expected": "unknown",
+          "footer_rows": 1,
+          "explicit_help_or_search": false,
+          "count_basis": "nonempty lines below last composer/cursor row; overlay rows retained as measured",
+          "nonempty_below_initial_prompt": null
+        },
+        {
+          "id": "form-80-split-mcp-text-elicitation",
+          "expected": "unknown",
+          "footer_rows": 1,
+          "explicit_help_or_search": false,
+          "count_basis": "nonempty lines below last composer/cursor row; overlay rows retained as measured",
+          "nonempty_below_initial_prompt": null
+        }
+      ],
+      "bundle_path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/x86-packaged-cursor-v2.tar.gz",
+      "bundle_sha256": "22f08e87bf7d00c735372c65cd0066dd392f56219c14bf7a5d4b053c11eec7bf",
+      "ap_replay": {
+        "passed": true,
+        "busy_hash_passed": true,
+        "ap_commit": "3ee82567b4007fa80b31bd012fb3f531c7d476a7",
+        "classifier_commit": "4a3a9afd76967b9b1d53403006174b1e4e938748",
+        "bundle_sha256": "22f08e87bf7d00c735372c65cd0066dd392f56219c14bf7a5d4b053c11eec7bf",
+        "expected_verdicts": [
+          {
+            "state": "high-100x40-idle-empty",
+            "expected": "idle",
+            "actual": "idle",
+            "passed": true
+          },
+          {
+            "state": "high-100x40-idle-help",
+            "expected": "idle",
+            "actual": "idle",
+            "passed": true
+          },
+          {
+            "state": "high-100x40-busy-midturn-t0",
+            "expected": "busy",
+            "actual": "busy",
+            "passed": true
+          },
+          {
+            "state": "high-100x40-busy-midturn-t5",
+            "expected": "busy",
+            "actual": "busy",
+            "passed": true
+          },
+          {
+            "state": "high-100x40-busy-typed",
+            "expected": "busy",
+            "actual": "busy",
+            "passed": true
+          },
+          {
+            "state": "high-100x40-idle-two-row-draft",
+            "expected": "unknown",
+            "actual": "unknown",
+            "passed": true
+          },
+          {
+            "state": "high-80-split-idle-empty",
+            "expected": "idle",
+            "actual": "idle",
+            "passed": true
+          },
+          {
+            "state": "high-80-split-idle-help",
+            "expected": "idle",
+            "actual": "idle",
+            "passed": true
+          },
+          {
+            "state": "high-80-split-busy-midturn-t0",
+            "expected": "busy",
+            "actual": "busy",
+            "passed": true
+          },
+          {
+            "state": "high-80-split-busy-midturn-t5",
+            "expected": "busy",
+            "actual": "busy",
+            "passed": true
+          },
+          {
+            "state": "high-80-split-busy-typed",
+            "expected": "busy",
+            "actual": "busy",
+            "passed": true
+          },
+          {
+            "state": "high-80-split-idle-two-row-draft",
+            "expected": "unknown",
+            "actual": "unknown",
+            "passed": true
+          },
+          {
+            "state": "high-80-split-approval-dialog",
+            "expected": "unknown",
+            "actual": "unknown",
+            "passed": true
+          },
+          {
+            "state": "high-100x40-approval-dialog",
+            "expected": "unknown",
+            "actual": "unknown",
+            "passed": true
+          },
+          {
+            "state": "ultra-100x40-idle-empty",
+            "expected": "idle",
+            "actual": "idle",
+            "passed": true
+          },
+          {
+            "state": "ultra-80-split-idle-empty",
+            "expected": "idle",
+            "actual": "idle",
+            "passed": true
+          },
+          {
+            "state": "form-100x40-request-user-input-notes",
+            "expected": "unknown",
+            "actual": "unknown",
+            "passed": true
+          },
+          {
+            "state": "form-80-split-request-user-input-notes",
+            "expected": "unknown",
+            "actual": "unknown",
+            "passed": true
+          },
+          {
+            "state": "form-100x40-mcp-text-elicitation",
+            "expected": "unknown",
+            "actual": "unknown",
+            "passed": true
+          },
+          {
+            "state": "form-80-split-mcp-text-elicitation",
+            "expected": "unknown",
+            "actual": "unknown",
+            "passed": true
+          }
+        ],
+        "original_report_sha256": "4b03a4ada0b9313928bb5d57da650dcef8e465baf7c368126af8e878cd217ac5",
+        "provenance": "Amended AP report verified from Git; only classifier commit spelling changed; fixtures/verdicts/busy-pair results identical.",
+        "ap_release_installed": false,
+        "original_report_path": ".build/release043/x86-runtime-final/ap-replay/amended-report.json",
+        "superseded_report_commit": "c44fa7eafb0b425cf8364cabda3dcbc2f5b88672"
+      },
+      "evidence": [
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/manifest.json",
+          "sha256": "07af6d7d746df9adcbe8c0783d14824197fd9b18baebd0d5b1671ecb425a4bdd"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/integrity.json",
+          "sha256": "d833bbf5865a3fbd6aa371a082a65a5bb9c824e9c29b21d86a5f94d02df6b562"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/frontend-equivalence.json",
+          "sha256": "960f65155a33c9b3e5e732ede489e8645165b6ab1920054175fb13d199be1648"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/frontend-package-manifest.json",
+          "sha256": "27950a50fac920eb5cbdbb4812608d0dc19de602cbd06c8e0e2f9139cd731200"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/fleet-footer/report.json",
+          "sha256": "05dc280751fb7cfe613ade3ef41905060015949aa1491e911335121d540fdb19"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/setting-footer/report.json",
+          "sha256": "7e3061361730a726a7f56f611f1d3be5a0a8b34703f7fac41cd2bf542946c4c0"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/ap-replay/receipt.json",
+          "sha256": "6719fd68251c724e4b07c64d32aeca97c48e26cad55f5fe48727dcad7fe62c3a"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/high-100x40-idle-empty/screen.txt",
+          "sha256": "ca96a15b8585ed7ea4d8d0c4d14861c4eec8de3504bbad7ec8d83fa5b43551d2"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/high-100x40-idle-empty/look.txt",
+          "sha256": "1eb8bc56b645a0b798570ed2a6c226f08f43f4c312ec13aaddd2997d72677d99"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/high-100x40-idle-help/screen.txt",
+          "sha256": "bb74ad580486c227a5b18f19357e36b9acf362a552121d6d831138567f8080c0"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/high-100x40-idle-help/look.txt",
+          "sha256": "4df936b445fb9a9bc15b4ca787eed7a96d3d8fe966393e738aee9a235a3e16b3"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/high-100x40-busy-midturn-t0/screen.txt",
+          "sha256": "e18e786579bced8c3153369140de9264b424ad0c9217c0b25ea8dd942ca6e865"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/high-100x40-busy-midturn-t0/look.txt",
+          "sha256": "1eb8bc56b645a0b798570ed2a6c226f08f43f4c312ec13aaddd2997d72677d99"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/high-100x40-busy-midturn-t5/screen.txt",
+          "sha256": "420cf68e41dd29815c7c65cc53dc155eb21f9cc2f848e82b21a4c89a50c600a2"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/high-100x40-busy-midturn-t5/look.txt",
+          "sha256": "1eb8bc56b645a0b798570ed2a6c226f08f43f4c312ec13aaddd2997d72677d99"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/high-100x40-busy-typed/screen.txt",
+          "sha256": "970cfb7376db187d72c3237ffdd082541d67e5cfa64c5ab9eccc04bf763c2811"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/high-100x40-busy-typed/look.txt",
+          "sha256": "1631dcf4ff3835a3f7084b3ecb05e3cd68fa6566149875062e5c8ff709a270de"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/high-100x40-idle-two-row-draft/screen.txt",
+          "sha256": "180123922dea424925609f0a85163606e71675b077e7b3af0bd692c012135738"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/high-100x40-idle-two-row-draft/look.txt",
+          "sha256": "6f04d3bc3cc430d776065a8d50a05af2ecc9c79d9b54ab4726bcc67e6a7cf5ac"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/high-80-split-idle-empty/screen.txt",
+          "sha256": "9b2f303100d63fcedb82416414a3cf72d772005422448fff55d5b61c576e6dff"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/high-80-split-idle-empty/look.txt",
+          "sha256": "59bbe94f5f7cac18b8c63a99139a4fb2729672dfcbc41d514bc0eb1d212bd238"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/high-80-split-idle-help/screen.txt",
+          "sha256": "981da1a0220eb2aaa82efa6447c10f95902db6a0135c826bc7172c333ac87d04"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/high-80-split-idle-help/look.txt",
+          "sha256": "cd79485f2e79a279f4d2d3310ea2c246fe6f41b8a83512ada2d716d88b43aef1"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/high-80-split-busy-midturn-t0/screen.txt",
+          "sha256": "c0fa4559afca34a286673bb85994703b0cae8178aea52e0f712d21375c8e6313"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/high-80-split-busy-midturn-t0/look.txt",
+          "sha256": "59bbe94f5f7cac18b8c63a99139a4fb2729672dfcbc41d514bc0eb1d212bd238"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/high-80-split-busy-midturn-t5/screen.txt",
+          "sha256": "3c23b4501f983df40ce997f18ff1d01c52b0bb7f4f0f3fed4538725f5cbd1c59"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/high-80-split-busy-midturn-t5/look.txt",
+          "sha256": "59bbe94f5f7cac18b8c63a99139a4fb2729672dfcbc41d514bc0eb1d212bd238"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/high-80-split-busy-typed/screen.txt",
+          "sha256": "6d849de0cf8a833689bb818eaaf4abe6016d7e47fb3fad03b2873322c37a2842"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/high-80-split-busy-typed/look.txt",
+          "sha256": "23629823f73a8848d732720ffaff87f205cfb0207e164061ce85223de3ba9e5f"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/high-80-split-idle-two-row-draft/screen.txt",
+          "sha256": "0614cb5cda39ffd442d346413c15b09a90bac4e93ed38a4b125bc8b0998769a0"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/high-80-split-idle-two-row-draft/look.txt",
+          "sha256": "426cbf2236f8213c09ac4ba209049146047a6cbc33f6661f31f93cd32ebf4c14"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/high-80-split-approval-dialog/screen.txt",
+          "sha256": "9e5b1b8039cc98627ca00256ffdc51ac9df2a01549e88e7b855150872182cdfa"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/high-80-split-approval-dialog/look.txt",
+          "sha256": "910438d0de797c917b3fae63b26e8d309627b145c3b02651f3808897be3cdacb"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/high-100x40-approval-dialog/screen.txt",
+          "sha256": "9e5b1b8039cc98627ca00256ffdc51ac9df2a01549e88e7b855150872182cdfa"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/high-100x40-approval-dialog/look.txt",
+          "sha256": "696d44aef3e0c580896febcbedea00f82167d9e900bad0c1c14c926e7e47ef8e"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/ultra-100x40-idle-empty/screen.txt",
+          "sha256": "cfa757229fed92870cd2bae920f2048d6333e9b4ec93fdaa0f3788898670b1cb"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/ultra-100x40-idle-empty/look.txt",
+          "sha256": "1eb8bc56b645a0b798570ed2a6c226f08f43f4c312ec13aaddd2997d72677d99"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/ultra-80-split-idle-empty/screen.txt",
+          "sha256": "b22c57a9269b5a889c1adcb07f2190d490ba976866fd900714b4d7b419fdc79e"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/ultra-80-split-idle-empty/look.txt",
+          "sha256": "59bbe94f5f7cac18b8c63a99139a4fb2729672dfcbc41d514bc0eb1d212bd238"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/form-100x40-request-user-input-notes/screen.txt",
+          "sha256": "1167a1317ef8b583f71d85ca5f610aab0dd53f1e05a5046804ebfacbe9b73a71"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/form-100x40-request-user-input-notes/look.txt",
+          "sha256": "941a8fdd7e1443dce84a05228f5e941b8b6546d5b6f69c765bc8b36a8ed80ebb"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/form-80-split-request-user-input-notes/screen.txt",
+          "sha256": "1167a1317ef8b583f71d85ca5f610aab0dd53f1e05a5046804ebfacbe9b73a71"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/form-80-split-request-user-input-notes/look.txt",
+          "sha256": "da9db63c4d105795225815af1c5ff36351d6b10531795d801747bbda78d58c3f"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/form-100x40-mcp-text-elicitation/screen.txt",
+          "sha256": "ca375f24698bb26cd2e84b168b298a19b9f39a4313f6074456077af71faa351e"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/form-100x40-mcp-text-elicitation/look.txt",
+          "sha256": "941a8fdd7e1443dce84a05228f5e941b8b6546d5b6f69c765bc8b36a8ed80ebb"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/form-80-split-mcp-text-elicitation/screen.txt",
+          "sha256": "ca375f24698bb26cd2e84b168b298a19b9f39a4313f6074456077af71faa351e"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/form-80-split-mcp-text-elicitation/look.txt",
+          "sha256": "da9db63c4d105795225815af1c5ff36351d6b10531795d801747bbda78d58c3f"
+        }
+      ]
+    },
+    "aarch64": {
+      "manifest_sha256": "8699753296c7c39ed97c458f706e0603d99448279bf259a89c03770013c03352",
+      "archive_sha256": "52f1e448bb6f4e3b9a3e43bb2ecfae361426f38521bb89eca498de74c952dff3",
+      "native": true,
+      "passed": true,
+      "development_pre_package": false,
+      "candidate_acceptance": true,
+      "capture_source_commit": "ecddea18279ede7774749c150ded30e7ef3b1d87",
+      "binary_source_commit": "3598e7a61543e9ae0f09c1da88b5ca89e27afe9b",
+      "binary_sha256": "37d3d5c03e8614a18b2bbbba54ce37702a78f7f30bcd14607c41041490de7da0",
+      "code_mode_host_sha256": "7dcf06832150734b040254ef3c5b79494c8855805bd61fa7dbcb0766371dbc1f",
+      "frontend_equivalence": {
+        "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/frontend-equivalence.json",
+        "sha256": "2ac6c96a8bca20f4773763cd05d195353477ac877e88d47597bb759e91951627"
+      },
+      "look_fields": 5,
+      "screen_v2": true,
+      "ultracode_badge_text": "ultracode",
+      "ultracode_badge_requested_on_only": true,
+      "tiny_clipping_passed": true,
+      "states": [
+        {
+          "id": "high-100x40-idle-empty",
+          "expected": "idle",
+          "footer_rows": 8,
+          "explicit_help_or_search": false,
+          "count_basis": "nonempty lines below last composer/cursor row; overlay rows retained as measured",
+          "nonempty_below_initial_prompt": 8
+        },
+        {
+          "id": "high-100x40-idle-help",
+          "expected": "idle",
+          "footer_rows": 9,
+          "explicit_help_or_search": true,
+          "count_basis": "nonempty lines below last composer/cursor row; overlay rows retained as measured",
+          "nonempty_below_initial_prompt": 9
+        },
+        {
+          "id": "high-100x40-busy-midturn-t0",
+          "expected": "busy",
+          "footer_rows": 8,
+          "explicit_help_or_search": false,
+          "count_basis": "nonempty lines below last composer/cursor row; overlay rows retained as measured",
+          "nonempty_below_initial_prompt": 8
+        },
+        {
+          "id": "high-100x40-busy-midturn-t5",
+          "expected": "busy",
+          "footer_rows": 8,
+          "explicit_help_or_search": false,
+          "count_basis": "nonempty lines below last composer/cursor row; overlay rows retained as measured",
+          "nonempty_below_initial_prompt": 8
+        },
+        {
+          "id": "high-100x40-busy-typed",
+          "expected": "busy",
+          "footer_rows": 8,
+          "explicit_help_or_search": false,
+          "count_basis": "nonempty lines below last composer/cursor row; overlay rows retained as measured",
+          "nonempty_below_initial_prompt": 8
+        },
+        {
+          "id": "high-100x40-idle-two-row-draft",
+          "expected": "unknown",
+          "footer_rows": 8,
+          "explicit_help_or_search": false,
+          "count_basis": "nonempty lines below last composer/cursor row; overlay rows retained as measured",
+          "nonempty_below_initial_prompt": 9
+        },
+        {
+          "id": "high-80-split-idle-empty",
+          "expected": "idle",
+          "footer_rows": 8,
+          "explicit_help_or_search": false,
+          "count_basis": "nonempty lines below last composer/cursor row; overlay rows retained as measured",
+          "nonempty_below_initial_prompt": 8
+        },
+        {
+          "id": "high-80-split-idle-help",
+          "expected": "idle",
+          "footer_rows": 9,
+          "explicit_help_or_search": true,
+          "count_basis": "nonempty lines below last composer/cursor row; overlay rows retained as measured",
+          "nonempty_below_initial_prompt": 9
+        },
+        {
+          "id": "high-80-split-busy-midturn-t0",
+          "expected": "busy",
+          "footer_rows": 8,
+          "explicit_help_or_search": false,
+          "count_basis": "nonempty lines below last composer/cursor row; overlay rows retained as measured",
+          "nonempty_below_initial_prompt": 8
+        },
+        {
+          "id": "high-80-split-busy-midturn-t5",
+          "expected": "busy",
+          "footer_rows": 8,
+          "explicit_help_or_search": false,
+          "count_basis": "nonempty lines below last composer/cursor row; overlay rows retained as measured",
+          "nonempty_below_initial_prompt": 8
+        },
+        {
+          "id": "high-80-split-busy-typed",
+          "expected": "busy",
+          "footer_rows": 8,
+          "explicit_help_or_search": false,
+          "count_basis": "nonempty lines below last composer/cursor row; overlay rows retained as measured",
+          "nonempty_below_initial_prompt": 8
+        },
+        {
+          "id": "high-80-split-idle-two-row-draft",
+          "expected": "unknown",
+          "footer_rows": 8,
+          "explicit_help_or_search": false,
+          "count_basis": "nonempty lines below last composer/cursor row; overlay rows retained as measured",
+          "nonempty_below_initial_prompt": 9
+        },
+        {
+          "id": "high-80-split-approval-dialog",
+          "expected": "unknown",
+          "footer_rows": 0,
+          "explicit_help_or_search": false,
+          "count_basis": "nonempty lines below last composer/cursor row; overlay rows retained as measured",
+          "nonempty_below_initial_prompt": null
+        },
+        {
+          "id": "high-100x40-approval-dialog",
+          "expected": "unknown",
+          "footer_rows": 0,
+          "explicit_help_or_search": false,
+          "count_basis": "nonempty lines below last composer/cursor row; overlay rows retained as measured",
+          "nonempty_below_initial_prompt": null
+        },
+        {
+          "id": "ultra-100x40-idle-empty",
+          "expected": "idle",
+          "footer_rows": 8,
+          "explicit_help_or_search": false,
+          "count_basis": "nonempty lines below last composer/cursor row; overlay rows retained as measured",
+          "nonempty_below_initial_prompt": 8
+        },
+        {
+          "id": "ultra-80-split-idle-empty",
+          "expected": "idle",
+          "footer_rows": 8,
+          "explicit_help_or_search": false,
+          "count_basis": "nonempty lines below last composer/cursor row; overlay rows retained as measured",
+          "nonempty_below_initial_prompt": 8
+        },
+        {
+          "id": "form-100x40-request-user-input-notes",
+          "expected": "unknown",
+          "footer_rows": 1,
+          "explicit_help_or_search": false,
+          "count_basis": "nonempty lines below last composer/cursor row; overlay rows retained as measured",
+          "nonempty_below_initial_prompt": null
+        },
+        {
+          "id": "form-80-split-request-user-input-notes",
+          "expected": "unknown",
+          "footer_rows": 1,
+          "explicit_help_or_search": false,
+          "count_basis": "nonempty lines below last composer/cursor row; overlay rows retained as measured",
+          "nonempty_below_initial_prompt": null
+        },
+        {
+          "id": "form-100x40-mcp-text-elicitation",
+          "expected": "unknown",
+          "footer_rows": 1,
+          "explicit_help_or_search": false,
+          "count_basis": "nonempty lines below last composer/cursor row; overlay rows retained as measured",
+          "nonempty_below_initial_prompt": null
+        },
+        {
+          "id": "form-80-split-mcp-text-elicitation",
+          "expected": "unknown",
+          "footer_rows": 1,
+          "explicit_help_or_search": false,
+          "count_basis": "nonempty lines below last composer/cursor row; overlay rows retained as measured",
+          "nonempty_below_initial_prompt": null
+        }
+      ],
+      "bundle_path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/arm-packaged-cursor-v2.tar.gz",
+      "bundle_sha256": "00000fd76d140461733b56a316f15dd49908c1b0d87423b1a5ab8d8bcf8c4882",
+      "ap_replay": {
+        "passed": true,
+        "busy_hash_passed": true,
+        "ap_commit": "f88d93b5675fa9712217a7763351d87bee81ca17",
+        "bundle_sha256": "00000fd76d140461733b56a316f15dd49908c1b0d87423b1a5ab8d8bcf8c4882",
+        "expected_verdicts": [
+          {
+            "state": "high-100x40-idle-empty",
+            "expected": "idle",
+            "actual": "idle",
+            "passed": true
+          },
+          {
+            "state": "high-100x40-idle-help",
+            "expected": "idle",
+            "actual": "idle",
+            "passed": true
+          },
+          {
+            "state": "high-100x40-busy-midturn-t0",
+            "expected": "busy",
+            "actual": "busy",
+            "passed": true
+          },
+          {
+            "state": "high-100x40-busy-midturn-t5",
+            "expected": "busy",
+            "actual": "busy",
+            "passed": true
+          },
+          {
+            "state": "high-100x40-busy-typed",
+            "expected": "busy",
+            "actual": "busy",
+            "passed": true
+          },
+          {
+            "state": "high-100x40-idle-two-row-draft",
+            "expected": "unknown",
+            "actual": "unknown",
+            "passed": true
+          },
+          {
+            "state": "high-80-split-idle-empty",
+            "expected": "idle",
+            "actual": "idle",
+            "passed": true
+          },
+          {
+            "state": "high-80-split-idle-help",
+            "expected": "idle",
+            "actual": "idle",
+            "passed": true
+          },
+          {
+            "state": "high-80-split-busy-midturn-t0",
+            "expected": "busy",
+            "actual": "busy",
+            "passed": true
+          },
+          {
+            "state": "high-80-split-busy-midturn-t5",
+            "expected": "busy",
+            "actual": "busy",
+            "passed": true
+          },
+          {
+            "state": "high-80-split-busy-typed",
+            "expected": "busy",
+            "actual": "busy",
+            "passed": true
+          },
+          {
+            "state": "high-80-split-idle-two-row-draft",
+            "expected": "unknown",
+            "actual": "unknown",
+            "passed": true
+          },
+          {
+            "state": "high-80-split-approval-dialog",
+            "expected": "unknown",
+            "actual": "unknown",
+            "passed": true
+          },
+          {
+            "state": "high-100x40-approval-dialog",
+            "expected": "unknown",
+            "actual": "unknown",
+            "passed": true
+          },
+          {
+            "state": "ultra-100x40-idle-empty",
+            "expected": "idle",
+            "actual": "idle",
+            "passed": true
+          },
+          {
+            "state": "ultra-80-split-idle-empty",
+            "expected": "idle",
+            "actual": "idle",
+            "passed": true
+          },
+          {
+            "state": "form-100x40-request-user-input-notes",
+            "expected": "unknown",
+            "actual": "unknown",
+            "passed": true
+          },
+          {
+            "state": "form-80-split-request-user-input-notes",
+            "expected": "unknown",
+            "actual": "unknown",
+            "passed": true
+          },
+          {
+            "state": "form-100x40-mcp-text-elicitation",
+            "expected": "unknown",
+            "actual": "unknown",
+            "passed": true
+          },
+          {
+            "state": "form-80-split-mcp-text-elicitation",
+            "expected": "unknown",
+            "actual": "unknown",
+            "passed": true
+          }
+        ],
+        "original_report_sha256": "8cde5dcb3c0e354ab3322ec6a13e5cc69830c486791532473ff91b60a3a27e80",
+        "ap_release": "0.7.34"
+      },
+      "evidence": [
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/manifest.json",
+          "sha256": "3d07e1cc8cab488b8709ddb2b34249a37628d7d269bf7ca2be0e596e30a7192e"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/integrity.json",
+          "sha256": "9c7a5db274e6d73adb47c9b97c87a9699c32bde2dd13097b5dd2d716424ef221"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/frontend-equivalence.json",
+          "sha256": "2ac6c96a8bca20f4773763cd05d195353477ac877e88d47597bb759e91951627"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/frontend-package-manifest.json",
+          "sha256": "8699753296c7c39ed97c458f706e0603d99448279bf259a89c03770013c03352"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/fleet-footer/report.json",
+          "sha256": "e8b243f1e5ab9e03cb854bdd281f751c4fa6d750dd1dfa573f9d6c30bca846ad"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/setting-footer/report.json",
+          "sha256": "65e21f3804100334ce414d5edfade35852289310a9e7a5c25bf31be1c80ba02f"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/ap-replay/receipt.json",
+          "sha256": "b03288a59af43f7fba7e6209d5a0de5126f9b40e5cc64eec5d3c1e0673ce5fb9"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-100x40-idle-empty/screen.txt",
+          "sha256": "a38bdd2e2a3133ebc7b2a2a00a308afee28d292b0da588b459411c6bf4c0652d"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-100x40-idle-empty/look.txt",
+          "sha256": "1eb8bc56b645a0b798570ed2a6c226f08f43f4c312ec13aaddd2997d72677d99"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-100x40-idle-help/screen.txt",
+          "sha256": "af67510f69a544983113467d9eadaf6395d82f2e254c8443b17455dd764ed75e"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-100x40-idle-help/look.txt",
+          "sha256": "4df936b445fb9a9bc15b4ca787eed7a96d3d8fe966393e738aee9a235a3e16b3"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-100x40-busy-midturn-t0/screen.txt",
+          "sha256": "a7f17caf74ad251772d551b4d79150de106579ab7cce9512616a118cce1afdbb"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-100x40-busy-midturn-t0/look.txt",
+          "sha256": "1eb8bc56b645a0b798570ed2a6c226f08f43f4c312ec13aaddd2997d72677d99"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-100x40-busy-midturn-t5/screen.txt",
+          "sha256": "5405f2558dc1a5fda391ea47e3df6533a9bac0134009c7c205d3c47456e9179b"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-100x40-busy-midturn-t5/look.txt",
+          "sha256": "1eb8bc56b645a0b798570ed2a6c226f08f43f4c312ec13aaddd2997d72677d99"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-100x40-busy-typed/screen.txt",
+          "sha256": "a1c447be42e8966a85b835077b2d7de380ad92e0874242065373854fe8f492d8"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-100x40-busy-typed/look.txt",
+          "sha256": "1631dcf4ff3835a3f7084b3ecb05e3cd68fa6566149875062e5c8ff709a270de"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-100x40-idle-two-row-draft/screen.txt",
+          "sha256": "06661e410606b87fea6fa1cfe8c4a3690e55e7f96128a31a10570ed042e94748"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-100x40-idle-two-row-draft/look.txt",
+          "sha256": "6f04d3bc3cc430d776065a8d50a05af2ecc9c79d9b54ab4726bcc67e6a7cf5ac"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-80-split-idle-empty/screen.txt",
+          "sha256": "64cf8310ea28fcf0062ca30fbcd127df5c3d90dec844621b1e94b1bdb7d352aa"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-80-split-idle-empty/look.txt",
+          "sha256": "59bbe94f5f7cac18b8c63a99139a4fb2729672dfcbc41d514bc0eb1d212bd238"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-80-split-idle-help/screen.txt",
+          "sha256": "83c1829de1465c479f6d4daa035b33ca02371c8d1d984c7dfc640c5676c4c281"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-80-split-idle-help/look.txt",
+          "sha256": "cd79485f2e79a279f4d2d3310ea2c246fe6f41b8a83512ada2d716d88b43aef1"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-80-split-busy-midturn-t0/screen.txt",
+          "sha256": "c525b86866b3d116fb8ee4f6349381ee68d10cf65c3d93c80ad04037e35c6288"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-80-split-busy-midturn-t0/look.txt",
+          "sha256": "59bbe94f5f7cac18b8c63a99139a4fb2729672dfcbc41d514bc0eb1d212bd238"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-80-split-busy-midturn-t5/screen.txt",
+          "sha256": "f7d0a6100c043e7a0ce075c4a1c0afc1d4e18dba500adecf7c6a6adf7cc725f5"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-80-split-busy-midturn-t5/look.txt",
+          "sha256": "59bbe94f5f7cac18b8c63a99139a4fb2729672dfcbc41d514bc0eb1d212bd238"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-80-split-busy-typed/screen.txt",
+          "sha256": "a03d1734a233652672e0ef7b1ef886e39ce3a9d7ba75f74717fb816d6d4183be"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-80-split-busy-typed/look.txt",
+          "sha256": "23629823f73a8848d732720ffaff87f205cfb0207e164061ce85223de3ba9e5f"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-80-split-idle-two-row-draft/screen.txt",
+          "sha256": "81abe0667be573a8ef3a221a5ed5fb20d58e325310f2727448fb22dce19dad80"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-80-split-idle-two-row-draft/look.txt",
+          "sha256": "426cbf2236f8213c09ac4ba209049146047a6cbc33f6661f31f93cd32ebf4c14"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-80-split-approval-dialog/screen.txt",
+          "sha256": "c6f73a8d09dbd327fa23e0ec9bcc4a5181df34881a37d5af2a48d6e4f26615ed"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-80-split-approval-dialog/look.txt",
+          "sha256": "910438d0de797c917b3fae63b26e8d309627b145c3b02651f3808897be3cdacb"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-100x40-approval-dialog/screen.txt",
+          "sha256": "c6f73a8d09dbd327fa23e0ec9bcc4a5181df34881a37d5af2a48d6e4f26615ed"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/high-100x40-approval-dialog/look.txt",
+          "sha256": "696d44aef3e0c580896febcbedea00f82167d9e900bad0c1c14c926e7e47ef8e"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/ultra-100x40-idle-empty/screen.txt",
+          "sha256": "af820696b2f04ccb6894ded8f9548edbaad3bdea2555af2e756e8ede9132ef73"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/ultra-100x40-idle-empty/look.txt",
+          "sha256": "1eb8bc56b645a0b798570ed2a6c226f08f43f4c312ec13aaddd2997d72677d99"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/ultra-80-split-idle-empty/screen.txt",
+          "sha256": "d2adc63995ce957278742b1b5db3871219ebde910192bf052746f690b4e3e9db"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/ultra-80-split-idle-empty/look.txt",
+          "sha256": "59bbe94f5f7cac18b8c63a99139a4fb2729672dfcbc41d514bc0eb1d212bd238"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/form-100x40-request-user-input-notes/screen.txt",
+          "sha256": "e7ff4a250baa21284edfa5a66b4acce8bfc72f8f4885fee17c71453da207dfd6"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/form-100x40-request-user-input-notes/look.txt",
+          "sha256": "941a8fdd7e1443dce84a05228f5e941b8b6546d5b6f69c765bc8b36a8ed80ebb"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/form-80-split-request-user-input-notes/screen.txt",
+          "sha256": "e7ff4a250baa21284edfa5a66b4acce8bfc72f8f4885fee17c71453da207dfd6"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/form-80-split-request-user-input-notes/look.txt",
+          "sha256": "da9db63c4d105795225815af1c5ff36351d6b10531795d801747bbda78d58c3f"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/form-100x40-mcp-text-elicitation/screen.txt",
+          "sha256": "f8165180f850e3481d5926f5f4fda678c294c48d4e5743ded010f3b3849004a8"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/form-100x40-mcp-text-elicitation/look.txt",
+          "sha256": "941a8fdd7e1443dce84a05228f5e941b8b6546d5b6f69c765bc8b36a8ed80ebb"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/form-80-split-mcp-text-elicitation/screen.txt",
+          "sha256": "f8165180f850e3481d5926f5f4fda678c294c48d4e5743ded010f3b3849004a8"
+        },
+        {
+          "path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/form-80-split-mcp-text-elicitation/look.txt",
+          "sha256": "da9db63c4d105795225815af1c5ff36351d6b10531795d801747bbda78d58c3f"
+        }
+      ]
+    }
+  }
+}

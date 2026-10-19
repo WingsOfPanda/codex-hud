@@ -1,0 +1,102 @@
+{
+  "status": "qualified-with-host-limitation",
+  "release": "0.163.0-plus.0.4.3",
+  "target": "x86_64-unknown-linux-gnu",
+  "plus_commit": "ecddea18279ede7774749c150ded30e7ef3b1d87",
+  "unsupported": [
+    "all mixed legacy 0.3.x compatibility"
+  ],
+  "limitations": [
+    "Full upstream suite is not green: six pre-existing app_server_session assertions remain outside the scoped native gate."
+  ],
+  "not_run": [],
+  "runtime_unit_count": 186,
+  "blackbox_counts": {
+    "tests": 29,
+    "skipped": [],
+    "admission_subcases": {
+      "test_input_settle_retries_only_temporary_turn_history_unavailability": 10,
+      "test_ultracode_item_readiness_preserves_input_and_reports_unavailable": 13
+    }
+  },
+  "suite_counts": {
+    "package_gates": 9,
+    "ultracode_tui_cases": 4,
+    "native_smoke_stages": 23
+  },
+  "native_filters": {
+    "bottom_pane": {
+      "passed": 1135,
+      "failed": 0,
+      "platform_ignored": [
+        {
+          "test": "bottom_pane::textarea::tests::altgr_ctrl_alt_char_inserts_literal",
+          "reason": "AltGr modifier only applies on Windows",
+          "platform": "linux"
+        }
+      ]
+    },
+    "goal": {
+      "passed": 74,
+      "failed": 0,
+      "platform_ignored": []
+    },
+    "style::contrast::tests": {
+      "passed": 5,
+      "failed": 0,
+      "platform_ignored": []
+    },
+    "worker_hud": {
+      "passed": 53,
+      "failed": 0,
+      "platform_ignored": []
+    },
+    "plus_ultracode": {
+      "passed": 7,
+      "failed": 0,
+      "platform_ignored": []
+    },
+    "ultracode_footer_reads_projection": {
+      "passed": 1,
+      "failed": 0,
+      "platform_ignored": []
+    },
+    "status_line": {
+      "passed": 94,
+      "failed": 0,
+      "platform_ignored": []
+    },
+    "status_surface": {
+      "passed": 44,
+      "failed": 0,
+      "platform_ignored": []
+    },
+    "app::owned_transcript::tests::worker_hud_footer_selection_and_config_panel_preserve_the_draft": {
+      "passed": 1,
+      "failed": 0,
+      "platform_ignored": []
+    },
+    "bottom_pane::chat_composer::status_surface::tests::shell_and_side_conversation_input_context_keep_the_hint_row": {
+      "passed": 1,
+      "failed": 0,
+      "platform_ignored": []
+    },
+    "bottom_pane::chat_composer::tests::footer_collapse_snapshots": {
+      "passed": 1,
+      "failed": 0,
+      "platform_ignored": []
+    }
+  },
+  "inherited_check_count": 15,
+  "fresh_check_count": 84,
+  "package_failed_gates": [
+    "resources"
+  ],
+  "package_skipped": [],
+  "host_limitation": "Raw bwrap uid-map denied identically for official and Plus; both CLI read-only sandboxes passed.",
+  "archive_sha256": "d03b795fb8e7069c8697b3f3479ed32b881dd9517b0c147006ab67b8d89c83d4",
+  "manifest_sha256": "27950a50fac920eb5cbdbb4812608d0dc19de602cbd06c8e0e2f9139cd731200",
+  "tree_sha256": "a0cee085064c7ca94687e13ef7506c459aa8bce9f42b2248df2b5d99dcc7006a",
+  "original_path": ".build/release043/x86-runtime-final/qualification-summary.json",
+  "original_sha256": "b0f41638e3c5362d2e370a0c7ecb519c3754bba4590df045279ee9637da5d0dd"
+}

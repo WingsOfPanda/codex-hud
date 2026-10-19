@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "scope": "companion evidence and exact accepted test-only patch",
+  "package_source": "ecddea18279ede7774749c150ded30e7ef3b1d87",
+  "checks": [
+    "exact accepted one-snapshot test correction and Python syntax",
+    "all JSON parse",
+    "exact agents block hash/bytes",
+    "both native final-manifest/source/7-check compatibility receipts",
+    "both corrected execution record hash chains",
+    "both native twenty-state screen/look raw hashes and five-field look",
+    "both actual AP twenty-verdict receipts and busy hash passes",
+    "both native/compat/AP release qualification accepted; publication unclaimed"
+  ],
+  "rerun_native_suites": false,
+  "native_test_evidence": "root-accepted native reports and preserved old-red/new-green fixture evidence",
+  "qualification_complete": true
+}

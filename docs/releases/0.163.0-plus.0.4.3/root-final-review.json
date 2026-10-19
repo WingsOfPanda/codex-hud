@@ -1,0 +1,17 @@
+{
+  "accepted": true,
+  "package_source": "ecddea18279ede7774749c150ded30e7ef3b1d87",
+  "native_architectures": [
+    "x86_64",
+    "aarch64"
+  ],
+  "compatibility_checks_each": 7,
+  "holds_each": 2,
+  "admitted_snapshots_each": 2,
+  "AP_verdicts_each": 20,
+  "AP_busy_pairs_each": 2,
+  "handoff_sha256": "77c4c1de010579819022cf6406c7ad671b08ec7c535f8f947f40354cba2e5a05",
+  "companion_test_only_correction": "one exact mixed-origin test passes; no package-source changes",
+  "root_test_log": "/home/liupan/.codex/codex-plus/logs/80b5083d-7175-43fc-9d1c-dbcf619f6747.log",
+  "published": false
+}
