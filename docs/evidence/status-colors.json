@@ -1,0 +1,173 @@
+{
+  "schema": 1,
+  "scope": "Distinct foregrounds for currently displayed status items, retaining two-row layout and worker roles",
+  "source_commit": "9364efc7537751f9874d43bceba1c4aeb4fedf0d",
+  "compiled_source_commit": "4f934b1229289c23db3866df979aae7b0e92ee28",
+  "post_build_delta": "Only five expected picker wording snapshots changed; native production source unchanged",
+  "platform": "x86_64-unknown-linux-gnu",
+  "installed": false,
+  "palette": {
+    "model_and_ultracode": "#89dceb",
+    "current_directory": "#89b4fa",
+    "context_remaining": "#a6e3a1",
+    "weekly_remaining": "#f9e2af",
+    "weekly_reset": "#cba6f7",
+    "pull_request_if_present": "#f38ba8, underlined",
+    "agent_and_separators": "existing neutral secondary style"
+  },
+  "patch_sha256": "34a75c3a93e8116e50b517885a6ce8804da43c74df3668870fd35a7907465918",
+  "binaries": {
+    "codex": "5be5d1eca2a3cd0ef9682502e525cc3403ddd04a76ffed28ce5306929997ed05",
+    "codex-code-mode-host": "60c47277810fdf79c2bdab6e3e92b51c4d12ee278344d0c79ae5e2c68d8a0035",
+    "codex-plus-runtime": "5e74477a2005af51f2734152387bb134d5fc2dfa3d6112c67eb77e194191c6ae"
+  },
+  "native_filters": [
+    {
+      "filter": "config_panel",
+      "exit": 0,
+      "summary": [
+        "test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 5860 filtered out; finished in 0.23s"
+      ],
+      "log": "/home/liupan/Aerius/codex-plus/.build/status-colors/triage/config_panel.log"
+    },
+    {
+      "filter": "style::contrast::tests",
+      "exit": 0,
+      "summary": [
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 5876 filtered out; finished in 0.01s"
+      ],
+      "log": "/home/liupan/Aerius/codex-plus/.build/status-colors/triage/style__contrast__tests.log"
+    },
+    {
+      "filter": "worker_hud",
+      "exit": 0,
+      "summary": [
+        "test result: ok. 50 passed; 0 failed; 0 ignored; 0 measured; 5831 filtered out; finished in 0.22s"
+      ],
+      "log": "/home/liupan/Aerius/codex-plus/.build/status-colors/triage/worker_hud.log"
+    },
+    {
+      "filter": "shell_policy",
+      "exit": 0,
+      "summary": [
+        "test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 5860 filtered out; finished in 0.10s"
+      ],
+      "log": "/home/liupan/Aerius/codex-plus/.build/status-colors/triage/shell_policy.log"
+    },
+    {
+      "filter": "chatwidget::tests::exec_flow",
+      "exit": 0,
+      "summary": [
+        "test result: ok. 53 passed; 0 failed; 0 ignored; 0 measured; 5828 filtered out; finished in 0.14s"
+      ],
+      "log": "/home/liupan/Aerius/codex-plus/.build/status-colors/triage/chatwidget__tests__exec_flow.log"
+    },
+    {
+      "filter": "thread_transcript::tools::tests",
+      "exit": 0,
+      "summary": [
+        "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 5875 filtered out; finished in 0.07s"
+      ],
+      "log": "/home/liupan/Aerius/codex-plus/.build/status-colors/triage/thread_transcript__tools__tests.log"
+    },
+    {
+      "filter": "status_line",
+      "exit": 0,
+      "summary": [
+        "test result: ok. 94 passed; 0 failed; 0 ignored; 0 measured; 5787 filtered out; finished in 0.11s"
+      ],
+      "log": "/home/liupan/Aerius/codex-plus/.build/status-colors/triage/status_line-corrected.log"
+    },
+    {
+      "filter": "status_surface",
+      "exit": 0,
+      "summary": [
+        "test result: ok. 43 passed; 0 failed; 0 ignored; 0 measured; 5838 filtered out; finished in 0.06s"
+      ],
+      "log": "/home/liupan/Aerius/codex-plus/.build/status-colors/triage/status_surface-corrected.log"
+    }
+  ],
+  "filter_counts_overlap": true,
+  "color_modes": {
+    "truecolor": {
+      "passed": true,
+      "foregrounds": {
+        "gpt-6-astra high ultracode": "89dceb",
+        "workspace": "89b4fa",
+        "Main [default]": "999999",
+        "Context 75% left": "a6e3a1",
+        "weekly 45% left": "f9e2af",
+        "resets in 5d 20h": "cba6f7"
+      },
+      "pairwise_distinct": true,
+      "evidence": "/home/liupan/Aerius/codex-plus/.build/status-colors/integrated-truecolor/report.json"
+    },
+    "ansi256": {
+      "passed": true,
+      "foregrounds": {
+        "gpt-6-astra high ultracode": "87d7d7",
+        "workspace": "87afff",
+        "Main [default]": "9e9e9e",
+        "Context 75% left": "afd787",
+        "weekly 45% left": "ffd7af",
+        "resets in 5d 20h": "d7afff"
+      },
+      "pairwise_distinct": true,
+      "evidence": "/home/liupan/Aerius/codex-plus/.build/status-colors/integrated-ansi256/report.json"
+    },
+    "ansi16": {
+      "passed": true,
+      "foregrounds": {
+        "gpt-6-astra high ultracode": "00cdcd",
+        "workspace": "0000ee",
+        "Main [default]": "default",
+        "Context 75% left": "00cd00",
+        "weekly 45% left": "cdcd00",
+        "resets in 5d 20h": "cd00cd"
+      },
+      "pairwise_distinct": true,
+      "evidence": "/home/liupan/Aerius/codex-plus/.build/status-colors/integrated-ansi16/report.json"
+    },
+    "disabled": {
+      "passed": true,
+      "foregrounds": {
+        "gpt-6-astra high ultracode": "999999",
+        "workspace": "999999",
+        "Main [default]": "999999",
+        "Context 75% left": "999999",
+        "weekly 45% left": "999999",
+        "resets in 5d 20h": "999999"
+      },
+      "pairwise_distinct": false,
+      "evidence": "/home/liupan/Aerius/codex-plus/.build/status-colors/integrated-disabled/report.json"
+    },
+    "no-color": {
+      "passed": true,
+      "foregrounds": {
+        "gpt-6-astra high ultracode": "default",
+        "workspace": "default",
+        "Main [default]": "default",
+        "Context 75% left": "default",
+        "weekly 45% left": "default",
+        "resets in 5d 20h": "default"
+      },
+      "pairwise_distinct": false,
+      "evidence": "/home/liupan/Aerius/codex-plus/.build/status-colors/integrated-no-color/report.json"
+    }
+  },
+  "regressions": {
+    "status_layout_cases": 4,
+    "ultracode_cases": 4,
+    "weekly_reset_stages": 4,
+    "worker_role_stages": 14,
+    "full_smoke_stages": 23,
+    "extra_display_model_calls": 0
+  },
+  "patch_verification": "Exact reconstruction including new files; snapshot padding preserved; final five-line wording correction limited to five snapshot files",
+  "failed_gate_preserved": "Managed test job4e6f91c0 stopped on5outdated picker wording snapshots, corrected individually andrerun withoutskips; originalfailurelogs retained",
+  "limitations": [
+    "Source qualification only, no release publication, main merge or installation",
+    "ARM qualification not run",
+    "Earlier unrelated startup snapshot mismatch remains documented in status-footer.json; not changed by palette work"
+  ]
+}

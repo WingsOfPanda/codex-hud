@@ -9301,6 +9301,45 @@ index 607cc6464..d6b2f9966 100644
  "                                                            "
 -"  ? for shortcuts          100% context left | Vim: Insert  "
 +"                           100% context left | Vim: Insert  "
+diff --git a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__status_line_setup__tests__setup_view_snapshot_includes_hostname.snap b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__status_line_setup__tests__setup_view_snapshot_includes_hostname.snap
+index 0385e0fb3..51f52fa1d 100644
+--- a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__status_line_setup__tests__setup_view_snapshot_includes_hostname.snap
++++ b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__status_line_setup__tests__setup_view_snapshot_includes_hostname.snap
+@@ -8,7 +8,7 @@ expression: "render_lines(&view,\n100).lines().map(str::trim_end).collect::<Vec<
+ 
+   Type to search
+ 
+-› [x] Use theme colors      Apply colors from the active /theme
++› [x] Use colors            Use distinct item colors and theme accents
+   ───────────────────────
+   [x] hostname              Current machine hostname (omitted when unavailable)
+   [x] current-dir           Current working directory
+diff --git a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__status_line_setup__tests__setup_view_snapshot_includes_thread_usage_items.snap b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__status_line_setup__tests__setup_view_snapshot_includes_thread_usage_items.snap
+index 1919254a0..eef5f568c 100644
+--- a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__status_line_setup__tests__setup_view_snapshot_includes_thread_usage_items.snap
++++ b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__status_line_setup__tests__setup_view_snapshot_includes_thread_usage_items.snap
+@@ -8,7 +8,7 @@ expression: "render_lines(&view, 100)"
+                                                                                                     
+   Type to search                                                                                    
+                                                                                                     
+-› [x] Use theme colors       Apply colors from the active /theme                                    
++› [x] Use colors             Use distinct item colors and theme accents                             
+   ───────────────────────                                                                           
+   [x] thread-credits         Estimated current-thread credits (Enterprise workspaces only; omitted …
+   [x] estimated-thread-cost  Estimated current-thread cost in USD (Enterprise workspaces only; omit…
+diff --git a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__status_line_setup__tests__setup_view_snapshot_uses_runtime_preview_values.snap b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__status_line_setup__tests__setup_view_snapshot_uses_runtime_preview_values.snap
+index 9a79c172f..7856ef14b 100644
+--- a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__status_line_setup__tests__setup_view_snapshot_uses_runtime_preview_values.snap
++++ b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__status_line_setup__tests__setup_view_snapshot_uses_runtime_preview_values.snap
+@@ -8,7 +8,7 @@ expression: "render_lines(&view, 72)"
+                                                                         
+   Type to search                                                        
+                                                                         
+-› [x] Use theme colors      Apply colors from the active /theme         
++› [x] Use colors            Use distinct item colors and theme accents  
+   ───────────────────────                                               
+   [x] model                 Current model name                          
+   [x] current-dir           Current working directory                   
 diff --git a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__backend_banner_personal_limit.snap b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__backend_banner_personal_limit.snap
 index 9c49315ad..5a597b68f 100644
 --- a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__backend_banner_personal_limit.snap
@@ -9389,7 +9428,7 @@ index 0b45f6d1c..40fc876db 100644
 -  ? for shortcuts            100% context left
 +                             100% context left
 diff --git a/codex-rs/tui/src/bottom_pane/status_line_setup.rs b/codex-rs/tui/src/bottom_pane/status_line_setup.rs
-index 9567424fb..f78b754eb 100644
+index 9567424fb..fc268784d 100644
 --- a/codex-rs/tui/src/bottom_pane/status_line_setup.rs
 +++ b/codex-rs/tui/src/bottom_pane/status_line_setup.rs
 @@ -113,6 +113,9 @@ pub(crate) enum StatusLineItem {
@@ -9418,6 +9457,28 @@ index 9567424fb..f78b754eb 100644
              StatusLineItem::CodexVersion => StatusSurfacePreviewItem::CodexVersion,
              StatusLineItem::ContextWindowSize => StatusSurfacePreviewItem::ContextWindowSize,
              StatusLineItem::UsedTokens => StatusSurfacePreviewItem::UsedTokens,
+@@ -278,8 +283,8 @@ impl StatusLineSetupView {
+     ///
+     /// * `status_line_items` - Currently configured item IDs (in display order),
+     ///   or `None` to start with all items disabled
+-    /// * `use_theme_colors` - Whether the preview and saved status line use colors from
+-    ///   the active theme
++    /// * `use_theme_colors` - Whether the preview and saved status line use distinct item
++    ///   colors and active-theme accents
+     /// * `app_event_tx` - Event sender for dispatching configuration changes
+     ///
+     /// Items from `status_line_items` are shown first (in order) and marked as
+@@ -294,8 +299,8 @@ impl StatusLineSetupView {
+         let mut used_ids = HashSet::new();
+         let mut items = vec![MultiSelectItem {
+             id: STATUS_LINE_USE_THEME_COLORS_ITEM_ID.to_string(),
+-            name: "Use theme colors".to_string(),
+-            description: Some("Apply colors from the active /theme".to_string()),
++            name: "Use colors".to_string(),
++            description: Some("Use distinct item colors and theme accents".to_string()),
+             enabled: use_theme_colors,
+             orderable: false,
+             section_break_after: true,
 @@ -382,6 +387,7 @@ impl StatusLineSetupView {
          let default_name = item.to_string();
          let default_description = item.description();
@@ -9457,10 +9518,47 @@ index 9567424fb..f78b754eb 100644
      fn project_name_is_canonical_and_accepts_legacy_ids() {
          assert_eq!(StatusLineItem::ProjectRoot.to_string(), "project-name");
 diff --git a/codex-rs/tui/src/bottom_pane/status_line_style.rs b/codex-rs/tui/src/bottom_pane/status_line_style.rs
-index 6ef9003c5..bcb40ecef 100644
+index 6ef9003c5..0253dd334 100644
 --- a/codex-rs/tui/src/bottom_pane/status_line_style.rs
 +++ b/codex-rs/tui/src/bottom_pane/status_line_style.rs
-@@ -52,7 +52,9 @@ impl StatusLineAccent {
+@@ -1,4 +1,4 @@
+-//! Theme-derived styling for the configurable footer statusline.
++//! Distinct item colors and theme accents for the configurable footer statusline.
+ 
+ use ratatui::style::Color;
+ use ratatui::style::Style;
+@@ -12,6 +12,7 @@ use crate::style::readable_color_on;
+ use crate::style::secondary_text_style;
+ use crate::terminal_palette::StdoutColorLevel;
+ use crate::terminal_palette::effective_stdout_color_level;
++use crate::terminal_palette::rgb_color;
+ use crate::thread_color::thread_color;
+ use codex_protocol::ThreadId;
+ 
+@@ -19,6 +20,22 @@ const STATUS_LINE_SEPARATOR: &str = " · ";
+ const STATUS_LINE_COLOR_SATURATION_PERCENT: u16 = 85;
+ const STATUS_LINE_COLOR_BRIGHTNESS_PERCENT: u16 = 100;
+ 
++fn status_line_item_colors(item: StatusLineItem) -> Option<(Color, Color)> {
++    // Adjacent status items stay distinct even when a syntax theme reuses accents.
++    let (rgb, ansi) = match item {
++        StatusLineItem::ModelName | StatusLineItem::ModelWithReasoning => {
++            ((137, 220, 235), Color::Cyan)
++        }
++        StatusLineItem::CurrentDir => ((137, 180, 250), Color::Blue),
++        StatusLineItem::ContextRemaining => ((166, 227, 161), Color::Green),
++        StatusLineItem::WeeklyLimit => ((249, 226, 175), Color::Yellow),
++        StatusLineItem::WeeklyReset => ((203, 166, 247), Color::Magenta),
++        StatusLineItem::PullRequestNumber => ((243, 139, 168), Color::Red),
++        _ => return None,
++    };
++    Some((rgb_color(rgb), ansi))
++}
++
+ #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+ enum StatusLineAccent {
+     Model,
+@@ -52,7 +69,9 @@ impl StatusLineAccent {
              | StatusLineItem::TotalOutputTokens
              | StatusLineItem::ThreadCredits
              | StatusLineItem::EstimatedThreadCost => Self::Usage,
@@ -9471,6 +9569,294 @@ index 6ef9003c5..bcb40ecef 100644
              StatusLineItem::CodexVersion | StatusLineItem::Hostname | StatusLineItem::SessionId => {
                  Self::Metadata
              }
+@@ -117,6 +136,7 @@ where
+ {
+     let mut spans = Vec::new();
+     for (item, text) in segments {
++        let item_colors = status_line_item_colors(item);
+         if !spans.is_empty() {
+             spans.push(STATUS_LINE_SEPARATOR.set_style(secondary_text_style()));
+         }
+@@ -128,6 +148,8 @@ where
+             && let Some(thread_id) = thread_id
+         {
+             Style::default().fg(thread_color(thread_id))
++        } else if use_theme_colors && let Some((foreground, _)) = item_colors {
++            Style::default().fg(foreground)
+         } else if use_theme_colors {
+             let accent = StatusLineAccent::for_item(item);
+             soften_status_line_style(
+@@ -141,7 +163,10 @@ where
+             if effective_stdout_color_level() == StdoutColorLevel::Ansi16
+                 && matches!(foreground, Color::Rgb(..) | Color::Indexed(16..))
+             {
+-                style.patch(StatusLineAccent::for_item(item).fallback_style())
++                style.patch(item_colors.map_or_else(
++                    || StatusLineAccent::for_item(item).fallback_style(),
++                    |(_, foreground)| Style::default().fg(foreground),
++                ))
+             } else {
+                 style.fg(readable_color_on(foreground, /*background*/ None))
+             }
+@@ -217,6 +242,7 @@ mod tests {
+     use super::*;
+     use pretty_assertions::assert_eq;
+     use ratatui::style::Modifier;
++    use std::collections::HashSet;
+ 
+     fn line_text(line: &Line<'static>) -> String {
+         line.spans
+@@ -229,8 +255,8 @@ mod tests {
+     fn status_line_segments_preserve_order_and_plain_text() {
+         let line = status_line_from_segments_with_resolver(
+             [
+-                (StatusLineItem::ModelName, "gpt-5".to_string()),
+-                (StatusLineItem::CurrentDir, "/repo".to_string()),
++                (StatusLineItem::Reasoning, "gpt-5".to_string()),
++                (StatusLineItem::ProjectRoot, "/repo".to_string()),
+                 (StatusLineItem::GitBranch, "main".to_string()),
+             ],
+             /*use_theme_colors*/ true,
+@@ -252,7 +278,7 @@ mod tests {
+     fn status_line_segments_use_secondary_separators_and_theme_styles_first() {
+         let line = status_line_from_segments_with_resolver(
+             [
+-                (StatusLineItem::ModelName, "gpt-5".to_string()),
++                (StatusLineItem::Reasoning, "gpt-5".to_string()),
+                 (StatusLineItem::ContextUsed, "Context 12% used".to_string()),
+             ],
+             /*use_theme_colors*/ true,
+@@ -298,7 +324,7 @@ mod tests {
+         };
+         crate::terminal_palette::with_test_default_colors(colors, || {
+             let line = status_line_from_segments_with_resolver(
+-                [(StatusLineItem::ModelName, "gpt-5".to_string())],
++                [(StatusLineItem::Reasoning, "gpt-5".to_string())],
+                 /*use_theme_colors*/ true,
+                 /*thread_id*/ None,
+                 |_| Some(Style::default().fg(Color::Rgb(255, 0, 0))),
+@@ -374,8 +400,8 @@ mod tests {
+         crate::terminal_palette::with_test_default_colors(colors, || {
+             let line = status_line_from_segments_with_resolver(
+                 [
+-                    (StatusLineItem::ModelName, "gpt-5".to_string()),
+-                    (StatusLineItem::CurrentDir, "~/code".to_string()),
++                    (StatusLineItem::Reasoning, "gpt-5".to_string()),
++                    (StatusLineItem::ProjectRoot, "~/code".to_string()),
+                     (
+                         StatusLineItem::Permissions,
+                         "Custom permissions".to_string(),
+@@ -402,22 +428,197 @@ mod tests {
+         });
+     }
+ 
++    const PALETTE_ITEMS: [StatusLineItem; 6] = [
++        StatusLineItem::ModelName,
++        StatusLineItem::CurrentDir,
++        StatusLineItem::ContextRemaining,
++        StatusLineItem::WeeklyLimit,
++        StatusLineItem::WeeklyReset,
++        StatusLineItem::PullRequestNumber,
++    ];
++    const PALETTE_RGB: [(u8, u8, u8); 6] = [
++        (137, 220, 235),
++        (137, 180, 250),
++        (166, 227, 161),
++        (249, 226, 175),
++        (203, 166, 247),
++        (243, 139, 168),
++    ];
++
++    #[test]
++    fn semantic_status_line_palette_is_distinct_on_light_and_dark_terminals() {
++        for (fg, bg) in [
++            ((255, 255, 255), (0, 0, 0)),
++            ((30, 30, 30), (255, 255, 255)),
++        ] {
++            crate::terminal_palette::with_test_default_colors(
++                crate::terminal_probe::DefaultColors { fg, bg },
++                || {
++                    let line = status_line_from_segments_with_resolver(
++                        PALETTE_ITEMS.map(|item| (item, "item".to_owned())),
++                        /*use_theme_colors*/ true,
++                        /*thread_id*/ None,
++                        |_| Some(Style::default().red()),
++                    )
++                    .expect("semantic status line");
++                    let colors: Vec<_> = line
++                        .spans
++                        .iter()
++                        .step_by(2)
++                        .map(|span| span.style.fg)
++                        .collect();
++                    assert_eq!(
++                        colors,
++                        PALETTE_RGB.map(|rgb| Some(readable_color_on(rgb_color(rgb), None)))
++                    );
++                    let distinct: HashSet<_> = colors
++                        .iter()
++                        .copied()
++                        .chain([secondary_text_style().fg])
++                        .collect();
++                    assert_eq!(distinct.len(), 7);
++                    assert!(
++                        line.spans
++                            .last()
++                            .unwrap()
++                            .style
++                            .add_modifier
++                            .contains(Modifier::UNDERLINED)
++                    );
++                    for (index, span) in line.spans.iter().enumerate() {
++                        assert!(!span.style.add_modifier.contains(Modifier::DIM));
++                        if index % 2 == 1 {
++                            assert_eq!(span.style, secondary_text_style());
++                        }
++                    }
++                    let alias = status_line_from_segments_with_resolver(
++                        [(
++                            StatusLineItem::ModelWithReasoning,
++                            "model ultracode".to_owned(),
++                        )],
++                        /*use_theme_colors*/ true,
++                        /*thread_id*/ None,
++                        |_| None,
++                    )
++                    .unwrap();
++                    assert_eq!(alias.spans[0].style.fg, colors[0]);
++                    let plain = status_line_from_segments_with_resolver(
++                        PALETTE_ITEMS.map(|item| (item, "item".to_owned())),
++                        /*use_theme_colors*/ false,
++                        /*thread_id*/ None,
++                        |_| Some(Style::default().red()),
++                    )
++                    .unwrap();
++                    assert!(
++                        plain
++                            .spans
++                            .iter()
++                            .all(|span| span.style.fg == secondary_text_style().fg)
++                    );
++                },
++            );
++        }
++    }
++
+     #[test]
+     fn status_line_theme_colors_at_limited_color_depths() {
++        const CHILD: &str = "CODEX_STATUS_LINE_COLOR_TEST_CHILD";
++        let Ok(level) = std::env::var(CHILD) else {
++            for level in ["0", "1", "2", "3"] {
++                let output = std::process::Command::new(std::env::current_exe().unwrap())
++                    .args([
++                        "--exact",
++                        "bottom_pane::status_line_style::tests::status_line_theme_colors_at_limited_color_depths",
++                    ])
++                    .env(CHILD, level)
++                    .env("FORCE_COLOR", level)
++                    .env("TERM", "dumb")
++                    .env_remove("NO_COLOR")
++                    .output()
++                    .unwrap();
++                assert!(
++                    output.status.success(),
++                    "level {level}: {}\n{}",
++                    String::from_utf8_lossy(&output.stdout),
++                    String::from_utf8_lossy(&output.stderr)
++                );
++            }
++            return;
++        };
++        let line = status_line_from_segments_with_resolver(
++            PALETTE_ITEMS.map(|item| (item, "item".to_owned())),
++            /*use_theme_colors*/ true,
++            /*thread_id*/ None,
++            |_| Some(Style::default().red()),
++        )
++        .expect("semantic status line");
++        let colors: Vec<_> = line
++            .spans
++            .iter()
++            .step_by(2)
++            .map(|span| span.style.fg)
++            .collect();
++        match level.as_str() {
++            "0" => assert_eq!(colors, vec![Some(Color::Reset); 6]),
++            "1" => assert_eq!(
++                colors,
++                [
++                    Color::Cyan,
++                    Color::Blue,
++                    Color::Green,
++                    Color::Yellow,
++                    Color::Magenta,
++                    Color::Red,
++                ]
++                .map(Some)
++            ),
++            "2" => assert!(
++                colors
++                    .iter()
++                    .all(|color| matches!(color, Some(Color::Indexed(16..))))
++            ),
++            "3" => assert_eq!(colors, PALETTE_RGB.map(|rgb| Some(rgb_color(rgb)))),
++            _ => unreachable!(),
++        }
++        if level != "0" {
++            let distinct: HashSet<_> = colors.iter().collect();
++            assert_eq!(distinct.len(), 6);
++        }
++        assert!(
++            line.spans
++                .iter()
++                .skip(1)
++                .step_by(2)
++                .all(|span| span.style == secondary_text_style())
++        );
++        assert!(
++            line.spans
++                .last()
++                .unwrap()
++                .style
++                .add_modifier
++                .contains(Modifier::UNDERLINED)
++        );
++    }
++
++    #[test]
++    fn status_line_unmodified_items_keep_theme_colors_at_limited_depths() {
+         use ratatui::buffer::Buffer;
+         use ratatui::layout::Rect;
+         use ratatui::widgets::Widget;
+ 
+-        const CHILD: &str = "CODEX_STATUS_LINE_COLOR_TEST_CHILD";
++        const CHILD: &str = "CODEX_STATUS_LINE_THEME_COLOR_TEST_CHILD";
+         let Ok(level) = std::env::var(CHILD) else {
+             for level in ["0", "1"] {
+                 let output = std::process::Command::new(std::env::current_exe().unwrap())
+                     .args([
+                         "--exact",
+-                        "bottom_pane::status_line_style::tests::status_line_theme_colors_at_limited_color_depths",
++                        "bottom_pane::status_line_style::tests::status_line_unmodified_items_keep_theme_colors_at_limited_depths",
+                     ])
+                     .env(CHILD, level)
+                     .env("FORCE_COLOR", level)
++                    .env("TERM", "dumb")
++                    .env_remove("NO_COLOR")
+                     .output()
+                     .unwrap();
+                 assert!(
+@@ -437,8 +638,8 @@ mod tests {
+         crate::render::highlight::set_syntax_theme(theme);
+         let line = status_line_from_segments(
+             [
+-                (StatusLineItem::ModelName, "gpt-5".to_string()),
+-                (StatusLineItem::CurrentDir, "~/code".to_string()),
++                (StatusLineItem::Reasoning, "gpt-5".to_string()),
++                (StatusLineItem::ProjectRoot, "~/code".to_string()),
+                 (StatusLineItem::UsedTokens, "12k tokens".to_string()),
+             ],
+             /*use_theme_colors*/ true,
 diff --git a/codex-rs/tui/src/bottom_pane/status_surface_preview.rs b/codex-rs/tui/src/bottom_pane/status_surface_preview.rs
 index 7389236c0..3fbed4438 100644
 --- a/codex-rs/tui/src/bottom_pane/status_surface_preview.rs
@@ -12456,6 +12842,71 @@ index 6200fdf10..b9b04258a 100644
 -"  gpt-5.4 xhigh fast · Context 100% left · /tmp/project                         "
 +"  gpt-5.4 xhigh fast · /tmp/project                                             "
 +"  Context 100% left                                                             "
+diff --git a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_setup_popup_hardcoded_only.snap b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_setup_popup_hardcoded_only.snap
+index 770ed596b..6868d1b66 100644
+--- a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_setup_popup_hardcoded_only.snap
++++ b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_setup_popup_hardcoded_only.snap
+@@ -7,7 +7,7 @@ expression: status_line_popup_snapshot(&mut chat)
+ 
+   Type to search
+ 
+-› [x] Use theme colors      Apply colors from the active /theme
++› [x] Use colors            Use distinct item colors and theme accents
+   ───────────────────────
+   [x] project-name          Project name (omitted when unavailable)
+   [x] git-branch            Current Git branch (omitted when unavailable)
+diff --git a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_setup_popup_live_only.snap b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_setup_popup_live_only.snap
+index b4eb9250d..9cb68e322 100644
+--- a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_setup_popup_live_only.snap
++++ b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_setup_popup_live_only.snap
+@@ -7,7 +7,7 @@ expression: status_line_popup_snapshot(&mut chat)
+ 
+   Type to search
+ 
+-› [x] Use theme colors      Apply colors from the active /theme
++› [x] Use colors            Use distinct item colors and theme accents
+   ───────────────────────
+   [x] project-name          Project name (omitted when unavailable)
+   [x] git-branch            Current Git branch (omitted when unavailable)
+diff --git a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_setup_popup_mixed.snap b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_setup_popup_mixed.snap
+index 7006478c5..c54d30211 100644
+--- a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_setup_popup_mixed.snap
++++ b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_setup_popup_mixed.snap
+@@ -7,7 +7,7 @@ expression: status_line_popup_snapshot(&mut chat)
+ 
+   Type to search
+ 
+-› [x] Use theme colors      Apply colors from the active /theme
++› [x] Use colors            Use distinct item colors and theme accents
+   ───────────────────────
+   [x] project-name          Project name (omitted when unavailable)
+   [x] git-branch            Current Git branch (omitted when unavailable)
+diff --git a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_setup_popup_rate_limits.snap b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_setup_popup_rate_limits.snap
+index 6b6cd080b..e54611ebc 100644
+--- a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_setup_popup_rate_limits.snap
++++ b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_setup_popup_rate_limits.snap
+@@ -7,7 +7,7 @@ expression: status_line_popup_snapshot(&mut chat)
+ 
+   Type to search
+ 
+-› [x] Use theme colors      Apply colors from the active /theme
++› [x] Use colors            Use distinct item colors and theme accents
+   ───────────────────────
+   [x] monthly-limit         Remaining usage on the monthly usage limit (omitted when unavailable)
+   [x] weekly-limit          Remaining usage on the weekly usage limit (omitted when unavailable)
+diff --git a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_setup_popup_workspace_headline.snap b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_setup_popup_workspace_headline.snap
+index 5fe11ae96..a2a8b5196 100644
+--- a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_setup_popup_workspace_headline.snap
++++ b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_setup_popup_workspace_headline.snap
+@@ -7,7 +7,7 @@ expression: status_line_popup_snapshot(&mut chat)
+ 
+   Type to search
+ 
+-› [x] Use theme colors      Apply colors from the active /theme
++› [x] Use colors            Use distinct item colors and theme accents
+   ───────────────────────
+   [x] workspace-headline    Workspace notification headline (Enterprise workspaces only; omitted wh…
+   [ ] model                 Current model name
 diff --git a/codex-rs/tui/src/chatwidget/status_controls.rs b/codex-rs/tui/src/chatwidget/status_controls.rs
 index 692eba105..54808699b 100644
 --- a/codex-rs/tui/src/chatwidget/status_controls.rs
@@ -14532,6 +14983,32 @@ index f055cd1b7..0946144be 100644
      /// Monotonic-ish counter used to invalidate transcript overlay caching.
      pub(super) active_cell_revision: u64,
      /// One bounded entry shared by layout and paint across unchanged active-cell frames.
+diff --git a/codex-rs/tui/src/config_panel/mod.rs b/codex-rs/tui/src/config_panel/mod.rs
+index ebc5799be..072ce1ef8 100644
+--- a/codex-rs/tui/src/config_panel/mod.rs
++++ b/codex-rs/tui/src/config_panel/mod.rs
+@@ -299,7 +299,7 @@ fn settings(tui: &Tui, status: ConfigPanelStatus) -> Vec<ConfigSetting> {
+         ConfigSetting {
+             section: ConfigSection::Appearance,
+             label: "Status line colors",
+-            description: "Use theme colors for the model, branch, and other status line details",
++            description: "Use distinct item colors and theme accents",
+             keywords: "statusline footer colour",
+             value: ConfigSettingValue::Toggle {
+                 setting: ConfigToggle::StatusLineColors,
+diff --git a/codex-rs/tui/src/config_panel/snapshots/codex_tui__config_panel__tests__config_Appearance.snap b/codex-rs/tui/src/config_panel/snapshots/codex_tui__config_panel__tests__config_Appearance.snap
+index f8681dc8a..4687db854 100644
+--- a/codex-rs/tui/src/config_panel/snapshots/codex_tui__config_panel__tests__config_Appearance.snap
++++ b/codex-rs/tui/src/config_panel/snapshots/codex_tui__config_panel__tests__config_Appearance.snap
+@@ -11,7 +11,7 @@ expression: "render(&panel, 140)"
+ › Theme                   Automatic ›          Choose a syntax color palette with a live preview
+   Effects                 Configure ›          Configure animations and composer effects
+   Tips                    [ ] Off              Show helpful shortcuts and suggestions
+-  Status line colors      [ ] Off              Use theme colors for the model, branch, and other status line details
++  Status line colors      [ ] Off              Use distinct item colors and theme accents
+   Status line display     Configure ›          Choose and reorder the information below the composer
+   Terminal title display  Configure ›          Choose and reorder the information in your terminal tab or window title
+ 
 diff --git a/codex-rs/tui/src/exec_cell/advisor.rs b/codex-rs/tui/src/exec_cell/advisor.rs
 new file mode 100644
 index 000000000..07dc951bd
