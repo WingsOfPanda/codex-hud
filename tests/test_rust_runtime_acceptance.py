@@ -313,17 +313,25 @@ class RuntimeAcceptance(unittest.TestCase):
 
     def test_ultracode_item_readiness_preserves_input_and_reports_unavailable(self):
         unsupported = {'code': -32601, 'message': 'list_items is not supported yet'}
+        empty = {'result': {'data': [], 'nextCursor': None}}
         cases = [
-            ('recovers', {'error': unsupported}, 2, True),
-            ('persistent', {'error': unsupported}, 100, False),
-            ('wrong_code', {'error': dict(unsupported, code=-32603)}, 1, False),
-            ('other_error', {'error': dict(unsupported, message='permission denied')}, 1, False),
-            ('empty_items', {'result': {'data': [], 'nextCursor': None}}, 1, False),
+            ('recovers', {'error': unsupported}, 2, True, 3),
+            ('persistent', {'error': unsupported}, 100, False, 4),
+            ('wrong_code', {'error': dict(unsupported, code=-32603)}, 1, False, 1),
+            ('other_error', {'error': dict(unsupported, message='permission denied')}, 1, False, 1),
+            ('empty_once', empty, 1, True, 2),
+            ('empty_twice', empty, 2, True, 3),
+            ('empty_three', empty, 3, True, 4),
+            ('empty_items', empty, 100, False, 4),
+            ('mixed_recovers', [empty, {'error': unsupported}, empty], 3, True, 4),
+            ('mixed_exhausted', [empty, {'error': unsupported}, empty, {'error': unsupported}], 4, False, 4),
+            ('missing_client', None, 1, False, 1),
+            ('unreserved', None, 1, False, 1),
             ('foreign_item', {'result': {'data': [{'turnId': str(uuid.uuid4()),
                 'item': {'type': 'userMessage', 'clientId': str(uuid.uuid4())}}],
-                'nextCursor': None}}, 1, False),
+                'nextCursor': None}}, 1, False, 1),
         ]
-        for label, response, failures, recovered in cases:
+        for label, response, failures, recovered, expected_reads in cases:
             with self.subTest(label=label), self.fixture(label=label) as f:
                 f.env.pop('CODEX_THREAD_ID')
                 f.fake.parent_turns = []
@@ -347,7 +355,12 @@ class RuntimeAcceptance(unittest.TestCase):
                     if method == 'thread/items/list':
                         reads.append(dict(params))
                         if len(reads) <= failures:
-                            return response
+                            if label in ('missing_client', 'unreserved'):
+                                item = {'type': 'userMessage'}
+                                if label == 'unreserved':
+                                    item['clientId'] = str(uuid.uuid4())
+                                return {'result': {'data': [{'turnId': turn, 'item': item}], 'nextCursor': None}}
+                            return response[len(reads) - 1] if isinstance(response, list) else response
                     return original_reply(method, params)
 
                 f.server.reply = reply
@@ -360,9 +373,9 @@ class RuntimeAcceptance(unittest.TestCase):
                 projection_path = f.home / 'codex-plus/ultracode' / f'{PARENT}.json'
                 projection = json.loads(projection_path.read_text())
                 self.assertTrue(all(p['threadId'] == PARENT and p['turnId'] == turn for p in reads))
+                self.assertEqual(len(reads), expected_reads)
                 if recovered:
                     self.assertEqual(result.stderr, '')
-                    self.assertEqual(len(reads), 3)
                     self.assertEqual(projection['availability'], 'available')
                     self.assertEqual(projection['effective']['submission'], submission)
                     self.assertEqual(projection['effective']['turn'], turn)
@@ -372,15 +385,13 @@ class RuntimeAcceptance(unittest.TestCase):
                     self.assertIsNone(projection['effective'])
                     self.assertEqual(projection['instructions'], '')
                     self.assertIn(submission, [p['submission'] for p in projection['pending']])
-                    if label == 'persistent':
-                        self.assertGreater(len(reads), 1)
-                        self.assertLessEqual(len(reads), 6)
+                    if label in ('persistent', 'empty_items'):
                         # A status read must not conceal the still-unresolved error.
                         status = json.loads(f.cli('ultracode', 'status', '--thread', PARENT, '--json').stdout)
                         self.assertEqual(status['availability'], 'unavailable')
-                        self.assertIn(unsupported['message'], status['unavailable_reason'])
-                    else:
-                        self.assertEqual(len(reads), 1)
+                        reason = unsupported['message'] if label == 'persistent' else 'initial user submission is not yet visible'
+                        self.assertIn(reason, status['unavailable_reason'])
+                        self.assertEqual(len(reads), expected_reads * 2)
                 self.assertTrue(all(r.get('method') in (
                     'initialize', 'initialized', 'thread/read', 'thread/turns/list', 'thread/items/list',
                 ) for r in f.server.requests[before:]), 'mode confirmation replayed a mutation')
