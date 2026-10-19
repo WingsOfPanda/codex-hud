@@ -3067,7 +3067,7 @@ index 6e340c424..aaf27274d 100644
  async fn quota_warnings_are_emitted_once_and_survive_native_replay() -> Result<()> {
      for initial_replay in [false, true] {
 diff --git a/codex-rs/tui/src/app/owned_transcript_tests.rs b/codex-rs/tui/src/app/owned_transcript_tests.rs
-index ff6e0201b..56d15f109 100644
+index ff6e0201b..c75d7cf5f 100644
 --- a/codex-rs/tui/src/app/owned_transcript_tests.rs
 +++ b/codex-rs/tui/src/app/owned_transcript_tests.rs
 @@ -1615,12 +1615,13 @@ async fn inline_confirmation_preserves_compact_viewport_without_replaying_histor
@@ -3085,7 +3085,7 @@ index ff6e0201b..56d15f109 100644
      );
      app.render_chat_widget_frame(&mut tui, size)?;
      assert!(tui.terminal.viewport_area.height < size.height);
-@@ -1849,3 +1850,96 @@ async fn footer_selection_defers_warning_clicks_and_preserves_the_draft() -> Res
+@@ -1849,3 +1850,110 @@ async fn footer_selection_defers_warning_clicks_and_preserves_the_draft() -> Res
      tui.set_owned_screen(/*owned*/ false)?;
      Ok(())
  }
@@ -3102,7 +3102,7 @@ index ff6e0201b..56d15f109 100644
 +    app.chat_widget
 +        .apply_external_edit("draft stays here".into());
 +    app.chat_widget.set_shell_hud(
-+        (0..5)
++        (0..8)
 +            .map(|n| ShellRow {
 +                command: format!("hud-job-{n}"),
 +                job_id: n.to_string(),
@@ -3126,12 +3126,18 @@ index ff6e0201b..56d15f109 100644
 +        .lines()
 +        .filter(|line| !line.trim().is_empty())
 +        .collect();
++    let cursor = tui.terminal.last_known_cursor_pos;
++    assert_eq!(
++        text.lines().nth(usize::from(cursor.y)).map(str::trim),
++        Some("› draft stays here"),
++        "{text}"
++    );
 +    assert!(
-+        lines
-+            .iter()
-+            .rev()
-+            .take(6)
-+            .any(|line| line.trim_start().starts_with('›')),
++        text.lines()
++            .skip(usize::from(cursor.y) + 1)
++            .filter(|line| !line.trim().is_empty())
++            .count()
++            <= 9,
 +        "{text}"
 +    );
 +    assert_eq!(
@@ -3141,9 +3147,17 @@ index ff6e0201b..56d15f109 100644
 +                || line.contains("Wake delivery uncertain")
 +                || line.contains("+4 more"))
 +            .count(),
-+        3,
++        6,
 +        "{text}"
 +    );
++    assert_eq!(
++        lines
++            .iter()
++            .filter(|line| line.contains("Background ·"))
++            .count(),
++        4
++    );
++    assert!(lines.iter().any(|line| line.trim() == "+4 more"), "{text}");
 +    let badge = buffer
 +        .area
 +        .positions()
