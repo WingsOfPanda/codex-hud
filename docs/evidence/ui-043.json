@@ -100,7 +100,19 @@
     "approval_dialog": "AP excludes numbered selections from idle prompt matching",
     "working_row": 27,
     "busy_cursor_row": 30,
-    "release_install": "pending owner authorization"
+    "release_install": "pending owner authorization",
+    "next_packaged_bundle": {
+      "format": "cursor_y cursor_x pane_height pane_width cursor_flag",
+      "ap_reported_policy_commit": "4a3a9af",
+      "multiline_draft_expected": "unknown",
+      "native_notes_and_mcp_text_expected": "unknown",
+      "development_bundle": ".build/footer-cursor043/v2/development-36ff-tab",
+      "development_raw_pairs": 20,
+      "root_integrity": "passed",
+      "form_cursor": "y36,x4,visible flag1 in bothsizes",
+      "final_packaged_capture_and_ap_replay": "pending",
+      "development_is_release_acceptance": false
+    }
   },
   "limitations": [
     "Six app_server_session assertions also fail unchanged on 0.4.2; full upstream suite is not green.",
