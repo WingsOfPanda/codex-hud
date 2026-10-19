@@ -1,5 +1,9 @@
 # Codex Plus goals — approved design and implementation
 
+Current UI: [Plus goal status](goals.md#use-a-goal) now uses one blue row above
+the editable input, replacing the right-footer placement discussed below. The
+earlier design answers and qualification record remain historical evidence.
+
 Status: Q1–Q18 agreed. The Rust coordinator and native client are implemented
 for `0.163.0-plus.0.3.2`; source acceptance is recorded in
 [verification](verification.md) and [the evidence record](evidence/custom-goals.json).

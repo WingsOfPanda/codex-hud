@@ -11,11 +11,14 @@ Use the goal menu to start, edit, pause, resume, complete or clear it. Completed
 and cleared goals remain in history. Native subagents return results to their
 parent; independent AP workers finish their brief within the turn.
 
-The right-hand input indicator shows `Goal active`, `Goal waiting · N jobs`,
-`Goal needs input`, `Goal paused` or `Goal complete`. Waiting means the daemon
-reports the parent Idle while the local observer watches registered jobs. It is
+One compact blue row above the editable input shows `Goal active`,
+`Goal waiting · N jobs`, `Goal needs input`, `Goal paused` or `Goal complete`.
+Waiting means the daemon reports the parent Idle while the local observer
+watches registered jobs. It is
 not a held model/tool call. The goal takes precedence over the Plan label,
-without changing Plan mode. It adds no activity rows; the worker/job/advisor
+without changing Plan mode. Narrow rows truncate the label; tiny terminals give
+input priority, and terminals without color use plain text. The status footer
+stays below input. The goal adds no activity rows; the worker/job/advisor
 strip still occupies at most three rows. Completion remains indicated until the
 next ordinary user message, not a synthetic callback or timer review.
 

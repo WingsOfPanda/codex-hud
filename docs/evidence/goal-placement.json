@@ -1,0 +1,138 @@
+{
+  "schema": 1,
+  "scope": "Plus-only compact blue goal row above editable input",
+  "source_commit": "84a2b58ae3f83138e7661c213792a034df7f3923",
+  "upstream_commit": "83086188ae0614bd882818ff1aa23f3194962012",
+  "platform": "x86_64-unknown-linux-gnu",
+  "installed": false,
+  "behavior": {
+    "placement": "existing above-composer flex; one truncated row; input gets tiny-terminal priority",
+    "color": "readable blue137,180,250 with ANSI16Blue and monochrome fallback",
+    "footer": "no duplicate Plus badge or Plus-only reserved row",
+    "preserved": [
+      "native goal footer variants",
+      "goal control/projection formats",
+      "Plan suppression while Plus goal exists",
+      "two status rows and worker HUD below input"
+    ]
+  },
+  "patch_sha256": "6d5153f9d240000ba97c2306e2022a26d93012d2bc8f168b82c95c906c1f943c",
+  "native_filters": [
+    {
+      "filter": "chatwidget__tests__exec_flow",
+      "results": [
+        "test result: ok. 53 passed; 0 failed; 0 ignored; 0 measured; 5833 filtered out; finished in 0.14s"
+      ]
+    },
+    {
+      "filter": "config_panel",
+      "results": [
+        "test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 5865 filtered out; finished in 0.25s"
+      ]
+    },
+    {
+      "filter": "goal",
+      "results": [
+        "test result: ok. 74 passed; 0 failed; 0 ignored; 0 measured; 5812 filtered out; finished in 0.61s"
+      ]
+    },
+    {
+      "filter": "shell_policy",
+      "results": [
+        "test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 5865 filtered out; finished in 0.18s"
+      ]
+    },
+    {
+      "filter": "status_line",
+      "results": [
+        "test result: ok. 94 passed; 0 failed; 0 ignored; 0 measured; 5792 filtered out; finished in 0.13s"
+      ]
+    },
+    {
+      "filter": "status_surface",
+      "results": [
+        "test result: ok. 43 passed; 0 failed; 0 ignored; 0 measured; 5843 filtered out; finished in 0.07s"
+      ]
+    },
+    {
+      "filter": "style__contrast__tests",
+      "results": [
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 5881 filtered out; finished in 0.01s"
+      ]
+    },
+    {
+      "filter": "thread_transcript__tools__tests",
+      "results": [
+        "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 5880 filtered out; finished in 0.07s"
+      ]
+    },
+    {
+      "filter": "worker_hud",
+      "results": [
+        "test result: ok. 50 passed; 0 failed; 0 ignored; 0 measured; 5836 filtered out; finished in 0.24s"
+      ]
+    }
+  ],
+  "native_counts_overlap": true,
+  "pty_goal_modes": {
+    "truecolor": {
+      "passed": true,
+      "stages": 13,
+      "display_model_requests": 0
+    },
+    "ansi256": {
+      "passed": true,
+      "stages": 13,
+      "display_model_requests": 0
+    },
+    "ansi16": {
+      "passed": true,
+      "stages": 13,
+      "display_model_requests": 0
+    },
+    "no-color": {
+      "passed": true,
+      "stages": 13,
+      "display_model_requests": 0
+    },
+    "disabled-footer": {
+      "passed": true,
+      "stages": 13,
+      "display_model_requests": 0
+    }
+  },
+  "regressions": {
+    "status_layout_cases": 4,
+    "status_color_modes": 5,
+    "ultracode_cases": 4,
+    "weekly_reset_stages": 4,
+    "worker_role_stages": 14,
+    "full_smoke_stages": 23,
+    "real_private_official_goal_scenarios": [
+      "display",
+      "restart"
+    ],
+    "extra_display_model_calls": 0
+  },
+  "integration": {
+    "passed": true,
+    "stages": 13,
+    "evidence": "/home/liupan/Aerius/codex-plus/.build/goal-placement/integrated-acceptance/report.json"
+  },
+  "native_binaries": {
+    "codex": "8dec3e6194de717b9735a28f2a3f1d8233f1f7eb14abb152b9f92c6103e00c57",
+    "codex-code-mode-host": "17953677418ee099bd3188db18f4d1c36946ab185bda89b8be48d7cd328380c6",
+    "codex-plus-runtime": "5e74477a2005af51f2734152387bb134d5fc2dfa3d6112c67eb77e194191c6ae"
+  },
+  "executions": {
+    "tests": "0f42ecae-b4e9-4a3b-b027-93c639efc21c",
+    "build": "68db2d10-6b0d-4be2-b12e-ac2822905b50",
+    "both_exit": 0,
+    "both_cleanup": "passed no leftovers"
+  },
+  "limits": [
+    "Source qualification only; native ARM package qualification not included here",
+    "No installation, publication or live iris-ascend changes",
+    "Earlier unrelated startup snapshot mismatch remains documented in status-footer.json"
+  ]
+}

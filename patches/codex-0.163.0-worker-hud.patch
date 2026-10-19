@@ -7615,7 +7615,7 @@ index cfe049959..f49923739 100644
              &mut response.thread,
              response.turns_backwards_cursor.clone(),
 diff --git a/codex-rs/tui/src/bottom_pane/chat_composer.rs b/codex-rs/tui/src/bottom_pane/chat_composer.rs
-index 2ad3f1cd9..c3cec81f7 100644
+index 2ad3f1cd9..c56503a40 100644
 --- a/codex-rs/tui/src/bottom_pane/chat_composer.rs
 +++ b/codex-rs/tui/src/bottom_pane/chat_composer.rs
 @@ -10,9 +10,9 @@
@@ -7639,7 +7639,23 @@ index 2ad3f1cd9..c3cec81f7 100644
                  side_conversation_context_label: None,
                  active_agent_label: None,
                  external_editor_key: default_keymap
-@@ -1790,6 +1791,16 @@ impl ChatComposer {
+@@ -1103,6 +1104,15 @@ impl ChatComposer {
+         self.footer.goal_status_indicator = indicator;
+     }
+ 
++    pub(super) fn plus_goal_status_line(&self) -> Option<Line<'static>> {
++        match self.footer.goal_status_indicator.as_ref() {
++            Some(indicator @ GoalStatusIndicator::Plus(_)) => {
++                super::footer::goal_status_indicator_line(Some(indicator))
++            }
++            _ => None,
++        }
++    }
++
+     pub fn set_ide_context_active(&mut self, active: bool) {
+         self.footer.ide_context_active = active;
+     }
+@@ -1790,6 +1800,16 @@ impl ChatComposer {
          self.footer.status_line_text()
      }
  
@@ -7656,7 +7672,7 @@ index 2ad3f1cd9..c3cec81f7 100644
      pub(crate) fn local_images(&self) -> Vec<LocalImageAttachment> {
          self.attachments.local_images()
      }
-@@ -4296,6 +4307,14 @@ impl ChatComposer {
+@@ -4296,6 +4316,14 @@ impl ChatComposer {
          true
      }
  
@@ -7671,7 +7687,7 @@ index 2ad3f1cd9..c3cec81f7 100644
      pub(crate) fn set_status_line_hyperlink(&mut self, url: Option<String>) -> bool {
          if self.footer.status_line_hyperlink_url == url {
              return false;
-@@ -4562,14 +4581,7 @@ impl ChatComposer {
+@@ -4562,14 +4590,7 @@ impl ChatComposer {
                  let show_cycle_hint = self.status_surface_height(options) == 0
                      && !footer_props.is_task_running
                      && self.footer.collaboration_mode_indicator.is_some();
@@ -7687,7 +7703,7 @@ index 2ad3f1cd9..c3cec81f7 100644
                  let show_queue_hint = match footer_props.mode {
                      FooterMode::ComposerHasDraft => footer_props.is_task_running,
                      FooterMode::HistorySearch
-@@ -4593,6 +4605,11 @@ impl ChatComposer {
+@@ -4593,6 +4614,11 @@ impl ChatComposer {
                      input.render(inset_footer_hint_area(hint_rect), buf);
                  } else if let Some(line) = self.history_search_footer_line() {
                      render_footer_line(hint_rect, buf, line);
@@ -7699,7 +7715,7 @@ index 2ad3f1cd9..c3cec81f7 100644
                  } else {
                      let available_width =
                          hint_rect.width.saturating_sub(FOOTER_INDENT_COLS as u16) as usize;
-@@ -4628,12 +4645,16 @@ impl ChatComposer {
+@@ -4628,12 +4654,16 @@ impl ChatComposer {
                      } else {
                          None
                      };
@@ -7722,39 +7738,7 @@ index 2ad3f1cd9..c3cec81f7 100644
                      let active_footer_hint_override = self.footer.hint_override.as_ref();
                      let mut left_width = if self.footer.flash_visible() {
                          self.footer
-@@ -4664,6 +4685,11 @@ impl ChatComposer {
-                             Some(line)
-                         } else if self.status_surface_height(options) > 0 || transition_active {
-                             None
-+                        } else if matches!(
-+                            self.footer.goal_status_indicator,
-+                            Some(GoalStatusIndicator::Plus(_))
-+                        ) {
-+                            self.mode_indicator_line(false)
-                         } else if status_line_active {
-                             let full = self.mode_indicator_line(show_cycle_hint);
-                             let compact = self.mode_indicator_line(/*show_cycle_hint*/ false);
-@@ -4676,6 +4702,19 @@ impl ChatComposer {
-                         } else {
-                             Some(self.right_footer_line_with_context())
-                         };
-+                    let right_line = right_line.map(|line| {
-+                        if matches!(
-+                            self.footer.goal_status_indicator,
-+                            Some(GoalStatusIndicator::Plus(_))
-+                        ) {
-+                            truncate_line_with_ellipsis_if_overflow(
-+                                line,
-+                                usize::from(inset_footer_hint_area(hint_rect).width),
-+                            )
-+                        } else {
-+                            line
-+                        }
-+                    });
-                     let right_width = right_line.as_ref().map(|l| l.width() as u16).unwrap_or(0);
-                     if status_line_active
-                         && let Some(max_left) = max_left_width_for_right(hint_rect, right_width)
-@@ -5073,10 +5112,10 @@ mod tests {
+@@ -5073,10 +5103,10 @@ mod tests {
      }
  
      #[test]
@@ -7767,7 +7751,7 @@ index 2ad3f1cd9..c3cec81f7 100644
              /*has_input_focus*/ true,
              sender,
              /*enhanced_keys_supported*/ false,
-@@ -5084,46 +5123,14 @@ mod tests {
+@@ -5084,46 +5114,14 @@ mod tests {
              /*disable_paste_burst*/ false,
          );
  
@@ -8190,21 +8174,15 @@ index c35c2d93e..10a855cf9 100644
  
  
 diff --git a/codex-rs/tui/src/bottom_pane/chat_composer/status_surface.rs b/codex-rs/tui/src/bottom_pane/chat_composer/status_surface.rs
-index 60ee2e0fa..91d541b97 100644
+index 60ee2e0fa..8063cfcf5 100644
 --- a/codex-rs/tui/src/bottom_pane/chat_composer/status_surface.rs
 +++ b/codex-rs/tui/src/bottom_pane/chat_composer/status_surface.rs
-@@ -6,7 +6,70 @@ use super::*;
+@@ -6,7 +6,58 @@ use super::*;
  
  impl ChatComposer {
      pub(super) fn status_surface_height(&self, options: ComposerRenderOptions<'_>) -> u16 {
 -        u16::from(options.separate_status_line && self.footer.status_line_enabled)
-+        if options.separate_status_line
-+            && (self.footer.status_line_enabled
-+                || matches!(
-+                    self.footer.goal_status_indicator,
-+                    Some(GoalStatusIndicator::Plus(_))
-+                ))
-+        {
++        if options.separate_status_line && self.footer.status_line_enabled {
 +            self.status_line_height(options)
 +        } else {
 +            0
@@ -8254,18 +8232,12 @@ index 60ee2e0fa..91d541b97 100644
 +            {
 +                return None;
 +            }
-+            if matches!(
-+                self.footer.goal_status_indicator,
-+                Some(GoalStatusIndicator::Plus(_))
-+            ) {
-+                return self.mode_indicator_line(/*show_cycle_hint*/ false);
-+            }
 +        }
 +        self.mode_indicator_line(show_cycle_hint)
      }
  
      pub(super) fn hint_footer_props(&self, options: ComposerRenderOptions<'_>) -> FooterProps {
-@@ -14,8 +77,12 @@ impl ChatComposer {
+@@ -14,8 +65,12 @@ impl ChatComposer {
          if self.status_surface_height(options) > 0 {
              props.status_line_enabled = false;
              props.status_line_value = None;
@@ -8278,7 +8250,7 @@ index 60ee2e0fa..91d541b97 100644
          props
      }
  
-@@ -28,21 +95,49 @@ impl ChatComposer {
+@@ -28,21 +83,49 @@ impl ChatComposer {
          if area.is_empty() {
              return;
          }
@@ -8342,31 +8314,17 @@ index 60ee2e0fa..91d541b97 100644
          let left_width = line
              .as_ref()
              .map_or(/*default*/ 0, |line| line.width() as u16);
-@@ -54,8 +149,21 @@ impl ChatComposer {
+@@ -54,7 +137,7 @@ impl ChatComposer {
          {
              full
          } else {
 -            self.mode_indicator_line(/*show_cycle_hint*/ false)
 +            self.status_line_right_indicator(options, /*show_cycle_hint*/ false)
          };
-+        let right = right.map(|line| {
-+            if matches!(
-+                self.footer.goal_status_indicator,
-+                Some(GoalStatusIndicator::Plus(_))
-+            ) {
-+                truncate_line_with_ellipsis_if_overflow(
-+                    line,
-+                    usize::from(inset_footer_hint_area(area).width),
-+                )
-+            } else {
-+                line
-+            }
-+        });
          let right_width = right
              .as_ref()
-             .map_or(/*default*/ 0, |line| line.width() as u16);
 diff --git a/codex-rs/tui/src/bottom_pane/chat_composer/status_surface_tests.rs b/codex-rs/tui/src/bottom_pane/chat_composer/status_surface_tests.rs
-index 03e761f4f..38c5d6727 100644
+index 03e761f4f..dda6ac416 100644
 --- a/codex-rs/tui/src/bottom_pane/chat_composer/status_surface_tests.rs
 +++ b/codex-rs/tui/src/bottom_pane/chat_composer/status_surface_tests.rs
 @@ -4,6 +4,37 @@ use super::*;
@@ -8374,7 +8332,7 @@ index 03e761f4f..38c5d6727 100644
  use tokio::sync::mpsc::unbounded_channel;
  
 +#[test]
-+fn plus_goal_uses_existing_status_surface_and_truncates_without_wrapping() {
++fn plus_goal_leaves_the_composer_footer_and_keeps_plan_suppressed() {
 +    for enabled in [true, false] {
 +        let mut composer = composer();
 +        composer.set_status_line_enabled(enabled);
@@ -8384,7 +8342,7 @@ index 03e761f4f..38c5d6727 100644
 +        )));
 +        composer.set_text_content("editable draft".into(), vec![], vec![]);
 +        let (wide, cursor) = render(&composer, 80, None);
-+        assert!(wide.contains("Goal waiting · 12 jobs"), "{wide}");
++        assert!(!wide.contains("Goal"), "{wide}");
 +        assert!(!wide.contains("Plan"), "{wide}");
 +        assert!(wide.contains("editable draft"), "{wide}");
 +        assert!(cursor.is_some());
@@ -8393,9 +8351,9 @@ index 03e761f4f..38c5d6727 100644
 +            ..Default::default()
 +        });
 +        let height = composer.desired_height_with_options(80, options);
-+        assert_eq!(height, 4);
++        assert_eq!(height, if enabled { 4 } else { 3 });
 +        let (narrow, cursor) = render(&composer, 12, None);
-+        assert!(narrow.contains("Goal"), "{narrow}");
++        assert!(!narrow.contains("Goal"), "{narrow}");
 +        assert!(cursor.is_some());
 +        assert_eq!(
 +            composer.desired_height_with_options(12, options),
@@ -8509,7 +8467,7 @@ index 03e761f4f..38c5d6727 100644
  }
  
  #[test]
-@@ -446,3 +524,175 @@ fn activity_shortcut_help_follows_runtime_binding() {
+@@ -446,3 +524,178 @@ fn activity_shortcut_help_follows_runtime_binding() {
      }
      insta::assert_snapshot!(snapshots.join("\n---\n"));
  }
@@ -8564,7 +8522,10 @@ index 03e761f4f..38c5d6727 100644
 +            if width == 120 {
 +                assert!(rows[identity].contains("Main [default]"), "{rows:?}");
 +            }
-+            assert!(rows[identity].contains("Goal active"), "{rows:?}");
++            assert!(
++                !rows.iter().any(|row| row.contains("Goal active")),
++                "{rows:?}"
++            );
 +            assert!(!rows[identity].contains("Context"));
 +            assert!(
 +                rows[identity + 1].starts_with("Context 75% left · weekly 45% left"),
@@ -8686,10 +8647,27 @@ index 03e761f4f..38c5d6727 100644
 +    }
 +}
 diff --git a/codex-rs/tui/src/bottom_pane/footer.rs b/codex-rs/tui/src/bottom_pane/footer.rs
-index f0b809ce5..0b656e002 100644
+index f0b809ce5..ef0ab62a6 100644
 --- a/codex-rs/tui/src/bottom_pane/footer.rs
 +++ b/codex-rs/tui/src/bottom_pane/footer.rs
-@@ -82,6 +82,7 @@ pub(crate) struct FooterProps {
+@@ -50,11 +50,16 @@ use crate::key_hint::KeyBinding;
+ use crate::key_hint::ShortcutHint;
+ use crate::render::line_utils::prefix_lines;
+ use crate::status::format_tokens_compact;
++use crate::style::readable_color_on;
+ use crate::style::secondary_text_style;
++use crate::terminal_palette::StdoutColorLevel;
++use crate::terminal_palette::effective_stdout_color_level;
++use crate::terminal_palette::rgb_color;
+ use crate::ui_consts::FOOTER_INDENT_COLS;
+ use crossterm::event::KeyCode;
+ use ratatui::buffer::Buffer;
+ use ratatui::layout::Rect;
++use ratatui::style::Color;
+ use ratatui::style::Styled;
+ use ratatui::style::Stylize;
+ use ratatui::text::Line;
+@@ -82,6 +87,7 @@ pub(crate) struct FooterProps {
      /// This is rendered when `mode` is `FooterMode::QuitShortcutReminder`.
      pub(crate) quit_shortcut_key: KeyBinding,
      pub(crate) status_line_value: Option<Line<'static>>,
@@ -8697,7 +8675,7 @@ index f0b809ce5..0b656e002 100644
      pub(crate) status_line_enabled: bool,
      pub(crate) key_hints: FooterKeyHints,
      /// Active thread label shown when the footer is rendering contextual information instead of an
-@@ -99,6 +100,7 @@ pub(crate) enum CollaborationModeIndicator {
+@@ -99,6 +105,7 @@ pub(crate) enum CollaborationModeIndicator {
  
  #[derive(Clone, Debug, Eq, PartialEq)]
  pub(crate) enum GoalStatusIndicator {
@@ -8705,26 +8683,48 @@ index f0b809ce5..0b656e002 100644
      Active { usage: Option<String> },
      Paused,
      Blocked,
-@@ -583,6 +585,7 @@ pub(crate) fn goal_status_indicator_line(
+@@ -583,6 +590,12 @@ pub(crate) fn goal_status_indicator_line(
  ) -> Option<Line<'static>> {
      let indicator = indicator?;
      let label = match indicator {
-+        GoalStatusIndicator::Plus(label) => label.clone(),
++        GoalStatusIndicator::Plus(label) => {
++            return Some(Line::from(Span::styled(
++                label.clone(),
++                plus_goal_color(effective_stdout_color_level()),
++            )));
++        }
          GoalStatusIndicator::Active { usage } => {
              if let Some(usage) = usage {
                  format!("Pursuing goal ({usage})")
-@@ -618,8 +621,8 @@ pub(crate) fn status_line_right_indicator_line(
+@@ -612,14 +625,25 @@ pub(crate) fn goal_status_indicator_line(
+     Some(Line::from(vec![Span::from(label).magenta()]))
+ }
+ 
++fn plus_goal_color(level: StdoutColorLevel) -> Color {
++    match level {
++        StdoutColorLevel::Unknown => Color::Reset,
++        StdoutColorLevel::Ansi16 => Color::Blue,
++        _ => readable_color_on(rgb_color((137, 180, 250)), None),
++    }
++}
++
+ pub(crate) fn status_line_right_indicator_line(
+     collaboration_mode_indicator: Option<CollaborationModeIndicator>,
+     goal_status_indicator: Option<&GoalStatusIndicator>,
      ide_context_active: bool,
      show_cycle_hint: bool,
  ) -> Option<Line<'static>> {
 -    let primary_indicator = mode_indicator_line(collaboration_mode_indicator, show_cycle_hint)
 -        .or_else(|| goal_status_indicator_line(goal_status_indicator));
-+    let primary_indicator = goal_status_indicator_line(goal_status_indicator)
-+        .or_else(|| mode_indicator_line(collaboration_mode_indicator, show_cycle_hint));
++    let primary_indicator = match goal_status_indicator {
++        Some(GoalStatusIndicator::Plus(_)) => None,
++        _ => goal_status_indicator_line(goal_status_indicator)
++            .or_else(|| mode_indicator_line(collaboration_mode_indicator, show_cycle_hint)),
++    };
      let ide_context_indicator = ide_context_active.then(|| Line::from(vec!["IDE context".cyan()]));
      let mut line: Option<Line<'static>> = None;
  
-@@ -774,8 +777,13 @@ fn footer_from_props_lines(
+@@ -774,8 +798,13 @@ fn footer_from_props_lines(
      let key_hints = props.key_hints;
      // Passive footer context can come from the configurable status line, the
      // active agent label, or both combined.
@@ -8740,7 +8740,20 @@ index f0b809ce5..0b656e002 100644
      }
      match props.mode {
          FooterMode::QuitShortcutReminder => {
-@@ -1299,6 +1307,7 @@ mod tests {
+@@ -982,6 +1011,12 @@ mod tests {
+     use ratatui::backend::Backend;
+     use ratatui::backend::TestBackend;
+ 
++    #[test]
++    fn plus_goal_color_keeps_ansi16_blue_and_no_color_readable() {
++        assert_eq!(plus_goal_color(StdoutColorLevel::Ansi16), Color::Blue);
++        assert_eq!(plus_goal_color(StdoutColorLevel::Unknown), Color::Reset);
++    }
++
+     #[test]
+     fn voice_live_microphone_indicator_is_red() {
+         let line = footer_hint_items_line(&[("voice".into(), "● listen".into())]);
+@@ -1299,6 +1334,7 @@ mod tests {
                  quit_shortcut_key: key_hint::ctrl(KeyCode::Char('c')),
                  status_line_value: None,
                  status_line_enabled: false,
@@ -8748,7 +8761,7 @@ index f0b809ce5..0b656e002 100644
                  key_hints: FooterKeyHints::default_bindings(),
                  active_agent_label: None,
              },
-@@ -1316,6 +1325,7 @@ mod tests {
+@@ -1316,6 +1352,7 @@ mod tests {
                  quit_shortcut_key: key_hint::ctrl(KeyCode::Char('c')),
                  status_line_value: None,
                  status_line_enabled: false,
@@ -8756,7 +8769,7 @@ index f0b809ce5..0b656e002 100644
                  key_hints: FooterKeyHints {
                      insert_newline: Some(key_hint::shift(KeyCode::Enter).into()),
                      ..FooterKeyHints::default_bindings()
-@@ -1336,6 +1346,7 @@ mod tests {
+@@ -1336,6 +1373,7 @@ mod tests {
                  quit_shortcut_key: key_hint::ctrl(KeyCode::Char('c')),
                  status_line_value: None,
                  status_line_enabled: false,
@@ -8764,7 +8777,7 @@ index f0b809ce5..0b656e002 100644
                  key_hints: FooterKeyHints::default_bindings(),
                  active_agent_label: None,
              },
-@@ -1353,6 +1364,7 @@ mod tests {
+@@ -1353,6 +1391,7 @@ mod tests {
                  quit_shortcut_key: key_hint::ctrl(KeyCode::Char('c')),
                  status_line_value: None,
                  status_line_enabled: false,
@@ -8772,7 +8785,7 @@ index f0b809ce5..0b656e002 100644
                  key_hints: FooterKeyHints::default_bindings(),
                  active_agent_label: None,
              },
-@@ -1370,6 +1382,7 @@ mod tests {
+@@ -1370,6 +1409,7 @@ mod tests {
                  quit_shortcut_key: key_hint::ctrl(KeyCode::Char('c')),
                  status_line_value: None,
                  status_line_enabled: false,
@@ -8780,7 +8793,7 @@ index f0b809ce5..0b656e002 100644
                  key_hints: FooterKeyHints::default_bindings(),
                  active_agent_label: None,
              },
-@@ -1387,6 +1400,7 @@ mod tests {
+@@ -1387,6 +1427,7 @@ mod tests {
                  quit_shortcut_key: key_hint::ctrl(KeyCode::Char('c')),
                  status_line_value: None,
                  status_line_enabled: false,
@@ -8788,7 +8801,7 @@ index f0b809ce5..0b656e002 100644
                  key_hints: FooterKeyHints::default_bindings(),
                  active_agent_label: None,
              },
-@@ -1404,6 +1418,7 @@ mod tests {
+@@ -1404,6 +1445,7 @@ mod tests {
                  quit_shortcut_key: key_hint::ctrl(KeyCode::Char('c')),
                  status_line_value: None,
                  status_line_enabled: false,
@@ -8796,7 +8809,7 @@ index f0b809ce5..0b656e002 100644
                  key_hints: FooterKeyHints::default_bindings(),
                  active_agent_label: None,
              },
-@@ -1421,6 +1436,7 @@ mod tests {
+@@ -1421,6 +1463,7 @@ mod tests {
                  quit_shortcut_key: key_hint::ctrl(KeyCode::Char('c')),
                  status_line_value: None,
                  status_line_enabled: false,
@@ -8804,7 +8817,7 @@ index f0b809ce5..0b656e002 100644
                  key_hints: FooterKeyHints::default_bindings(),
                  active_agent_label: None,
              },
-@@ -1440,6 +1456,7 @@ mod tests {
+@@ -1440,6 +1483,7 @@ mod tests {
                  quit_shortcut_key: key_hint::ctrl(KeyCode::Char('c')),
                  status_line_value: None,
                  status_line_enabled: false,
@@ -8812,7 +8825,7 @@ index f0b809ce5..0b656e002 100644
                  key_hints: FooterKeyHints::default_bindings(),
                  active_agent_label: None,
              },
-@@ -1459,6 +1476,7 @@ mod tests {
+@@ -1459,6 +1503,7 @@ mod tests {
                  quit_shortcut_key: key_hint::ctrl(KeyCode::Char('c')),
                  status_line_value: None,
                  status_line_enabled: false,
@@ -8820,7 +8833,7 @@ index f0b809ce5..0b656e002 100644
                  key_hints: FooterKeyHints::default_bindings(),
                  active_agent_label: None,
              },
-@@ -1474,6 +1492,7 @@ mod tests {
+@@ -1474,6 +1519,7 @@ mod tests {
              quit_shortcut_key: key_hint::ctrl(KeyCode::Char('c')),
              status_line_value: None,
              status_line_enabled: false,
@@ -8828,7 +8841,7 @@ index f0b809ce5..0b656e002 100644
              key_hints: FooterKeyHints::default_bindings(),
              active_agent_label: None,
          };
-@@ -1502,6 +1521,7 @@ mod tests {
+@@ -1502,6 +1548,7 @@ mod tests {
              quit_shortcut_key: key_hint::ctrl(KeyCode::Char('c')),
              status_line_value: None,
              status_line_enabled: false,
@@ -8836,7 +8849,7 @@ index f0b809ce5..0b656e002 100644
              key_hints: FooterKeyHints::default_bindings(),
              active_agent_label: None,
          };
-@@ -1523,6 +1543,7 @@ mod tests {
+@@ -1523,6 +1570,7 @@ mod tests {
              quit_shortcut_key: key_hint::ctrl(KeyCode::Char('c')),
              status_line_value: Some(Line::from("Status line content".to_string())),
              status_line_enabled: true,
@@ -8844,7 +8857,7 @@ index f0b809ce5..0b656e002 100644
              key_hints: FooterKeyHints::default_bindings(),
              active_agent_label: None,
          };
-@@ -1539,6 +1560,7 @@ mod tests {
+@@ -1539,6 +1587,7 @@ mod tests {
              quit_shortcut_key: key_hint::ctrl(KeyCode::Char('c')),
              status_line_value: Some(Line::from("Status line content".to_string())),
              status_line_enabled: true,
@@ -8852,7 +8865,7 @@ index f0b809ce5..0b656e002 100644
              key_hints: FooterKeyHints::default_bindings(),
              active_agent_label: None,
          };
-@@ -1555,6 +1577,7 @@ mod tests {
+@@ -1555,6 +1604,7 @@ mod tests {
              quit_shortcut_key: key_hint::ctrl(KeyCode::Char('c')),
              status_line_value: Some(Line::from("Status line content".to_string())),
              status_line_enabled: true,
@@ -8860,7 +8873,7 @@ index f0b809ce5..0b656e002 100644
              key_hints: FooterKeyHints::default_bindings(),
              active_agent_label: None,
          };
-@@ -1571,6 +1594,7 @@ mod tests {
+@@ -1571,6 +1621,7 @@ mod tests {
              quit_shortcut_key: key_hint::ctrl(KeyCode::Char('c')),
              status_line_value: None, // command timed out / empty
              status_line_enabled: true,
@@ -8868,7 +8881,7 @@ index f0b809ce5..0b656e002 100644
              key_hints: FooterKeyHints::default_bindings(),
              active_agent_label: None,
          };
-@@ -1601,6 +1625,7 @@ mod tests {
+@@ -1601,6 +1652,7 @@ mod tests {
              quit_shortcut_key: key_hint::ctrl(KeyCode::Char('c')),
              status_line_value: None,
              status_line_enabled: false,
@@ -8876,7 +8889,7 @@ index f0b809ce5..0b656e002 100644
              key_hints: FooterKeyHints::default_bindings(),
              active_agent_label: None,
          };
-@@ -1623,6 +1648,7 @@ mod tests {
+@@ -1623,6 +1675,7 @@ mod tests {
              quit_shortcut_key: key_hint::ctrl(KeyCode::Char('c')),
              status_line_value: None,
              status_line_enabled: true,
@@ -8884,7 +8897,7 @@ index f0b809ce5..0b656e002 100644
              key_hints: FooterKeyHints::default_bindings(),
              active_agent_label: None,
          };
-@@ -1648,6 +1674,7 @@ mod tests {
+@@ -1648,6 +1701,7 @@ mod tests {
                  "Status line content that should truncate before the mode indicator".to_string(),
              )),
              status_line_enabled: true,
@@ -8892,7 +8905,7 @@ index f0b809ce5..0b656e002 100644
              key_hints: FooterKeyHints::default_bindings(),
              active_agent_label: None,
          };
-@@ -1670,6 +1697,7 @@ mod tests {
+@@ -1670,6 +1724,7 @@ mod tests {
              quit_shortcut_key: key_hint::ctrl(KeyCode::Char('c')),
              status_line_value: None,
              status_line_enabled: false,
@@ -8900,7 +8913,7 @@ index f0b809ce5..0b656e002 100644
              key_hints: FooterKeyHints::default_bindings(),
              active_agent_label: Some("Robie [explorer]".to_string()),
          };
-@@ -1686,6 +1714,7 @@ mod tests {
+@@ -1686,6 +1741,7 @@ mod tests {
              quit_shortcut_key: key_hint::ctrl(KeyCode::Char('c')),
              status_line_value: Some(Line::from("Status line content".to_string())),
              status_line_enabled: true,
@@ -8908,7 +8921,7 @@ index f0b809ce5..0b656e002 100644
              key_hints: FooterKeyHints::default_bindings(),
              active_agent_label: Some("Robie [explorer]".to_string()),
          };
-@@ -1708,6 +1737,7 @@ mod tests {
+@@ -1708,6 +1764,7 @@ mod tests {
                      .to_string(),
              )),
              status_line_enabled: true,
@@ -8917,7 +8930,7 @@ index f0b809ce5..0b656e002 100644
              active_agent_label: None,
          };
 diff --git a/codex-rs/tui/src/bottom_pane/mod.rs b/codex-rs/tui/src/bottom_pane/mod.rs
-index ae9405e9f..fc1799dc7 100644
+index ae9405e9f..ea8ef0f6a 100644
 --- a/codex-rs/tui/src/bottom_pane/mod.rs
 +++ b/codex-rs/tui/src/bottom_pane/mod.rs
 @@ -169,6 +169,8 @@ pub(crate) use footer::CollaborationModeIndicator;
@@ -8929,15 +8942,17 @@ index ae9405e9f..fc1799dc7 100644
  pub(crate) use list_selection_view::ColumnWidthMode;
  pub(crate) use list_selection_view::ListSelectionView;
  pub(crate) use list_selection_view::OnSelectionChangedCallback;
-@@ -207,6 +209,7 @@ mod paste_burst;
+@@ -207,6 +209,9 @@ mod paste_burst;
  mod pending_input_preview;
  mod pending_thread_approvals;
  mod picker_option;
++#[cfg(test)]
++mod plus_goal_tests;
 +pub(crate) mod worker_hud;
  pub(crate) use picker_option::picker_option_list;
  pub(crate) use picker_option::picker_option_row;
  pub(crate) mod popup_consts;
-@@ -331,6 +334,7 @@ pub(crate) struct BottomPane {
+@@ -331,6 +336,7 @@ pub(crate) struct BottomPane {
      pending_input_preview: PendingInputPreview,
      /// Inactive threads with pending approval requests.
      pending_thread_approvals: PendingThreadApprovals,
@@ -8945,7 +8960,7 @@ index ae9405e9f..fc1799dc7 100644
      context_window_percent: Option<i64>,
      context_window_used_tokens: Option<i64>,
      keymap: RuntimeKeymap,
-@@ -405,6 +409,7 @@ impl BottomPane {
+@@ -405,6 +411,7 @@ impl BottomPane {
              unified_exec_footer: UnifiedExecFooter::new(),
              pending_input_preview: PendingInputPreview::new(),
              pending_thread_approvals: PendingThreadApprovals::new(),
@@ -8953,7 +8968,7 @@ index ae9405e9f..fc1799dc7 100644
              esc_backtrack_hint: false,
              animations_enabled,
              effects,
-@@ -1352,6 +1357,11 @@ impl BottomPane {
+@@ -1352,6 +1359,11 @@ impl BottomPane {
          self.composer.status_line_text()
      }
  
@@ -8965,7 +8980,7 @@ index ae9405e9f..fc1799dc7 100644
      pub(crate) fn show_esc_backtrack_hint(&mut self) {
          self.esc_backtrack_hint = true;
          self.composer.set_esc_backtrack_hint(/*show*/ true);
-@@ -1732,6 +1742,46 @@ impl BottomPane {
+@@ -1732,6 +1744,46 @@ impl BottomPane {
          self.request_redraw();
      }
  
@@ -9012,7 +9027,34 @@ index ae9405e9f..fc1799dc7 100644
      /// Update the inactive-thread approval list shown above the composer.
      pub(crate) fn set_pending_thread_approvals(&mut self, threads: Vec<String>) {
          if self.pending_thread_approvals.set_threads(threads) {
-@@ -2495,6 +2545,7 @@ impl BottomPane {
+@@ -2449,11 +2501,13 @@ impl BottomPane {
+                 flex.push(/*flex*/ 0, RenderableItem::Owned("".into()));
+             }
+             let question_summary = self.question_summary(Instant::now());
++            let plus_goal = self.composer.plus_goal_status_line();
+             // History overlays must not clear the status and previews above this composer.
+             if options.command_popup_placement == CommandPopupPlacement::Overlay
+                 && (has_status_or_footer
+                     || has_inline_previews
+                     || self.inline_banner.is_some()
++                    || plus_goal.is_some()
+                     || question_summary.is_some())
+             {
+                 options.command_popup_placement = CommandPopupPlacement::AboveComposer;
+@@ -2464,6 +2518,12 @@ impl BottomPane {
+                     RenderableItem::Owned(Box::new(Paragraph::new(summary))),
+                 );
+             }
++            if let Some(line) = plus_goal {
++                flex.push(
++                    /*flex*/ 0,
++                    RenderableItem::Owned(Box::new(PlusGoalStatus(line))),
++                );
++            }
+             let mut flex2 = FlexRenderable::new();
+             // Clip spacing and hints before activity and previews when the composer is tall.
+             let above_composer = if let Some(gap) = options.composer_gap {
+@@ -2495,6 +2555,7 @@ impl BottomPane {
                  }))
              };
              flex2.push(/*flex*/ 0, composer);
@@ -9020,7 +9062,7 @@ index ae9405e9f..fc1799dc7 100644
              RenderableItem::Owned(Box::new(flex2))
          }
      }
-@@ -2515,6 +2566,12 @@ impl BottomPane {
+@@ -2515,6 +2576,12 @@ impl BottomPane {
          }
      }
  
@@ -9033,7 +9075,30 @@ index ae9405e9f..fc1799dc7 100644
      pub(crate) fn set_luna_reserve_active(&mut self, active: bool) {
          if self.composer.set_luna_reserve_active(active) {
              self.request_redraw();
-@@ -2729,6 +2786,96 @@ mod tests {
+@@ -2550,6 +2617,22 @@ impl BottomPane {
+     }
+ }
+ 
++struct PlusGoalStatus(Line<'static>);
++
++impl Renderable for PlusGoalStatus {
++    fn render(&self, area: Rect, buf: &mut Buffer) {
++        let line = crate::line_truncation::truncate_line_with_ellipsis_if_overflow(
++            self.0.clone(),
++            usize::from(footer::inset_footer_hint_area(area).width),
++        );
++        footer::render_footer_line(area, buf, line);
++    }
++
++    fn desired_height(&self, _width: u16) -> u16 {
++        1
++    }
++}
++
+ struct ChatComposerPresentation<'a> {
+     composer: &'a chat_composer::ChatComposer,
+     options: ComposerRenderOptions<'a>,
+@@ -2729,6 +2812,96 @@ mod tests {
          assert_eq!(pane.composer_text(), "main draft");
      }
  
@@ -9130,6 +9195,230 @@ index ae9405e9f..fc1799dc7 100644
      #[test]
      fn inline_banner_snapshot() {
          let (tx, _rx) = unbounded_channel();
+diff --git a/codex-rs/tui/src/bottom_pane/plus_goal_tests.rs b/codex-rs/tui/src/bottom_pane/plus_goal_tests.rs
+new file mode 100644
+index 000000000..ef52e81e6
+--- /dev/null
++++ b/codex-rs/tui/src/bottom_pane/plus_goal_tests.rs
+@@ -0,0 +1,218 @@
++//! Plus goals share the bottom pane's layout, while native goals retain their footer.
++
++use super::*;
++use crate::terminal_palette::rgb_color;
++use crate::terminal_palette::with_test_default_colors;
++use crossterm::event::KeyModifiers;
++use pretty_assertions::assert_eq;
++use ratatui::style::Color;
++use tokio::sync::mpsc::unbounded_channel;
++
++fn pane() -> BottomPane {
++    let (tx, _rx) = unbounded_channel();
++    tests::test_pane(AppEventSender::new(tx))
++}
++
++fn render(
++    pane: &BottomPane,
++    width: u16,
++    height: Option<u16>,
++    options: ComposerRenderOptions<'_>,
++) -> (Vec<String>, Option<(u16, u16)>) {
++    let view = pane.as_renderable_with_options(options);
++    let area = Rect::new(
++        0,
++        0,
++        width,
++        height.unwrap_or_else(|| view.desired_height(width)),
++    );
++    let mut buffer = Buffer::empty(area);
++    view.render(area, &mut buffer);
++    let rows = buffer
++        .content
++        .chunks(usize::from(width))
++        .map(|row| row.iter().map(|cell| cell.symbol()).collect::<String>())
++        .collect();
++    (rows, view.cursor_pos(area))
++}
++
++fn assert_above_input(rows: &[String], cursor: Option<(u16, u16)>) {
++    let goal = rows.iter().position(|row| row.contains("Goal")).unwrap();
++    let input = rows.iter().position(|row| row.contains('›')).unwrap();
++    assert!(goal < input, "{rows:?}");
++    assert_eq!(rows.iter().filter(|row| row.contains("Goal")).count(), 1);
++    assert!(cursor.is_some_and(|(_, y)| usize::from(y) == input));
++}
++
++#[test]
++fn plus_goal_row_measurement_cursor_and_clear_share_both_layouts() {
++    for enabled in [false, true] {
++        for separate in [false, true] {
++            let mut pane = pane();
++            pane.set_status_line_enabled(enabled);
++            pane.set_status_line(Some("MODEL".into()));
++            pane.set_status_line_stats(Some("Context 75% left".into()));
++            pane.set_collaboration_mode_indicator(Some(CollaborationModeIndicator::Plan));
++            pane.composer.set_text_content("x".into(), vec![], vec![]);
++            let options = ComposerRenderOptions {
++                separate_status_line: separate,
++                ..Default::default()
++            };
++            for width in [12, 48, 120] {
++                let baseline = pane
++                    .as_renderable_with_options(options)
++                    .desired_height(width);
++                pane.set_goal_status_indicator(Some(GoalStatusIndicator::Plus(
++                    "Goal paused".into(),
++                )));
++                assert_eq!(
++                    pane.as_renderable_with_options(options)
++                        .desired_height(width),
++                    baseline + 1
++                );
++                let (rows, cursor) = render(&pane, width, None, options);
++                assert_above_input(&rows, cursor);
++                assert!(!rows.iter().any(|row| row.contains("Plan")), "{rows:?}");
++                assert!(rows.iter().any(|row| row.contains('x')));
++                for height in 0..=3 {
++                    let (rows, cursor) = render(&pane, width, Some(height), options);
++                    if let Some((x, y)) = cursor {
++                        assert!(x < width && y < height, "{rows:?}");
++                    }
++                    if height >= 3 {
++                        assert!(cursor.is_some(), "{rows:?}");
++                        assert!(rows.iter().any(|row| row.contains('x')), "{rows:?}");
++                    }
++                }
++                pane.set_goal_status_indicator(None);
++                assert_eq!(
++                    pane.as_renderable_with_options(options)
++                        .desired_height(width),
++                    baseline
++                );
++                let (rows, _) = render(&pane, width, None, options);
++                assert!(!rows.iter().any(|row| row.contains("Goal")));
++            }
++        }
++    }
++}
++
++#[test]
++fn plus_goal_header_keeps_previews_queue_help_and_composer_gap() {
++    for separate in [false, true] {
++        for running in [false, true] {
++            let mut pane = pane();
++            pane.set_task_running(running);
++            pane.set_status_line(Some("MODEL".into()));
++            pane.set_status_line_enabled(true);
++            pane.set_pending_input_preview(vec!["queued followup".into()], vec![], vec![]);
++            pane.set_pending_thread_approvals(vec!["pending approval".into()]);
++            pane.set_goal_status_indicator(Some(GoalStatusIndicator::Plus("Goal waiting".into())));
++            pane.set_queue_submissions(true);
++            let gap = ComposerGap::default();
++            let options = ComposerRenderOptions {
++                separate_status_line: separate,
++                command_popup_placement: CommandPopupPlacement::Overlay,
++                composer_gap: Some(&gap),
++                ..Default::default()
++            };
++            for help in [false, true] {
++                if help {
++                    pane.handle_key_event(KeyEvent::new(KeyCode::Char('?'), KeyModifiers::NONE));
++                    assert!(pane.shortcut_overlay_visible());
++                }
++                let (rows, cursor) = render(&pane, 100, None, options);
++                assert_above_input(&rows, cursor);
++                assert!(
++                    rows.iter().any(|row| row.contains("queued followup")),
++                    "{rows:?}"
++                );
++                assert!(
++                    rows.iter().any(|row| row.contains("pending approval")),
++                    "{rows:?}"
++                );
++                if help {
++                    assert!(
++                        rows.iter().any(|row| row.contains("Keyboard shortcuts")),
++                        "{rows:?}"
++                    );
++                }
++            }
++        }
++    }
++}
++
++#[test]
++fn plus_goal_long_labels_use_one_ellipsized_row() {
++    let mut pane = pane();
++    pane.set_status_line_enabled(false);
++    pane.composer.set_text_content("x".into(), vec![], vec![]);
++    let label = "Goal waiting · 18446744073709551615 jobs";
++    pane.set_goal_status_indicator(Some(GoalStatusIndicator::Plus(label.into())));
++    for width in [3, 12, 48, 120] {
++        let line = PlusGoalStatus(pane.composer.plus_goal_status_line().unwrap());
++        assert_eq!(line.desired_height(width), 1);
++        let mut buffer = Buffer::empty(Rect::new(0, 0, width, 1));
++        line.render(buffer.area, &mut buffer);
++        let text = buffer
++            .content
++            .iter()
++            .map(|cell| cell.symbol())
++            .collect::<String>();
++        if usize::from(width) < label.len() + 2 {
++            assert!(text.ends_with('…'), "{text:?}");
++        } else {
++            assert!(text.contains(label), "{text:?}");
++        }
++    }
++}
++
++#[test]
++fn plus_goal_blue_and_mono_fallback_keep_native_goal_footer_unchanged() {
++    with_test_default_colors(
++        crate::terminal_probe::DefaultColors {
++            fg: (255, 255, 255),
++            bg: (0, 0, 0),
++        },
++        || {
++            let mut pane = pane();
++            pane.set_goal_status_indicator(Some(GoalStatusIndicator::Plus("Goal active".into())));
++            let header = pane.composer.plus_goal_status_line().unwrap();
++            assert_eq!(header.spans[0].style.fg, Some(rgb_color((137, 180, 250))));
++            assert!(
++                footer::status_line_right_indicator_line(
++                    Some(CollaborationModeIndicator::Plan),
++                    Some(&GoalStatusIndicator::Plus("Goal active".into())),
++                    false,
++                    true,
++                )
++                .is_none()
++            );
++            for indicator in [
++                GoalStatusIndicator::Active { usage: None },
++                GoalStatusIndicator::Paused,
++                GoalStatusIndicator::Blocked,
++                GoalStatusIndicator::UsageLimited,
++                GoalStatusIndicator::BudgetLimited { usage: None },
++                GoalStatusIndicator::Complete { usage: None },
++            ] {
++                pane.set_goal_status_indicator(Some(indicator.clone()));
++                assert!(pane.composer.plus_goal_status_line().is_none());
++                let line =
++                    footer::status_line_right_indicator_line(None, Some(&indicator), false, false)
++                        .unwrap();
++                assert_eq!(line.spans[0].style.fg, Some(Color::Magenta));
++                pane.set_status_line_enabled(true);
++                pane.set_status_line(Some("MODEL".into()));
++                let (rows, cursor) = render(&pane, 100, None, Default::default());
++                let input = rows.iter().position(|row| row.contains('›')).unwrap();
++                let goal = rows
++                    .iter()
++                    .position(|row| row.contains(&line.to_string()))
++                    .unwrap();
++                assert!(goal > input, "{rows:?}");
++                assert!(cursor.is_some());
++            }
++        },
++    );
++}
 diff --git a/codex-rs/tui/src/bottom_pane/request_user_input/snapshots/codex_tui__bottom_pane__request_user_input__render__tests__request_user_input_halfwidth_sound_marks_truncation.snap b/codex-rs/tui/src/bottom_pane/request_user_input/snapshots/codex_tui__bottom_pane__request_user_input__render__tests__request_user_input_halfwidth_sound_marks_truncation.snap
 index 4dc0fc13b..1efcc1a62 100644
 --- a/codex-rs/tui/src/bottom_pane/request_user_input/snapshots/codex_tui__bottom_pane__request_user_input__render__tests__request_user_input_halfwidth_sound_marks_truncation.snap
@@ -12812,25 +13101,33 @@ index b2b296cb6..000000000
 -"                                                                                "
 -"  GPT-5.6-Sol default · /tmp/project              Goal paused (/goal resume)    "
 diff --git a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_goal_active_token_budget_footer.snap b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_goal_active_token_budget_footer.snap
-index d7fddce12..6c0113f9c 100644
+index d7fddce12..290965ece 100644
 --- a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_goal_active_token_budget_footer.snap
 +++ b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_goal_active_token_budget_footer.snap
-@@ -6,4 +6,4 @@ expression: normalized_backend_snapshot(terminal.backend())
+@@ -3,7 +3,8 @@ source: tui/src/chatwidget/tests/status_and_layout.rs
+ expression: normalized_backend_snapshot(terminal.backend())
+ ---
+ "                                                                                "
++"  Goal active                                                                   "
  "                                                                                "
  "› Ask Codex to do anything                                                      "
  "                                                                                "
 -"  GPT-5.5                                            Pursuing goal (40K / 50K)  "
-+"  GPT-5.5                                                          Goal active  "
++"  GPT-5.5                                                                       "
 diff --git a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_goal_complete_elapsed_footer.snap b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_goal_complete_elapsed_footer.snap
-index 10e1d6409..4c1e4e202 100644
+index 10e1d6409..bf27267ce 100644
 --- a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_goal_complete_elapsed_footer.snap
 +++ b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_goal_complete_elapsed_footer.snap
-@@ -6,4 +6,4 @@ expression: normalized_backend_snapshot(terminal.backend())
+@@ -3,7 +3,8 @@ source: tui/src/chatwidget/tests/status_and_layout.rs
+ expression: normalized_backend_snapshot(terminal.backend())
+ ---
+ "                                                                                "
++"  Goal complete                                                                 "
  "                                                                                "
  "› Ask Codex to do anything                                                      "
  "                                                                                "
 -"  GPT-5.5                                           Goal achieved (2d 23h 42m)  "
-+"  GPT-5.5                                                        Goal complete  "
++"  GPT-5.5                                                                       "
 diff --git a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_model_with_reasoning_context_remaining_footer.snap b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_model_with_reasoning_context_remaining_footer.snap
 index 6200fdf10..b9b04258a 100644
 --- a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_model_with_reasoning_context_remaining_footer.snap
@@ -13703,10 +14000,10 @@ index 000000000..374da3b50
 +    }
 +}
 diff --git a/codex-rs/tui/src/chatwidget/tests/slash_commands.rs b/codex-rs/tui/src/chatwidget/tests/slash_commands.rs
-index f867a24d5..4084beb06 100644
+index f867a24d5..52bac1379 100644
 --- a/codex-rs/tui/src/chatwidget/tests/slash_commands.rs
 +++ b/codex-rs/tui/src/chatwidget/tests/slash_commands.rs
-@@ -4,6 +4,90 @@ use crate::bottom_pane::slash_commands::ServiceTierCommand;
+@@ -4,6 +4,89 @@ use crate::bottom_pane::slash_commands::ServiceTierCommand;
  use pretty_assertions::assert_eq;
  use serial_test::serial;
  
@@ -13757,9 +14054,8 @@ index f867a24d5..4084beb06 100644
 +        chat.current_goal_status_indicator.as_ref(),
 +        false,
 +        true,
-+    )
-+    .unwrap();
-+    assert_eq!(line.to_string(), "Goal paused");
++    );
++    assert!(line.is_none());
 +    chat.refresh_goal_status_indicator_for_time_tick();
 +    assert_eq!(
 +        chat.current_goal_status_indicator,
@@ -13797,7 +14093,7 @@ index f867a24d5..4084beb06 100644
  fn force_pet_image_support(chat: &mut ChatWidget) {
      chat.set_pet_image_support_for_tests(crate::pets::PetImageSupport::Supported(
          crate::pets::ImageProtocol::Kitty,
-@@ -876,7 +960,7 @@ async fn goal_control_slash_commands_emit_goal_events() {
+@@ -876,7 +959,7 @@ async fn goal_control_slash_commands_emit_goal_events() {
          ("/goal resume", Some(AppThreadGoalStatus::Active)),
      ];
  
@@ -13806,7 +14102,7 @@ index f867a24d5..4084beb06 100644
          let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
          chat.set_feature_enabled(Feature::Goals, /*enabled*/ true);
          let thread_id = ThreadId::new();
-@@ -889,30 +973,16 @@ async fn goal_control_slash_commands_emit_goal_events() {
+@@ -889,30 +972,16 @@ async fn goal_control_slash_commands_emit_goal_events() {
          chat.handle_key_event(KeyCode::Enter.into());
          assert_matches!(rx.try_recv(), Ok(AppEvent::FollowTranscript));
  
@@ -13847,7 +14143,7 @@ index f867a24d5..4084beb06 100644
          chat.handle_key_event(KeyCode::Char('x').into());
          chat.handle_key_event(KeyCode::Right.into());
          chat.handle_key_event(KeyCode::Esc.into());
-@@ -2715,7 +2785,7 @@ async fn agent_turn_complete_notification_does_not_reuse_stale_copy_source() {
+@@ -2715,7 +2784,7 @@ async fn agent_turn_complete_notification_does_not_reuse_stale_copy_source() {
  }
  
  #[tokio::test]
@@ -13856,7 +14152,7 @@ index f867a24d5..4084beb06 100644
      let (mut chat, _rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
      chat.set_feature_enabled(Feature::Goals, /*enabled*/ true);
      chat.handle_server_notification(
-@@ -2740,7 +2810,10 @@ async fn active_goal_without_follow_up_suppresses_agent_turn_complete_notificati
+@@ -2740,7 +2809,10 @@ async fn active_goal_without_follow_up_suppresses_agent_turn_complete_notificati
  
      complete_turn_with_message(&mut chat, "turn-1", Some("Still working"));
  
@@ -13868,7 +14164,7 @@ index f867a24d5..4084beb06 100644
  }
  
  #[tokio::test]
-@@ -3880,3 +3953,136 @@ async fn owned_copy_guard_defers_queued_input_until_released() {
+@@ -3880,3 +3952,136 @@ async fn owned_copy_guard_defers_queued_input_until_released() {
          assert!(chat.input_queue.queued_user_messages.is_empty());
      }
  }
