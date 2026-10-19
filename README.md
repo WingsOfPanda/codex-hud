@@ -10,7 +10,9 @@ The 0.163.0-plus.0.4.1 patch release fixes transient input and Ultracode admissi
 failures. It retains [reviewed detached jobs](docs/detached-jobs.md):
 workers prepare expensive work, the root reviews and launches it, and local
 executors preserve results across qualified TUI and stock-daemon restarts.
-It retains [Plus-owned goals](docs/goals.md) and genuine Idle waiting.
+It retains [Plus-owned goals](docs/goals.md) and genuine Idle waiting. Plus goal
+status appears in one blue row above the editable input; status and worker rows
+remain below it. Terminals without color use readable plain text.
 This checkout is not a fleet installation; fleet-config owns the quiet initial
 protocol transition and later qualified upgrades.
 
