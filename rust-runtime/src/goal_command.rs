@@ -292,7 +292,15 @@ fn input_mutation(
             .as_deref()
             .context("--turn is required for accepted input")?;
         if let Some(rpc) = rpc.as_mut() {
-            if !crate::background::goal_known_turn(rpc, parent, turn)? {
+            if !crate::background::goal_known_turn(
+                rpc,
+                parent,
+                turn,
+                store
+                    .directory
+                    .parent()
+                    .context("goal state home unavailable")?,
+            )? {
                 bail!("input admission receipt must identify an exact known root turn");
             }
         }
