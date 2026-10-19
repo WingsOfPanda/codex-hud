@@ -1,4 +1,4 @@
-# Unreleased 0.4.3 candidate
+# Codex Plus 0.163.0-plus.0.4.3
 
 The candidate reserves up to six activity rows, keeping at least one worker,
 native shell and detached job visible when each exists. Warning, Advisor and

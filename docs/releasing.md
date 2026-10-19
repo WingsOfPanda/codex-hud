@@ -13,21 +13,25 @@ updates; increment its patch component for Plus fixes and its minor component
 for Plus features. Every new combination still needs qualified target packages.
 Existing published `plus.N` releases retain their original identities.
 
-The current native UI/admission patch version is `0.163.0-plus.0.4.2`: coordinator protocol 5 and
+The current native UI/admission patch version is `0.163.0-plus.0.4.3`: coordinator protocol 5 and
 package `execution_record_format: 1`, with the same pinned official 0.163.0 daemon.
 The execution format describes durable executor records separately from
 coordinator/upstream compatibility. These identities do not establish package
 qualification, publication or installation.
 
-For 0.4.2, require complete native qualification and actual 0.4.1/0.4.2
+For 0.4.3, require complete native qualification and actual 0.4.2/0.4.3
 mixed-version checks. Use `quiet_checkpoint: true`,
 `executions: wait`, `daemon_restart: false` and `session_restart: required` to
-load the changed frontend. Retain qualified 0.4.1 as the rollback floor and all
+load the changed frontend. Retain qualified 0.4.2 as the rollback floor and all
 packages still referenced by processes or unresolved executions. Global AGENTS
 instructions are unchanged. Do not create a qualified handoff or publish archive
 hashes before the final source freeze and per-target qualification. The
-[source companion note](releases/0.163.0-plus.0.4.2.md) lists the required gates;
+[source companion note](releases/0.163.0-plus.0.4.3.md) lists the required gates;
 the release handoff records their executed results separately.
+The expanded footer requires a compatible AP release installed on every box
+where AP drives Codex workers before fleet staging. Replay actual packaged
+screen/cursor captures against AP's classifier; development captures alone do
+not satisfy that final gate.
 
 ## Native binaries
 
