@@ -1,0 +1,12 @@
+  /model - choose what model and reasoning effort to use         
+  /review - review any changes and find issues                   
+  Goal needs input                                               
+                                                                 
+                                                                 
+› fleet-editable-draft-narrow                                    
+                                                                 
+  gpt-6-astra high · /data/liupan/codex-plus-build/r42/s-aham7tc…
+  Context 75% left · weekly 45% left · resets in 5d 20h          
+  GPT-6.1-Sol (high) [general] · worker 1 · 0:28 · ? tok         
+  GPT-6-Astra (medium) [general] · worker 2 · 0:28 · ? tok       
+  +4 more                                                        

@@ -1,0 +1,223 @@
+{
+  "source": "483912b9ed2783cf239e62f3aec3922730979905",
+  "targets": {
+    "x86_64": {
+      "triple": "x86_64-unknown-linux-gnu",
+      "asset": "codex-plus-0.163.0-plus.0.4.2-x86_64-unknown-linux-gnu.tar.gz",
+      "sha256": "f2fd5ad784e64e523cbb1e9777ab7df9293c42fb38ff25c3aed7454e9dff3ed7",
+      "tree_sha256": "08b8a45823ab9e1520757886346f3ec05e87577f8f41f6c718c95b341413e9c5",
+      "manifest_sha256": "2d72c614ea7e855f7a0732f0db82973aba14583f8ee19fe9d39f88994dae0d1b"
+    },
+    "aarch64": {
+      "triple": "aarch64-unknown-linux-gnu",
+      "asset": "codex-plus-0.163.0-plus.0.4.2-aarch64-unknown-linux-gnu.tar.gz",
+      "sha256": "57aaf5cc5c861db36d630aacd6df5e4a7ae881e6031652ca43829e96a0b45e43",
+      "tree_sha256": "3d850e52acbb96880249e3613acb357a90e5e714536adb4e4fcf990b52248a00",
+      "manifest_sha256": "9af40f41da92483d01bfa6a30aea4d64a8edcda16e4b881839996b4f44edf7ac"
+    }
+  },
+  "native_compatibility": {
+    "x86_64": {
+      "041": {
+        "passed": true,
+        "checks": 7,
+        "cleanup": [],
+        "source": "483912b9ed2783cf239e62f3aec3922730979905",
+        "manifest_sha256": "2d72c614ea7e855f7a0732f0db82973aba14583f8ee19fe9d39f88994dae0d1b",
+        "read_passes": [
+          {
+            "package": "old",
+            "schema_sha256": "8667cf967bdcebd7eacb35a22d7f2781fe2387dda29509dd415d389d79635791",
+            "rows_unchanged": true
+          },
+          {
+            "package": "new",
+            "schema_sha256": "8667cf967bdcebd7eacb35a22d7f2781fe2387dda29509dd415d389d79635791",
+            "rows_unchanged": true
+          },
+          {
+            "package": "old",
+            "schema_sha256": "8667cf967bdcebd7eacb35a22d7f2781fe2387dda29509dd415d389d79635791",
+            "rows_unchanged": true
+          }
+        ],
+        "turn_snapshots": 2
+      },
+      "040": {
+        "passed": true,
+        "checks": 6,
+        "cleanup": [],
+        "source": "483912b9ed2783cf239e62f3aec3922730979905",
+        "manifest_sha256": "2d72c614ea7e855f7a0732f0db82973aba14583f8ee19fe9d39f88994dae0d1b",
+        "read_passes": [
+          {
+            "package": "old",
+            "schema_sha256": "8667cf967bdcebd7eacb35a22d7f2781fe2387dda29509dd415d389d79635791",
+            "rows_unchanged": true
+          },
+          {
+            "package": "new",
+            "schema_sha256": "8667cf967bdcebd7eacb35a22d7f2781fe2387dda29509dd415d389d79635791",
+            "rows_unchanged": true
+          },
+          {
+            "package": "old",
+            "schema_sha256": "8667cf967bdcebd7eacb35a22d7f2781fe2387dda29509dd415d389d79635791",
+            "rows_unchanged": true
+          }
+        ],
+        "turn_snapshots": 2
+      }
+    },
+    "aarch64": {
+      "041": {
+        "passed": true,
+        "checks": 7,
+        "cleanup": [],
+        "source": "483912b9ed2783cf239e62f3aec3922730979905",
+        "manifest_sha256": "9af40f41da92483d01bfa6a30aea4d64a8edcda16e4b881839996b4f44edf7ac",
+        "read_passes": [
+          {
+            "package": "old",
+            "schema_sha256": "8667cf967bdcebd7eacb35a22d7f2781fe2387dda29509dd415d389d79635791",
+            "rows_unchanged": true
+          },
+          {
+            "package": "new",
+            "schema_sha256": "8667cf967bdcebd7eacb35a22d7f2781fe2387dda29509dd415d389d79635791",
+            "rows_unchanged": true
+          },
+          {
+            "package": "old",
+            "schema_sha256": "8667cf967bdcebd7eacb35a22d7f2781fe2387dda29509dd415d389d79635791",
+            "rows_unchanged": true
+          }
+        ],
+        "turn_snapshots": 2
+      },
+      "040": {
+        "passed": true,
+        "checks": 6,
+        "cleanup": [],
+        "source": "483912b9ed2783cf239e62f3aec3922730979905",
+        "manifest_sha256": "9af40f41da92483d01bfa6a30aea4d64a8edcda16e4b881839996b4f44edf7ac",
+        "read_passes": [
+          {
+            "package": "old",
+            "schema_sha256": "8667cf967bdcebd7eacb35a22d7f2781fe2387dda29509dd415d389d79635791",
+            "rows_unchanged": true
+          },
+          {
+            "package": "new",
+            "schema_sha256": "8667cf967bdcebd7eacb35a22d7f2781fe2387dda29509dd415d389d79635791",
+            "rows_unchanged": true
+          },
+          {
+            "package": "old",
+            "schema_sha256": "8667cf967bdcebd7eacb35a22d7f2781fe2387dda29509dd415d389d79635791",
+            "rows_unchanged": true
+          }
+        ],
+        "turn_snapshots": 2
+      }
+    }
+  },
+  "footer": {
+    "x86_64": {
+      "passed": true,
+      "stages": 7,
+      "nonempty_rows_below_prompt": 5
+    },
+    "aarch64": {
+      "passed": true,
+      "stages": 7,
+      "nonempty_rows_below_prompt": 5
+    }
+  },
+  "x86_acceptance": {
+    "accepted": true,
+    "source": "483912b9ed2783cf239e62f3aec3922730979905",
+    "archive_sha256": "f2fd5ad784e64e523cbb1e9777ab7df9293c42fb38ff25c3aed7454e9dff3ed7",
+    "manifest_sha256": "2d72c614ea7e855f7a0732f0db82973aba14583f8ee19fe9d39f88994dae0d1b",
+    "tree_sha256": "08b8a45823ab9e1520757886346f3ec05e87577f8f41f6c718c95b341413e9c5",
+    "summary_sha256": "f27605c7e05b993ce8e7f10c8d74265b5919d854663fa9e2ef6d7f6b2ca410a8",
+    "final_archive_checks": 31,
+    "inherited_runtime_checks": 35,
+    "host_limitation": "Raw bwrap uid-map denial reproduced identically with official and Plus; both CLI read-only sandboxes enforce writes.",
+    "cleanup_passed": true,
+    "compatibility": {
+      "quiet_rollback_041": "passed native x86",
+      "mixed_helpers_041_040": "passed native x86",
+      "cleanup": "no survivors",
+      "ARM": "pending"
+    }
+  },
+  "arm_acceptance": {
+    "accepted": true,
+    "cleanup_passed": true,
+    "source": "483912b9ed2783cf239e62f3aec3922730979905",
+    "archive_sha256": "57aaf5cc5c861db36d630aacd6df5e4a7ae881e6031652ca43829e96a0b45e43",
+    "manifest_sha256": "9af40f41da92483d01bfa6a30aea4d64a8edcda16e4b881839996b4f44edf7ac",
+    "tree_sha256": "3d850e52acbb96880249e3613acb357a90e5e714536adb4e4fcf990b52248a00",
+    "qualification_checks": 54,
+    "package_gates": 9,
+    "footer_stages": 7,
+    "footer_rows_below_prompt": 5,
+    "runner_python_only_skips": 3,
+    "compatibility": {
+      "quiet_rollback_041": "passed native ARM",
+      "mixed_helpers_041_040": "passed native ARM",
+      "cleanup": "no survivors"
+    },
+    "cleanup": {
+      "owned_survivors": [],
+      "machine": "aarch64"
+    },
+    "native_counts": {
+      "logs/tui-bottom_pane__footer__tests.log": [
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 5885 filtered out; finished in 0.01s"
+      ],
+      "logs/tui-config_panel.log": [
+        "test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 5869 filtered out; finished in 0.24s"
+      ],
+      "logs/tui-exec_flow.log": [
+        "test result: ok. 53 passed; 0 failed; 0 ignored; 0 measured; 5837 filtered out; finished in 0.08s"
+      ],
+      "logs/tui-plus_goal.log": [
+        "test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 5868 filtered out; finished in 0.41s"
+      ],
+      "logs/tui-shell_policy.log": [
+        "test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 5869 filtered out; finished in 0.05s"
+      ],
+      "logs/tui-status_line.log": [
+        "test result: ok. 94 passed; 0 failed; 0 ignored; 0 measured; 5796 filtered out; finished in 0.07s"
+      ],
+      "logs/tui-status_surface.log": [
+        "test result: ok. 44 passed; 0 failed; 0 ignored; 0 measured; 5846 filtered out; finished in 0.05s"
+      ],
+      "logs/tui-style__contrast__tests.log": [
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 5885 filtered out; finished in 0.01s"
+      ],
+      "logs/tui-thread_transcript__tools__tests.log": [
+        "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 5884 filtered out; finished in 0.01s"
+      ],
+      "logs/tui-ultracode.log": [
+        "test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 5878 filtered out; finished in 0.02s"
+      ],
+      "logs/tui-weekly_reset.log": [
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 5887 filtered out; finished in 0.01s"
+      ],
+      "logs/tui-worker_hud.log": [
+        "test result: ok. 54 passed; 0 failed; 0 ignored; 0 measured; 5836 filtered out; finished in 0.09s"
+      ]
+    }
+  },
+  "limitations": [
+    "x86 raw bwrap uid-map denied identically for official and Plus; both CLI read-only sandboxes passed",
+    "Three Python-only runner tests skipped on each architecture; 183 native runtime unit tests passed",
+    "Full upstream suite and dedicated SSH logout/oracle-based advisor foreground trials not rerun for 0.4.2",
+    "Mixed checks exercised real adjacent helpers and CLI on shared private ledger, not two live native TUIs or active-executor rollback",
+    "Successful empty initial item history can still briefly project Ultracode unavailable; isolated fix prepared for planned 0.4.3"
+  ],
+  "publication": "separate publication receipt required"
+}

@@ -1,0 +1,39 @@
+{
+  "release": "0.163.0-plus.0.4.2",
+  "plus_commit": "483912b9ed2783cf239e62f3aec3922730979905",
+  "coordinator_protocol": 5,
+  "execution_record_format": 1,
+  "upstream": {
+    "version": "0.163.0",
+    "tag": "rust-v0.163.0",
+    "commit": "83086188ae0614bd882818ff1aa23f3194962012"
+  },
+  "note": "docs/releases/0.163.0-plus.0.4.2.md",
+  "targets": {
+    "x86_64": {
+      "triple": "x86_64-unknown-linux-gnu",
+      "asset": "codex-plus-0.163.0-plus.0.4.2-x86_64-unknown-linux-gnu.tar.gz",
+      "sha256": "f2fd5ad784e64e523cbb1e9777ab7df9293c42fb38ff25c3aed7454e9dff3ed7",
+      "tree_sha256": "08b8a45823ab9e1520757886346f3ec05e87577f8f41f6c718c95b341413e9c5",
+      "manifest_sha256": "2d72c614ea7e855f7a0732f0db82973aba14583f8ee19fe9d39f88994dae0d1b"
+    },
+    "aarch64": {
+      "triple": "aarch64-unknown-linux-gnu",
+      "asset": "codex-plus-0.163.0-plus.0.4.2-aarch64-unknown-linux-gnu.tar.gz",
+      "sha256": "57aaf5cc5c861db36d630aacd6df5e4a7ae881e6031652ca43829e96a0b45e43",
+      "tree_sha256": "3d850e52acbb96880249e3613acb357a90e5e714536adb4e4fcf990b52248a00",
+      "manifest_sha256": "9af40f41da92483d01bfa6a30aea4d64a8edcda16e4b881839996b4f44edf7ac"
+    }
+  },
+  "rollout": {
+    "daemon_restart": false,
+    "quiet_checkpoint": true,
+    "executions": "wait",
+    "session_restart": "required",
+    "agents_md": null,
+    "retain": [
+      "0.163.0-plus.0.4.1"
+    ],
+    "notes": "Require native x86 and ARM final-package acceptance, actual 0.4.1/0.4.2 quiet rollback and bidirectional maintenance holds, and actual 0.4.0/0.4.2 mixed adjacent-helper checks before qualification. Drain actual work, enter maintenance with current, perform fleet quiet/install checks, then leave using the selected helper. Preserve settled ledger/result data, disabled native goals, official daemon identity, updater policy and global AGENTS block. Restart sessions to load the new frontend and adjacent helper; old TUIs retain their prior timing/visibility defects until restart. Tested mixed helper contracts do not establish simultaneous native TUI interaction or running-executor rollback. Keep qualified 0.4.1 as floor only after both native rollback gates pass. Unused 0.4.0 becomes removable, except packages referenced by live processes or unresolved executions. Legacy 0.3.x mixes remain unsupported; retain their directories while in use. Preserve the six existing status items and colors=true with no new keys. Fleet staging/test, merge, publication and deployment require separate authorization."
+  }
+}

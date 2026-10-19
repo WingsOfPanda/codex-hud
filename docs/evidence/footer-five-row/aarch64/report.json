@@ -1,0 +1,318 @@
+{
+  "passed": true,
+  "source": "/data/liupan/codex-plus-build/release042-final/plus-source",
+  "binary": "/data/liupan/codex-plus-build/release042-final/extracted/codex-plus-0.163.0-plus.0.4.2-aarch64-unknown-linux-gnu/bin/codex",
+  "binary_sha256": "7b256df730ca7a37d48fa362effa4d3af776c6584e6fefb62279d0baf7d67d4d",
+  "fixture": "private PTY with native_smoke loopback fixture and helper stub; no stock/runtime claim",
+  "selection": [
+    "model-with-reasoning",
+    "context-remaining",
+    "weekly-limit",
+    "current-dir",
+    "pull-request-number",
+    "weekly-reset"
+  ],
+  "status_line_use_colors": true,
+  "stages": [
+    {
+      "name": "wide-empty",
+      "dimensions": [
+        32,
+        120
+      ],
+      "prompt_row": 25,
+      "goal_rows": [
+        22
+      ],
+      "worker_rows": [
+        29,
+        30
+      ],
+      "overflow_rows": [
+        31
+      ],
+      "nonempty_below_prompt": 5,
+      "below_prompt": [
+        [
+          27,
+          "gpt-6-astra high \u00b7 /data/liupan/codex-plus-build/r42/s-aham7tc9/workspace"
+        ],
+        [
+          28,
+          "Context 75% left \u00b7 weekly 45% left \u00b7 resets in 5d 20h"
+        ],
+        [
+          29,
+          "GPT-6.1-Sol (high) [general] \u00b7 worker 1 \u00b7 0:27 \u00b7 ? tok"
+        ],
+        [
+          30,
+          "GPT-6-Astra (medium) [general] \u00b7 worker 2 \u00b7 0:27 \u00b7 ? tok"
+        ],
+        [
+          31,
+          "+4 more"
+        ]
+      ],
+      "prompt_in_last_six_nonempty": true
+    },
+    {
+      "name": "wide-draft",
+      "dimensions": [
+        32,
+        120
+      ],
+      "prompt_row": 25,
+      "goal_rows": [
+        22
+      ],
+      "worker_rows": [
+        29,
+        30
+      ],
+      "overflow_rows": [
+        31
+      ],
+      "nonempty_below_prompt": 5,
+      "below_prompt": [
+        [
+          27,
+          "gpt-6-astra high \u00b7 /data/liupan/codex-plus-build/r42/s-aham7tc9/workspace"
+        ],
+        [
+          28,
+          "Context 75% left \u00b7 weekly 45% left \u00b7 resets in 5d 20h"
+        ],
+        [
+          29,
+          "GPT-6.1-Sol (high) [general] \u00b7 worker 1 \u00b7 0:27 \u00b7 ? tok"
+        ],
+        [
+          30,
+          "GPT-6-Astra (medium) [general] \u00b7 worker 2 \u00b7 0:27 \u00b7 ? tok"
+        ],
+        [
+          31,
+          "+4 more"
+        ]
+      ],
+      "prompt_in_last_six_nonempty": true
+    },
+    {
+      "name": "narrow-draft",
+      "dimensions": [
+        12,
+        65
+      ],
+      "prompt_row": 5,
+      "goal_rows": [
+        2
+      ],
+      "worker_rows": [
+        9,
+        10
+      ],
+      "overflow_rows": [
+        11
+      ],
+      "nonempty_below_prompt": 5,
+      "below_prompt": [
+        [
+          7,
+          "gpt-6-astra high \u00b7 /data/liupan/codex-plus-build/r42/s-aham7tc\u2026"
+        ],
+        [
+          8,
+          "Context 75% left \u00b7 weekly 45% left \u00b7 resets in 5d 20h"
+        ],
+        [
+          9,
+          "GPT-6.1-Sol (high) [general] \u00b7 worker 1 \u00b7 0:28 \u00b7 ? tok"
+        ],
+        [
+          10,
+          "GPT-6-Astra (medium) [general] \u00b7 worker 2 \u00b7 0:28 \u00b7 ? tok"
+        ],
+        [
+          11,
+          "+4 more"
+        ]
+      ],
+      "prompt_in_last_six_nonempty": true
+    },
+    {
+      "name": "shortcuts",
+      "dimensions": [
+        32,
+        120
+      ],
+      "prompt_row": 25,
+      "goal_rows": [
+        7
+      ],
+      "worker_rows": [
+        30
+      ],
+      "overflow_rows": [
+        31
+      ],
+      "nonempty_below_prompt": 5,
+      "below_prompt": [
+        [
+          27,
+          "gpt-6-astra high \u00b7 /data/liupan/codex-plus-build/r42/s-aham7tc9/workspace"
+        ],
+        [
+          28,
+          "Context 75% left \u00b7 weekly 45% left \u00b7 resets in 5d 20h"
+        ],
+        [
+          29,
+          "? / esc close"
+        ],
+        [
+          30,
+          "GPT-6.1-Sol (high) [general] \u00b7 worker 1 \u00b7 0:28 \u00b7 ? tok"
+        ],
+        [
+          31,
+          "+5 more"
+        ]
+      ],
+      "prompt_in_last_six_nonempty": true
+    },
+    {
+      "name": "narrow-shortcuts",
+      "dimensions": [
+        32,
+        65
+      ],
+      "prompt_row": 25,
+      "goal_rows": [
+        7
+      ],
+      "worker_rows": [
+        30
+      ],
+      "overflow_rows": [
+        31
+      ],
+      "nonempty_below_prompt": 5,
+      "below_prompt": [
+        [
+          27,
+          "gpt-6-astra high \u00b7 /data/liupan/codex-plus-build/r42/s-aham7tc\u2026"
+        ],
+        [
+          28,
+          "Context 75% left \u00b7 weekly 45% left \u00b7 resets in 5d 20h"
+        ],
+        [
+          29,
+          "? / esc close"
+        ],
+        [
+          30,
+          "GPT-6.1-Sol (high) [general] \u00b7 worker 1 \u00b7 0:28 \u00b7 ? tok"
+        ],
+        [
+          31,
+          "+5 more"
+        ]
+      ],
+      "prompt_in_last_six_nonempty": true
+    },
+    {
+      "name": "escape-idle",
+      "dimensions": [
+        32,
+        120
+      ],
+      "prompt_row": 25,
+      "goal_rows": [
+        22
+      ],
+      "worker_rows": [
+        29,
+        30
+      ],
+      "overflow_rows": [
+        31
+      ],
+      "nonempty_below_prompt": 5,
+      "below_prompt": [
+        [
+          27,
+          "gpt-6-astra high \u00b7 /data/liupan/codex-plus-build/r42/s-aham7tc9/workspace"
+        ],
+        [
+          28,
+          "Context 75% left \u00b7 weekly 45% left \u00b7 resets in 5d 20h"
+        ],
+        [
+          29,
+          "GPT-6.1-Sol (high) [general] \u00b7 worker 1 \u00b7 0:29 \u00b7 ? tok"
+        ],
+        [
+          30,
+          "GPT-6-Astra (medium) [general] \u00b7 worker 2 \u00b7 0:29 \u00b7 ? tok"
+        ],
+        [
+          31,
+          "+4 more"
+        ]
+      ],
+      "prompt_in_last_six_nonempty": true
+    },
+    {
+      "name": "history-search",
+      "dimensions": [
+        32,
+        120
+      ],
+      "prompt_row": 25,
+      "goal_rows": [
+        22
+      ],
+      "worker_rows": [
+        30
+      ],
+      "overflow_rows": [
+        31
+      ],
+      "nonempty_below_prompt": 5,
+      "below_prompt": [
+        [
+          27,
+          "gpt-6-astra high \u00b7 /data/liupan/codex-plus-build/r42/s-aham7tc9/workspace"
+        ],
+        [
+          28,
+          "Context 75% left \u00b7 weekly 45% left \u00b7 resets in 5d 20h"
+        ],
+        [
+          29,
+          "reverse-i-search:"
+        ],
+        [
+          30,
+          "GPT-6.1-Sol (high) [general] \u00b7 worker 1 \u00b7 0:29 \u00b7 ? tok"
+        ],
+        [
+          31,
+          "+5 more"
+        ]
+      ],
+      "prompt_in_last_six_nonempty": true
+    }
+  ],
+  "violations": [],
+  "config_preserved": true,
+  "save_introduced_new_keys": false,
+  "display_model_requests": 0,
+  "startup_added_tui_keys": [
+    "screen_reader_detection_done"
+  ],
+  "quit_hint": "Disabled in candidate; actual idle Ctrl-C exits zero instead of showing a footer",
+  "fixture_errors": []
+}

@@ -1,0 +1,12 @@
+  /model - choose what model and reasoning effort to use         
+  /review - review any changes and find issues                   
+  Goal active                                                    
+                                                                 
+                                                                 
+› fleet-editable-draft-narrow                                    
+                                                                 
+  gpt-6-astra high · /tmp/cp042-final-jul0o3rc/plus-fleet-footer…
+  Context 75% left · weekly 45% left · resets in 5d 20h          
+  GPT-6.1-Sol (high) [general] · worker 1 · 0:26 · ? tok         
+  GPT-6-Astra (medium) [general] · worker 2 · 0:26 · ? tok       
+  +4 more                                                        
