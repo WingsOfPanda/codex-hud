@@ -99,28 +99,37 @@ The one-time Python-to-Rust rollout needs a
 
 ## Display behavior
 
-Select **Weekly reset** in `/statusline` to show `resets in 2d 5h` alongside
-your existing items (`weekly-reset` in `tui.status_line`). The countdown uses
+The status footer puts model, Ultracode, working directory and active agent on
+the first row. Selected **Context remaining**, **Weekly limit** and **Weekly reset**
+items appear on a second row, retaining their configured order and styling.
+The worker HUD follows both rows. A selection with only stats uses one row when
+there is no agent label or mode indicator; selections without stats keep one row.
+
+Select **Weekly reset** in `/statusline` to show `resets in 2d 5h`
+(`weekly-reset` in `tui.status_line`). The countdown uses
 Codex's reported weekly reset timestamp and the local clock; refreshing it makes
 no model calls or extra quota requests. Missing timestamps show `reset unknown`;
 an elapsed timestamp shows `reset due` until updated quota data arrives. This
-item is optional and adds no extra footer row.
+item is optional and shares the stats row with the other selected stats.
 
 The strip shows active and waiting direct workers without a count header:
 
 ```text
-GPT-6.1-Sol (high) · integration probe · 3:42 · 123.4K tok
+GPT-6.1-Sol (high) [worker] · implement fix · 1:20 · 25K tok
 ```
 
-Rows start with the full reported model and reasoning effort, followed by a short task
-name, current-turn elapsed time, and current-turn reported tokens. Routine active
+Rows start with the full reported model, reasoning effort, and agent role,
+followed by a short task name, current-turn elapsed time, and current-turn reported
+tokens. Routine active
 state is implicit; approval/input waits and stale data remain explicit. Long names shorten
 to leave room for metrics. Activity rows are dim; warnings use normal brightness.
 Recognized GPT Sol/Astra names use display casing while preserving their version
 and suffixes; custom and provider-prefixed identifiers remain intact. The model
 comes from Codex's thread metadata, which is not per-turn execution telemetry.
-Unknown values, including missing effort, show `?`. Finished,
-interrupted, failed, and idle workers disappear. The strip hides once no activity
+Unknown model, effort, time, and token values show `?`; a missing or empty role
+shows `[general]`. Custom roles retain their reported names with control characters
+replaced by spaces. Finished, interrupted, failed, and idle workers disappear.
+The strip hides once no activity
 or warnings remain. Small terminals clip rows to preserve the prompt.
 
 Native background shell commands belonging to this root session also appear in
@@ -189,7 +198,7 @@ belong to the existing batch. Each member name remains unique.
 These names produce one row:
 
 ```text
-GPT-6.1-Sol (high) · hud styling (3 agents) · 1:20 · 250K tok
+GPT-6.1-Sol (high) [worker] · hud styling (3 agents) · 1:20 · 250K tok
 ```
 
 The count includes only active/waiting members: 3 becomes 2, then 1, and the group
@@ -202,6 +211,9 @@ lifetime totals can include inherited usage. Use a fresh batch for a new dispatc
 Standalone rows pair latest-turn elapsed time with that same turn's usage. Missing metrics remain
 unknown. Model and effort come
 from the remaining active/waiting members; differing known settings show `mixed`.
+The role prefix also uses only active/waiting members: matching roles share their
+name, differing known roles show `[mixed]`, and any missing or empty role shows
+`[general]`. Finished members do not change the role prefix.
 
 Different batches and parent threads stay separate. Untagged or malformed names
 remain standalone rows. Grouping never guesses purpose from timing or similar

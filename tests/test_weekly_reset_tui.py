@@ -7,7 +7,7 @@ import tempfile
 import time
 
 from fixtures.native_server import AppServer
-from native_smoke import Terminal, assert_compact_hud, composer_ready, wait
+from native_smoke import Terminal, assert_compact_hud, composer_ready, wait, worker_rows
 
 
 class ResetServer(AppServer):
@@ -74,6 +74,8 @@ def run(binary, evidence):
             stages.append("weekly remaining plus exact compact countdown")
             os.write(terminal.master, b"reset-draft")
             wait([terminal], lambda: "reset-draft" in terminal.text, "countdown blocked input")
+            wait([terminal], lambda: len(worker_rows(terminal.text)) == 2,
+                 "worker metadata not ready for countdown layout check")
             assert_compact_hud(terminal.text, rows=2)
             server.workers = []
             server.quota(int(time.time()) + 3, weekly_primary=True)
