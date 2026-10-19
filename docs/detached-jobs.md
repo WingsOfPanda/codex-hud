@@ -177,7 +177,7 @@ The local HUD reuses `Background · topic · elapsed`, with an optional stage
 explicitly reported by the execution. Prepared workers disappear when they
 finish, and executions appear after launch. Detached UUIDs remain distinct from
 native terminal IDs and `/ps` controls. Refresh is read-only, root-scoped and
-model-free, preserving composer input and the shared three-row budget. A terminal
+model-free, preserving composer input and the shared six-row budget. A terminal
 result with unavailable monitoring or unresolved cleanup stays visibly unknown;
 its durable exit receipt remains available. Settled activity projections disappear.
 
@@ -239,7 +239,7 @@ enter/leave` to the host operator.
    maintenance races and simulated passage beyond 24 hours.
 4. Independent and conflicting jobs across two roots; qualified package switches,
    incompatible/rollback refusal, old-package retention and failed upgrade recovery.
-5. HUD identity/isolation, elapsed time, three rows, input/resize, no model calls
+5. HUD identity/isolation, elapsed time, six rows, input/resize, no model calls
    from refresh, native regressions and clean frontend patch reconstruction.
 
 Mock-only checks do not establish daemon-restart survival. Publication, merging

@@ -109,14 +109,18 @@ The status footer puts model, Ultracode, working directory and active agent on
 the first row. Selected **Context remaining**, **Weekly limit** and **Weekly reset**
 items appear on a second row, retaining their configured order and styling.
 When status line colors are enabled, model and Ultracode use cyan, directory
-blue, context green, weekly remaining yellow, weekly reset purple, and PR number
+blue, branch peach, context green, weekly remaining yellow, weekly reset purple, and PR number
 red. Active agent and separators stay neutral. Colors adapt to terminal contrast
 and supported depth; other selected items retain theme accents.
 The worker HUD follows both rows. A selection with only stats uses one row when
 there is no agent label or mode indicator; selections without stats keep one row.
-The activity strip uses up to three rows. When shortcut help, history search or
-another hint adds a third footer row, activity uses two rows and retains its
-overflow count, keeping at most five nonempty rows below the prompt.
+The activity strip uses up to six rows independently of the status footer.
+Warnings, Advisor, worker groups, native shells, detached jobs and overflow share
+this budget. Every nonempty activity category keeps at least one row, including
+while typing or displaying a warning and Advisor. Advisor and overflow remain
+separate rows. Two status rows plus six activity rows give at most eight nonempty
+rows below the prompt; explicitly opened help/search can add a close/search row.
+Small terminals may clip rows to preserve the editable input.
 
 Select **Weekly reset** in `/statusline` to show `resets in 2d 5h`
 (`weekly-reset` in `tui.status_line`). The countdown uses
@@ -157,13 +161,18 @@ model or token fields. The stock terminal API has no start timestamp: **seen
 measures time observed by this client**, not the command's total runtime, and resets when the
 client restarts or sees a new command identity.
 
-Workers, background commands, advisor status, warnings, and any `+N more` line share a strict
-three-row total limit below the prompt footer. The automatic
-`← for agents · ? for shortcuts` hint row is hidden; the shortcuts remain active.
-Contextual footer information and explicit help remain available. This keeps the composer within
-AP's last-six-nonempty-lines readiness window. When space permits, mixed activity
-shows both a worker and a background command. Warnings take priority within the
-same limit; overflow represents activity that does not fit.
+Workers, background commands, Advisor status, warnings and `+N more` share a
+six-row activity limit. At least one worker group, native shell and detached job
+is shown when each category has activity. Warnings retain priority, and overflow
+counts activity that does not fit. Automatic shortcut, queue and Escape hints
+are hidden; their keys still work. Explicit `?` help, search, quit confirmation,
+warnings and operational transcript state remain available. The working status
+keeps the literal `esc to interrupt` indicator. AP integrations must use the
+composer cursor and busy indicator; the old last-six-nonempty-lines detector is
+incompatible with this expanded footer.
+The generic `Background status unavailable` banner is omitted. Existing per-job
+unknown/stale labels and detailed job status remain; display does not dismiss a
+failure, resolve cleanup or rewrite execution records.
 Worker and shell queries fail independently, so unavailable shell metadata does
 not hide valid workers. A successful terminal-list refresh removes commands no
 longer present; disappearance does not claim successful completion.
@@ -231,7 +240,7 @@ name, differing known roles show `[mixed]`, and any missing or empty role shows
 Different batches and parent threads stay separate. Untagged or malformed names
 remain standalone rows. Grouping never guesses purpose from timing or similar
 names and makes no model calls.
-The three-row limit and `+N more` count groups, standalone workers, and shell jobs.
+The six-row limit and `+N more` count groups, standalone workers, native shells and detached jobs.
 
 ## Astra advisor
 

@@ -1,4 +1,4 @@
-"""Private candidate PTY check for AP's last-six-nonempty-lines idle detector."""
+"""Private candidate PTY check for the expanded activity footer and explicit help."""
 import argparse
 import hashlib
 import json
@@ -83,7 +83,7 @@ with tempfile.TemporaryDirectory(prefix='plus-fleet-footer-') as temporary:
     (home / 'auth.json').write_text('{"OPENAI_API_KEY":"isolated-fixture-only"}')
     socket = home / 'app-server-control/app-server-control.sock'
     socket.parent.mkdir(mode=0o700)
-    server = FleetServer(ROOT, work, 6, socket_path=socket)
+    server = FleetServer(ROOT, work, 9, socket_path=socket)
     socket.chmod(0o600)
     projection = home / 'codex-plus/goals' / f'{ROOT}.json'
     projection.parent.mkdir(parents=True)
@@ -94,7 +94,7 @@ with tempfile.TemporaryDirectory(prefix='plus-fleet-footer-') as temporary:
     os.environ.pop('NO_COLOR', None)
     os.environ['FORCE_COLOR'] = '3'
 
-    def capture(name, *, normal=False):
+    def capture(name, *, normal=False, tiny=False):
         display = terminal.screen.display
         prompt = max(i for i, line in enumerate(display) if line.lstrip().startswith('›'))
         below = [(i, line.strip()) for i, line in enumerate(display) if i > prompt and line.strip()]
@@ -104,18 +104,28 @@ with tempfile.TemporaryDirectory(prefix='plus-fleet-footer-') as temporary:
         item = dict(name=name, dimensions=[terminal.screen.lines, terminal.screen.columns],
             prompt_row=prompt, goal_rows=goal, worker_rows=workers, overflow_rows=overflow,
             nonempty_below_prompt=len(below), below_prompt=below,
-            prompt_in_last_six_nonempty=len(below) <= 5)
+            cursor_row=terminal.screen.cursor.y, tiny_clipping=tiny,
+            footer_within_budget=len(below) <= (9 if name in ('shortcuts', 'narrow-shortcuts', 'history-search') else 8))
         report['stages'].append(item)
         (evidence / f'{name}-screen.txt').write_text(terminal.text + '\n')
         (evidence / f'{name}.ansi').write_bytes(terminal.output)
         try:
-            assert len(below) <= 5, f'{name}: {len(below)} nonempty lines below prompt'
+            assert len(below) <= (9 if name in ('shortcuts', 'narrow-shortcuts', 'history-search') else 8), f'{name}: {len(below)} nonempty lines below prompt'
             assert goal and goal[0] < prompt, f'{name}: goal absent or below prompt'
-            assert 1 <= len(workers) <= 2 and len(overflow) == 1, f'{name}: bounded worker strip missing'
-            assert display[overflow[0]].strip() == f'+{6 - len(workers)} more', 'wrong hidden worker count'
+            if tiny:
+                assert 1 <= len(workers) <= 5 and len(workers) + len(overflow) <= 6, (name, below)
+                assert len(overflow) <= 1, (name, below)
+                if overflow:
+                    assert len(workers) == 5 and display[overflow[0]].strip() == '+4 more', 'false clipped overflow'
+                assert terminal.screen.cursor.y == prompt, (name, prompt, terminal.screen.cursor.y)
+                assert 'fleet-editable-draft-narrow-tiny' in display[prompt], (name, below)
+                assert any('Context 75% left' in line for _, line in below), (name, below)
+            else:
+                assert 1 <= len(workers) <= 5 and len(overflow) == 1, f'{name}: bounded worker strip missing'
+                assert display[overflow[0]].strip() == f'+{9 - len(workers)} more', 'wrong hidden worker count'
             if normal:
-                assert len(workers) == 2, f'{name}: normal worker budget unexpectedly reduced'
-                assert len(below) == 5, (name, below)
+                assert len(workers) == 5, f'{name}: normal worker budget unexpectedly reduced'
+                assert len(below) == 8, (name, below)
                 assert 'Context 75% left' in below[1][1], (name, below)
         except AssertionError as error:
             report['violations'].append(str(error))
@@ -136,12 +146,18 @@ with tempfile.TemporaryDirectory(prefix='plus-fleet-footer-') as temporary:
         os.write(terminal.master, b'fleet-editable-draft')
         wait([terminal], lambda: 'fleet-editable-draft' in terminal.text, 'draft not editable')
         capture('wide-draft', normal=True)
-        replies = terminal.resize(12, 65)
+        replies = terminal.resize(18, 65)
         wait([terminal], lambda: terminal.resized_frame(replies) and 'fleet-editable-draft' in terminal.text,
              'narrow resize did not preserve draft')
         os.write(terminal.master, b'-narrow')
         wait([terminal], lambda: 'fleet-editable-draft-narrow' in terminal.text, 'narrow not editable')
         capture('narrow-draft', normal=True)
+        replies = terminal.resize(12, 65)
+        wait([terminal], lambda: terminal.resized_frame(replies) and 'fleet-editable-draft-narrow' in terminal.text,
+             'tiny resize did not preserve draft')
+        os.write(terminal.master, b'-tiny')
+        wait([terminal], lambda: 'fleet-editable-draft-narrow-tiny' in terminal.text, 'tiny draft not editable')
+        capture('tiny-draft', tiny=True)
         replies = terminal.resize(32, 120)
         wait([terminal], lambda: terminal.resized_frame(replies), 'wide resize not repainted')
         os.write(terminal.master, b'\x15?')

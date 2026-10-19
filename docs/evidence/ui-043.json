@@ -1,0 +1,122 @@
+{
+  "schema": 1,
+  "status": "unreleased Linux x86 development acceptance",
+  "recorded_at": "2026-10-19T09:31:17.884671+00:00",
+  "production_source": "7fe258deb606887c62439e2670db761222f7d664",
+  "production_patch_sha256": "03bfeabe3fb5063531b70dbf00363be9f0d227b046de9d83cf65a655c1ff66a9",
+  "test_companion": "842e35e656698e706a23416b176efea0a322af3f",
+  "smoke_companion": "d8728c4d38e2d2741ca40264ce4f6cc01adf5c0d",
+  "integrated_patch_sha256": "383a2b1335c19f9364bf19fe2617dccd4cc917ba62b15e64f2b6fb1be0f41a58",
+  "upstream": "83086188ae0614bd882818ff1aa23f3194962012",
+  "core_version": "0.163.0",
+  "artifacts": {
+    "codex": {
+      "path": "/home/liupan/Aerius/codex-plus/.build/footer-rows043/repair/preparation/candidate/bin/codex",
+      "sha256": "36ff66ced8aebb22faab9faed6ce800de5d8bc79a3f66af40fffbdfe91e822a2"
+    },
+    "codex-code-mode-host": {
+      "path": "/home/liupan/Aerius/codex-plus/.build/footer-rows043/repair/preparation/candidate/bin/codex-code-mode-host",
+      "sha256": "a212e8a7decacac18ba5c3aabdf468ab8b6ea672bda7d2cc47ef927fd79bb17e"
+    },
+    "codex-plus-runtime": {
+      "path": "/home/liupan/Aerius/codex-plus/.build/footer-rows043/repair/preparation/candidate/bin/codex-plus-runtime",
+      "sha256": "571303c4207eb71a2fa381f3ab9850498639f93991a9a701f959f52922ba33db"
+    }
+  },
+  "production_equivalence": ".build/footer-rows043/selection-repair/production-equivalence.json",
+  "scope": [
+    "warm-resume Ultracode refresh",
+    "bounded initial empty-history retry",
+    "owned empty-rollout accepted-input retry",
+    "blue upper-right goal",
+    "distinct warm branch color",
+    "six activity rows with worker/shell/detached category reservation",
+    "hide automatic hints and generic background-availability banner"
+  ],
+  "native_filters": {
+    "bottom_pane": {
+      "passed": 1135,
+      "platform_ignored": [
+        {
+          "test": "bottom_pane::textarea::tests::altgr_ctrl_alt_char_inserts_literal",
+          "reason": "AltGr modifier only applies on Windows"
+        }
+      ]
+    },
+    "goal": {
+      "passed": 74
+    },
+    "style::contrast::tests": {
+      "passed": 5
+    },
+    "worker_hud": {
+      "passed": 53
+    },
+    "note": "Scoped overlapping filters; counts are not a unique-test total. Exact regression reruns are included in these filters."
+  },
+  "native_evidence": [
+    ".build/footer-rows043/repair/preparation/tests/test-results.json",
+    ".build/footer-rows043/selection-repair/preparation/tests/result.json"
+  ],
+  "terminal_acceptance": {
+    "footer_contract_stages": 4,
+    "detached_hud_stages": 9,
+    "fleet_footer_stages": 8,
+    "goal_placement": "13 stages across five color/footer modes",
+    "branch_colors": "six modes including colors disabled and NO_COLOR alone",
+    "status_line_selections": 5,
+    "full_smoke_stages": 23,
+    "startup_safety_cases": 6,
+    "upstream_ui_cases": 2,
+    "official_daemon_bootstrap_modes": 4,
+    "official_daemon_admission": "passed",
+    "official_daemon_custom_goals": "all scenarios passed",
+    "ultracode_weekly_reset_worker_roles": "passed"
+  },
+  "terminal_evidence": [
+    ".build/footer-rows043/repair/preparation/build",
+    ".build/footer-rows043/selection-repair/preparation/acceptance",
+    ".build/footer-rows043/smoke-repair/evidence/report.json"
+  ],
+  "smoke_log": "/home/liupan/.codex/codex-plus/logs/ca8facec-ad71-478c-8c2b-e28c4f8642a3.log",
+  "helper_acceptance": {
+    "rust_units": 185,
+    "runtime_acceptance_cases": 29,
+    "owned_empty_rollout_contract_cases": 9,
+    "evidence": ".build/astop-empty-rollout043/STATE.json"
+  },
+  "footer_contract": {
+    "normal_max_nonempty_below_cursor": 8,
+    "explicit_help_max": 9,
+    "tiny_terminal": "Clips footer while retaining editable input; overflow may be offscreen. Covered separately at 12x65."
+  },
+  "ap_compatibility": {
+    "captures": ".build/footer-cursor043/candidate-7fe258d",
+    "raw_tmux_pairs": 16,
+    "root_capture_integrity": "passed",
+    "ap_reported_commit": "f3ffcbe",
+    "ap_reported_replay": "all16states and both busy hash pairs passed",
+    "ap_reported_full_gate": "182 files,4065tests",
+    "approval_dialog": "AP excludes numbered selections from idle prompt matching",
+    "working_row": 27,
+    "busy_cursor_row": 30,
+    "release_install": "pending owner authorization"
+  },
+  "limitations": [
+    "Six app_server_session assertions also fail unchanged on 0.4.2; full upstream suite is not green.",
+    ".build/ultracode-startup043/tests-triage/output/baseline-comparison.json proves the six existing failures.",
+    "Retained failed execution receipts remain failed; successful child gates and corrected reruns are recorded separately.",
+    "Short owned empty-rollout errors retry for the existing two-second budget; longer metadata delays may still require attention.",
+    "No claim that every possible transient Ultracode-unavailable condition is eliminated.",
+    "Native ARM and full package/rollback qualification remain pending.",
+    "No publication, main merge or fleet installation is performed.",
+    "Fleet staging requires compatible AP release installed on every AP-driving box."
+  ],
+  "cleanup": "Final native/terminal qualification jobs had no owned leftovers. The earlier baseline cleanup was explicitly reconciled with verified process evidence; its failed command receipt is preserved.",
+  "integration_acceptance": {
+    "report": ".build/footer-rows043/integration-acceptance/report.json",
+    "log": "/home/liupan/.codex/codex-plus/logs/fa4ab9a3-50ff-45ae-bf7f-0f07922aab89.log",
+    "stages": 4,
+    "passed": true
+  }
+}

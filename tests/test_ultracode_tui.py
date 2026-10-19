@@ -221,7 +221,7 @@ def run_case(binary, root_directory, evidence, bootstrap, *, empty=False, unqual
         assert [call["args"][1] for call in control] == ["on", "status", "off"], control
         assert all(call["stdin_bytes"] == 0 and call["inherited_thread_removed"] for call in control)
         report.update(model_turn_requests=0, controls=["on", "status", "off"],
-            configured_status_line_preserved=True, composer_editable=True, hud_maximum_rows=3)
+            configured_status_line_preserved=True, composer_editable=True, hud_maximum_rows=6)
         passed = True
     finally:
         if terminal:

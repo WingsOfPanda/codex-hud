@@ -67,7 +67,7 @@ def parent_id(home):
     return next(event['payload']['id'] for event in rollout(home) if event['type'] == 'session_meta')
 
 
-def command_for(workspace, marker, held=False, failed=False):
+def command_for(workspace, marker, held=False, failed=False, *, launcher=None):
     script = workspace / 'finite.py'
     script.parent.mkdir(parents=True, exist_ok=True)
     script.write_text('import pathlib, sys, time\n'
@@ -78,7 +78,7 @@ def command_for(workspace, marker, held=False, failed=False):
            '    time.sleep(.05)\n' if held else '')
         + ('for index in range(40):\n    print(f"FAIL_LINE_{index:03}", flush=True)\n'
            'sys.exit(17)\n' if failed else 'print("POLICY_COMPLETE", flush=True)\n'))
-    command = shlex.join([str(REPO / 'bin/codex-plus'), 'run', '--', sys.executable, str(script)])
+    command = shlex.join([str(launcher or REPO / 'bin/codex-plus'), 'run', '--', sys.executable, str(script)])
     return (f'# codex-plus-shell: {marker}\n' if marker else '') + command
 
 

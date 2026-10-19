@@ -42,7 +42,7 @@ The topic summarizes what is being reviewed. The model and effort stay in the
 footer. Completion changes the same row to `• Advised on … · M:SS`, or
 `• Advisor failed on … · M:SS`; the main session then reviews the findings.
 These are display rows, not model messages. The footer retains its model, effort,
-call count and timing within the existing three-row activity budget.
+call count and timing within the existing six-row activity budget.
 
 Give a foreground consultation a short topic in its command header:
 

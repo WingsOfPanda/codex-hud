@@ -166,22 +166,24 @@ def assert_compact_hud(text, *, rows=None, idle=True):
     lines = [line.strip() for line in text.splitlines() if line.strip()]
     activities = worker_rows(text) + shell_rows(text) + advisor_rows(text)
     alerts = [line for line in lines if line.startswith(('Workers stale', 'Workers unavailable',
-              'Shells stale', 'Shells unavailable', 'Background status unavailable', 'Watcher ', 'Wake pending', 'Wake delivery ', 'Restart report '))]
+              'Shells stale', 'Shells unavailable', 'Watcher ', 'Wake pending', 'Wake delivery ', 'Restart report '))]
     overflow = [line for line in lines if re.match(r'^\+\d+ more$', line)]
     hud = activities + alerts + overflow
-    assert len(hud) <= 3, f'HUD exceeded three total rows\n{text}'
+    assert len(hud) <= 6, f'HUD exceeded six total rows\n{text}'
     if rows is not None:
         assert len(hud) == rows, f'expected {rows} HUD rows, got {len(hud)}\n{text}'
     assert len(alerts) <= 1, f'alerts were not combined\n{text}'
+    assert 'Background status unavailable' not in text, text
     assert not any(re.match(r'^Workers \d|^Shells \d', line) for line in lines), text
     assert all(' · active · ' not in line and ' · running · ' not in line and ' · job ' not in line
                for line in activities), text
-    assert 'for shortcuts' not in text and 'for agents' not in text, text
+    assert 'for shortcuts' not in text and 'for agents' not in text and 'tab to queue' not in text, text
     if hud:
         composer = max(index for index, line in enumerate(lines) if line.startswith('›'))
         assert all(composer < lines.index(line) for line in hud), text
     if idle:
-        assert any(line.startswith('›') for line in lines[-6:]), f'idle composer fell outside last six nonempty lines\n{text}'
+        footer_limit = 9 if 'Keyboard shortcuts' in text or 'reverse-i-search:' in text else 8
+        assert any(line.startswith('›') for line in lines[-(footer_limit + 1):]), f'composer fell outside footer row budget\n{text}'
     return hud
 
 
@@ -276,15 +278,15 @@ def shell_hud_smoke(binary, root, evidence):
         wait(terminals, lambda: age(rows(first)[0]) <= 1, 'new process with same item inherited old observed elapsed')
         (evidence / 'shell-only-screen.txt').write_text(first.text + '\n')
 
-        servers[0].shells.extend(servers[0].shell(710 + i, f'paginated-shell-{i}') for i in range(3))
-        servers[1].shells.extend(servers[1].shell(720 + i, f'mixed-shell-{i}') for i in range(3))
+        servers[0].shells.extend(servers[0].shell(710 + i, f'paginated-shell-{i}') for i in range(6))
+        servers[1].shells.extend(servers[1].shell(720 + i, f'mixed-shell-{i}') for i in range(6))
         wait(terminals, lambda: '+2 more' in first.text and '+4 more' in second.text,
              'paginated shell counts or mixed overflow did not render')
-        assert len(rows(first)) == 2, first.text
+        assert len(rows(first)) == 5, first.text
         details = len(rows(second)) + len(worker_rows(second.text))
-        assert details == 2 and rows(second) and worker_rows(second.text), second.text
-        assert_compact_hud(first.text, rows=3)
-        assert_compact_hud(second.text, rows=3)
+        assert details == 5 and rows(second) and worker_rows(second.text), second.text
+        assert_compact_hud(first.text, rows=6)
+        assert_compact_hud(second.text, rows=6)
         assert all(any(r.get('method') == 'thread/backgroundTerminals/list' and r['params'].get('cursor') == '2'
                        for r in server.requests) for server in servers), 'second shell page was never read'
         (evidence / 'shell-mixed-screen.txt').write_text(second.text + '\n')
@@ -294,14 +296,14 @@ def shell_hud_smoke(binary, root, evidence):
         assert worker_rows(second.text) and 'Workers stale' not in second.text and 'shell-draft-1' in second.text, second.text
         assert all(' · stale · seen ?' in line for line in rows(second)), second.text
         assert '+5 more' in second.text, second.text
-        assert_compact_hud(second.text, rows=3)
+        assert_compact_hud(second.text, rows=6)
         assert '+2 more' in first.text, first.text
         (evidence / 'shell-error-screen.txt').write_text(second.text + '\n')
         servers[1].reject_turn_metadata = True
         wait(terminals, lambda: 'Workers stale' in second.text and 'Shells stale' in second.text,
              'simultaneous worker and shell errors lost one warning')
-        assert_compact_hud(second.text, rows=3)
-        assert '+5 more' in second.text and len(worker_rows(second.text)) == 1, second.text
+        assert_compact_hud(second.text, rows=6)
+        assert '+5 more' in second.text and len(worker_rows(second.text)) == 2, second.text
         (evidence / 'mixed-alert-overflow-screen.txt').write_text(second.text + '\n')
         servers[1].reject_turn_metadata = False
         servers[1].reject_shell_cursor = None
@@ -310,7 +312,7 @@ def shell_hud_smoke(binary, root, evidence):
         servers[0].shell_next_cursor = '0'
         wait(terminals, lambda: 'shells stale' in first.text.lower(), 'cyclic shell pagination was accepted as fresh')
         assert rows(first) and all(' · stale · seen ?' in line for line in rows(first)), first.text
-        assert_compact_hud(first.text, rows=3)
+        assert_compact_hud(first.text, rows=6)
         (evidence / 'shell-alert-overflow-screen.txt').write_text(first.text + '\n')
         servers[0].shell_next_cursor = None
         wait(terminals, lambda: '+2 more' in first.text and 'stale' not in first.text, 'cyclic pagination did not recover')
@@ -344,7 +346,7 @@ def shell_hud_smoke(binary, root, evidence):
         for server in servers:
             assert not server.errors, server.errors
             assert not any(r.get('method') in ('turn/start', 'turn/steer', 'command/exec') for r in server.requests), server.requests
-        return ['unregistered remote shell-only and mixed worker/shell strips; three total rows including overflow and alerts; compact background labels and observed elapsed; item identity reset; parent isolation; shell-only stale failures and recovery; Unicode/control-safe narrow drafts; successful disappearance without success claim; zero UI turn or execution requests']
+        return ['unregistered remote shell-only and mixed worker/shell strips; six total rows including overflow and alerts; compact background labels and observed elapsed; item identity reset; parent isolation; shell-only stale failures and recovery; Unicode/control-safe narrow drafts; successful disappearance without success claim; zero UI turn or execution requests']
     finally:
         for index, terminal in enumerate(terminals):
             (evidence / f'shell-pane-{index}.ansi').write_bytes(terminal.output)
@@ -753,7 +755,7 @@ stream_max_retries=0
         assert provider.count == before, 'advisor footer called a model: ' + repr(provider.requests)
         for index, parent in enumerate(parents):
             assert len(rpc.call('thread/read', {'threadId': parent, 'includeTurns': True})['thread']['turns']) == (3 if index == 0 else 1)
-        return ['advisor explicit Astra catalog: ready zero calls, running timer, done count/duration, error, stale/malformed/mismatched/FIFO/symlink status, full reported model per pane, managed advisor shell coalesces only while reviewing and unrelated shell stays visible, warning/advisor/real-shell share three rows with narrow AP composer, zero extra model calls or turns']
+        return ['advisor explicit Astra catalog: ready zero calls, running timer, done count/duration, error, stale/malformed/mismatched/FIFO/symlink status, full reported model per pane, managed advisor shell coalesces only while reviewing and unrelated shell stays visible, warning/advisor/real-shell keep separate rows with narrow editable composer, zero extra model calls or turns']
     finally:
         release.touch()
         for index, terminal in enumerate(terminals):
@@ -1114,7 +1116,7 @@ def run(binary, evidence):
     temporary = tempfile.TemporaryDirectory(prefix='h-')
     try:
         root = Path(temporary.name)
-        for index, count in enumerate((2, 6)):
+        for index, count in enumerate((2, 9)):
             home, workspace = root / f'home-{index}', root / f'workspace-{index}'
             home.mkdir()
             workspace.mkdir()
@@ -1142,21 +1144,21 @@ def run(binary, evidence):
              'distinct worker populations did not render', 30)
         for server, terminal in zip(servers, terminals):
             assert 'for shortcuts' not in terminal.text and 'for agents' not in terminal.text, terminal.text
-            assert_compact_hud(terminal.text, rows=min(3, len(server.workers)))
+            assert_compact_hud(terminal.text, rows=min(6, len(server.workers)))
             worker_lines = worker_rows(terminal.text)
-            assert len(worker_lines) == 2, terminal.text
+            assert len(worker_lines) == min(5, len(server.workers)), terminal.text
             for index, line in enumerate(worker_lines):
                 assert ('GPT-6.1-Sol (high)' if index % 2 == 0 else 'GPT-6-Astra (medium)') + f' [general] · worker {index + 1} ·' in line, line
                 assert '? tok' in line, line
                 assert re.search(r' · \d+:\d{2} · ', line), line
                 assert '/root/' not in line and 'worker_' not in line, line
-            if len(server.workers) > 3:
-                assert '+4 more' in terminal.text and 'worker 3 ·' not in terminal.text, terminal.text
+            if len(server.workers) > 6:
+                assert '+4 more' in terminal.text and 'worker 6 ·' not in terminal.text, terminal.text
             assert 'idle ' not in terminal.text and 'done ' not in terminal.text and 'other ' not in terminal.text, terminal.text
             assert 'Wake delivery uncertain' not in terminal.text and '987654' not in terminal.text, terminal.text
             assert not advisor_rows(terminal.text), terminal.text
         (evidence / 'compact-six-active-screen.txt').write_text(terminals[1].text + '\n')
-        stages.append('six active workers show two full-model rows plus +4 more in three total rows, with elapsed, unknown remote tokens, actual GPT-6.1-Sol high/GPT-6-Astra medium, and idle composer within last six nonempty lines')
+        stages.append('nine active workers show five full-model rows plus +4 more in six total rows, with elapsed, unknown remote tokens, actual GPT-6.1-Sol high/GPT-6-Astra medium, and editable composer within the expanded footer budget')
         os.write(terminals[0].master, b'/daemon')
         wait(terminals, lambda: '/daemon' in terminals[0].text, '/daemon did not finish rendering')
         os.write(terminals[0].master, b'\r')
@@ -1187,18 +1189,18 @@ def run(binary, evidence):
         active_worker = servers[1].workers[0]
         active_worker['status'] = {'type': 'idle'}
         servers[1].turns[active_worker['id']][0].update(status='completed', completedAt=int(time.time()))
-        wait(terminals, lambda: '+3 more' in terminals[1].text and 'worker 1 ·' not in terminals[1].text and 'worker 3 ·' in terminals[1].text, 'completed worker did not disappear and promote hidden active worker')
-        assert_compact_hud(terminals[1].text, rows=3)
+        wait(terminals, lambda: '+3 more' in terminals[1].text and 'worker 1 ·' not in terminals[1].text and 'worker 6 ·' in terminals[1].text, 'completed worker did not disappear and promote hidden active worker')
+        assert_compact_hud(terminals[1].text, rows=6)
         (evidence / 'compact-promoted-screen.txt').write_text(terminals[1].text + '\n')
         stages.append('completion removes its row and promotes a hidden active worker')
         for worker in servers[1].workers[1:-1]:
             worker['status'] = {'type': 'idle'}
             servers[1].turns[worker['id']][0].update(status='completed', completedAt=int(time.time()))
-        wait(terminals, lambda: len(worker_rows(terminals[1].text)) == 1 and 'worker 6 ·' in terminals[1].text and '+3 more' not in terminals[1].text, 'remaining active worker did not replace completed rows')
+        wait(terminals, lambda: len(worker_rows(terminals[1].text)) == 1 and 'worker 9 ·' in terminals[1].text and '+3 more' not in terminals[1].text, 'remaining active worker did not replace completed rows')
         last_worker = servers[1].workers[-1]
         last_worker['status'] = {'type': 'idle'}
         servers[1].turns[last_worker['id']][0].update(status='completed', completedAt=int(time.time()))
-        wait(terminals, lambda: not worker_rows(terminals[1].text) and 'worker 6 ·' not in terminals[1].text and '+3 more' not in terminals[1].text, 'healthy HUD did not disappear after the last worker finished')
+        wait(terminals, lambda: not worker_rows(terminals[1].text) and 'worker 9 ·' not in terminals[1].text and '+3 more' not in terminals[1].text, 'healthy HUD did not disappear after the last worker finished')
         os.write(terminals[1].master, b'-quiet')
         wait(terminals, lambda: 'draft-1-quiet' in terminals[1].text, 'hidden HUD blocked the composer')
         assert len(worker_rows(terminals[0].text)) == 2 and 'draft-0-refresh' in terminals[0].text, terminals[0].text
@@ -1221,7 +1223,7 @@ def run(binary, evidence):
 
         wait(terminals, lambda: '(3 agents)' in group_line() and '+2 more' in grouped_terminal.text, 'explicit cohort did not replace three individual rows')
         assert group_line().startswith('mixed (mixed) [general] ·') and '? tok' in group_line(), group_line()
-        assert_compact_hud(grouped_terminal.text, rows=3)
+        assert_compact_hud(grouped_terminal.text, rows=6)
         assert 'worker 1 ·' not in grouped_terminal.text and 'worker 2 ·' not in grouped_terminal.text and 'worker 3 ·' not in grouped_terminal.text, grouped_terminal.text
         initial_age = re.search(r' · (\d+):(\d{2}) · ', group_line())
         initial_age = int(initial_age[1]) * 60 + int(initial_age[2])
@@ -1257,19 +1259,19 @@ def run(binary, evidence):
             grouped_server.turns[worker['id']][0].update(status='inProgress', startedAt=int(time.time()), completedAt=None)
         wait(terminals, lambda: '(3 agents)' in group_line() and '+2 more' in grouped_terminal.text, 'group reactivation did not restore strip')
         grouped_server.workers[-1]['status']['activeFlags'] = ['waitingOnApproval']
-        wait(terminals, lambda: any('worker 6 · wait approval' in line for line in worker_rows(grouped_terminal.text)),
+        wait(terminals, lambda: any('worker 9 · wait approval' in line for line in worker_rows(grouped_terminal.text)),
              'explicit approval wait did not remain visible')
         grouped_server.reject_turn_metadata = True
         wait(terminals, lambda: 'Workers stale' in grouped_terminal.text and '+3 more' in grouped_terminal.text,
-             'worker alert and overflow did not share the three-row budget')
-        assert_compact_hud(grouped_terminal.text, rows=3)
-        assert len(worker_rows(grouped_terminal.text)) == 1 and 'worker 6 · stale' in grouped_terminal.text, grouped_terminal.text
+             'worker alert and overflow did not share the six-row budget')
+        assert_compact_hud(grouped_terminal.text, rows=6)
+        assert len(worker_rows(grouped_terminal.text)) == 4 and 'worker 9 · stale' in grouped_terminal.text, grouped_terminal.text
         (evidence / 'worker-wait-alert-overflow-screen.txt').write_text(grouped_terminal.text + '\n')
         grouped_server.reject_turn_metadata = False
         grouped_server.workers[-1]['status']['activeFlags'] = []
         wait(terminals, lambda: 'Workers stale' not in grouped_terminal.text and '(3 agents)' in group_line() and '+2 more' in grouped_terminal.text,
              'worker wait and stale state failed to recover')
-        stages.append('explicit approval wait survives alert plus overflow in three total rows, with idle composer within last six nonempty lines')
+        stages.append('explicit approval wait survives alert plus overflow in six total rows, with editable composer within the expanded footer budget')
 
         replies_before_resize = terminals[0].resize(10, 50)
         wait(terminals, lambda: terminals[0].resized_frame(replies_before_resize) and 'draft-0-refresh' in terminals[0].text, 'small terminal did not finish repainting')

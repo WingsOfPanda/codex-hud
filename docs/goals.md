@@ -19,7 +19,7 @@ not a held model/tool call. The goal takes precedence over the Plan label,
 without changing Plan mode. Narrow rows truncate the label; tiny terminals give
 input priority, and terminals without color use plain text. The status footer
 stays below input. The goal adds no activity rows; the worker/job/advisor
-strip still occupies at most three rows. Completion remains indicated until the
+strip still occupies at most six rows. Completion remains indicated until the
 next ordinary user message, not a synthetic callback or timer review.
 
 Your input takes priority and does not automatically pause the objective. Pause

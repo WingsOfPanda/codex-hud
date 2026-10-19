@@ -1,3 +1,24 @@
+# Unreleased 0.4.3 candidate
+
+The candidate reserves up to six activity rows, keeping at least one worker,
+native shell and detached job visible when each exists. Warning, Advisor and
+overflow remain distinct, and typing no longer shrinks the activity budget.
+Automatic queue/shortcut/Escape hints are hidden while their keys, explicit help,
+search, warnings and the working `esc to interrupt` indicator remain available.
+With two status rows, the normal maximum is eight rows below the prompt. Fleet
+rollout requires AP's cursor/busy-indicator integration instead of the previous
+six-line readiness detector. Scoped Linux x86 acceptance is recorded in
+[candidate evidence](evidence/ui-043.json). ARM and complete-package qualification
+remain pending; published 0.4.2 evidence below is historical.
+The generic background-availability banner is hidden; identified unknown/stale
+jobs retain their labels, and execution/cleanup records remain authoritative.
+
+The candidate also refreshes Ultracode status on local warm resume, retries
+briefly empty initial item history within the existing bounded retry budget,
+and retries the exact owned empty-rollout error during accepted-input settlement
+without replaying input. Plus goals align to the upper-right above input, and
+Git branches use a warm color distinct from the blue directory.
+
 # Codex Plus 0.163.0-plus.0.4.2
 
 This patch refines the native UI and exact-turn admission readiness.

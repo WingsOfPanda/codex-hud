@@ -93,6 +93,9 @@ def main():
                 data['foregrounds'] = sorted({terminal.screen.buffer[row][x].fg
                     for x in range(column, column + len(label))})
                 if check_goal:
+                    data['right_edge'] = len(display[row].rstrip())
+                    if data['right_edge'] != terminal.screen.columns - 2:
+                        report['violations'].append(f'{name}: goal must end at right content margin; {data}')
                     if not (goal_rows == [row] and row < composer):
                         report['violations'].append(f'{name}: goal must appear once above input; {data}')
                     allowed = {'default'} if args.color_level == '0' else {'89b4fa', '87afff', 'blue', '0000ee'}

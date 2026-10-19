@@ -8,10 +8,12 @@ Parser/fixture checks without a candidate:
 
 import argparse
 import base64
+import hashlib
 import json
 import os
 from pathlib import Path
 import re
+import shlex
 import shutil
 import subprocess
 import tempfile
@@ -24,7 +26,7 @@ from wcwidth import wcswidth
 from fixtures.native_server import AppServer
 from fixtures.shell_policy_provider import ShellPolicyProvider
 from native_smoke import Terminal, advisor_rows, assert_compact_hud, composer_ready, shell_rows, wait, worker_rows
-from test_shell_policy_integration import command_for, configure, rollout, start_terminal, turns
+from test_shell_policy_integration import REPO, command_for, configure, rollout, start_terminal, turns
 
 
 def program_statuses(output):
@@ -84,15 +86,15 @@ def config_and_selection(binary, root, evidence):
         'tui.alternate_screen="always"\n'
         f'[projects."{workspace}"]\ntrust_level="trusted"\n')
     (home / 'auth.json').write_text('{"OPENAI_API_KEY":"isolated-fixture-only"}')
-    server = AppServer('00000000-0000-0000-0016-000000000001', workspace, 6)
+    server = AppServer('00000000-0000-0000-0016-000000000001', workspace, 9)
     terminal = None
     geometry = {}
     try:
         terminal = private_terminal(binary, home, workspace, server.url)
         wait([terminal], lambda: '+4 more' in terminal.text and composer_ready(terminal.text),
-             'three-row HUD and native footer did not initialize', 30)
-        assert_compact_hud(terminal.text, rows=3)
-        geometry['three_rows'] = copy_footer(terminal, evidence, 'selection-three-rows')
+             'six-row HUD and native footer did not initialize', 30)
+        assert_compact_hud(terminal.text, rows=6)
+        geometry['six_rows'] = copy_footer(terminal, evidence, 'selection-six-rows')
 
         draft = 'config-preserved-draft'
         os.write(terminal.master, draft.encode())
@@ -115,10 +117,10 @@ def config_and_selection(binary, root, evidence):
         os.write(terminal.master, b'\x1b[27u')
         wait([terminal], lambda: 'Configuration' not in terminal.text and 'Workers stale' in terminal.text,
              '/config did not close onto the refreshed warning/overflow HUD')
-        assert_compact_hud(terminal.text, rows=3)
+        assert_compact_hud(terminal.text, rows=6)
         os.write(terminal.master, b'\x19')
         wait([terminal], lambda: draft in terminal.text, '/config lost the native killed draft')
-        assert_compact_hud(terminal.text, rows=3)
+        assert_compact_hud(terminal.text, rows=6)
         (evidence / 'config-restored-draft-screen.txt').write_text(terminal.text + '\n')
 
         os.write(terminal.master, b'\x01\x0b')
@@ -132,7 +134,7 @@ def config_and_selection(binary, root, evidence):
              and '+4 more' not in terminal.text, 'completed workers did not collapse the HUD')
         assert_compact_hud(terminal.text, rows=0)
         geometry['zero_rows'] = copy_footer(terminal, evidence, 'selection-zero-rows')
-        assert geometry['three_rows']['row'] != geometry['zero_rows']['row'], geometry
+        assert geometry['six_rows']['row'] != geometry['zero_rows']['row'], geometry
 
         server.shells = [server.shell(163, 'footer-geometry-held-command')]
         wait([terminal], lambda: len(shell_rows(terminal.text)) == 1,
@@ -164,13 +166,22 @@ def config_and_selection(binary, root, evidence):
 
 def managed_shell_status(binary, root, evidence):
     home, workspace = root / 'status-home', root / 'status-workspace'
-    provider = ShellPolicyProvider(command_for(workspace, 'background', held=True), yield_time_ms=1000)
+    package_bin = root / 'status-package/bin'
+    package_bin.mkdir(parents=True)
+    for name in ('codex', 'codex-code-mode-host', 'codex-plus-runtime'):
+        artifact = binary if name == 'codex' else binary.with_name(name)
+        (package_bin / name).symlink_to(artifact.resolve(strict=True))
+    launcher = package_bin / 'codex-plus'
+    # Copy the launcher: its readlink-based root must resolve to this private package.
+    shutil.copy2(REPO / 'bin/codex-plus', launcher)
+    provider = ShellPolicyProvider(command_for(workspace, 'background', held=True, launcher=launcher),
+                                   yield_time_ms=1000)
     configure(home, workspace, provider)
     terminal = None
     try:
         # start_terminal uses the same safe child environment for its embedded daemon.
         with patch('test_shell_policy_integration.Terminal', private_terminal):
-            terminal = start_terminal(binary, home, workspace, provider, 'upstream-status-acceptance')
+            terminal = start_terminal(package_bin / 'codex', home, workspace, provider, 'upstream-status-acceptance')
         wait([terminal], lambda: provider.count == 2 and shell_rows(terminal.text),
              'marked background command did not yield while held', 30)
         assert not (workspace / 'release').exists()
@@ -208,7 +219,10 @@ def managed_shell_status(binary, root, evidence):
         logs = list((home / 'codex-plus/logs').glob('*'))
         assert len(logs) == 1 and 'POLICY_COMPLETE' in logs[0].read_text(), logs
         shutil.copy2(logs[0], evidence / 'status-command.log')
+        with (package_bin / 'codex-plus-runtime').open('rb') as stream:
+            runtime_sha256 = hashlib.file_digest(stream, 'sha256').hexdigest()
         return {'case': 'marked_background_program_status', 'statuses': program_statuses(terminal.output),
+                'runtime_sha256': runtime_sha256,
                 'loopback_requests': provider.count, 'turns': turns(home), 'passed': True}
     finally:
         (workspace / 'release').touch()
@@ -226,6 +240,17 @@ def managed_shell_status(binary, root, evidence):
 
 
 class AcceptanceFixtureTests(unittest.TestCase):
+    def test_command_launcher_is_explicit_or_keeps_the_repository_default(self):
+        with tempfile.TemporaryDirectory(prefix='plus-launcher-') as temporary:
+            workspace = Path(temporary)
+            explicit = workspace / 'private package/bin/codex-plus'
+            for launcher in (None, explicit):
+                command = command_for(workspace, 'background', launcher=launcher)
+                marker, invocation = command.split('\n', 1)
+                self.assertEqual(marker, '# codex-plus-shell: background')
+                self.assertEqual(shlex.split(invocation)[:3],
+                                 [str(launcher or REPO / 'bin/codex-plus'), 'run', '--'])
+
     def test_status_parser_requires_complete_codex_protocol_and_keeps_order(self):
         data = (b'\x1b]7501;state=working:app=other\x1b\\'
                 b'\x1b]7501;state=working:app=codex\x1b\\'
