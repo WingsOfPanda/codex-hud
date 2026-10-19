@@ -5373,10 +5373,10 @@ index c8d16dc9c..6cf52a01c 100644
                  self.handle_skills_list_result(
 diff --git a/codex-rs/tui/src/app/worker_hud.rs b/codex-rs/tui/src/app/worker_hud.rs
 new file mode 100644
-index 000000000..71da99ad6
+index 000000000..58fa43169
 --- /dev/null
 +++ b/codex-rs/tui/src/app/worker_hud.rs
-@@ -0,0 +1,1867 @@
+@@ -0,0 +1,1902 @@
 +//! Per-client worker metadata refresh. These requests never start or steer a turn.
 +
 +use super::*;
@@ -6116,6 +6116,17 @@ index 000000000..71da99ad6
 +        elapsed_secs,
 +        model: thread.model.clone(),
 +        reasoning_effort: thread.reasoning_effort.clone(),
++        agent_role: thread
++            .agent_role
++            .as_deref()
++            .map(|role| {
++                role.chars()
++                    .map(|ch| if ch.is_control() { ' ' } else { ch })
++                    .collect::<String>()
++                    .trim()
++                    .to_string()
++            })
++            .filter(|role| !role.is_empty()),
 +        total_tokens: None,
 +    }
 +}
@@ -6800,6 +6811,29 @@ index 000000000..71da99ad6
 +    }
 +
 +    #[test]
++    fn worker_hud_carries_and_normalizes_reported_agent_roles() {
++        let mut worker = thread("worker-id");
++        for (role, expected) in [
++            (None, None),
++            (Some("worker"), Some("worker")),
++            (Some("explorer"), Some("explorer")),
++            (Some("tester"), Some("tester")),
++            (Some("release_reviewer"), Some("release_reviewer")),
++            (Some("\nworker\t"), Some("worker")),
++            (Some("\ncustom\trole\u{7}"), Some("custom role")),
++            (Some(""), None),
++            (Some("   "), None),
++            (Some("\n\t\u{7}"), None),
++        ] {
++            worker.agent_role = role.map(str::to_string);
++            assert_eq!(
++                worker_row(&worker, None, 10).agent_role.as_deref(),
++                expected
++            );
++        }
++    }
++
++    #[test]
 +    fn worker_hud_groups_only_explicit_topic_batch_tags_before_shortening() {
 +        let mut worker = thread("worker-id");
 +        worker.parent_thread_id = Some("parent-a".into());
@@ -7213,6 +7247,7 @@ index 000000000..71da99ad6
 +            elapsed_secs: Some(10),
 +            model: None,
 +            reasoning_effort: None,
++            agent_role: None,
 +            total_tokens: None,
 +        };
 +        let mut a = WorkerHudState::default();
@@ -8302,7 +8337,7 @@ index f0b809ce5..f9b2d456f 100644
      let mut line: Option<Line<'static>> = None;
  
 diff --git a/codex-rs/tui/src/bottom_pane/mod.rs b/codex-rs/tui/src/bottom_pane/mod.rs
-index ae9405e9f..9f3f2d911 100644
+index ae9405e9f..129960685 100644
 --- a/codex-rs/tui/src/bottom_pane/mod.rs
 +++ b/codex-rs/tui/src/bottom_pane/mod.rs
 @@ -169,6 +169,8 @@ pub(crate) use footer::CollaborationModeIndicator;
@@ -8393,7 +8428,7 @@ index ae9405e9f..9f3f2d911 100644
              RenderableItem::Owned(Box::new(flex2))
          }
      }
-@@ -2729,6 +2775,95 @@ mod tests {
+@@ -2729,6 +2775,96 @@ mod tests {
          assert_eq!(pane.composer_text(), "main draft");
      }
  
@@ -8411,6 +8446,7 @@ index ae9405e9f..9f3f2d911 100644
 +                total_tokens: Some(0),
 +                model: Some("gpt-6-sol".to_string()),
 +                reasoning_effort: None,
++                agent_role: None,
 +            }],
 +            false,
 +            true,
@@ -8892,10 +8928,10 @@ index f717e2426..7a49ebb6a 100644
 +                                                   100% context left
 diff --git a/codex-rs/tui/src/bottom_pane/worker_hud.rs b/codex-rs/tui/src/bottom_pane/worker_hud.rs
 new file mode 100644
-index 000000000..5919069c4
+index 000000000..1c57acd32
 --- /dev/null
 +++ b/codex-rs/tui/src/bottom_pane/worker_hud.rs
-@@ -0,0 +1,1573 @@
+@@ -0,0 +1,1667 @@
 +//! Read-only worker summary; clipping never takes space from the composer.
 +
 +use crate::line_truncation::truncate_line_with_ellipsis_if_overflow;
@@ -8959,6 +8995,7 @@ index 000000000..5919069c4
 +    pub(crate) total_tokens: Option<i64>,
 +    pub(crate) model: Option<String>,
 +    pub(crate) reasoning_effort: Option<ReasoningEffort>,
++    pub(crate) agent_role: Option<String>,
 +}
 +
 +#[derive(Clone, Debug, PartialEq, Eq)]
@@ -9229,7 +9266,14 @@ index 000000000..5919069c4
 +            } else {
 +                "mixed".to_string()
 +            };
-+            let prefix = format!("  {model} ({effort}) · ");
++            let role = if current.iter().any(|row| row.agent_role.is_none()) {
++                "general"
++            } else if current.iter().all(|row| row.agent_role == first.agent_role) {
++                first.agent_role.as_deref().unwrap_or("general")
++            } else {
++                "mixed"
++            };
++            let prefix = format!("  {model} ({effort}) [{role}] · ");
 +            let state = if state.is_empty() {
 +                String::new()
 +            } else {
@@ -9420,6 +9464,7 @@ index 000000000..5919069c4
 +                total_tokens: Some(10),
 +                model: None,
 +                reasoning_effort: None,
++                agent_role: None,
 +            }],
 +            false,
 +            true,
@@ -10026,6 +10071,7 @@ index 000000000..5919069c4
 +                total_tokens: Some(9_040_000),
 +                model: Some("gpt-6.1-sol".into()),
 +                reasoning_effort: Some(ReasoningEffort::High),
++                agent_role: None,
 +            }],
 +            false,
 +            true,
@@ -10044,7 +10090,7 @@ index 000000000..5919069c4
 +        assert_eq!(lines.len(), 2);
 +        assert_eq!(
 +            lines[0].to_string(),
-+            "  GPT-6.1-Sol (high) · glm w8 graph trial · 24:31 · 9.04M tok"
++            "  GPT-6.1-Sol (high) [general] · glm w8 graph trial · 24:31 · 9.04M tok"
 +        );
 +        assert_eq!(
 +            lines[1].to_string(),
@@ -10078,6 +10124,7 @@ index 000000000..5919069c4
 +                    total_tokens: Some(12_300),
 +                    model: Some("gpt-6-sol".into()),
 +                    reasoning_effort: Some(ReasoningEffort::High),
++                    agent_role: None,
 +                })
 +                .collect(),
 +            false,
@@ -10090,9 +10137,9 @@ index 000000000..5919069c4
 +        hud.render(area, &mut buf);
 +        for n in 0..2 {
 +            let rendered: String = (0..80).map(|x| buf[(x, n)].symbol()).collect();
-+            assert_eq!(buf[(27, n)].symbol(), "测");
-+            assert_eq!(buf[(29, n)].symbol(), "试");
-+            assert_eq!(buf[(31, n)].symbol(), n.to_string());
++            assert_eq!(buf[(37, n)].symbol(), "测");
++            assert_eq!(buf[(39, n)].symbol(), "试");
++            assert_eq!(buf[(41, n)].symbol(), n.to_string());
 +            assert!(rendered.contains("1:02 · 12.3K tok"));
 +            assert!(buf[(2, n)].modifier.contains(Modifier::DIM));
 +        }
@@ -10133,6 +10180,7 @@ index 000000000..5919069c4
 +                    total_tokens: None,
 +                    model: None,
 +                    reasoning_effort: None,
++                    agent_role: None,
 +                })
 +                .collect(),
 +            false,
@@ -10185,12 +10233,13 @@ index 000000000..5919069c4
 +                total_tokens: Some(12_300),
 +                model: Some("gpt-6-astra".to_string()),
 +                reasoning_effort: Some(ReasoningEffort::Medium),
++                agent_role: None,
 +            }],
 +            false,
 +            true,
 +        );
 +        let line = hud.lines(80)[0].to_string();
-+        assert!(line.starts_with("  GPT-6-Astra (medium) · 测试"));
++        assert!(line.starts_with("  GPT-6-Astra (medium) [general] · 测试"));
 +        assert!(line.contains('…'));
 +        assert!(line.ends_with(" · 3:42 · 12.3K tok"));
 +        assert!(display_width(&line) <= 80);
@@ -10214,6 +10263,7 @@ index 000000000..5919069c4
 +                total_tokens: Some(12_300),
 +                model: Some("gpt-6-astra".to_string()),
 +                reasoning_effort: Some(ReasoningEffort::Medium),
++                agent_role: None,
 +            }],
 +            false,
 +            true,
@@ -10240,13 +10290,20 @@ index 000000000..5919069c4
 +                total_tokens: Some(0),
 +                model: None,
 +                reasoning_effort: None,
++                agent_role: None,
 +            }],
 +            false,
 +            true,
 +        );
-+        assert_eq!(hud.lines(80)[0].to_string(), "  ? (?) · probe · ? · 0 tok");
++        assert_eq!(
++            hud.lines(80)[0].to_string(),
++            "  ? (?) [general] · probe · ? · 0 tok"
++        );
 +        hud.rows[0].total_tokens = None;
-+        assert_eq!(hud.lines(80)[0].to_string(), "  ? (?) · probe · ? · ? tok");
++        assert_eq!(
++            hud.lines(80)[0].to_string(),
++            "  ? (?) [general] · probe · ? · ? tok"
++        );
 +        hud.rows[0].total_tokens = Some(-1);
 +        assert!(hud.lines(80)[0].to_string().contains("? tok"));
 +    }
@@ -10274,6 +10331,7 @@ index 000000000..5919069c4
 +                    total_tokens: None,
 +                    model: Some("gpt-6.1-sol".to_string()),
 +                    reasoning_effort,
++                    agent_role: None,
 +                }],
 +                false,
 +                true,
@@ -10281,7 +10339,7 @@ index 000000000..5919069c4
 +            assert!(
 +                hud.lines(80)[0]
 +                    .to_string()
-+                    .starts_with(&format!("  GPT-6.1-Sol ({expected}) ·"))
++                    .starts_with(&format!("  GPT-6.1-Sol ({expected}) [general] ·"))
 +            );
 +            let area = Rect::new(0, 0, 80, 2);
 +            let mut buf = Buffer::empty(area);
@@ -10307,6 +10365,78 @@ index 000000000..5919069c4
 +            total_tokens: Some(tokens),
 +            model: Some("gpt-6.1-sol".into()),
 +            reasoning_effort: Some(ReasoningEffort::High),
++            agent_role: None,
++        }
++    }
++
++    #[test]
++    fn worker_hud_role_prefix_preserves_custom_roles_and_narrow_task_metrics() {
++        let mut hud = WorkerHud::default();
++        for role in [
++            None,
++            Some("worker"),
++            Some("explorer"),
++            Some("tester"),
++            Some("release_reviewer"),
++        ] {
++            let mut row = grouped_member("unused", WorkerState::Active, 80, 25_000);
++            row.group = None;
++            row.agent_role = role.map(str::to_string);
++            row.task = "implement fix".into();
++            row.elapsed_secs = Some(80);
++            hud.set(vec![row], false, true);
++            assert_eq!(
++                hud.lines(100)[0].to_string(),
++                format!(
++                    "  GPT-6.1-Sol (high) [{}] · implement fix · 1:20 · 25K tok",
++                    role.unwrap_or("general")
++                )
++            );
++        }
++        hud.rows[0].agent_role = Some("worker".into());
++        hud.rows[0].task = "测试 long task ".repeat(20);
++        let line = hud.lines(65)[0].to_string();
++        assert!(line.starts_with("  GPT-6.1-Sol (high) [worker] · 测试"));
++        assert!(line.contains('…'));
++        assert!(line.ends_with(" · 1:20 · 25K tok"));
++        assert!(display_width(&line) <= 65);
++        let area = Rect::new(0, 0, 65, 1);
++        let mut buf = Buffer::empty(area);
++        hud.render(area, &mut buf);
++        let rendered: String = (0..65).map(|x| buf[(x, 0)].symbol()).collect();
++        assert!(rendered.contains("[worker] · "));
++        assert!(rendered.contains("1:20 · 25K tok"));
++    }
++
++    #[test]
++    fn worker_hud_group_role_uses_only_active_and_waiting_members() {
++        let mut hud = WorkerHud::default();
++        for (first, second, expected) in [
++            (Some("worker"), Some("worker"), "worker"),
++            (Some("explorer"), Some("tester"), "mixed"),
++            (Some("worker"), None, "general"),
++            (None, Some("worker"), "general"),
++            (Some("general"), Some("worker"), "mixed"),
++        ] {
++            let mut active = grouped_member("b1", WorkerState::Active, 120, 1000);
++            active.agent_role = first.map(str::to_string);
++            let mut waiting = grouped_member("b1", WorkerState::Approval, 90, 2000);
++            waiting.agent_role = second.map(str::to_string);
++            let mut done = grouped_member("b1", WorkerState::Done, 150, 3000);
++            done.agent_role = Some("release_reviewer".into());
++            hud.set(vec![active, waiting, done], false, true);
++            assert_eq!(
++                hud.lines(120)[0].to_string(),
++                format!(
++                    "  GPT-6.1-Sol (high) [{expected}] · hud styling (2 agents) · wait approval · 2:30 · 6K tok"
++                )
++            );
++            hud.rows[2].agent_role = None;
++            assert!(
++                hud.lines(120)[0]
++                    .to_string()
++                    .contains(&format!("[{expected}] ·"))
++            );
 +        }
 +    }
 +
@@ -10321,11 +10451,11 @@ index 000000000..5919069c4
 +        for remaining in (0..=3).rev() {
 +            hud.set(rows.clone(), false, true);
 +            if remaining == 0 {
-+                assert!(hud.lines(80).is_empty());
-+                assert_eq!(hud.desired_height(80), 0);
++                assert!(hud.lines(100).is_empty());
++                assert_eq!(hud.desired_height(100), 0);
 +            } else {
-+                assert_eq!(hud.desired_height(80), 1);
-+                let lines = hud.lines(80);
++                assert_eq!(hud.desired_height(100), 1);
++                let lines = hud.lines(100);
 +                assert_eq!(lines.len(), 1);
 +                let state = if remaining == 1 {
 +                    "wait input"
@@ -10336,7 +10466,7 @@ index 000000000..5919069c4
 +                assert_eq!(
 +                    lines[0].to_string(),
 +                    format!(
-+                        "  GPT-6.1-Sol (high) · hud styling ({remaining} agent{suffix}) · {state} · 2:00 · 6K tok"
++                        "  GPT-6.1-Sol (high) [general] · hud styling ({remaining} agent{suffix}) · {state} · 2:00 · 6K tok"
 +                    )
 +                );
 +                rows[3 - remaining].state = WorkerState::Idle;

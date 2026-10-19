@@ -143,7 +143,7 @@ def composer_ready(text):
 
 def worker_rows(text):
     return [line.strip() for line in text.splitlines()
-            if re.fullmatch(r'[^·›>]+ \([^()·›>]*\) · '
+            if re.fullmatch(r'[^·›>]+ \([^()·›>]*\)(?: \[[^\]·›>]*\])? · '
                             r'.+ · (?:\d+:\d{2}|\?)(?: · (?:\?|[\d,.]+[kKmMbBtT]?)'
                             r'(?: (?:t|to|tok))?)?', line.strip())]
 
