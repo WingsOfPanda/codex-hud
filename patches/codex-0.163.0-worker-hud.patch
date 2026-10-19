@@ -13789,7 +13789,7 @@ index 692eba105..54808699b 100644
      pub(crate) fn set_status_line_hyperlink(&mut self, url: Option<String>) {
          self.bottom_pane.set_status_line_hyperlink(url);
 diff --git a/codex-rs/tui/src/chatwidget/status_surfaces.rs b/codex-rs/tui/src/chatwidget/status_surfaces.rs
-index a3946abd1..e5e409568 100644
+index a3946abd1..913b08195 100644
 --- a/codex-rs/tui/src/chatwidget/status_surfaces.rs
 +++ b/codex-rs/tui/src/chatwidget/status_surfaces.rs
 @@ -205,6 +205,7 @@ impl ChatWidget {
@@ -13846,7 +13846,7 @@ index a3946abd1..e5e409568 100644
 +    fn ultracode_status_label(&self) -> Option<String> {
 +        self.thread_id.and_then(|root| {
 +            match crate::plus_ultracode::read(self.config.codex_home.as_path(), root) {
-+                Ok(Some(snapshot)) => Some(snapshot.footer_label().into()),
++                Ok(Some(snapshot)) => snapshot.footer_label().map(str::to_owned),
 +                Ok(None) | Err(_) => None,
 +            }
 +        })
@@ -14900,7 +14900,7 @@ index 25210e0ac..08c79bad7 100644
  
    GPT-5.5 default · /tmp/project
 diff --git a/codex-rs/tui/src/chatwidget/tests/status_and_layout.rs b/codex-rs/tui/src/chatwidget/tests/status_and_layout.rs
-index 301b55c2c..c27978f15 100644
+index 301b55c2c..ac40d5291 100644
 --- a/codex-rs/tui/src/chatwidget/tests/status_and_layout.rs
 +++ b/codex-rs/tui/src/chatwidget/tests/status_and_layout.rs
 @@ -116,7 +116,11 @@ async fn resumed_session_hides_unknown_token_usage_until_an_update_arrives() {
@@ -15277,7 +15277,7 @@ index 301b55c2c..c27978f15 100644
      );
      chat.turn_lifecycle
          .budget_limited_turn_ids
-@@ -5883,3 +6042,106 @@ async fn chatwidget_tall() {
+@@ -5883,3 +6042,109 @@ async fn chatwidget_tall() {
          normalize_snapshot_paths(term.backend().vt100().screen().contents())
      );
  }
@@ -15306,11 +15306,11 @@ index 301b55c2c..c27978f15 100644
 +        "availability":"available","pending":[]
 +    });
 +    for (enabled, availability, revision, expected) in [
-+        (true, "available", 1, "ultracode on"),
-+        (true, "available", 2, "ultracode on"),
-+        (true, "unavailable", 2, "ultracode on"),
-+        (false, "available", 2, "ultracode off"),
-+        (false, "unavailable", 2, "ultracode off"),
++        (true, "available", 1, Some("ultracode")),
++        (true, "available", 2, Some("ultracode")),
++        (true, "unavailable", 2, Some("ultracode")),
++        (false, "available", 2, None),
++        (false, "unavailable", 2, None),
 +    ] {
 +        projection["availability"] = availability.into();
 +        projection["requested"]["enabled"] = enabled.into();
@@ -15318,11 +15318,14 @@ index 301b55c2c..c27978f15 100644
 +        std::fs::write(&path, projection.to_string()).unwrap();
 +        let before = std::fs::read(&path).unwrap();
 +        chat.refresh_ultracode_status();
-+        assert!(status_line_text(&chat).unwrap().contains(expected));
-+        assert!(
-+            status_line_text(&chat)
-+                .unwrap()
-+                .contains(&format!("{} {expected}", chat.model_display_name()))
++        assert_eq!(chat.ultracode_status_label().as_deref(), expected);
++        assert_eq!(
++            status_line_text(&chat).unwrap(),
++            format!(
++                "{}{}",
++                chat.model_display_name(),
++                if enabled { " ultracode" } else { "" }
++            )
 +        );
 +        assert_eq!(std::fs::read(&path).unwrap(), before);
 +        assert_eq!(chat.desired_height(100), height);
@@ -15337,7 +15340,7 @@ index 301b55c2c..c27978f15 100644
 +            .iter()
 +            .map(|cell| cell.symbol())
 +            .collect::<String>();
-+        assert!(rendered.contains(expected), "{rendered:?}");
++        assert_eq!(rendered.contains("ultracode"), enabled, "{rendered:?}");
 +        assert!(rendered.contains("Goal active"), "{rendered:?}");
 +        assert_eq!(chat.bottom_pane.composer_text(), "editable draft");
 +        assert_no_submit_op(&mut op_rx);
@@ -15367,13 +15370,13 @@ index 301b55c2c..c27978f15 100644
 +            .unwrap();
 +        chat.refresh_ultracode_status();
 +        let text = status_line_text(&chat).unwrap();
-+        assert!(text.contains(&format!("{model} ultracode on")), "{text}");
++        assert!(text.contains(&format!("{model} ultracode")), "{text}");
 +        assert_eq!(text.matches("ultracode").count(), 1);
 +        assert_eq!(chat.configured_status_line_items(), items);
 +    }
 +    chat.local_settings.tui.status_line = Some(vec!["weekly-reset".into()]);
 +    chat.refresh_ultracode_status();
-+    assert_eq!(status_line_text(&chat).unwrap(), "ultracode on");
++    assert_eq!(status_line_text(&chat).unwrap(), "ultracode");
 +    assert_eq!(
 +        chat.bottom_pane.status_line_stats_text().as_deref(),
 +        Some("reset unknown")
@@ -16798,10 +16801,10 @@ index 000000000..557176b27
 +}
 diff --git a/codex-rs/tui/src/plus_ultracode.rs b/codex-rs/tui/src/plus_ultracode.rs
 new file mode 100644
-index 000000000..1ba211a78
+index 000000000..375ffdc02
 --- /dev/null
 +++ b/codex-rs/tui/src/plus_ultracode.rs
-@@ -0,0 +1,466 @@
+@@ -0,0 +1,455 @@
 +//! Mode state belongs to the helper; footer refresh only reads its projection.
 +use codex_protocol::ThreadId;
 +use serde::Deserialize;
@@ -16890,12 +16893,8 @@ index 000000000..1ba211a78
 +        Ok(())
 +    }
 +
-+    pub(crate) fn footer_label(&self) -> &'static str {
-+        if self.requested.enabled {
-+            "ultracode on"
-+        } else {
-+            "ultracode off"
-+        }
++    pub(crate) fn footer_label(&self) -> Option<&'static str> {
++        self.requested.enabled.then_some("ultracode")
 +    }
 +
 +    pub(crate) fn label(&self) -> Option<String> {
@@ -17154,14 +17153,7 @@ index 000000000..1ba211a78
 +                            serde_json::json!({"enabled":enabled,"revision":1,"policy_version":1,"submission":"s","turn":"t","generation":"g"})
 +                        });
 +                        let snapshot: Snapshot = serde_json::from_value(value).unwrap();
-+                        assert_eq!(
-+                            snapshot.footer_label(),
-+                            if enabled {
-+                                "ultracode on"
-+                            } else {
-+                                "ultracode off"
-+                            }
-+                        );
++                        assert_eq!(snapshot.footer_label(), enabled.then_some("ultracode"));
 +                    }
 +                }
 +            }

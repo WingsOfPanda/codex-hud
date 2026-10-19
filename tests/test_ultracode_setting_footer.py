@@ -76,7 +76,7 @@ with tempfile.TemporaryDirectory(prefix='plus-setting-') as temporary:
                     terminal.read()
                 labels = [m.group().strip().lower() for line in footer(terminal) if ROOT in line
                           for m in [re.search(r'\bultracode[^·]*', line, re.I)] if m]
-                expected = [] if not selection else ['ultracode ' + ('on' if enabled else 'off')]
+                expected = ['ultracode'] if selection and enabled else []
                 case = dict(selection=selection_name, state=name, expected=expected, actual=labels)
                 report['cases'].append(case)
                 if labels != expected:

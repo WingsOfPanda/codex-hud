@@ -9,12 +9,12 @@ completion wakes. It adds no workflow scripting engine or model polling loop.
 
 Use `/ultracode on`, `/ultracode off` or `/ultracode status` in a qualified local
 Plus root TUI. Remote workspaces, side conversations and unqualified forks are
-outside this first version. The existing status line shows the saved requested
-setting as `ultracode on` or `ultracode off`; the activity strip keeps its six-row
-limit. Turning mode off preserves workers,
+outside this first version. The existing status line shows `ultracode` when the
+saved requested setting is on and omits the badge when it is off; the activity
+strip keeps its six-row limit. Turning mode off preserves workers,
 jobs and their result delivery. Native Ultra effort retains its upstream meaning.
 The mode appears beside the model and effort, for example
-`GPT-6-Astra high ultracode on`. It prefers the model-with-reasoning item, falls back
+`GPT-6-Astra high ultracode`. It prefers the model-with-reasoning item, falls back
 to the model item, and appears only once when both are selected. A status line
 without either model item gets a standalone mode label; an explicitly disabled
 status line stays disabled. Missing or unreadable mode projections omit the badge.
