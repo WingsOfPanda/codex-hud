@@ -694,6 +694,57 @@ fn lost_initialized_resource_registry_refuses_new_claims_and_maintenance_scan() 
 }
 
 #[test]
+fn group_scan_skips_vanished_stat_and_still_detects_live_members() {
+    let fixture = tempfile::tempdir().unwrap();
+    for pid in [1, 2] {
+        fs::create_dir(fixture.path().join(pid.to_string())).unwrap();
+    }
+    // Assign roles in directory order, so the vanished process is scanned first.
+    let entries: Vec<_> = fs::read_dir(fixture.path())
+        .unwrap()
+        .map(|entry| entry.unwrap().path())
+        .collect();
+    let vanished = entries[0].join("stat");
+    let live = entries[1].join("stat");
+    let mut child = Command::new("/bin/sleep").arg("30").spawn().unwrap();
+    let stat = File::open(format!("/proc/{}/stat", child.id())).unwrap();
+    child.kill().unwrap();
+    child.wait().unwrap();
+    std::os::unix::fs::symlink(format!("/proc/self/fd/{}", stat.as_raw_fd()), &vanished).unwrap();
+    assert_eq!(
+        fs::read_to_string(&vanished).unwrap_err().raw_os_error(),
+        Some(libc::ESRCH)
+    );
+    let own = identity(std::process::id()).unwrap();
+    let groups = BTreeSet::from([(own.pgid, own.sid)]);
+    assert!(!live_groups_at(&groups, fixture.path()).unwrap());
+
+    std::os::unix::fs::symlink(format!("/proc/{}/stat", own.pid), &live).unwrap();
+    assert_eq!(
+        fs::read_dir(fixture.path())
+            .unwrap()
+            .next()
+            .unwrap()
+            .unwrap()
+            .path(),
+        entries[0]
+    );
+    assert!(live_groups_at(&groups, fixture.path()).unwrap());
+
+    fs::remove_file(&vanished).unwrap();
+    assert!(live_groups_at(&groups, fixture.path()).unwrap());
+    fs::write(&vanished, "invalid process metadata").unwrap();
+    assert!(live_groups_at(&groups, fixture.path()).is_err());
+    fs::remove_file(&vanished).unwrap();
+    std::os::unix::fs::symlink("stat", &vanished).unwrap();
+    let error = live_groups_at(&groups, fixture.path()).unwrap_err();
+    assert_eq!(
+        error.downcast_ref::<io::Error>().unwrap().raw_os_error(),
+        Some(libc::ELOOP)
+    );
+}
+
+#[test]
 fn cancellation_escalates_owned_descendants_or_keeps_visible_cleanup_unknown() {
     for grace in [Some(1), None] {
         let (temp, root, mut record, dir) = setup(
