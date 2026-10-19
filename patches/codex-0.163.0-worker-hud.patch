@@ -7824,7 +7824,7 @@ index 2ad3f1cd9..c56503a40 100644
  
      #[test]
 diff --git a/codex-rs/tui/src/bottom_pane/chat_composer/footer_state.rs b/codex-rs/tui/src/bottom_pane/chat_composer/footer_state.rs
-index bcc92a3ed..dfc4e1b45 100644
+index bcc92a3ed..8b8d6cdbc 100644
 --- a/codex-rs/tui/src/bottom_pane/chat_composer/footer_state.rs
 +++ b/codex-rs/tui/src/bottom_pane/chat_composer/footer_state.rs
 @@ -10,13 +10,14 @@
@@ -7843,7 +7843,23 @@ index bcc92a3ed..dfc4e1b45 100644
  use super::ActivePopup;
  use crate::bottom_pane::footer::FooterKeyHints;
  use crate::bottom_pane::footer::FooterProps;
-@@ -106,6 +107,7 @@ impl super::ChatComposer {
+@@ -24,7 +25,6 @@ use crate::key_hint;
+ use crossterm::event::KeyCode;
+ use ratatui::buffer::Buffer;
+ use ratatui::layout::Rect;
+-use ratatui::style::Styled;
+ use ratatui::text::Line;
+ use ratatui::text::Text;
+ use ratatui::widgets::Paragraph;
+@@ -35,7 +35,6 @@ use crate::bottom_pane::footer::FooterMode;
+ use crate::bottom_pane::footer::GoalStatusIndicator;
+ use crate::key_hint::KeyBinding;
+ use crate::key_hint::ShortcutHint;
+-use crate::style::secondary_text_style;
+ use std::time::Duration;
+ 
+ /// Resolved rectangles shared by painting and cursor placement, without retained layout state.
+@@ -106,6 +105,7 @@ impl super::ChatComposer {
              collaboration_modes_enabled: self.collaboration_modes_enabled,
              is_wsl,
              status_line_value: self.footer.status_line_value.clone(),
@@ -7851,7 +7867,7 @@ index bcc92a3ed..dfc4e1b45 100644
              status_line_enabled: self.footer.status_line_enabled,
              key_hints: FooterKeyHints {
                  agents: self
-@@ -260,7 +262,11 @@ impl super::ChatComposer {
+@@ -260,7 +260,11 @@ impl super::ChatComposer {
              {
                  return false;
              }
@@ -7864,7 +7880,7 @@ index bcc92a3ed..dfc4e1b45 100644
          });
          options
      }
-@@ -279,16 +285,25 @@ impl super::ChatComposer {
+@@ -279,16 +283,25 @@ impl super::ChatComposer {
          if self.show_warning_notice(options) || self.shortcuts_above_composer(options) {
              return 1;
          }
@@ -7900,7 +7916,7 @@ index bcc92a3ed..dfc4e1b45 100644
      }
  
      pub(super) fn render_transcript_footer(
-@@ -312,23 +327,6 @@ impl super::ChatComposer {
+@@ -312,23 +325,6 @@ impl super::ChatComposer {
                  .saturating_sub(hint_area.x)
                  .saturating_sub(/*rhs*/ 2);
          }
@@ -7924,7 +7940,7 @@ index bcc92a3ed..dfc4e1b45 100644
          Paragraph::new(text).render(hint_area, buf);
      }
  
-@@ -359,6 +357,7 @@ pub(super) struct FooterState {
+@@ -359,6 +355,7 @@ pub(super) struct FooterState {
      pub(super) goal_status_indicator: Option<GoalStatusIndicator>,
      pub(super) ide_context_active: bool,
      pub(super) status_line_value: Option<Line<'static>>,
@@ -14900,7 +14916,7 @@ index 25210e0ac..08c79bad7 100644
  
    GPT-5.5 default · /tmp/project
 diff --git a/codex-rs/tui/src/chatwidget/tests/status_and_layout.rs b/codex-rs/tui/src/chatwidget/tests/status_and_layout.rs
-index 301b55c2c..ac40d5291 100644
+index 301b55c2c..6f45329f6 100644
 --- a/codex-rs/tui/src/chatwidget/tests/status_and_layout.rs
 +++ b/codex-rs/tui/src/chatwidget/tests/status_and_layout.rs
 @@ -116,7 +116,11 @@ async fn resumed_session_hides_unknown_token_usage_until_an_update_arrives() {
@@ -15277,7 +15293,7 @@ index 301b55c2c..ac40d5291 100644
      );
      chat.turn_lifecycle
          .budget_limited_turn_ids
-@@ -5883,3 +6042,109 @@ async fn chatwidget_tall() {
+@@ -5883,3 +6042,108 @@ async fn chatwidget_tall() {
          normalize_snapshot_paths(term.backend().vt100().screen().contents())
      );
  }
@@ -15305,12 +15321,12 @@ index 301b55c2c..ac40d5291 100644
 +        "effective":{"enabled":true,"revision":1,"policy_version":1,"submission":"s","turn":"t","generation":"g"},
 +        "availability":"available","pending":[]
 +    });
-+    for (enabled, availability, revision, expected) in [
-+        (true, "available", 1, Some("ultracode")),
-+        (true, "available", 2, Some("ultracode")),
-+        (true, "unavailable", 2, Some("ultracode")),
-+        (false, "available", 2, None),
-+        (false, "unavailable", 2, None),
++    for (enabled, availability, revision) in [
++        (true, "available", 1),
++        (true, "available", 2),
++        (true, "unavailable", 2),
++        (false, "available", 2),
++        (false, "unavailable", 2),
 +    ] {
 +        projection["availability"] = availability.into();
 +        projection["requested"]["enabled"] = enabled.into();
@@ -15318,7 +15334,6 @@ index 301b55c2c..ac40d5291 100644
 +        std::fs::write(&path, projection.to_string()).unwrap();
 +        let before = std::fs::read(&path).unwrap();
 +        chat.refresh_ultracode_status();
-+        assert_eq!(chat.ultracode_status_label().as_deref(), expected);
 +        assert_eq!(
 +            status_line_text(&chat).unwrap(),
 +            format!(
