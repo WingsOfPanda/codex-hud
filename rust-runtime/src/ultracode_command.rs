@@ -58,7 +58,16 @@ pub(crate) fn reconcile_turn(
             "thread/items/list",
             json!({"threadId":root,"turnId":turn,"sortDirection":"asc"}),
         ) {
-            Ok(items) => break items,
+            Ok(items) => {
+                initial_submission(&items, turn)?;
+                if items
+                    .iter()
+                    .any(|item| item["item"]["type"] == "userMessage")
+                    || retries == 3
+                {
+                    break items;
+                }
+            }
             Err(error) => {
                 let temporary = error
                     .downcast_ref::<crate::rpc::RpcError>()
@@ -71,10 +80,10 @@ pub(crate) fn reconcile_turn(
                 if !temporary || retries == 3 {
                     return Err(error);
                 }
-                retries += 1;
-                std::thread::sleep(Duration::from_millis(100));
             }
         }
+        retries += 1;
+        std::thread::sleep(Duration::from_millis(100));
     };
     let submission =
         initial_submission(&items, turn)?.context("initial user submission is not yet visible")?;
