@@ -9518,7 +9518,7 @@ index 9567424fb..fc268784d 100644
      fn project_name_is_canonical_and_accepts_legacy_ids() {
          assert_eq!(StatusLineItem::ProjectRoot.to_string(), "project-name");
 diff --git a/codex-rs/tui/src/bottom_pane/status_line_style.rs b/codex-rs/tui/src/bottom_pane/status_line_style.rs
-index 6ef9003c5..f89229603 100644
+index 6ef9003c5..0253dd334 100644
 --- a/codex-rs/tui/src/bottom_pane/status_line_style.rs
 +++ b/codex-rs/tui/src/bottom_pane/status_line_style.rs
 @@ -1,4 +1,4 @@
@@ -9646,7 +9646,7 @@ index 6ef9003c5..f89229603 100644
                      (
                          StatusLineItem::Permissions,
                          "Custom permissions".to_string(),
-@@ -402,15 +428,103 @@ mod tests {
+@@ -402,22 +428,197 @@ mod tests {
          });
      }
  
@@ -9667,11 +9667,7 @@ index 6ef9003c5..f89229603 100644
 +        (243, 139, 168),
 +    ];
 +
-     #[test]
--    fn status_line_theme_colors_at_limited_color_depths() {
--        use ratatui::buffer::Buffer;
--        use ratatui::layout::Rect;
--        use ratatui::widgets::Widget;
++    #[test]
 +    fn semantic_status_line_palette_is_distinct_on_light_and_dark_terminals() {
 +        for (fg, bg) in [
 +            ((255, 255, 255), (0, 0, 0)),
@@ -9745,75 +9741,38 @@ index 6ef9003c5..f89229603 100644
 +            );
 +        }
 +    }
- 
-+    #[test]
-+    fn status_line_theme_colors_at_limited_color_depths() {
-         const CHILD: &str = "CODEX_STATUS_LINE_COLOR_TEST_CHILD";
-         let Ok(level) = std::env::var(CHILD) else {
--            for level in ["0", "1"] {
++
+     #[test]
+     fn status_line_theme_colors_at_limited_color_depths() {
++        const CHILD: &str = "CODEX_STATUS_LINE_COLOR_TEST_CHILD";
++        let Ok(level) = std::env::var(CHILD) else {
 +            for level in ["0", "1", "2", "3"] {
-                 let output = std::process::Command::new(std::env::current_exe().unwrap())
-                     .args([
-                         "--exact",
-@@ -418,6 +532,8 @@ mod tests {
-                     ])
-                     .env(CHILD, level)
-                     .env("FORCE_COLOR", level)
++                let output = std::process::Command::new(std::env::current_exe().unwrap())
++                    .args([
++                        "--exact",
++                        "bottom_pane::status_line_style::tests::status_line_theme_colors_at_limited_color_depths",
++                    ])
++                    .env(CHILD, level)
++                    .env("FORCE_COLOR", level)
 +                    .env("TERM", "dumb")
 +                    .env_remove("NO_COLOR")
-                     .output()
-                     .unwrap();
-                 assert!(
-@@ -429,52 +545,59 @@ mod tests {
-             }
-             return;
-         };
--        let theme = crate::render::highlight::resolve_theme_by_name(
--            "coldark-dark",
--            /*codex_home*/ None,
--        )
--        .unwrap();
--        crate::render::highlight::set_syntax_theme(theme);
--        let line = status_line_from_segments(
--            [
--                (StatusLineItem::ModelName, "gpt-5".to_string()),
--                (StatusLineItem::CurrentDir, "~/code".to_string()),
--                (StatusLineItem::UsedTokens, "12k tokens".to_string()),
--            ],
++                    .output()
++                    .unwrap();
++                assert!(
++                    output.status.success(),
++                    "level {level}: {}\n{}",
++                    String::from_utf8_lossy(&output.stdout),
++                    String::from_utf8_lossy(&output.stderr)
++                );
++            }
++            return;
++        };
 +        let line = status_line_from_segments_with_resolver(
 +            PALETTE_ITEMS.map(|item| (item, "item".to_owned())),
-             /*use_theme_colors*/ true,
-             /*thread_id*/ None,
++            /*use_theme_colors*/ true,
++            /*thread_id*/ None,
 +            |_| Some(Style::default().red()),
-         )
--        .expect("status line");
--        if level == "0" {
--            assert_eq!(
--                line.spans
--                    .iter()
--                    .map(|span| span.style.fg)
--                    .collect::<Vec<_>>(),
--                vec![Some(Color::Reset); line.spans.len()]
--            );
--        } else {
--            let area = Rect::new(
--                /*x*/ 0, /*y*/ 0, /*width*/ 30, /*height*/ 1,
--            );
--            let mut buffer = Buffer::empty(area);
--            line.render(area, &mut buffer);
--            insta::assert_snapshot!(format!("{buffer:?}"), @r###"
--            Buffer {
--                area: Rect { x: 0, y: 0, width: 30, height: 1 },
--                content: [
--                    "gpt-5 · ~/code · 12k tokens   ",
--                ],
--                styles: [
--                    x: 0, y: 0, fg: Cyan, bg: Reset, underline: Reset, modifier: NONE,
--                    x: 5, y: 0, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
--                    x: 8, y: 0, fg: Green, bg: Reset, underline: Reset, modifier: NONE,
--                    x: 14, y: 0, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
--                    x: 17, y: 0, fg: Green, bg: Reset, underline: Reset, modifier: NONE,
--                    x: 27, y: 0, fg: Reset, bg: Reset, underline: Reset, modifier: NONE,
++        )
 +        .expect("semantic status line");
 +        let colors: Vec<_> = line
 +            .spans
@@ -9832,9 +9791,7 @@ index 6ef9003c5..f89229603 100644
 +                    Color::Yellow,
 +                    Color::Magenta,
 +                    Color::Red,
-                 ]
--            }
--            "###);
++                ]
 +                .map(Some)
 +            ),
 +            "2" => assert!(
@@ -9848,7 +9805,7 @@ index 6ef9003c5..f89229603 100644
 +        if level != "0" {
 +            let distinct: HashSet<_> = colors.iter().collect();
 +            assert_eq!(distinct.len(), 6);
-         }
++        }
 +        assert!(
 +            line.spans
 +                .iter()
@@ -9864,8 +9821,42 @@ index 6ef9003c5..f89229603 100644
 +                .add_modifier
 +                .contains(Modifier::UNDERLINED)
 +        );
-     }
- }
++    }
++
++    #[test]
++    fn status_line_unmodified_items_keep_theme_colors_at_limited_depths() {
+         use ratatui::buffer::Buffer;
+         use ratatui::layout::Rect;
+         use ratatui::widgets::Widget;
+ 
+-        const CHILD: &str = "CODEX_STATUS_LINE_COLOR_TEST_CHILD";
++        const CHILD: &str = "CODEX_STATUS_LINE_THEME_COLOR_TEST_CHILD";
+         let Ok(level) = std::env::var(CHILD) else {
+             for level in ["0", "1"] {
+                 let output = std::process::Command::new(std::env::current_exe().unwrap())
+                     .args([
+                         "--exact",
+-                        "bottom_pane::status_line_style::tests::status_line_theme_colors_at_limited_color_depths",
++                        "bottom_pane::status_line_style::tests::status_line_unmodified_items_keep_theme_colors_at_limited_depths",
+                     ])
+                     .env(CHILD, level)
+                     .env("FORCE_COLOR", level)
++                    .env("TERM", "dumb")
++                    .env_remove("NO_COLOR")
+                     .output()
+                     .unwrap();
+                 assert!(
+@@ -437,8 +638,8 @@ mod tests {
+         crate::render::highlight::set_syntax_theme(theme);
+         let line = status_line_from_segments(
+             [
+-                (StatusLineItem::ModelName, "gpt-5".to_string()),
+-                (StatusLineItem::CurrentDir, "~/code".to_string()),
++                (StatusLineItem::Reasoning, "gpt-5".to_string()),
++                (StatusLineItem::ProjectRoot, "~/code".to_string()),
+                 (StatusLineItem::UsedTokens, "12k tokens".to_string()),
+             ],
+             /*use_theme_colors*/ true,
 diff --git a/codex-rs/tui/src/bottom_pane/status_surface_preview.rs b/codex-rs/tui/src/bottom_pane/status_surface_preview.rs
 index 7389236c0..3fbed4438 100644
 --- a/codex-rs/tui/src/bottom_pane/status_surface_preview.rs
