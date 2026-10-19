@@ -4,6 +4,25 @@ Target: Codex 0.163.0, commit
 `83086188ae0614bd882818ff1aa23f3194962012`, Linux x86_64 and ARM64,
 Rust 1.99.1. Keep the ordinary installed Codex and global configuration intact.
 
+## Expanded footer candidate gate
+
+The prepared footer change raises the activity budget to six rows independently
+of the two status rows. Automatic queue/shortcut/Escape hints disappear; explicit
+help/search, warnings, operational state and `esc to interrupt` remain. A normal
+footer has at most eight nonempty rows below the prompt; explicit help/search may
+add its own row. This is incompatible with AP's former six-line readiness scan;
+fleet rollout requires the cursor/busy-indicator integration gate.
+
+Run `tests/test_footer_rows_tui.py --source SOURCE --binary CANDIDATE --evidence NEW_DIRECTORY`
+using the private native-smoke Python environment. The sealed contract covers
+idle, busy draft, narrow busy draft and explicit help, requiring visible worker,
+native-shell and detached-job categories plus separate Advisor/overflow rows,
+exact hidden counts, editable input, and no model requests. Run native worker-HUD,
+composer footer/status-surface tests and the updated smoke/fixture suites too.
+Reconstruct the frontend patch cleanly and verify the original daemon sources.
+Source preparation and old-version red evidence do not establish candidate
+acceptance. The release evidence below retains the limits verified at that time.
+
 ## Current release acceptance
 
 ### Short background topics

@@ -84,15 +84,15 @@ def config_and_selection(binary, root, evidence):
         'tui.alternate_screen="always"\n'
         f'[projects."{workspace}"]\ntrust_level="trusted"\n')
     (home / 'auth.json').write_text('{"OPENAI_API_KEY":"isolated-fixture-only"}')
-    server = AppServer('00000000-0000-0000-0016-000000000001', workspace, 6)
+    server = AppServer('00000000-0000-0000-0016-000000000001', workspace, 9)
     terminal = None
     geometry = {}
     try:
         terminal = private_terminal(binary, home, workspace, server.url)
         wait([terminal], lambda: '+4 more' in terminal.text and composer_ready(terminal.text),
-             'three-row HUD and native footer did not initialize', 30)
-        assert_compact_hud(terminal.text, rows=3)
-        geometry['three_rows'] = copy_footer(terminal, evidence, 'selection-three-rows')
+             'six-row HUD and native footer did not initialize', 30)
+        assert_compact_hud(terminal.text, rows=6)
+        geometry['six_rows'] = copy_footer(terminal, evidence, 'selection-six-rows')
 
         draft = 'config-preserved-draft'
         os.write(terminal.master, draft.encode())
@@ -115,10 +115,10 @@ def config_and_selection(binary, root, evidence):
         os.write(terminal.master, b'\x1b[27u')
         wait([terminal], lambda: 'Configuration' not in terminal.text and 'Workers stale' in terminal.text,
              '/config did not close onto the refreshed warning/overflow HUD')
-        assert_compact_hud(terminal.text, rows=3)
+        assert_compact_hud(terminal.text, rows=6)
         os.write(terminal.master, b'\x19')
         wait([terminal], lambda: draft in terminal.text, '/config lost the native killed draft')
-        assert_compact_hud(terminal.text, rows=3)
+        assert_compact_hud(terminal.text, rows=6)
         (evidence / 'config-restored-draft-screen.txt').write_text(terminal.text + '\n')
 
         os.write(terminal.master, b'\x01\x0b')
@@ -132,7 +132,7 @@ def config_and_selection(binary, root, evidence):
              and '+4 more' not in terminal.text, 'completed workers did not collapse the HUD')
         assert_compact_hud(terminal.text, rows=0)
         geometry['zero_rows'] = copy_footer(terminal, evidence, 'selection-zero-rows')
-        assert geometry['three_rows']['row'] != geometry['zero_rows']['row'], geometry
+        assert geometry['six_rows']['row'] != geometry['zero_rows']['row'], geometry
 
         server.shells = [server.shell(163, 'footer-geometry-held-command')]
         wait([terminal], lambda: len(shell_rows(terminal.text)) == 1,

@@ -10,7 +10,7 @@ completion wakes. It adds no workflow scripting engine or model polling loop.
 Use `/ultracode on`, `/ultracode off` or `/ultracode status` in a qualified local
 Plus root TUI. Remote workspaces, side conversations and unqualified forks are
 outside this first version. The existing status line shows effective, pending or unavailable mode;
-the activity strip keeps its three-row limit. Turning mode off preserves workers,
+the activity strip keeps its six-row limit. Turning mode off preserves workers,
 jobs and their result delivery. Native Ultra effort retains its upstream meaning.
 The mode appears beside the model and effort, for example
 `GPT-6-Astra high ultracode`. It prefers the model-with-reasoning item, falls back

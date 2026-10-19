@@ -7810,7 +7810,7 @@ index 2ad3f1cd9..c56503a40 100644
  
      #[test]
 diff --git a/codex-rs/tui/src/bottom_pane/chat_composer/footer_state.rs b/codex-rs/tui/src/bottom_pane/chat_composer/footer_state.rs
-index bcc92a3ed..b91a5a39c 100644
+index bcc92a3ed..c405d54a7 100644
 --- a/codex-rs/tui/src/bottom_pane/chat_composer/footer_state.rs
 +++ b/codex-rs/tui/src/bottom_pane/chat_composer/footer_state.rs
 @@ -17,6 +17,7 @@ use std::time::Instant;
@@ -7829,7 +7829,20 @@ index bcc92a3ed..b91a5a39c 100644
              status_line_enabled: self.footer.status_line_enabled,
              key_hints: FooterKeyHints {
                  agents: self
-@@ -279,16 +281,25 @@ impl super::ChatComposer {
+@@ -260,7 +262,11 @@ impl super::ChatComposer {
+             {
+                 return false;
+             }
+-            footer.is_interactive || shows_passive_footer_line(&self.footer_props())
++            footer.is_interactive
++                || matches!(
++                    self.footer_mode(),
++                    FooterMode::ComposerEmpty | FooterMode::ComposerHasDraft | FooterMode::EscHint
++                )
+         });
+         options
+     }
+@@ -279,16 +285,35 @@ impl super::ChatComposer {
          if self.show_warning_notice(options) || self.shortcuts_above_composer(options) {
              return 1;
          }
@@ -7848,6 +7861,16 @@ index bcc92a3ed..b91a5a39c 100644
 +                self.custom_footer_height().unwrap_or_else(|| {
 +                    let props = self.hint_footer_props(options);
 +                    if options.separate_status_line
++                        && matches!(
++                            self.footer_mode(),
++                            FooterMode::ComposerEmpty
++                                | FooterMode::ComposerHasDraft
++                                | FooterMode::EscHint
++                        )
++                    {
++                        return 0;
++                    }
++                    if options.separate_status_line
 +                        && shows_passive_footer_line(&props)
 +                        && !self.is_bang_shell_command()
 +                        && self.footer.side_conversation_context_label.is_none()
@@ -7865,7 +7888,31 @@ index bcc92a3ed..b91a5a39c 100644
      }
  
      pub(super) fn render_transcript_footer(
-@@ -359,6 +370,7 @@ pub(super) struct FooterState {
+@@ -312,23 +337,6 @@ impl super::ChatComposer {
+                 .saturating_sub(hint_area.x)
+                 .saturating_sub(/*rhs*/ 2);
+         }
+-        if !footer.is_interactive
+-            && !self.footer.flash_visible()
+-            && self.footer_mode() == FooterMode::ComposerEmpty
+-            && !self.is_in_paste_burst()
+-            && let Some(key) = self.footer.toggle_shortcuts_key
+-            && let Some(line) = text.lines.last_mut()
+-        {
+-            let mut shortcuts = Line::default();
+-            if line.width() > 0 {
+-                shortcuts.push_span(" · ".set_style(secondary_text_style()));
+-            }
+-            shortcuts.extend(key.spans());
+-            shortcuts.push_span(" shortcuts".set_style(secondary_text_style()));
+-            if line.width() + shortcuts.width() <= usize::from(hint_area.width) {
+-                line.extend(shortcuts.spans);
+-            }
+-        }
+         Paragraph::new(text).render(hint_area, buf);
+     }
+ 
+@@ -359,6 +367,7 @@ pub(super) struct FooterState {
      pub(super) goal_status_indicator: Option<GoalStatusIndicator>,
      pub(super) ide_context_active: bool,
      pub(super) status_line_value: Option<Line<'static>>,
@@ -7873,6 +7920,46 @@ index bcc92a3ed..b91a5a39c 100644
      pub(super) status_line_hyperlink_url: Option<String>,
      pub(super) status_line_enabled: bool,
      pub(super) side_conversation_context_label: Option<String>,
+diff --git a/codex-rs/tui/src/bottom_pane/chat_composer/footer_state_tests.rs b/codex-rs/tui/src/bottom_pane/chat_composer/footer_state_tests.rs
+index 5db883b7e..afdd40056 100644
+--- a/codex-rs/tui/src/bottom_pane/chat_composer/footer_state_tests.rs
++++ b/codex-rs/tui/src/bottom_pane/chat_composer/footer_state_tests.rs
+@@ -57,6 +57,25 @@ fn text(buffer: &Buffer) -> String {
+         .join("\n")
+ }
+ 
++#[test]
++fn automatic_hints_hide_while_busy_without_hiding_explicit_help_or_search() {
++    let mut composer = composer();
++    composer.set_task_running(true);
++    composer.set_text_content("editable draft".into(), vec![], vec![]);
++    let options = ComposerRenderOptions {
++        separate_status_line: true,
++        ..Default::default()
++    };
++    assert_eq!(composer.footer_hint_height(80, options), 0);
++    composer.footer.mode = FooterMode::EscHint;
++    assert_eq!(composer.footer_hint_height(80, options), 0);
++    composer.footer.mode = FooterMode::ShortcutOverlay;
++    assert_eq!(composer.footer_hint_height(80, options), 1);
++    composer.footer.mode = FooterMode::HistorySearch;
++    assert!(composer.footer_hint_height(80, options) > 0);
++    assert_eq!(composer.draft.textarea.text(), "editable draft");
++}
++
+ #[test]
+ fn retained_command_suggestions_yield_paint_and_cursor_to_find() {
+     let mut composer = composer();
+diff --git a/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__paste_tests__paste_burst_tab_indentation.snap b/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__paste_tests__paste_burst_tab_indentation.snap
+index f6d632ac8..d243691fc 100644
+--- a/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__paste_tests__paste_burst_tab_indentation.snap
++++ b/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__paste_tests__paste_burst_tab_indentation.snap
+@@ -10,4 +10,4 @@ expression: terminal.backend()
+ "                                                            "
+ "                                                            "
+ "                                                            "
+-"  tab to queue message                   100% context left  "
++"                                         100% context left  "
 diff --git a/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__snapshot_tests__voice_composer.snap b/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__snapshot_tests__voice_composer.snap
 index 3b8930982..e9bbcf22b 100644
 --- a/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__snapshot_tests__voice_composer.snap
@@ -8168,7 +8255,7 @@ index 833484264..ab8479a90 100644
    MODEL · ~/project · Context 20% used                                   Plan mode (⇧tab to cycle)
 -  ? for shortcuts
 diff --git a/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__status_surface__tests__persistent_status_and_messages.snap b/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__status_surface__tests__persistent_status_and_messages.snap
-index c35c2d93e..10a855cf9 100644
+index c35c2d93e..8d27b040f 100644
 --- a/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__status_surface__tests__persistent_status_and_messages.snap
 +++ b/codex-rs/tui/src/bottom_pane/chat_composer/snapshots/codex_tui__bottom_pane__chat_composer__status_surface__tests__persistent_status_and_messages.snap
 @@ -14,7 +14,6 @@ expression: "states.join(\"\\n---\\n\")"
@@ -8179,28 +8266,18 @@ index c35c2d93e..10a855cf9 100644
  ---
  
  
+@@ -56,4 +55,3 @@ expression: "states.join(\"\\n---\\n\")"
+ › Continue the task
+ 
+   MODEL · ~/project · Context 20% used               Plan mode
+-  tab to queue message
 diff --git a/codex-rs/tui/src/bottom_pane/chat_composer/status_surface.rs b/codex-rs/tui/src/bottom_pane/chat_composer/status_surface.rs
-index 60ee2e0fa..9d5dc1b24 100644
+index 60ee2e0fa..11c7115ec 100644
 --- a/codex-rs/tui/src/bottom_pane/chat_composer/status_surface.rs
 +++ b/codex-rs/tui/src/bottom_pane/chat_composer/status_surface.rs
-@@ -5,8 +5,73 @@
- use super::*;
+@@ -6,16 +6,79 @@ use super::*;
  
  impl ChatComposer {
-+    pub(crate) fn worker_hud_row_budget(
-+        &self,
-+        width: u16,
-+        options: ComposerRenderOptions<'_>,
-+    ) -> u16 {
-+        let options = self.resolve_render_options(options);
-+        // Keep the prompt within the fleet idle detector's last six nonempty rows.
-+        5u16.saturating_sub(
-+            self.status_surface_height(options)
-+                .saturating_add(self.footer_hint_height(width, options)),
-+        )
-+        .min(3)
-+    }
-+
      pub(super) fn status_surface_height(&self, options: ComposerRenderOptions<'_>) -> u16 {
 -        u16::from(options.separate_status_line && self.footer.status_line_enabled)
 +        if options.separate_status_line && self.footer.status_line_enabled {
@@ -8258,7 +8335,13 @@ index 60ee2e0fa..9d5dc1b24 100644
      }
  
      pub(super) fn hint_footer_props(&self, options: ComposerRenderOptions<'_>) -> FooterProps {
-@@ -14,8 +79,12 @@ impl ChatComposer {
+         let mut props = self.footer_props();
++        if matches!(
++            props.mode,
++            FooterMode::ComposerHasDraft | FooterMode::EscHint
++        ) {
++            props.mode = FooterMode::ComposerEmpty;
++        }
          if self.status_surface_height(options) > 0 {
              props.status_line_enabled = false;
              props.status_line_value = None;
@@ -8267,11 +8350,13 @@ index 60ee2e0fa..9d5dc1b24 100644
          }
 +        if props.mode != FooterMode::ShortcutOverlay {
 +            props.key_hints.agents = None;
++            props.key_hints.toggle_shortcuts = None;
++            props.key_hints.queue = None;
 +        }
          props
      }
  
-@@ -28,21 +97,49 @@ impl ChatComposer {
+@@ -28,21 +91,49 @@ impl ChatComposer {
          if area.is_empty() {
              return;
          }
@@ -8335,7 +8420,7 @@ index 60ee2e0fa..9d5dc1b24 100644
          let left_width = line
              .as_ref()
              .map_or(/*default*/ 0, |line| line.width() as u16);
-@@ -54,7 +151,7 @@ impl ChatComposer {
+@@ -54,7 +145,7 @@ impl ChatComposer {
          {
              full
          } else {
@@ -8345,7 +8430,7 @@ index 60ee2e0fa..9d5dc1b24 100644
          let right_width = right
              .as_ref()
 diff --git a/codex-rs/tui/src/bottom_pane/chat_composer/status_surface_tests.rs b/codex-rs/tui/src/bottom_pane/chat_composer/status_surface_tests.rs
-index 03e761f4f..3891d8f83 100644
+index 03e761f4f..adc90d677 100644
 --- a/codex-rs/tui/src/bottom_pane/chat_composer/status_surface_tests.rs
 +++ b/codex-rs/tui/src/bottom_pane/chat_composer/status_surface_tests.rs
 @@ -4,6 +4,76 @@ use super::*;
@@ -8353,7 +8438,7 @@ index 03e761f4f..3891d8f83 100644
  use tokio::sync::mpsc::unbounded_channel;
  
 +#[test]
-+fn worker_hud_budget_tracks_status_hints_and_resolved_footer_options() {
++fn status_hints_measure_only_explicit_footer_options() {
 +    let mut composer = composer();
 +    composer.set_status_line_stats(Some("Context 75% left".into()));
 +    let options = ComposerRenderOptions {
@@ -8361,13 +8446,13 @@ index 03e761f4f..3891d8f83 100644
 +        ..Default::default()
 +    };
 +    for width in [0, 12, 80] {
-+        assert_eq!(composer.worker_hud_row_budget(width, options), 3);
++        assert_eq!(composer.footer_hint_height(width, options), 0);
 +    }
 +    composer.footer.mode = FooterMode::ShortcutOverlay;
-+    assert_eq!(composer.worker_hud_row_budget(80, options), 2);
++    assert_eq!(composer.footer_hint_height(80, options), 1);
 +    composer.footer.mode = FooterMode::ComposerEmpty;
 +    composer.begin_history_search();
-+    assert_eq!(composer.worker_hud_row_budget(80, options), 2);
++    assert_eq!(composer.footer_hint_height(80, options), 1);
 +    composer.cancel_history_search();
 +    for rows in 1..=6 {
 +        let footer = TranscriptFooter {
@@ -8380,13 +8465,13 @@ index 03e761f4f..3891d8f83 100644
 +            ..options
 +        };
 +        for width in [12, 80] {
-+            assert_eq!(
-+                composer.worker_hud_row_budget(width, options),
-+                3u16.saturating_sub(rows as u16)
-+            );
++            assert_eq!(composer.footer_hint_height(width, options), rows as u16);
 +        }
 +        composer.set_footer_hint_override(Some(Vec::new()));
-+        assert_eq!(composer.worker_hud_row_budget(80, options), 3);
++        assert_eq!(
++            composer.footer_hint_height(80, composer.resolve_render_options(options)),
++            0
++        );
 +        composer.set_footer_hint_override(None);
 +    }
 +}
@@ -8425,11 +8510,11 @@ index 03e761f4f..3891d8f83 100644
  fn composer() -> ChatComposer {
      let (tx, _rx) = unbounded_channel();
      let mut composer = ChatComposer::new(
-@@ -57,6 +127,53 @@ fn render_with_height(
-     (text, composer.cursor_pos_with_options(area, options))
+@@ -58,7 +128,54 @@ fn render_with_height(
  }
  
-+#[test]
+ #[test]
+-fn passive_activity_keeps_shortcuts_only_when_the_complete_hint_fits() {
 +fn ordinary_hint_row_collapses_without_affecting_status_or_navigation() {
 +    for status_enabled in [true, false] {
 +        let mut composer = composer();
@@ -8476,9 +8561,20 @@ index 03e761f4f..3891d8f83 100644
 +    assert!(!side.contains("for shortcuts"), "{side}");
 +}
 +
- #[test]
- fn passive_activity_keeps_shortcuts_only_when_the_complete_hint_fits() {
++#[test]
++fn passive_activity_keeps_its_state_without_automatic_shortcut_hints() {
      let mut composer = composer();
+     let mut line = Line::from(key_hint::key_label_spans("ctrl+o t/f4"));
+     line.push_span(" inspect activity".dim());
+@@ -68,7 +185,7 @@ fn passive_activity_keeps_shortcuts_only_when_the_complete_hint_fits() {
+         is_interactive: false,
+     };
+     for (width, expected) in [
+-        (80, "ctrl+o t/f4 inspect activity · ? shortcuts"),
++        (80, "ctrl+o t/f4 inspect activity"),
+         (40, "ctrl+o t/f4 inspect activity"),
+     ] {
+         let (text, _) = render(&composer, width, Some(&footer));
 @@ -124,7 +241,7 @@ fn fullscreen_plan_indicator_keeps_the_cycle_hint_when_it_fits() {
      composer.set_status_line(/*status_line*/ None);
      let (empty_narrow, _) = render(&composer, /*width*/ 24, /*footer*/ None);
@@ -8527,7 +8623,15 @@ index 03e761f4f..3891d8f83 100644
  }
  
  #[test]
-@@ -446,3 +563,178 @@ fn activity_shortcut_help_follows_runtime_binding() {
+@@ -313,6 +430,7 @@ fn status_survives_hints_feedback_and_queue() {
+     composer.set_text_content("Continue the task".into(), Vec::new(), Vec::new());
+     composer.set_task_running(/*running*/ true);
+     states.push(render(&composer, /*width*/ 64, /*footer*/ None).0);
++    assert!(!states.last().unwrap().contains("to queue"));
+     for popup in [
+         ActivePopup::File(FileSearchPopup::new()),
+         ActivePopup::Skill(SkillPopup::new(Vec::new())),
+@@ -446,3 +564,179 @@ fn activity_shortcut_help_follows_runtime_binding() {
      }
      insta::assert_snapshot!(snapshots.join("\n---\n"));
  }
@@ -8649,14 +8753,15 @@ index 03e761f4f..3891d8f83 100644
 +}
 +
 +#[test]
-+fn status_stats_follow_existing_transient_hint_priorities() {
++fn status_stats_survive_queue_drafts_and_follow_explicit_hint_priorities() {
 +    for separate in [false, true] {
 +        let mut composer = composer();
 +        composer.set_status_line_stats(Some("STATS".into()));
 +        composer.set_text_content("draft".into(), vec![], vec![]);
 +        composer.set_task_running(true);
 +        let (queue, _) = status_rows(&composer, separate, 80, None);
-+        assert_eq!(queue.iter().any(|row| row.contains("STATS")), separate);
++        assert!(queue.iter().any(|row| row.contains("STATS")));
++        assert!(!queue.iter().any(|row| row.contains("to queue")));
 +        composer.set_task_running(false);
 +        composer.begin_history_search();
 +        let (search, cursor) = status_rows(&composer, separate, 80, None);
@@ -8990,7 +9095,7 @@ index f0b809ce5..ef0ab62a6 100644
              active_agent_label: None,
          };
 diff --git a/codex-rs/tui/src/bottom_pane/mod.rs b/codex-rs/tui/src/bottom_pane/mod.rs
-index ae9405e9f..a9e403410 100644
+index ae9405e9f..0d228c5e1 100644
 --- a/codex-rs/tui/src/bottom_pane/mod.rs
 +++ b/codex-rs/tui/src/bottom_pane/mod.rs
 @@ -169,6 +169,8 @@ pub(crate) use footer::CollaborationModeIndicator;
@@ -9114,7 +9219,7 @@ index ae9405e9f..a9e403410 100644
              let mut flex2 = FlexRenderable::new();
              // Clip spacing and hints before activity and previews when the composer is tall.
              let above_composer = if let Some(gap) = options.composer_gap {
-@@ -2495,6 +2555,14 @@ impl BottomPane {
+@@ -2495,6 +2555,12 @@ impl BottomPane {
                  }))
              };
              flex2.push(/*flex*/ 0, composer);
@@ -9122,14 +9227,12 @@ index ae9405e9f..a9e403410 100644
 +                /*flex*/ 1,
 +                RenderableItem::Owned(Box::new(WorkerHudPresentation {
 +                    hud: &self.worker_hud,
-+                    composer: &self.composer,
-+                    options,
 +                })),
 +            );
              RenderableItem::Owned(Box::new(flex2))
          }
      }
-@@ -2515,6 +2583,12 @@ impl BottomPane {
+@@ -2515,6 +2581,12 @@ impl BottomPane {
          }
      }
  
@@ -9142,7 +9245,7 @@ index ae9405e9f..a9e403410 100644
      pub(crate) fn set_luna_reserve_active(&mut self, active: bool) {
          if self.composer.set_luna_reserve_active(active) {
              self.request_redraw();
-@@ -2550,6 +2624,49 @@ impl BottomPane {
+@@ -2550,6 +2622,44 @@ impl BottomPane {
      }
  }
  
@@ -9164,16 +9267,11 @@ index ae9405e9f..a9e403410 100644
 +
 +struct WorkerHudPresentation<'a> {
 +    hud: &'a worker_hud::WorkerHud,
-+    composer: &'a chat_composer::ChatComposer,
-+    options: ComposerRenderOptions<'a>,
 +}
 +
 +impl WorkerHudPresentation<'_> {
 +    fn lines(&self, width: u16) -> Vec<Line<'static>> {
-+        self.hud.lines_with_budget(
-+            width,
-+            self.composer.worker_hud_row_budget(width, self.options),
-+        )
++        self.hud.lines(width)
 +    }
 +}
 +
@@ -9192,12 +9290,12 @@ index ae9405e9f..a9e403410 100644
  struct ChatComposerPresentation<'a> {
      composer: &'a chat_composer::ChatComposer,
      options: ComposerRenderOptions<'a>,
-@@ -2729,6 +2846,157 @@ mod tests {
+@@ -2729,6 +2839,155 @@ mod tests {
          assert_eq!(pane.composer_text(), "main draft");
      }
  
 +    #[test]
-+    fn worker_hud_five_row_footer_budget_preserves_status_hints_and_editable_input() {
++    fn worker_hud_six_rows_preserve_status_hints_and_editable_input() {
 +        let (tx, _rx) = unbounded_channel();
 +        let mut pane = test_pane_with_disable_paste_burst(AppEventSender::new(tx), true);
 +        pane.set_status_line_enabled(true);
@@ -9238,7 +9336,7 @@ index ae9405e9f..a9e403410 100644
 +                    .map(|y| (0..width).map(|x| buf[(x, y)].symbol()).collect::<String>())
 +                    .filter(|line| !line.trim().is_empty())
 +                    .collect();
-+                assert_eq!(below.len(), 5, "{below:?}");
++                assert_eq!(below.len(), if hint { 9 } else { 8 }, "{below:?}");
 +                assert!(below[0].contains("MODEL"), "{below:?}");
 +                assert!(below[1].contains("Context 75% left"), "{below:?}");
 +                assert_eq!(
@@ -9246,12 +9344,10 @@ index ae9405e9f..a9e403410 100644
 +                        .iter()
 +                        .filter(|line| line.contains("GPT-6-Sol"))
 +                        .count(),
-+                    if hint { 1 } else { 2 }
++                    6
 +                );
-+                assert_eq!(
-+                    below.last().unwrap().trim(),
-+                    if hint { "+5 more" } else { "+4 more" }
-+                );
++                assert!(below.last().unwrap().contains("worker5"));
++                assert!(!below.iter().any(|line| line.contains(" more")));
 +                assert_eq!(pane.composer_text(), "editable draft");
 +            }
 +        }
@@ -9693,6 +9789,116 @@ index ca2a96b3c..7dad54cba 100644
  "                                                                                                                        "
 -"  ? for shortcuts · Plan mode (⇧tab to cycle)                                                        100% context left  "
 +"  Plan mode (⇧tab to cycle)                                                                          100% context left  "
+diff --git a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_plan_queue_full.snap b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_plan_queue_full.snap
+index 5f0f35382..09f6d4b9a 100644
+--- a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_plan_queue_full.snap
++++ b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_plan_queue_full.snap
+@@ -10,4 +10,4 @@ expression: terminal.backend()
+ "                                                                                                                        "
+ "                                                                                                                        "
+ "                                                                                                                        "
+-"  tab to queue message · Plan mode                                                                    98% context left  "
++"  Plan mode                                                                                           98% context left  "
+diff --git a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_plan_queue_message_without_context.snap b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_plan_queue_message_without_context.snap
+index 017e3eb2a..9b43fa0f6 100644
+--- a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_plan_queue_message_without_context.snap
++++ b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_plan_queue_message_without_context.snap
+@@ -10,4 +10,4 @@ expression: terminal.backend()
+ "                                        "
+ "                                        "
+ "                                        "
+-"  tab to queue message · Plan mode      "
++"  Plan mode           98% context left  "
+diff --git a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_plan_queue_short_with_context.snap b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_plan_queue_short_with_context.snap
+index 77f38dc4e..54b351cc7 100644
+--- a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_plan_queue_short_with_context.snap
++++ b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_plan_queue_short_with_context.snap
+@@ -10,4 +10,4 @@ expression: terminal.backend()
+ "                                                  "
+ "                                                  "
+ "                                                  "
+-"  tab to queue · Plan mode      98% context left  "
++"  Plan mode                     98% context left  "
+diff --git a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_plan_queue_short_without_context.snap b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_plan_queue_short_without_context.snap
+index 91f917e98..8ae435a6b 100644
+--- a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_plan_queue_short_without_context.snap
++++ b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_plan_queue_short_without_context.snap
+@@ -10,4 +10,4 @@ expression: terminal.backend()
+ "                              "
+ "                              "
+ "                              "
+-"  tab to queue · Plan mode    "
++"  Plan mode                   "
+diff --git a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_queue_full.snap b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_queue_full.snap
+index 105780332..926c9526a 100644
+--- a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_queue_full.snap
++++ b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_queue_full.snap
+@@ -10,4 +10,4 @@ expression: terminal.backend()
+ "                                                                                                                        "
+ "                                                                                                                        "
+ "                                                                                                                        "
+-"  tab to queue message                                                                                98% context left  "
++"                                                                                                      98% context left  "
+diff --git a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_queue_message_without_context.snap b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_queue_message_without_context.snap
+index 4f44c0424..bfe1eceff 100644
+--- a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_queue_message_without_context.snap
++++ b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_queue_message_without_context.snap
+@@ -10,4 +10,4 @@ expression: terminal.backend()
+ "                                        "
+ "                                        "
+ "                                        "
+-"  tab to queue        98% context left  "
++"                      98% context left  "
+diff --git a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_queue_mode_only.snap b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_queue_mode_only.snap
+index e2d1d2e28..2efa7a49c 100644
+--- a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_queue_mode_only.snap
++++ b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_queue_mode_only.snap
+@@ -10,4 +10,4 @@ expression: terminal.backend()
+ "                    "
+ "                    "
+ "                    "
+-"  tab to queue      "
++"  98% context left  "
+diff --git a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_queue_short_with_context.snap b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_queue_short_with_context.snap
+index b7128fd41..e4d234403 100644
+--- a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_queue_short_with_context.snap
++++ b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_queue_short_with_context.snap
+@@ -10,4 +10,4 @@ expression: terminal.backend()
+ "                                                  "
+ "                                                  "
+ "                                                  "
+-"  tab to queue message          98% context left  "
++"                                98% context left  "
+diff --git a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_queue_short_without_context.snap b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_queue_short_without_context.snap
+index 3df7f7432..2dc83e0ec 100644
+--- a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_queue_short_without_context.snap
++++ b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_queue_short_without_context.snap
+@@ -10,4 +10,4 @@ expression: terminal.backend()
+ "                              "
+ "                              "
+ "                              "
+-"  tab to queue message        "
++"            98% context left  "
+diff --git a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_mode_ctrl_c_then_esc_hint.snap b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_mode_ctrl_c_then_esc_hint.snap
+index 9cad17b86..bf36738c4 100644
+--- a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_mode_ctrl_c_then_esc_hint.snap
++++ b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_mode_ctrl_c_then_esc_hint.snap
+@@ -10,4 +10,4 @@ expression: terminal.backend()
+ "                                                                                                    "
+ "                                                                                                    "
+ "                                                                                                    "
+-"  esc esc to edit previous message                                                                  "
++"                                                                                 100% context left  "
+diff --git a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_mode_esc_hint_backtrack.snap b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_mode_esc_hint_backtrack.snap
+index 2fce42cc2..bf36738c4 100644
+--- a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_mode_esc_hint_backtrack.snap
++++ b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_mode_esc_hint_backtrack.snap
+@@ -10,4 +10,4 @@ expression: terminal.backend()
+ "                                                                                                    "
+ "                                                                                                    "
+ "                                                                                                    "
+-"  esc again to edit previous message                                                                "
++"                                                                                 100% context left  "
 diff --git a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_mode_esc_hint_from_overlay.snap b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_mode_esc_hint_from_overlay.snap
 index 66bb11a81..bf36738c4 100644
 --- a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_mode_esc_hint_from_overlay.snap
@@ -9709,6 +9915,16 @@ index 66bb11a81..bf36738c4 100644
  "                                                                                                    "
  "                                                                                                    "
 -"  ? for shortcuts                                                                100% context left  "
++"                                                                                 100% context left  "
+diff --git a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_mode_overlay_then_external_esc_hint.snap b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_mode_overlay_then_external_esc_hint.snap
+index 2fce42cc2..bf36738c4 100644
+--- a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_mode_overlay_then_external_esc_hint.snap
++++ b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_mode_overlay_then_external_esc_hint.snap
+@@ -10,4 +10,4 @@ expression: terminal.backend()
+ "                                                                                                    "
+ "                                                                                                    "
+ "                                                                                                    "
+-"  esc again to edit previous message                                                                "
 +"                                                                                 100% context left  "
 diff --git a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__light_terminal_palette_composer.snap b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__light_terminal_palette_composer.snap
 index 8ef90ddc8..55e72126b 100644
@@ -9842,6 +10058,16 @@ index e803ab161..7b8018a0e 100644
                                                  
 -  ? for shortcuts            100% context left
 +                             100% context left
+diff --git a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__slash_command_popup_dismissed.snap b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__slash_command_popup_dismissed.snap
+index 2eae5af3d..c6c18fe5c 100644
+--- a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__slash_command_popup_dismissed.snap
++++ b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__slash_command_popup_dismissed.snap
+@@ -7,4 +7,4 @@ expression: "render_snapshot(&pane, area)"
+                                                             
+ › /rev                                                      
+                                                             
+-  tab to queue message                   100% context left
++                                         100% context left
 diff --git a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__status_and_queued_messages_snapshot.snap b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__status_and_queued_messages_snapshot.snap
 index cbc675a0a..433cb090f 100644
 --- a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__tests__status_and_queued_messages_snapshot.snap
@@ -10399,10 +10625,10 @@ index f717e2426..7a49ebb6a 100644
 +                                                   100% context left
 diff --git a/codex-rs/tui/src/bottom_pane/worker_hud.rs b/codex-rs/tui/src/bottom_pane/worker_hud.rs
 new file mode 100644
-index 000000000..506f625e7
+index 000000000..f8de90943
 --- /dev/null
 +++ b/codex-rs/tui/src/bottom_pane/worker_hud.rs
-@@ -0,0 +1,1798 @@
+@@ -0,0 +1,1819 @@
 +//! Read-only worker summary; clipping never takes space from the composer.
 +
 +use crate::line_truncation::truncate_line_with_ellipsis_if_overflow;
@@ -10627,12 +10853,12 @@ index 000000000..506f625e7
 +        rows
 +    }
 +
-+    fn lines(&self, width: u16) -> Vec<Line<'static>> {
-+        self.lines_with_budget(width, 3)
++    pub(super) fn lines(&self, width: u16) -> Vec<Line<'static>> {
++        self.lines_with_budget(width, 6)
 +    }
 +
 +    pub(crate) fn lines_with_budget(&self, width: u16, row_budget: u16) -> Vec<Line<'static>> {
-+        let row_budget = usize::from(row_budget.min(3));
++        let row_budget = usize::from(row_budget.min(6));
 +        if width == 0 || row_budget == 0 {
 +            return Vec::new();
 +        }
@@ -10698,14 +10924,14 @@ index 000000000..506f625e7
 +                .iter()
 +                .any(|row| matches!(row.state, WorkerState::Approval | WorkerState::Input))
 +        });
-+        let worker_limit = display_rows
-+            .len()
-+            .min(activity_limit.saturating_sub(usize::from(
-+                (!shells.is_empty() || !self.executions.rows.is_empty()) && activity_limit > 1,
-+            )));
-+        let shell_limit = shells
-+            .len()
-+            .min(activity_limit.saturating_sub(worker_limit));
++        // Reserve a row for each nonempty activity category before filling the remaining space.
++        let worker_limit = display_rows.len().min(activity_limit.saturating_sub(
++            usize::from(!shells.is_empty()) + usize::from(!self.executions.rows.is_empty()),
++        ));
++        let shell_limit = shells.len().min(
++            activity_limit
++                .saturating_sub(worker_limit + usize::from(!self.executions.rows.is_empty())),
++        );
 +        let execution_limit = self.executions.rows.len().min(
 +            activity_limit
 +                .saturating_sub(worker_limit)
@@ -10999,19 +11225,28 @@ index 000000000..506f625e7
 +        hud.set_executions(executions);
 +        for width in [8, 30, 100] {
 +            let lines = hud.lines(width);
-+            assert_eq!(lines.len(), 3);
++            assert_eq!(lines.len(), 6);
 +            assert!(
 +                lines[0]
 +                    .to_string()
 +                    .contains("Background status unavailable")
 +            );
 +            assert!(lines[1].to_string().contains("Advisor"));
-+            assert!(lines[2].to_string().contains("+6 more"));
++            assert!(lines[2].to_string().contains("tok"));
++            assert!(lines[3].to_string().contains("seen"));
++            assert!(lines[4].to_string().starts_with("  Background ·"));
++            assert!(!lines[4].to_string().contains("seen"));
++            if width == 100 {
++                assert!(lines[2].to_string().contains("prepare"));
++                assert!(lines[3].to_string().contains("unrelated native"));
++                assert!(lines[4].to_string().contains("detached build"));
++            }
++            assert_eq!(lines[5].to_string(), "  +3 more");
 +        }
 +    }
 +
 +    #[test]
-+    fn execution_hud_shares_three_rows_and_preserves_native_shells() {
++    fn execution_hud_shares_six_rows_and_preserves_native_shells() {
 +        for native in 0..4 {
 +            for detached in 0..4 {
 +                for warning in [false, true] {
@@ -11049,7 +11284,7 @@ index 000000000..506f625e7
 +                        .map(ToString::to_string)
 +                        .collect::<Vec<_>>()
 +                        .join("\n");
-+                    assert!(lines.len() <= 3, "{text}");
++                    assert!(lines.len() <= 6, "{text}");
 +                    assert_eq!(
 +                        text.matches("Background status unavailable").count(),
 +                        usize::from(warning)
@@ -11061,8 +11296,11 @@ index 000000000..506f625e7
 +                        );
 +                        assert!(!text.contains("seen"));
 +                    }
-+                    if native > 0 && !warning {
++                    if native > 0 {
 +                        assert!(text.contains("native 0"), "{text}");
++                    }
++                    if detached > 0 {
++                        assert!(text.contains("compile 模型 next"), "{text}");
 +                    }
 +                }
 +            }
@@ -11139,7 +11377,7 @@ index 000000000..506f625e7
 +
 +    #[test]
 +    fn worker_hud_dynamic_budget_preserves_priority_rows_and_hidden_counts() {
-+        for budget in 0..=3 {
++        for budget in 0..=6 {
 +            for workers in 0..=4 {
 +                for shells in 0..=4 {
 +                    for executions in 0..=4 {
@@ -11289,7 +11527,7 @@ index 000000000..506f625e7
 +    }
 +
 +    #[test]
-+    fn advisor_rows_keep_warnings_priority_and_three_total_rows() {
++    fn advisor_rows_keep_warnings_priority_and_six_total_rows() {
 +        for advisor_state in [
 +            AdvisorState::Ready,
 +            AdvisorState::Running(83),
@@ -11328,7 +11566,7 @@ index 000000000..506f625e7
 +                            hud.set_watcher(Some(WatcherHealth::Unavailable));
 +                        }
 +                        let lines = hud.lines(100);
-+                        assert!(lines.len() <= 3);
++                        assert!(lines.len() <= 6);
 +                        let line = &lines[usize::from(warning)];
 +                        assert!(line.to_string().contains("Advisor · GPT-7.2-Astra (xhigh)"));
 +                        let warning_style = matches!(
@@ -11342,7 +11580,7 @@ index 000000000..506f625e7
 +                        if warning {
 +                            assert!(lines[0].to_string().contains("Watcher unavailable"));
 +                        }
-+                        if workers + shells > 3 - usize::from(warning) - 1 {
++                        if workers + shells > 6 - usize::from(warning) - 1 {
 +                            assert!(lines.last().unwrap().to_string().contains("more"));
 +                        }
 +                    }
@@ -11485,14 +11723,14 @@ index 000000000..506f625e7
 +                                    .as_ref()
 +                                    .and_then(WatcherHealth::label)
 +                                    .is_some();
-+                            let available = 3 - usize::from(alert);
++                            let available = 6 - usize::from(alert);
 +                            let total = workers + shells;
 +                            let shown = total.min(available - usize::from(total > available));
 +                            assert_eq!(
 +                                lines.len(),
 +                                usize::from(alert) + shown + usize::from(total > shown)
 +                            );
-+                            assert!(lines.len() <= 3);
++                            assert!(lines.len() <= 6);
 +                            if total > shown {
 +                                assert_eq!(
 +                                    lines.last().unwrap().to_string(),
@@ -11716,7 +11954,7 @@ index 000000000..506f625e7
 +    fn worker_hud_caps_current_rows_and_is_safe_when_resized() {
 +        let mut hud = WorkerHud::default();
 +        hud.set(
-+            (0..6)
++            (0..9)
 +                .map(|n| WorkerRow {
 +                    group: None,
 +                    dispatch_elapsed_secs: None,
@@ -11732,12 +11970,12 @@ index 000000000..506f625e7
 +            false,
 +            true,
 +        );
-+        assert_eq!(hud.lines(80).len(), 3);
-+        assert_eq!(hud.lines(80)[2].to_string(), "  +4 more");
-+        let area = Rect::new(0, 0, 80, 3);
++        assert_eq!(hud.lines(80).len(), 6);
++        assert_eq!(hud.lines(80)[5].to_string(), "  +4 more");
++        let area = Rect::new(0, 0, 80, 6);
 +        let mut buf = Buffer::empty(area);
 +        hud.render(area, &mut buf);
-+        for n in 0..2 {
++        for n in 0..5 {
 +            let rendered: String = (0..80).map(|x| buf[(x, n)].symbol()).collect();
 +            assert_eq!(buf[(37, n)].symbol(), "测");
 +            assert_eq!(buf[(39, n)].symbol(), "试");
@@ -11747,7 +11985,7 @@ index 000000000..506f625e7
 +        }
 +        hud.rows[0].state = WorkerState::Done;
 +        assert!(hud.lines(80)[0].to_string().contains("测试1"));
-+        assert_eq!(hud.lines(80)[2].to_string(), "  +3 more");
++        assert_eq!(hud.lines(80)[5].to_string(), "  +3 more");
 +        hud.stale = true;
 +        let line = hud.lines(80)[1].to_string();
 +        assert!(line.contains("stale · ? · ? tok"));
@@ -11806,7 +12044,8 @@ index 000000000..506f625e7
 +        hud.set_shells(vec![shell_row(0)], false, true);
 +        hud.set_watcher(Some(WatcherHealth::Unavailable));
 +        assert!(hud.lines(80)[1].to_string().contains("wait approval"));
-+        assert_eq!(hud.lines(80)[2].to_string(), "  +3 more");
++        assert_eq!(hud.lines(80).len(), 5);
++        assert!(hud.lines(80)[4].to_string().contains("Background"));
 +        hud.set_shells(vec![], false, true);
 +        hud.set_watcher(None);
 +        let mut rows = hud.rows.clone();
@@ -12133,7 +12372,15 @@ index 000000000..506f625e7
 +    fn worker_hud_caps_display_groups_and_keeps_counts_after_long_topics() {
 +        let mut hud = WorkerHud::default();
 +        let mut rows = Vec::new();
-+        for key in ["parent-a/b1", "parent-a/b2", "parent-b/b1", "other/b1"] {
++        for key in [
++            "parent-a/b1",
++            "parent-a/b2",
++            "parent-b/b1",
++            "other/b1",
++            "other/b2",
++            "other/b3",
++            "other/b4",
++        ] {
 +            for _ in 0..3 {
 +                rows.push(grouped_member(key, WorkerState::Active, 120, 1000));
 +            }
@@ -12148,9 +12395,9 @@ index 000000000..506f625e7
 +        rows[0].group.as_mut().unwrap().topic = "very_long_topic ".repeat(20);
 +        hud.set(rows, false, true);
 +        let lines = hud.lines(80);
-+        assert_eq!(lines.len(), 3);
-+        assert_eq!(hud.desired_height(80), 3);
-+        assert_eq!(lines[2].to_string(), "  +4 more");
++        assert_eq!(lines.len(), 6);
++        assert_eq!(hud.desired_height(80), 6);
++        assert_eq!(lines[5].to_string(), "  +4 more");
 +        let line = lines[0].to_string();
 +        assert!(line.contains("… (3 agents) · 2:00 · 3K tok"));
 +        assert!(display_width(&line) <= 80);

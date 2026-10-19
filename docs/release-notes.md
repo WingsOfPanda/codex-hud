@@ -1,3 +1,15 @@
+# Unreleased footer change
+
+The candidate reserves up to six activity rows, keeping at least one worker,
+native shell and detached job visible when each exists. Warning, Advisor and
+overflow remain distinct, and typing no longer shrinks the activity budget.
+Automatic queue/shortcut/Escape hints are hidden while their keys, explicit help,
+search, warnings and the working `esc to interrupt` indicator remain available.
+With two status rows, the normal maximum is eight rows below the prompt. Fleet
+rollout requires AP's cursor/busy-indicator integration instead of the previous
+six-line readiness detector. Qualification is pending; published 0.4.2 evidence
+below is historical.
+
 # Codex Plus 0.163.0-plus.0.4.2
 
 This patch refines the native UI and exact-turn admission readiness.
