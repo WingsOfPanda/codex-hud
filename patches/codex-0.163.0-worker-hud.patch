@@ -8990,7 +8990,7 @@ index f0b809ce5..ef0ab62a6 100644
              active_agent_label: None,
          };
 diff --git a/codex-rs/tui/src/bottom_pane/mod.rs b/codex-rs/tui/src/bottom_pane/mod.rs
-index ae9405e9f..7d228eb88 100644
+index ae9405e9f..a9e403410 100644
 --- a/codex-rs/tui/src/bottom_pane/mod.rs
 +++ b/codex-rs/tui/src/bottom_pane/mod.rs
 @@ -169,6 +169,8 @@ pub(crate) use footer::CollaborationModeIndicator;
@@ -9152,9 +9152,9 @@ index ae9405e9f..7d228eb88 100644
 +    fn render(&self, area: Rect, buf: &mut Buffer) {
 +        let line = crate::line_truncation::truncate_line_with_ellipsis_if_overflow(
 +            self.0.clone(),
-+            usize::from(footer::inset_footer_hint_area(area).width),
++            usize::from(footer::inset_footer_hint_area(area).width.saturating_sub(2)),
 +        );
-+        footer::render_footer_line(area, buf, line);
++        footer::render_context_right(area, buf, &line);
 +    }
 +
 +    fn desired_height(&self, _width: u16) -> u16 {
@@ -9352,10 +9352,10 @@ index ae9405e9f..7d228eb88 100644
          let (tx, _rx) = unbounded_channel();
 diff --git a/codex-rs/tui/src/bottom_pane/plus_goal_tests.rs b/codex-rs/tui/src/bottom_pane/plus_goal_tests.rs
 new file mode 100644
-index 000000000..ef52e81e6
+index 000000000..aacccdc0e
 --- /dev/null
 +++ b/codex-rs/tui/src/bottom_pane/plus_goal_tests.rs
-@@ -0,0 +1,218 @@
+@@ -0,0 +1,236 @@
 +//! Plus goals share the bottom pane's layout, while native goals retain their footer.
 +
 +use super::*;
@@ -9399,6 +9399,10 @@ index 000000000..ef52e81e6
 +    let input = rows.iter().position(|row| row.contains('›')).unwrap();
 +    assert!(goal < input, "{rows:?}");
 +    assert_eq!(rows.iter().filter(|row| row.contains("Goal")).count(), 1);
++    assert_eq!(
++        rows[goal].trim_end().chars().count(),
++        rows[goal].chars().count() - 2
++    );
 +    assert!(cursor.is_some_and(|(_, y)| usize::from(y) == input));
 +}
 +
@@ -9517,10 +9521,15 @@ index 000000000..ef52e81e6
 +            .iter()
 +            .map(|cell| cell.symbol())
 +            .collect::<String>();
-+        if usize::from(width) < label.len() + 2 {
-+            assert!(text.ends_with('…'), "{text:?}");
++        if width <= 4 {
++            assert!(text.trim().is_empty(), "{text:?}");
++        } else if usize::from(width) < label.chars().count() + 4 {
++            assert!(text.trim_end().ends_with('…'), "{text:?}");
 +        } else {
 +            assert!(text.contains(label), "{text:?}");
++        }
++        if width > 4 {
++            assert_eq!(text.trim_end().chars().count(), usize::from(width - 2));
 +        }
 +    }
 +}
@@ -9537,6 +9546,15 @@ index 000000000..ef52e81e6
 +            pane.set_goal_status_indicator(Some(GoalStatusIndicator::Plus("Goal active".into())));
 +            let header = pane.composer.plus_goal_status_line().unwrap();
 +            assert_eq!(header.spans[0].style.fg, Some(rgb_color((137, 180, 250))));
++            let mut buffer = Buffer::empty(Rect::new(0, 0, 100, 1));
++            PlusGoalStatus(header).render(buffer.area, &mut buffer);
++            assert!(
++                buffer
++                    .content
++                    .iter()
++                    .filter(|cell| cell.symbol() != " ")
++                    .all(|cell| cell.fg == rgb_color((137, 180, 250)))
++            );
 +            assert!(
 +                footer::status_line_right_indicator_line(
 +                    Some(CollaborationModeIndicator::Plan),
