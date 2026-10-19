@@ -102,6 +102,10 @@ The one-time Python-to-Rust rollout needs a
 The status footer puts model, Ultracode, working directory and active agent on
 the first row. Selected **Context remaining**, **Weekly limit** and **Weekly reset**
 items appear on a second row, retaining their configured order and styling.
+When status line colors are enabled, model and Ultracode use cyan, directory
+blue, context green, weekly remaining yellow, weekly reset purple, and PR number
+red. Active agent and separators stay neutral. Colors adapt to terminal contrast
+and supported depth; other selected items retain theme accents.
 The worker HUD follows both rows. A selection with only stats uses one row when
 there is no agent label or mode indicator; selections without stats keep one row.
 

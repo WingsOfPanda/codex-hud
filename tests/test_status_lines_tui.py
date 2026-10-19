@@ -15,8 +15,15 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--binary', required=True, type=Path)
 parser.add_argument('--source', required=True, type=Path)
 parser.add_argument('--evidence', required=True, type=Path)
+parser.add_argument('--color-level', choices=['0', '1', '2', '3'], default='3')
+parser.add_argument('--colors', choices=['on', 'off', 'observe'])
 parser.add_argument('--case', choices=['all', 'mixed', 'stats-only', 'identity-only', 'empty'], default='all')
 args = parser.parse_args()
+if args.colors is not None:
+    os.environ.pop('NO_COLOR', None)
+    os.environ['FORCE_COLOR'] = args.color_level
+    if args.color_level == '0':
+        os.environ['NO_COLOR'] = '1'
 source = args.source.resolve(strict=True)
 sys.path.insert(0, str(source / 'tests'))
 from fixtures.native_server import AppServer, frame
@@ -49,7 +56,7 @@ class StatusServer(AppServer):
         result = super().reply(method, params)
         if method == 'config/read':
             result['result']['config'].update(model='gpt-6-astra', model_reasoning_effort='high',
-                tui={'status_line': self.selection})
+                tui={'status_line': self.selection, 'status_line_use_colors': args.colors != 'off'})
         if method in ('thread/start', 'thread/resume'):
             result['result'].update(model='gpt-6-astra', reasoningEffort='high')
         if method == 'thread/list' and params.get('ancestorThreadId') == ROOT:
@@ -76,6 +83,30 @@ def footer_rows(terminal):
             and line.strip() and line.strip() not in workers]
 
 
+
+def item_colors(terminal, rows):
+    labels = ['gpt-6-astra high ultracode', 'workspace', 'Main [default]',
+              'Context 75% left', 'weekly 45% left', 'resets in 5d 20h']
+    found = {}
+    for label in labels:
+        matches = [(row, terminal.screen.display[row].index(label))
+                   for row, _ in rows if label in terminal.screen.display[row]]
+        assert len(matches) == 1, (label, matches)
+        row, column = matches[0]
+        cells = [terminal.screen.buffer[row][x] for x in range(column, column + len(label))]
+        foregrounds = sorted({cell.fg for cell in cells})
+        assert len(foregrounds) == 1, (label, foregrounds)
+        found[label] = dict(foreground=foregrounds[0], background=sorted({cell.bg for cell in cells}),
+                            bold=sorted({cell.bold for cell in cells}), italics=sorted({cell.italics for cell in cells}))
+    separators = []
+    for row, _ in rows:
+        for column, cell in terminal.screen.buffer[row].items():
+            if cell.data == '·':
+                separators.append(cell.fg)
+    return dict(items=found, separators=sorted(set(separators)),
+                pairwise_distinct=len({value['foreground'] for value in found.values()}) == len(found))
+
+
 def run_case(binary, directory, evidence, name):
     evidence.mkdir(parents=True, exist_ok=True)
     home, work = directory / 'home', directory / 'workspace'
@@ -90,12 +121,13 @@ def run_case(binary, directory, evidence, name):
         'model_provider="openai"\ncheck_for_update_on_startup=false\n'
         'suppress_unstable_features_warning=true\nanalytics.enabled=false\n'
         'features.daemon_auto_start=false\nfeatures.plugins=false\n'
-        f'[tui]\nstatus_line={json.dumps(selection)}\n')
+        f'[tui]\nstatus_line={json.dumps(selection)}\n'
+        + (f'status_line_use_colors={str(args.colors != "off").lower()}\n' if args.colors else ''))
     (home / 'config.toml').write_text(config)
     (home / 'auth.json').write_text('{"OPENAI_API_KEY":"isolated-fixture-only"}')
     server = StatusServer(home, work, selection, workers)
     terminal = None
-    report = dict(case=name, selection=selection, passed=False, stages=[])
+    report = dict(case=name, selection=selection, colors_mode=args.colors, color_level=args.color_level, passed=False, stages=[])
     try:
         terminal = Terminal(binary, home, work)
         wait([terminal], lambda: composer_ready(terminal.text)
@@ -156,6 +188,9 @@ def run_case(binary, directory, evidence, name):
         else:
             assert rows == [], f'disabled status left a footer row: {rows}'
         report['stages'].append('wide-physical-rows')
+        if name == 'mixed' and args.colors:
+            report['colors'] = item_colors(terminal, rows)
+            (evidence / 'colors.json').write_text(json.dumps(report['colors'], indent=2) + '\n')
         assert_compact_hud(terminal.text, rows=workers)
         if workers:
             worker_indices = [i for i, line in enumerate(terminal.screen.display)
@@ -174,19 +209,29 @@ def run_case(binary, directory, evidence, name):
         (evidence / 'narrow.txt').write_text(terminal.text + '\n')
         report['stages'].append('narrow-editable-input')
         if name == 'mixed':
+            replies = terminal.resize(32, 200)
+            wait([terminal], lambda: terminal.resized_frame(replies), 'wide terminal not repainted for shortcuts')
             os.write(terminal.master, b'\x15?')
-            wait([terminal], lambda: '? / esc close' in terminal.text, 'shortcuts close hint absent')
+            wait([terminal], lambda: 'Keyboard shortcuts' in terminal.text, 'shortcuts overlay absent')
             assert len([line for _, line in footer_rows(terminal) if 'Context 75% left' in line]) == 1
             (evidence / 'shortcuts.txt').write_text(terminal.text + '\n')
             os.write(terminal.master, b'\x1b')
-            wait([terminal], lambda: '? / esc close' not in terminal.text, 'shortcuts did not close')
+            wait([terminal], lambda: 'Keyboard shortcuts' not in terminal.text, 'shortcuts did not close')
             report['stages'].append('shortcuts-persistent-status')
         assert not server.errors, server.errors
         forbidden = ('turn/start', 'turn/steer', 'thread/queue/add', 'thread/queue/start')
         assert not [request for request in server.requests if request.get('method') in forbidden]
         saved = tomllib.loads((home / 'config.toml').read_text())
         assert saved['tui']['status_line'] == selection, 'display rewrote status-line selection'
-        report.update(passed=True, display_model_requests=0, config_preserved=True)
+        report.update(display_model_requests=0, config_preserved=True)
+        if name == 'mixed' and args.colors == 'on' and args.color_level != '0':
+            assert report['colors']['pairwise_distinct'], report['colors']
+            assert len(report['colors']['separators']) == 1, report['colors']
+        if name == 'mixed' and (args.colors == 'off' or args.color_level == '0'):
+            foregrounds = {value['foreground'] for value in report['colors']['items'].values()}
+            assert len(foregrounds) == 1, report['colors']
+            assert foregrounds == set(report['colors']['separators']), report['colors']
+        report['passed'] = True
     except BaseException as error:
         report['failure'] = str(error)
         raise
