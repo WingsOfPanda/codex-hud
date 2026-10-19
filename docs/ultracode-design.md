@@ -224,10 +224,10 @@ move this follow-on into MVP scope rather than claiming current park provides it
 ## Long execution handoff
 
 Use the already agreed [detached-job workflow](detached-jobs.md), not a second
-execution store or a tmux/job-watch requirement. Expected commands over eight
+execution store or a tmux/job-watch requirement. Expected commands over sixteen
 minutes, hardware trials, serving experiments and service restarts return to the
 root before launch. Unexpected overruns of permitted short checks finish through
-a bounded local wait; eight minutes is not an automatic termination deadline.
+a bounded local wait; sixteen minutes is not an automatic termination deadline.
 
 Workers return exact command/script, cwd, reviewed inputs/environment references,
 resource effects, expected duration, logs/results, success checks and cleanup.

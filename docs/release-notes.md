@@ -1,5 +1,9 @@
 # Codex Plus 0.163.0-plus.0.4.3
 
+Workers hand back commands expected to exceed sixteen minutes before launch.
+Hardware trials, serving experiments and service changes still return to the
+main session regardless of duration. This is a planning estimate, not a timeout.
+
 The candidate reserves up to six activity rows, keeping at least one worker,
 native shell and detached job visible when each exists. Warning, Advisor and
 overflow remain distinct, and typing no longer shrinks the activity budget.
