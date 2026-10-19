@@ -7810,7 +7810,7 @@ index 2ad3f1cd9..c56503a40 100644
  
      #[test]
 diff --git a/codex-rs/tui/src/bottom_pane/chat_composer/footer_state.rs b/codex-rs/tui/src/bottom_pane/chat_composer/footer_state.rs
-index bcc92a3ed..d0c41ad76 100644
+index bcc92a3ed..dfc4e1b45 100644
 --- a/codex-rs/tui/src/bottom_pane/chat_composer/footer_state.rs
 +++ b/codex-rs/tui/src/bottom_pane/chat_composer/footer_state.rs
 @@ -10,13 +10,14 @@
@@ -7850,7 +7850,7 @@ index bcc92a3ed..d0c41ad76 100644
          });
          options
      }
-@@ -279,16 +285,35 @@ impl super::ChatComposer {
+@@ -279,16 +285,25 @@ impl super::ChatComposer {
          if self.show_warning_notice(options) || self.shortcuts_above_composer(options) {
              return 1;
          }
@@ -7869,16 +7869,6 @@ index bcc92a3ed..d0c41ad76 100644
 +                self.custom_footer_height().unwrap_or_else(|| {
 +                    let props = self.hint_footer_props(options);
 +                    if options.separate_status_line
-+                        && matches!(
-+                            self.footer_mode(),
-+                            FooterMode::ComposerEmpty
-+                                | FooterMode::ComposerHasDraft
-+                                | FooterMode::EscHint
-+                        )
-+                    {
-+                        return 0;
-+                    }
-+                    if options.separate_status_line
 +                        && shows_passive_footer_line(&props)
 +                        && !self.is_bang_shell_command()
 +                        && self.footer.side_conversation_context_label.is_none()
@@ -7896,7 +7886,7 @@ index bcc92a3ed..d0c41ad76 100644
      }
  
      pub(super) fn render_transcript_footer(
-@@ -312,23 +337,6 @@ impl super::ChatComposer {
+@@ -312,23 +327,6 @@ impl super::ChatComposer {
                  .saturating_sub(hint_area.x)
                  .saturating_sub(/*rhs*/ 2);
          }
@@ -7920,7 +7910,7 @@ index bcc92a3ed..d0c41ad76 100644
          Paragraph::new(text).render(hint_area, buf);
      }
  
-@@ -359,6 +367,7 @@ pub(super) struct FooterState {
+@@ -359,6 +357,7 @@ pub(super) struct FooterState {
      pub(super) goal_status_indicator: Option<GoalStatusIndicator>,
      pub(super) ide_context_active: bool,
      pub(super) status_line_value: Option<Line<'static>>,
@@ -9828,7 +9818,7 @@ index 77f38dc4e..54b351cc7 100644
 -"  tab to queue · Plan mode      98% context left  "
 +"  Plan mode                     98% context left  "
 diff --git a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_plan_queue_short_without_context.snap b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_plan_queue_short_without_context.snap
-index 91f917e98..8ae435a6b 100644
+index 91f917e98..9eb553200 100644
 --- a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_plan_queue_short_without_context.snap
 +++ b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_plan_queue_short_without_context.snap
 @@ -10,4 +10,4 @@ expression: terminal.backend()
@@ -9836,7 +9826,7 @@ index 91f917e98..8ae435a6b 100644
  "                              "
  "                              "
 -"  tab to queue · Plan mode    "
-+"  Plan mode                   "
++"  Plan mode 98% context left  "
 diff --git a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_queue_full.snap b/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_queue_full.snap
 index 105780332..926c9526a 100644
 --- a/codex-rs/tui/src/bottom_pane/snapshots/codex_tui__bottom_pane__chat_composer__tests__footer_collapse_queue_full.snap
