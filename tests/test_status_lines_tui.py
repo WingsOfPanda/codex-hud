@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import subprocess
 import sys
 import tempfile
 import time
@@ -17,13 +18,17 @@ parser.add_argument('--source', required=True, type=Path)
 parser.add_argument('--evidence', required=True, type=Path)
 parser.add_argument('--color-level', choices=['0', '1', '2', '3'], default='3')
 parser.add_argument('--colors', choices=['on', 'off', 'observe'])
-parser.add_argument('--case', choices=['all', 'mixed', 'stats-only', 'identity-only', 'empty'], default='all')
+parser.add_argument('--no-color', action='store_true', help='Exercise NO_COLOR without FORCE_COLOR')
+parser.add_argument('--case', choices=['all', 'mixed', 'stats-only', 'identity-only', 'branch', 'empty'], default='all')
 args = parser.parse_args()
 if args.colors is not None:
     os.environ.pop('NO_COLOR', None)
     os.environ['FORCE_COLOR'] = args.color_level
     if args.color_level == '0':
         os.environ['NO_COLOR'] = '1'
+if args.no_color:
+    os.environ.pop('FORCE_COLOR', None)
+    os.environ['NO_COLOR'] = '1'
 source = args.source.resolve(strict=True)
 sys.path.insert(0, str(source / 'tests'))
 from fixtures.native_server import AppServer, frame
@@ -45,6 +50,17 @@ class StatusServer(AppServer):
         socket.chmod(0o600)
 
     def reply(self, method, params):
+        if method == 'command/exec':
+            assert 'git-branch' in self.selection, params
+            assert params['cwd'] == self.cwd, params
+            assert params['command'] == ['git', '-c', 'safe.bareRepository=explicit',
+                                         'branch', '--show-current'], params
+            output = subprocess.run(params['command'], cwd=self.cwd, capture_output=True,
+                                    text=True, timeout=5,
+                                    env={**os.environ, 'GIT_CONFIG_NOSYSTEM': '1',
+                                         'GIT_CONFIG_GLOBAL': os.devnull, 'GIT_OPTIONAL_LOCKS': '0'})
+            return {'result': {'exitCode': output.returncode, 'stdout': output.stdout,
+                               'stderr': output.stderr}}
         if method == 'account/read':
             return {'result': {'account': {'type': 'chatgpt', 'email': None, 'planType': 'plus'},
                                'requiresOpenaiAuth': True}}
@@ -84,9 +100,11 @@ def footer_rows(terminal):
 
 
 
-def item_colors(terminal, rows):
+def item_colors(terminal, rows, branch=False):
     labels = ['gpt-6-astra high ultracode', 'workspace', 'Main [default]',
               'Context 75% left', 'weekly 45% left', 'resets in 5d 20h']
+    if branch:
+        labels.append('main')
     found = {}
     for label in labels:
         matches = [(row, terminal.screen.display[row].index(label))
@@ -112,11 +130,16 @@ def run_case(binary, directory, evidence, name):
     home, work = directory / 'home', directory / 'workspace'
     home.mkdir(mode=0o700)
     work.mkdir()
+    if name == 'branch':
+        subprocess.run(['git', '-c', 'init.templateDir=', 'init', '--initial-branch=main', str(work)],
+                       check=True, capture_output=True, env={**os.environ, 'GIT_CONFIG_NOSYSTEM': '1',
+                                                           'GIT_CONFIG_GLOBAL': os.devnull})
     selection = {'mixed': ['model-with-reasoning', 'context-remaining', 'current-dir',
                            'weekly-limit', 'weekly-reset'], 'stats-only': STATS,
-                 'identity-only': ['model-with-reasoning', 'current-dir'], 'empty': []}[name]
+                 'identity-only': ['model-with-reasoning', 'current-dir'],
+                 'branch': ['model-with-reasoning', 'current-dir', 'git-branch', *STATS], 'empty': []}[name]
     # No badge/agent exists in stats-only: a blank identity row would be a regression.
-    workers = 2 if name == 'mixed' else 0
+    workers = 2 if name in ('mixed', 'branch') else 0
     config = ('model="gpt-6-astra"\nmodel_reasoning_effort="high"\n'
         'model_provider="openai"\ncheck_for_update_on_startup=false\n'
         'suppress_unstable_features_warning=true\nanalytics.enabled=false\n'
@@ -127,7 +150,8 @@ def run_case(binary, directory, evidence, name):
     (home / 'auth.json').write_text('{"OPENAI_API_KEY":"isolated-fixture-only"}')
     server = StatusServer(home, work, selection, workers)
     terminal = None
-    report = dict(case=name, selection=selection, colors_mode=args.colors, color_level=args.color_level, passed=False, stages=[])
+    report = dict(case=name, selection=selection, colors_mode=args.colors, color_level=args.color_level,
+                  no_color=args.no_color, passed=False, stages=[])
     try:
         terminal = Terminal(binary, home, work)
         wait([terminal], lambda: composer_ready(terminal.text)
@@ -135,7 +159,7 @@ def run_case(binary, directory, evidence, name):
              'native startup/provenance not ready', 25)
         replies = terminal.resize(32, 200)
         wait([terminal], lambda: terminal.resized_frame(replies), 'wide terminal not repainted')
-        if name == 'mixed':
+        if name in ('mixed', 'branch'):
             os.write(terminal.master, b'/subagents')
             wait([terminal], lambda: '› /subagents' in terminal.text, 'agent picker command absent')
             os.write(terminal.master, b'\r')
@@ -152,7 +176,7 @@ def run_case(binary, directory, evidence, name):
             snapshot['requested']['enabled'] = True
             projection.write_text(json.dumps(snapshot))
             project_effective(home, ROOT, True)
-        if name in ('mixed', 'stats-only'):
+        if name in ('mixed', 'branch', 'stats-only'):
             server.context75()
             wait([terminal], lambda: all(text in terminal.text for text in
                  ('Context 75% left', 'weekly 45% left', 'resets in 5d 20h')),
@@ -163,9 +187,12 @@ def run_case(binary, directory, evidence, name):
              and any(r.get('method') == 'thread/backgroundTerminals/list' for r in server.requests)
              and 'counts unavailable' not in terminal.text,
              'native HUD metadata not settled')
-        if name == 'mixed':
+        if name in ('mixed', 'branch'):
             wait([terminal], lambda: any('ultracode' in line.lower() for _, line in footer_rows(terminal)),
                  'effective Ultracode badge absent')
+        if name == 'branch':
+            wait([terminal], lambda: any(' · main' in line for _, line in footer_rows(terminal)),
+                 'private repository branch absent')
         os.write(terminal.master, b'footer-editable-draft')
         wait([terminal], lambda: 'footer-editable-draft' in terminal.text, 'composer not editable')
         wait([terminal], lambda: 'counts unavailable' not in terminal.text,
@@ -173,11 +200,13 @@ def run_case(binary, directory, evidence, name):
         rows = footer_rows(terminal)
         (evidence / 'wide.txt').write_text(terminal.text + '\n')
         report['wide_footer_rows'] = rows
-        if name == 'mixed':
+        if name in ('mixed', 'branch'):
             assert len(rows) == 2, f'expected two physical footer rows, got {rows}'
             first, second = rows
             assert second[0] == first[0] + 1, f'footer rows not adjacent: {rows}'
             assert all(value in first[1].lower() for value in ('gpt-6-astra high ultracode', 'workspace', 'main [default]')), rows
+            if name == 'branch':
+                assert ' · main' in first[1], rows
             assert not any(value in first[1] for value in ('Context ', 'weekly ', 'resets ')), rows
             assert second[1] == 'Context 75% left · weekly 45% left · resets in 5d 20h', rows
         elif name == 'stats-only':
@@ -188,8 +217,8 @@ def run_case(binary, directory, evidence, name):
         else:
             assert rows == [], f'disabled status left a footer row: {rows}'
         report['stages'].append('wide-physical-rows')
-        if name == 'mixed' and args.colors:
-            report['colors'] = item_colors(terminal, rows)
+        if name in ('mixed', 'branch') and args.colors:
+            report['colors'] = item_colors(terminal, rows, branch=name == 'branch')
             (evidence / 'colors.json').write_text(json.dumps(report['colors'], indent=2) + '\n')
         assert_compact_hud(terminal.text, rows=workers)
         if workers:
@@ -203,12 +232,12 @@ def run_case(binary, directory, evidence, name):
         wait([terminal], lambda: 'footer-editable-draft-narrow' in terminal.text, 'resized composer not editable')
         narrow = footer_rows(terminal)
         assert len(narrow) == len(rows), f'narrow resize changed row count: {narrow}'
-        if name == 'mixed':
+        if name in ('mixed', 'branch'):
             assert 'Context 75% left' in narrow[1][1] and 'Context ' not in narrow[0][1], narrow
         assert_compact_hud(terminal.text, rows=workers)
         (evidence / 'narrow.txt').write_text(terminal.text + '\n')
         report['stages'].append('narrow-editable-input')
-        if name == 'mixed':
+        if name in ('mixed', 'branch'):
             replies = terminal.resize(32, 200)
             wait([terminal], lambda: terminal.resized_frame(replies), 'wide terminal not repainted for shortcuts')
             os.write(terminal.master, b'\x15?')
@@ -224,10 +253,17 @@ def run_case(binary, directory, evidence, name):
         saved = tomllib.loads((home / 'config.toml').read_text())
         assert saved['tui']['status_line'] == selection, 'display rewrote status-line selection'
         report.update(display_model_requests=0, config_preserved=True)
-        if name == 'mixed' and args.colors == 'on' and args.color_level != '0':
+        if name in ('mixed', 'branch') and args.colors == 'on' and args.color_level != '0' and not args.no_color:
             assert report['colors']['pairwise_distinct'], report['colors']
             assert len(report['colors']['separators']) == 1, report['colors']
-        if name == 'mixed' and (args.colors == 'off' or args.color_level == '0'):
+            if name == 'branch':
+                foreground = report['colors']['items']['main']['foreground']
+                if args.color_level == '1':
+                    assert foreground == 'ff0000', report['colors']
+                else:
+                    # Two near-blue RGB values are distinct numbers but still look alike.
+                    assert int(foreground[:2], 16) > int(foreground[4:], 16) + 40, report['colors']
+        if name in ('mixed', 'branch') and (args.colors == 'off' or args.color_level == '0' or args.no_color):
             foregrounds = {value['foreground'] for value in report['colors']['items'].values()}
             assert len(foregrounds) == 1, report['colors']
             assert foregrounds == set(report['colors']['separators']), report['colors']
@@ -264,7 +300,7 @@ def run():
         helper = package / 'codex-plus-runtime'
         helper.write_text(helper_script((source / 'docs/ultracode-bootstrap.txt').read_text()))
         helper.chmod(0o700)
-        names = ['mixed', 'stats-only', 'identity-only', 'empty'] if args.case == 'all' else [args.case]
+        names = ['mixed', 'stats-only', 'identity-only', 'branch', 'empty'] if args.case == 'all' else [args.case]
         for name in names:
             directory = root / name
             directory.mkdir()

@@ -9980,7 +9980,7 @@ index 9567424fb..fc268784d 100644
      fn project_name_is_canonical_and_accepts_legacy_ids() {
          assert_eq!(StatusLineItem::ProjectRoot.to_string(), "project-name");
 diff --git a/codex-rs/tui/src/bottom_pane/status_line_style.rs b/codex-rs/tui/src/bottom_pane/status_line_style.rs
-index 6ef9003c5..0253dd334 100644
+index 6ef9003c5..380144a48 100644
 --- a/codex-rs/tui/src/bottom_pane/status_line_style.rs
 +++ b/codex-rs/tui/src/bottom_pane/status_line_style.rs
 @@ -1,4 +1,4 @@
@@ -9997,7 +9997,7 @@ index 6ef9003c5..0253dd334 100644
  use crate::thread_color::thread_color;
  use codex_protocol::ThreadId;
  
-@@ -19,6 +20,22 @@ const STATUS_LINE_SEPARATOR: &str = " · ";
+@@ -19,6 +20,23 @@ const STATUS_LINE_SEPARATOR: &str = " · ";
  const STATUS_LINE_COLOR_SATURATION_PERCENT: u16 = 85;
  const STATUS_LINE_COLOR_BRIGHTNESS_PERCENT: u16 = 100;
  
@@ -10008,6 +10008,7 @@ index 6ef9003c5..0253dd334 100644
 +            ((137, 220, 235), Color::Cyan)
 +        }
 +        StatusLineItem::CurrentDir => ((137, 180, 250), Color::Blue),
++        StatusLineItem::GitBranch => ((250, 179, 135), Color::LightRed),
 +        StatusLineItem::ContextRemaining => ((166, 227, 161), Color::Green),
 +        StatusLineItem::WeeklyLimit => ((249, 226, 175), Color::Yellow),
 +        StatusLineItem::WeeklyReset => ((203, 166, 247), Color::Magenta),
@@ -10020,7 +10021,7 @@ index 6ef9003c5..0253dd334 100644
  #[derive(Clone, Copy, Debug, Eq, PartialEq)]
  enum StatusLineAccent {
      Model,
-@@ -52,7 +69,9 @@ impl StatusLineAccent {
+@@ -52,7 +70,9 @@ impl StatusLineAccent {
              | StatusLineItem::TotalOutputTokens
              | StatusLineItem::ThreadCredits
              | StatusLineItem::EstimatedThreadCost => Self::Usage,
@@ -10031,7 +10032,7 @@ index 6ef9003c5..0253dd334 100644
              StatusLineItem::CodexVersion | StatusLineItem::Hostname | StatusLineItem::SessionId => {
                  Self::Metadata
              }
-@@ -117,6 +136,7 @@ where
+@@ -117,6 +137,7 @@ where
  {
      let mut spans = Vec::new();
      for (item, text) in segments {
@@ -10039,7 +10040,7 @@ index 6ef9003c5..0253dd334 100644
          if !spans.is_empty() {
              spans.push(STATUS_LINE_SEPARATOR.set_style(secondary_text_style()));
          }
-@@ -128,6 +148,8 @@ where
+@@ -128,6 +149,8 @@ where
              && let Some(thread_id) = thread_id
          {
              Style::default().fg(thread_color(thread_id))
@@ -10048,7 +10049,7 @@ index 6ef9003c5..0253dd334 100644
          } else if use_theme_colors {
              let accent = StatusLineAccent::for_item(item);
              soften_status_line_style(
-@@ -141,7 +163,10 @@ where
+@@ -141,7 +164,10 @@ where
              if effective_stdout_color_level() == StdoutColorLevel::Ansi16
                  && matches!(foreground, Color::Rgb(..) | Color::Indexed(16..))
              {
@@ -10060,7 +10061,7 @@ index 6ef9003c5..0253dd334 100644
              } else {
                  style.fg(readable_color_on(foreground, /*background*/ None))
              }
-@@ -217,6 +242,7 @@ mod tests {
+@@ -217,6 +243,7 @@ mod tests {
      use super::*;
      use pretty_assertions::assert_eq;
      use ratatui::style::Modifier;
@@ -10068,18 +10069,20 @@ index 6ef9003c5..0253dd334 100644
  
      fn line_text(line: &Line<'static>) -> String {
          line.spans
-@@ -229,8 +255,8 @@ mod tests {
+@@ -229,9 +256,9 @@ mod tests {
      fn status_line_segments_preserve_order_and_plain_text() {
          let line = status_line_from_segments_with_resolver(
              [
 -                (StatusLineItem::ModelName, "gpt-5".to_string()),
 -                (StatusLineItem::CurrentDir, "/repo".to_string()),
+-                (StatusLineItem::GitBranch, "main".to_string()),
 +                (StatusLineItem::Reasoning, "gpt-5".to_string()),
 +                (StatusLineItem::ProjectRoot, "/repo".to_string()),
-                 (StatusLineItem::GitBranch, "main".to_string()),
++                (StatusLineItem::BranchChanges, "main".to_string()),
              ],
              /*use_theme_colors*/ true,
-@@ -252,7 +278,7 @@ mod tests {
+             /*thread_id*/ None,
+@@ -252,7 +279,7 @@ mod tests {
      fn status_line_segments_use_secondary_separators_and_theme_styles_first() {
          let line = status_line_from_segments_with_resolver(
              [
@@ -10088,7 +10091,7 @@ index 6ef9003c5..0253dd334 100644
                  (StatusLineItem::ContextUsed, "Context 12% used".to_string()),
              ],
              /*use_theme_colors*/ true,
-@@ -298,7 +324,7 @@ mod tests {
+@@ -298,7 +325,7 @@ mod tests {
          };
          crate::terminal_palette::with_test_default_colors(colors, || {
              let line = status_line_from_segments_with_resolver(
@@ -10097,7 +10100,7 @@ index 6ef9003c5..0253dd334 100644
                  /*use_theme_colors*/ true,
                  /*thread_id*/ None,
                  |_| Some(Style::default().fg(Color::Rgb(255, 0, 0))),
-@@ -374,8 +400,8 @@ mod tests {
+@@ -374,8 +401,8 @@ mod tests {
          crate::terminal_palette::with_test_default_colors(colors, || {
              let line = status_line_from_segments_with_resolver(
                  [
@@ -10108,21 +10111,23 @@ index 6ef9003c5..0253dd334 100644
                      (
                          StatusLineItem::Permissions,
                          "Custom permissions".to_string(),
-@@ -402,22 +428,197 @@ mod tests {
+@@ -402,22 +429,200 @@ mod tests {
          });
      }
  
-+    const PALETTE_ITEMS: [StatusLineItem; 6] = [
++    const PALETTE_ITEMS: [StatusLineItem; 7] = [
 +        StatusLineItem::ModelName,
 +        StatusLineItem::CurrentDir,
++        StatusLineItem::GitBranch,
 +        StatusLineItem::ContextRemaining,
 +        StatusLineItem::WeeklyLimit,
 +        StatusLineItem::WeeklyReset,
 +        StatusLineItem::PullRequestNumber,
 +    ];
-+    const PALETTE_RGB: [(u8, u8, u8); 6] = [
++    const PALETTE_RGB: [(u8, u8, u8); 7] = [
 +        (137, 220, 235),
 +        (137, 180, 250),
++        (250, 179, 135),
 +        (166, 227, 161),
 +        (249, 226, 175),
 +        (203, 166, 247),
@@ -10160,7 +10165,7 @@ index 6ef9003c5..0253dd334 100644
 +                        .copied()
 +                        .chain([secondary_text_style().fg])
 +                        .collect();
-+                    assert_eq!(distinct.len(), 7);
++                    assert_eq!(distinct.len(), PALETTE_ITEMS.len() + 1);
 +                    assert!(
 +                        line.spans
 +                            .last()
@@ -10243,12 +10248,13 @@ index 6ef9003c5..0253dd334 100644
 +            .map(|span| span.style.fg)
 +            .collect();
 +        match level.as_str() {
-+            "0" => assert_eq!(colors, vec![Some(Color::Reset); 6]),
++            "0" => assert_eq!(colors, vec![Some(Color::Reset); PALETTE_ITEMS.len()]),
 +            "1" => assert_eq!(
 +                colors,
 +                [
 +                    Color::Cyan,
 +                    Color::Blue,
++                    Color::LightRed,
 +                    Color::Green,
 +                    Color::Yellow,
 +                    Color::Magenta,
@@ -10266,7 +10272,7 @@ index 6ef9003c5..0253dd334 100644
 +        }
 +        if level != "0" {
 +            let distinct: HashSet<_> = colors.iter().collect();
-+            assert_eq!(distinct.len(), 6);
++            assert_eq!(distinct.len(), PALETTE_ITEMS.len());
 +        }
 +        assert!(
 +            line.spans
@@ -10308,7 +10314,7 @@ index 6ef9003c5..0253dd334 100644
                      .output()
                      .unwrap();
                  assert!(
-@@ -437,8 +638,8 @@ mod tests {
+@@ -437,8 +642,8 @@ mod tests {
          crate::render::highlight::set_syntax_theme(theme);
          let line = status_line_from_segments(
              [
