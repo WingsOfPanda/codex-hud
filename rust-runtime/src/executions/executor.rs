@@ -1129,19 +1129,27 @@ fn remaining_groups(record: &Record) -> Result<bool> {
     live_groups(&groups)
 }
 fn live_groups(groups: &BTreeSet<(i32, i32)>) -> Result<bool> {
+    live_groups_at(groups, Path::new("/proc"))
+}
+fn live_groups_at(groups: &BTreeSet<(i32, i32)>, proc: &Path) -> Result<bool> {
     if groups.is_empty() {
         return Ok(false);
     }
     let mut count = 0;
-    for entry in fs::read_dir("/proc")? {
+    for entry in fs::read_dir(proc)? {
         count += 1;
         ensure!(count <= 100000, "process group inspection exceeds bound");
         let Ok(pid) = entry?.file_name().to_string_lossy().parse::<u32>() else {
             continue;
         };
-        let text = match fs::read_to_string(format!("/proc/{pid}/stat")) {
+        let text = match fs::read_to_string(proc.join(pid.to_string()).join("stat")) {
             Ok(text) => text,
-            Err(e) if e.kind() == io::ErrorKind::NotFound => continue,
+            // An opened proc stat file can return ESRCH after its process exits.
+            Err(e)
+                if e.kind() == io::ErrorKind::NotFound || e.raw_os_error() == Some(libc::ESRCH) =>
+            {
+                continue;
+            }
             Err(e) => return Err(e.into()),
         };
         let fields: Vec<_> = text
