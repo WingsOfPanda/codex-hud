@@ -170,6 +170,9 @@ warnings and operational transcript state remain available. The working status
 keeps the literal `esc to interrupt` indicator. AP integrations must use the
 composer cursor and busy indicator; the old last-six-nonempty-lines detector is
 incompatible with this expanded footer.
+The generic `Background status unavailable` banner is omitted. Existing per-job
+unknown/stale labels and detailed job status remain; display does not dismiss a
+failure, resolve cleanup or rewrite execution records.
 Worker and shell queries fail independently, so unavailable shell metadata does
 not hide valid workers. A successful terminal-list refresh removes commands no
 longer present; disappearance does not claim successful completion.

@@ -9,6 +9,8 @@ With two status rows, the normal maximum is eight rows below the prompt. Fleet
 rollout requires AP's cursor/busy-indicator integration instead of the previous
 six-line readiness detector. Qualification is pending; published 0.4.2 evidence
 below is historical.
+The generic background-availability banner is hidden; identified unknown/stale
+jobs retain their labels, and execution/cleanup records remain authoritative.
 
 # Codex Plus 0.163.0-plus.0.4.2
 

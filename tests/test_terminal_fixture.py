@@ -97,6 +97,10 @@ class CompactHudAssertionTests(unittest.TestCase):
             with self.subTest(hint=hint), self.assertRaises(AssertionError):
                 assert_compact_hud('› draft\n' + hint)
 
+    def test_removed_background_aggregate_banner_is_rejected(self):
+        with self.assertRaises(AssertionError):
+            assert_compact_hud('› draft\nBackground status unavailable')
+
     def test_old_summary_and_seven_activity_rows_are_rejected(self):
         for rows in (['Workers 6 active'], [
                 f'GPT-6.1-Sol (high) · task{n} · 0:12 · ? tok' for n in range(7)]):

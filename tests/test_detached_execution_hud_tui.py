@@ -46,6 +46,7 @@ def run(binary, evidence):
             os.replace(temporary, path)
 
         def capture(label):
+            assert 'Background status unavailable' not in terminals[0].text
             (evidence / f'{label}.txt').write_text(terminals[0].text + '\n')
 
         try:
@@ -65,32 +66,42 @@ def run(binary, evidence):
             wait(terminals, lambda: 'Background · compile 模型 · 2:' in terminal.text and
                  ' · link · ' not in terminal.text, 'optional stage was inferred or retained')
             publish(state='unknown')
-            wait(terminals, lambda: 'Background status unavailable' in terminal.text and
-                 'compile 模型 · unknown' in terminal.text, 'unknown outcome hidden')
-            assert_compact_hud(terminal.text, rows=2)
+            wait(terminals, lambda: 'compile 模型 · unknown' in terminal.text, 'unknown outcome hidden')
+            assert_compact_hud(terminal.text, rows=1)
             capture('unknown')
             publish(age=20)
             wait(terminals, lambda: 'compile 模型 · stale' in terminal.text, 'stale heartbeat hidden')
             replies = terminal.resize(12, 65)
             wait(terminals, lambda: terminal.resized_frame(replies) and
-                 'detached-draft' in terminal.text and 'Background status unavailable' in terminal.text,
+                 'detached-draft' in terminal.text and 'compile 模型 · stale' in terminal.text,
                  'narrow status lost input or warning')
-            assert_compact_hud(terminal.text, rows=2)
+            assert_compact_hud(terminal.text, rows=1)
             capture('stale-narrow')
             replies = terminal.resize(32, 120)
             publish(error='monitoring unavailable')
-            wait(terminals, lambda: terminal.resized_frame(replies) and 'Background status unavailable' in terminal.text
-                 and 'compile 模型 · stale' not in terminal.text, 'projection error not surfaced')
+            wait(terminals, lambda: terminal.resized_frame(replies)
+                 and 'Background · compile 模型 · 2:' in terminal.text
+                 and 'compile 模型 · stale' not in terminal.text, 'projection error hid the job or retained stale state')
+            assert json.loads(path.read_text())['error'] == 'monitoring unavailable'
             # Unrelated native jobs remain native rows; all activity shares one cap.
             server.shells = [server.shell(42, 'unrelated-native-job')]
             wait(terminals, lambda: 'unrelated-native-job' in terminal.text, 'native job hidden by detached identity')
-            assert_compact_hud(terminal.text, rows=3)
+            assert_compact_hud(terminal.text, rows=2)
             capture('mixed')
+            published = path.read_text()
+            path.write_text('{')
+            wait(terminals, lambda: 'compile 模型' not in terminal.text, 'malformed record was accepted')
+            assert path.read_text() == '{', 'display rewrote invalid execution evidence'
+            assert not any(word in terminal.text.lower() for word in ('completed', 'succeeded', 'exit 0'))
+            capture('invalid-record')
+            path.write_text(published)
+            wait(terminals, lambda: 'compile 模型' in terminal.text, 'valid record did not return after invalid snapshot')
             path.unlink()
             wait(terminals, lambda: 'compile 模型' not in terminal.text and 'Background status unavailable' not in terminal.text,
-                 'durable completion projection did not disappear')
+                 'removed projection did not disappear')
             assert 'unrelated-native-job' in terminal.text
-            capture('complete')
+            assert not any(word in terminal.text.lower() for word in ('completed', 'succeeded', 'exit 0'))
+            capture('record-removed')
             server.shells = []
             publish()
             wait(terminals, lambda: 'compile 模型' in terminal.text and 'unrelated-native-job' not in terminal.text,
@@ -122,7 +133,7 @@ def run(binary, evidence):
                 assert not current.errors, current.errors
                 assert not [request for request in current.requests if request['method'] in ('turn/start', 'turn/steer')]
             report.update(passed=True, display_model_requests=0, stages=['active', 'unknown', 'stale-narrow',
-                          'projection-error', 'mixed', 'complete', 'restart', 'root-and-remote-isolation'])
+                          'projection-error', 'mixed', 'invalid-record', 'record-removed', 'restart', 'root-and-remote-isolation'])
         finally:
             for index, terminal in enumerate(terminals):
                 (evidence / f'pane-{index}.ansi').write_bytes(terminal.output)

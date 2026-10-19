@@ -166,13 +166,14 @@ def assert_compact_hud(text, *, rows=None, idle=True):
     lines = [line.strip() for line in text.splitlines() if line.strip()]
     activities = worker_rows(text) + shell_rows(text) + advisor_rows(text)
     alerts = [line for line in lines if line.startswith(('Workers stale', 'Workers unavailable',
-              'Shells stale', 'Shells unavailable', 'Background status unavailable', 'Watcher ', 'Wake pending', 'Wake delivery ', 'Restart report '))]
+              'Shells stale', 'Shells unavailable', 'Watcher ', 'Wake pending', 'Wake delivery ', 'Restart report '))]
     overflow = [line for line in lines if re.match(r'^\+\d+ more$', line)]
     hud = activities + alerts + overflow
     assert len(hud) <= 6, f'HUD exceeded six total rows\n{text}'
     if rows is not None:
         assert len(hud) == rows, f'expected {rows} HUD rows, got {len(hud)}\n{text}'
     assert len(alerts) <= 1, f'alerts were not combined\n{text}'
+    assert 'Background status unavailable' not in text, text
     assert not any(re.match(r'^Workers \d|^Shells \d', line) for line in lines), text
     assert all(' · active · ' not in line and ' · running · ' not in line and ' · job ' not in line
                for line in activities), text

@@ -7810,10 +7810,18 @@ index 2ad3f1cd9..c56503a40 100644
  
      #[test]
 diff --git a/codex-rs/tui/src/bottom_pane/chat_composer/footer_state.rs b/codex-rs/tui/src/bottom_pane/chat_composer/footer_state.rs
-index bcc92a3ed..c405d54a7 100644
+index bcc92a3ed..d0c41ad76 100644
 --- a/codex-rs/tui/src/bottom_pane/chat_composer/footer_state.rs
 +++ b/codex-rs/tui/src/bottom_pane/chat_composer/footer_state.rs
-@@ -17,6 +17,7 @@ use std::time::Instant;
+@@ -10,13 +10,14 @@
+ //! Warning notices use the passive hint row, including while typing, and yield to input controls.
+ //! Only the two base composer modes opt into fresh-thread decoration; queries and help do not.
+ //! Shortcut help occupies the space above the composer and keeps its close hint on the final row.
+-//! Passive transcript hints retain the shortcuts entry when it fits beside the complete hint.
++//! Operational transcript state remains visible without automatic shortcut, queue or Escape hints.
+ 
+ use std::time::Instant;
+ 
  use super::super::footer::footer_height;
  use super::super::footer::reset_mode_after_activity;
  use super::super::footer::shows_passive_footer_line;
@@ -10579,6 +10587,16 @@ index 7389236c0..3fbed4438 100644
              Self::CodexVersion,
              Self::ContextWindowSize,
              Self::UsedTokens,
+diff --git a/codex-rs/tui/src/bottom_pane/tests/snapshots/codex_tui__bottom_pane__tests__actionable_banner_tests__actionable_banner_with_composer_gap.snap b/codex-rs/tui/src/bottom_pane/tests/snapshots/codex_tui__bottom_pane__tests__actionable_banner_tests__actionable_banner_with_composer_gap.snap
+index 1ec65f630..af5037149 100644
+--- a/codex-rs/tui/src/bottom_pane/tests/snapshots/codex_tui__bottom_pane__tests__actionable_banner_tests__actionable_banner_with_composer_gap.snap
++++ b/codex-rs/tui/src/bottom_pane/tests/snapshots/codex_tui__bottom_pane__tests__actionable_banner_tests__actionable_banner_with_composer_gap.snap
+@@ -12,4 +12,4 @@ expression: rendered
+                                                                       
+ › Ask Codex to do anything                                            
+                                                                       
+-  esc esc to edit previous message
++                                                   100% context left
 diff --git a/codex-rs/tui/src/bottom_pane/tests/snapshots/codex_tui__bottom_pane__tests__actionable_banner_tests__banner_wrapped_url.snap b/codex-rs/tui/src/bottom_pane/tests/snapshots/codex_tui__bottom_pane__tests__actionable_banner_tests__banner_wrapped_url.snap
 index 01e6540e2..c99958b8b 100644
 --- a/codex-rs/tui/src/bottom_pane/tests/snapshots/codex_tui__bottom_pane__tests__actionable_banner_tests__banner_wrapped_url.snap
@@ -10625,10 +10643,10 @@ index f717e2426..7a49ebb6a 100644
 +                                                   100% context left
 diff --git a/codex-rs/tui/src/bottom_pane/worker_hud.rs b/codex-rs/tui/src/bottom_pane/worker_hud.rs
 new file mode 100644
-index 000000000..f8de90943
+index 000000000..72ebda43c
 --- /dev/null
 +++ b/codex-rs/tui/src/bottom_pane/worker_hud.rs
-@@ -0,0 +1,1819 @@
+@@ -0,0 +1,1809 @@
 +//! Read-only worker summary; clipping never takes space from the composer.
 +
 +use crate::line_truncation::truncate_line_with_ellipsis_if_overflow;
@@ -10886,9 +10904,6 @@ index 000000000..f8de90943
 +        }
 +        if self.shells_visible && self.shells_stale {
 +            alerts.push("Shells stale · counts unavailable".to_string());
-+        }
-+        if self.executions.unavailable {
-+            alerts.push("Background status unavailable".to_string());
 +        }
 +        let mut lines = Vec::new();
 +        if !alerts.is_empty() {
@@ -11223,14 +11238,11 @@ index 000000000..f8de90943
 +            unavailable: true,
 +        };
 +        hud.set_executions(executions);
++        hud.set_watcher(Some(WatcherHealth::Unavailable));
 +        for width in [8, 30, 100] {
 +            let lines = hud.lines(width);
 +            assert_eq!(lines.len(), 6);
-+            assert!(
-+                lines[0]
-+                    .to_string()
-+                    .contains("Background status unavailable")
-+            );
++            assert!(lines[0].to_string().contains("Watcher unavailable"));
 +            assert!(lines[1].to_string().contains("Advisor"));
 +            assert!(lines[2].to_string().contains("tok"));
 +            assert!(lines[3].to_string().contains("seen"));
@@ -11285,10 +11297,7 @@ index 000000000..f8de90943
 +                        .collect::<Vec<_>>()
 +                        .join("\n");
 +                    assert!(lines.len() <= 6, "{text}");
-+                    assert_eq!(
-+                        text.matches("Background status unavailable").count(),
-+                        usize::from(warning)
-+                    );
++                    assert_eq!(text.matches("Background status unavailable").count(), 0);
 +                    if native == 0 && detached == 1 && !warning {
 +                        assert!(
 +                            text.contains("Background · compile 模型 next · check stage · 1:05"),
@@ -11410,6 +11419,7 @@ index 000000000..f8de90943
 +                                        .collect(),
 +                                    unavailable: warning,
 +                                });
++                                hud.set_watcher(warning.then_some(WatcherHealth::Unavailable));
 +                                if advisor {
 +                                    hud.set_advisor(Some(AdvisorRow {
 +                                        started_at_ms: None,
@@ -11429,10 +11439,8 @@ index 000000000..f8de90943
 +                                        .map(ToString::to_string)
 +                                        .collect::<Vec<_>>()
 +                                        .join("\n");
-+                                    assert_eq!(
-+                                        text.contains("Background status unavailable"),
-+                                        warning
-+                                    );
++                                    assert_eq!(text.contains("Watcher unavailable"), warning);
++                                    assert!(!text.contains("Background status unavailable"));
 +                                    assert_eq!(text.contains("Advisor"), advisor);
 +                                    let shown = lines
 +                                        .iter()
@@ -13658,28 +13666,28 @@ index b2b296cb6..000000000
 -"                                                                                "
 -"  GPT-5.6-Sol default · /tmp/project              Goal paused (/goal resume)    "
 diff --git a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_goal_active_token_budget_footer.snap b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_goal_active_token_budget_footer.snap
-index d7fddce12..290965ece 100644
+index d7fddce12..2b6a9656e 100644
 --- a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_goal_active_token_budget_footer.snap
 +++ b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_goal_active_token_budget_footer.snap
 @@ -3,7 +3,8 @@ source: tui/src/chatwidget/tests/status_and_layout.rs
  expression: normalized_backend_snapshot(terminal.backend())
  ---
  "                                                                                "
-+"  Goal active                                                                   "
++"                                                                   Goal active  "
  "                                                                                "
  "› Ask Codex to do anything                                                      "
  "                                                                                "
 -"  GPT-5.5                                            Pursuing goal (40K / 50K)  "
 +"  GPT-5.5                                                                       "
 diff --git a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_goal_complete_elapsed_footer.snap b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_goal_complete_elapsed_footer.snap
-index 10e1d6409..bf27267ce 100644
+index 10e1d6409..59468521c 100644
 --- a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_goal_complete_elapsed_footer.snap
 +++ b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_goal_complete_elapsed_footer.snap
 @@ -3,7 +3,8 @@ source: tui/src/chatwidget/tests/status_and_layout.rs
  expression: normalized_backend_snapshot(terminal.backend())
  ---
  "                                                                                "
-+"  Goal complete                                                                 "
++"                                                                 Goal complete  "
  "                                                                                "
  "› Ask Codex to do anything                                                      "
  "                                                                                "

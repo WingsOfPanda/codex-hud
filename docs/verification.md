@@ -17,7 +17,11 @@ Run `tests/test_footer_rows_tui.py --source SOURCE --binary CANDIDATE --evidence
 using the private native-smoke Python environment. The sealed contract covers
 idle, busy draft, narrow busy draft and explicit help, requiring visible worker,
 native-shell and detached-job categories plus separate Advisor/overflow rows,
-exact hidden counts, editable input, and no model requests. Run native worker-HUD,
+exact hidden counts, editable input, and no model requests.
+The revised contract also rejects the generic background-availability banner
+while retaining the affected unknown/stale job. Invalid and removed projection
+checks must not rewrite evidence or claim successful completion.
+Run native worker-HUD,
 composer footer/status-surface tests and the updated smoke/fixture suites too.
 Reconstruct the frontend patch cleanly and verify the original daemon sources.
 Source preparation and old-version red evidence do not establish candidate

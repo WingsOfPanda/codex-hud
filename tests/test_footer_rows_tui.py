@@ -93,6 +93,8 @@ with tempfile.TemporaryDirectory(prefix='plus-rows-') as temporary:
         (a.evidence / (name + '.txt')).write_text(terminal.text)
         checks = {
             'subagent row visible': bool(workers),
+            'aggregate background warning hidden': 'Background status unavailable' not in text,
+            'affected job remains visible': any(x.startswith('Background · detached-contract-0') and ('unknown' in x or 'stale' in x) for x in below),
             'native shell visible': any(x.startswith('Background · shell-contract') for x in below),
             'detached job visible': any(x.startswith('Background · detached-contract-') for x in below),
             'advisor own row': any(x.startswith('Advisor ·') for x in below),
@@ -112,7 +114,7 @@ with tempfile.TemporaryDirectory(prefix='plus-rows-') as temporary:
     try:
         terminal = Terminal(native, home, work)
         wait([terminal], lambda: composer_ready(terminal.text) and 'Advisor' in terminal.text
-             and 'Background status unavailable' in terminal.text and 'more' in terminal.text,
+             and 'more' in terminal.text,
              'mixed activity fixture did not settle', 30)
         settle()
         capture('idle')
