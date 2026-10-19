@@ -145,7 +145,7 @@ def worker_rows(text):
     return [line.strip() for line in text.splitlines()
             if re.fullmatch(r'[^·›>]+ \([^()·›>]*\)(?: \[[^\]·›>]*\])? · '
                             r'.+ · (?:\d+:\d{2}|\?)(?: · (?:\?|[\d,.]+[kKmMbBtT]?)'
-                            r'(?: (?:t|to|tok))?)?', line.strip())]
+                            r'(?: (?:t|to|tok))?)?(?: ·)?', line.strip())]
 
 
 def shell_rows(text):
@@ -1146,7 +1146,7 @@ def run(binary, evidence):
             worker_lines = worker_rows(terminal.text)
             assert len(worker_lines) == 2, terminal.text
             for index, line in enumerate(worker_lines):
-                assert ('GPT-6.1-Sol (high)' if index % 2 == 0 else 'GPT-6-Astra (medium)') + f' · worker {index + 1} ·' in line, line
+                assert ('GPT-6.1-Sol (high)' if index % 2 == 0 else 'GPT-6-Astra (medium)') + f' [general] · worker {index + 1} ·' in line, line
                 assert '? tok' in line, line
                 assert re.search(r' · \d+:\d{2} · ', line), line
                 assert '/root/' not in line and 'worker_' not in line, line
@@ -1220,7 +1220,7 @@ def run(binary, evidence):
             return next((line.strip() for line in grouped_terminal.screen.display if 'hud styling (' in line), '')
 
         wait(terminals, lambda: '(3 agents)' in group_line() and '+2 more' in grouped_terminal.text, 'explicit cohort did not replace three individual rows')
-        assert group_line().startswith('mixed (mixed) ·') and '? tok' in group_line(), group_line()
+        assert group_line().startswith('mixed (mixed) [general] ·') and '? tok' in group_line(), group_line()
         assert_compact_hud(grouped_terminal.text, rows=3)
         assert 'worker 1 ·' not in grouped_terminal.text and 'worker 2 ·' not in grouped_terminal.text and 'worker 3 ·' not in grouped_terminal.text, grouped_terminal.text
         initial_age = re.search(r' · (\d+):(\d{2}) · ', group_line())
