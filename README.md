@@ -114,6 +114,9 @@ red. Active agent and separators stay neutral. Colors adapt to terminal contrast
 and supported depth; other selected items retain theme accents.
 The worker HUD follows both rows. A selection with only stats uses one row when
 there is no agent label or mode indicator; selections without stats keep one row.
+The activity strip uses up to three rows. When shortcut help, history search or
+another hint adds a third footer row, activity uses two rows and retains its
+overflow count, keeping at most five nonempty rows below the prompt.
 
 Select **Weekly reset** in `/statusline` to show `resets in 2d 5h`
 (`weekly-reset` in `tui.status_line`). The countdown uses
