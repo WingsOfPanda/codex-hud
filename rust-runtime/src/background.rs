@@ -135,11 +135,15 @@ pub(crate) fn goal_current_turn(client: &mut Client, thread: &str) -> Result<Val
 }
 
 pub(crate) fn goal_known_turn(client: &mut Client, thread: &str, ident: &str) -> Result<bool> {
-    let mut retries = 0;
-    let mut original_error = None;
+    let deadline = Instant::now() + Duration::from_secs(2);
     loop {
         match turn(client, thread, ident) {
-            Ok(found) => return Ok(found.is_some()),
+            Ok(Some(_)) => return Ok(true),
+            Ok(None) => {
+                if Instant::now() >= deadline {
+                    return Ok(false);
+                }
+            }
             Err(error) => {
                 let temporary = error
                     .downcast_ref::<crate::rpc::RpcError>()
@@ -149,18 +153,15 @@ pub(crate) fn goal_known_turn(client: &mut Client, thread: &str, ident: &str) ->
                             && rpc.error["message"].as_str()
                                 == Some("list_turns is not supported yet")
                     });
-                if !temporary {
+                if !temporary || Instant::now() >= deadline {
                     return Err(error);
                 }
-                if retries == 3 {
-                    return Err(original_error.unwrap_or(error));
-                }
-                original_error.get_or_insert(error);
-                retries += 1;
-                // Allow brief turn-history unavailability before settling the input receipt.
-                std::thread::sleep(Duration::from_millis(100));
             }
         }
+        // Turn history can briefly omit a turn after its admission succeeds.
+        std::thread::sleep(
+            Duration::from_millis(100).min(deadline.saturating_duration_since(Instant::now())),
+        );
     }
 }
 
