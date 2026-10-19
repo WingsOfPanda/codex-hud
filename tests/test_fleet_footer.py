@@ -94,7 +94,7 @@ with tempfile.TemporaryDirectory(prefix='plus-fleet-footer-') as temporary:
     os.environ.pop('NO_COLOR', None)
     os.environ['FORCE_COLOR'] = '3'
 
-    def capture(name, *, normal=False):
+    def capture(name, *, normal=False, tiny=False):
         display = terminal.screen.display
         prompt = max(i for i, line in enumerate(display) if line.lstrip().startswith('›'))
         below = [(i, line.strip()) for i, line in enumerate(display) if i > prompt and line.strip()]
@@ -104,6 +104,7 @@ with tempfile.TemporaryDirectory(prefix='plus-fleet-footer-') as temporary:
         item = dict(name=name, dimensions=[terminal.screen.lines, terminal.screen.columns],
             prompt_row=prompt, goal_rows=goal, worker_rows=workers, overflow_rows=overflow,
             nonempty_below_prompt=len(below), below_prompt=below,
+            cursor_row=terminal.screen.cursor.y, tiny_clipping=tiny,
             footer_within_budget=len(below) <= (9 if name in ('shortcuts', 'narrow-shortcuts', 'history-search') else 8))
         report['stages'].append(item)
         (evidence / f'{name}-screen.txt').write_text(terminal.text + '\n')
@@ -111,8 +112,17 @@ with tempfile.TemporaryDirectory(prefix='plus-fleet-footer-') as temporary:
         try:
             assert len(below) <= (9 if name in ('shortcuts', 'narrow-shortcuts', 'history-search') else 8), f'{name}: {len(below)} nonempty lines below prompt'
             assert goal and goal[0] < prompt, f'{name}: goal absent or below prompt'
-            assert 1 <= len(workers) <= 5 and len(overflow) == 1, f'{name}: bounded worker strip missing'
-            assert display[overflow[0]].strip() == f'+{9 - len(workers)} more', 'wrong hidden worker count'
+            if tiny:
+                assert 1 <= len(workers) <= 5 and len(workers) + len(overflow) <= 6, (name, below)
+                assert len(overflow) <= 1, (name, below)
+                if overflow:
+                    assert len(workers) == 5 and display[overflow[0]].strip() == '+4 more', 'false clipped overflow'
+                assert terminal.screen.cursor.y == prompt, (name, prompt, terminal.screen.cursor.y)
+                assert 'fleet-editable-draft-narrow-tiny' in display[prompt], (name, below)
+                assert any('Context 75% left' in line for _, line in below), (name, below)
+            else:
+                assert 1 <= len(workers) <= 5 and len(overflow) == 1, f'{name}: bounded worker strip missing'
+                assert display[overflow[0]].strip() == f'+{9 - len(workers)} more', 'wrong hidden worker count'
             if normal:
                 assert len(workers) == 5, f'{name}: normal worker budget unexpectedly reduced'
                 assert len(below) == 8, (name, below)
@@ -136,12 +146,18 @@ with tempfile.TemporaryDirectory(prefix='plus-fleet-footer-') as temporary:
         os.write(terminal.master, b'fleet-editable-draft')
         wait([terminal], lambda: 'fleet-editable-draft' in terminal.text, 'draft not editable')
         capture('wide-draft', normal=True)
-        replies = terminal.resize(12, 65)
+        replies = terminal.resize(18, 65)
         wait([terminal], lambda: terminal.resized_frame(replies) and 'fleet-editable-draft' in terminal.text,
              'narrow resize did not preserve draft')
         os.write(terminal.master, b'-narrow')
         wait([terminal], lambda: 'fleet-editable-draft-narrow' in terminal.text, 'narrow not editable')
         capture('narrow-draft', normal=True)
+        replies = terminal.resize(12, 65)
+        wait([terminal], lambda: terminal.resized_frame(replies) and 'fleet-editable-draft-narrow' in terminal.text,
+             'tiny resize did not preserve draft')
+        os.write(terminal.master, b'-tiny')
+        wait([terminal], lambda: 'fleet-editable-draft-narrow-tiny' in terminal.text, 'tiny draft not editable')
+        capture('tiny-draft', tiny=True)
         replies = terminal.resize(32, 120)
         wait([terminal], lambda: terminal.resized_frame(replies), 'wide resize not repainted')
         os.write(terminal.master, b'\x15?')
