@@ -127,7 +127,7 @@ def new_piece(directory, name, base):
              "Contracts and all other files are protected in normal cases. For normal implementations, run python3 -m pytest -q -p no:cacheprovider "
              + " ".join(required + ["test_regression.py"])
              + ". For normal implementations, commit only your owned implementation in this piece branch; adversarial runs follow their explicit exception above. Do not merge or change main. "
-             "Return changed paths, commit, checks/results, actual model/effort metadata reference and any blocker. Expected work under eight minutes; hand back longer execution commands. "
+             "Return changed paths, commit, checks/results, actual model/effort metadata reference and any blocker. Expected work under sixteen minutes; hand back longer execution commands. "
              "No user-facing product changes: this is a genuine Codex-worker contract dry run.\n")
     (directory / "briefs").mkdir(exist_ok=True)
     (directory / "briefs" / f"{name}.txt").write_text(brief)

@@ -39,6 +39,7 @@ TARGETS = {'x86_64-unknown-linux-gnu': 62, 'aarch64-unknown-linux-gnu': 183}
 DOCS = ('README.md', 'GLOSSARY.md', 'docs/background-work.md',
         'docs/shell-workflow.md', 'docs/verification.md', 'docs/release-notes.md',
         'docs/releases/0.163.0-plus.0.4.3.md',
+        'docs/releases/0.163.0-plus.0.4.3/agents-block.md',
         'docs/releasing.md', 'docs/advisor.md', 'docs/rust-runtime.md',
         'docs/audit-fixes.md', 'docs/notice-resolution.md',
         'docs/evidence/audit-fixes.json', 'docs/evidence/advisor-topic.json',

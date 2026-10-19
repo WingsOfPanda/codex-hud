@@ -23,8 +23,9 @@ For 0.4.3, require complete native qualification and actual 0.4.2/0.4.3
 mixed-version checks. Use `quiet_checkpoint: true`,
 `executions: wait`, `daemon_restart: false` and `session_restart: required` to
 load the changed frontend. Retain qualified 0.4.2 as the rollback floor and all
-packages still referenced by processes or unresolved executions. Global AGENTS
-instructions are unchanged. Do not create a qualified handoff or publish archive
+packages still referenced by processes or unresolved executions. The global
+worker handoff threshold changes to sixteen minutes; include the reviewed
+replacement shell/advisor/goal block in `rollout.agents_md`. Do not create a qualified handoff or publish archive
 hashes before the final source freeze and per-target qualification. The
 [source companion note](releases/0.163.0-plus.0.4.3.md) lists the required gates;
 the release handoff records their executed results separately.
@@ -248,7 +249,7 @@ protocol-5 package as the rollback floor until explicitly retired by tested
 qualification. Private feature evidence does not qualify complete combined
 archives; record final qualification for each architecture in the companion note.
 See the [reviewed handoff contract](detached-jobs.md): workers prepare expected
-runs over eight minutes for root review; the estimate never imposes a timeout.
+runs over sixteen minutes for root review; the estimate never imposes a timeout.
 
 The earlier custom-goal cutover requires a quiet protocol-2 to protocol-3 transition,
 `daemon_restart: true` and `session_restart: required`, even though the upstream

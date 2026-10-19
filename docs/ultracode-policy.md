@@ -35,7 +35,7 @@ current turn. Ordinary user direction and goal/report-only barriers take priorit
    constraints and done criteria. Workers are leaves and return design questions
    to the root. Use topic/batch names for the HUD. Respect the shared configured
    child cap and actual remaining capacity; do not create another scheduling loop.
-5. **Hand back long executions.** Workers return commands expected to exceed eight
+5. **Hand back long executions.** Workers return commands expected to exceed sixteen
    minutes, hardware trials and service changes before launch. Include exact argv,
    cwd, inputs/environment references, resources/effects, duration, logs, success
    checks and cleanup. Unexpected overruns of permitted short checks may finish in

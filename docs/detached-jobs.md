@@ -11,7 +11,7 @@ These commands require the combined protocol-5 candidate. Until its quiet rollou
 exercise the candidate only with a private `CODEX_HOME`; keep live protocol-3
 registrations on the installed helper. Building a binary is not a live migration.
 
-1. Plan worker preparation and quick checks. Hand back expected runs over eight
+1. Plan worker preparation and quick checks. Hand back expected runs over sixteen
    minutes and hardware/service operations before launch. If a permitted quick
    check unexpectedly takes longer, finish it in one bounded local wait.
 2. Inspect the worker's script, declared inputs, resource claims, external
@@ -77,11 +77,11 @@ does not change the job's outcome.
 
 The interactive root plans each native worker assignment: preparation artifacts,
 permitted quick checks, and the point at which the worker returns control.
-Expected commands longer than eight minutes are handed back before launch.
+Expected commands longer than sixteen minutes are handed back before launch.
 Hardware trials, serving experiments and service restarts are handed back
 regardless of estimated duration. Independent AP sessions retain their workflow.
 
-Eight minutes is a planning guide, not a timeout. An allowed short command that
+Sixteen minutes is a planning guide, not a timeout. An allowed short command that
 overruns finishes normally in one bounded local wait, without repeated model
 polling, automatic transfer, cancellation or extra approval.
 
@@ -213,11 +213,11 @@ with this block only after the package and `job` wrapper route exist:
 
 ```markdown
 Plan native-worker assignments around preparation, quick checks and a clear handoff.
-Workers return expected runs over eight minutes, hardware trials, serving experiments
+Workers return expected runs over sixteen minutes, hardware trials, serving experiments
 and service restarts before launch. The root reviews and launches them with
 [reviewed detached jobs](/home/liupan/.local/share/fleet-config/codex-plus/current/docs/detached-jobs.md#agent-workflow),
 using existing authorization and safe parallelism across worktrees/resources.
-Eight minutes is an estimate: an allowed quick check that overruns finishes in
+Sixteen minutes is an estimate: an allowed quick check that overruns finishes in
 one bounded local wait. AP workers use native shell work and finish within their
 turn; managed detached jobs are for interactive roots. Leave `job maintenance
 enter/leave` to the host operator.

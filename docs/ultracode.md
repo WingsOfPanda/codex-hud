@@ -74,7 +74,7 @@ Ordinary direct-child watches expire after 24 hours with local attention, withou
 a guaranteed model wake. Per-child completion may cause multiple useful root
 wakes; unchanged work causes no observer model calls.
 
-Workers hand back expected executions over eight minutes before launch. The root
+Workers hand back expected executions over sixteen minutes before launch. The root
 uses [detached jobs](detached-jobs.md) only where the qualified commands are
 installed. Unexpected overruns of permitted short checks may finish. Prepared
 work is pending until execution acceptance passes.
