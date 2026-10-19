@@ -1,6 +1,6 @@
-# Codex Plus 0.163.0-plus.0.4.2 candidate
+# Codex Plus 0.163.0-plus.0.4.2
 
-This patch candidate refines the native UI and exact-turn admission readiness.
+This patch refines the native UI and exact-turn admission readiness.
 It retains official Codex 0.163.0, upstream commit
 `83086188ae0614bd882818ff1aa23f3194962012`, Rust 1.99.1, coordinator protocol 5
 and `execution_record_format: 1`. The shared daemon remains OpenAI's binary.
@@ -25,13 +25,14 @@ remain omitted. No new coordinator protocol or execution-record format is added.
 
 ## Qualification and rollout
 
-Complete x86_64 and aarch64 native package qualification is pending. Earlier
-feature evidence and tests do not qualify the final source snapshot, complete
-archives or mixed 0.4.1/0.4.2 operation. Record final source identity, exact checks,
-failures, skipped cases and accepted limits in the
-[draft companion note](releases/0.163.0-plus.0.4.2.md).
+Publication requires complete x86_64 and aarch64 native package qualification.
+Earlier feature evidence does not qualify final archives or mixed 0.4.1/0.4.2
+operation. The matching release handoff records final source and archive
+identities, executed checks, failures, skipped cases and accepted limits.
+The [source companion note](releases/0.163.0-plus.0.4.2.md) describes the scope
+and qualification requirements; it is not an archive acceptance receipt.
 
-Planned rollout requires `quiet_checkpoint: true`, `executions: wait`,
+Rollout requires `quiet_checkpoint: true`, `executions: wait`,
 `daemon_restart: false` and `session_restart: required` to load the changed UI.
 Retain qualified 0.4.1 as the rollback floor, plus all packages referenced by
 processes or unresolved executions. Actual forward/rollback compatibility must

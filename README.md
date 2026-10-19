@@ -6,10 +6,11 @@ tracks its own parent thread in ordinary terminals and split tmux panes.
 Release builds patch the frontend and keep upstream daemon code unchanged.
 The HUD and Rust completion coordinator work with the official stock daemon.
 
-The 0.163.0-plus.0.4.2 candidate refines the native status footer, worker role
+The 0.163.0-plus.0.4.2 update refines the native status footer, worker role
 prefixes and status colors, places Plus goal status above input, and fixes
-exact-turn admission readiness. Complete native package qualification is pending;
-see the [draft release note](docs/releases/0.163.0-plus.0.4.2.md).
+exact-turn admission readiness. See the
+[release note](docs/releases/0.163.0-plus.0.4.2.md); native archive qualification
+and identities are recorded separately in the release handoff.
 It retains [reviewed detached jobs](docs/detached-jobs.md):
 workers prepare expensive work, the root reviews and launches it, and local
 executors preserve results across qualified TUI and stock-daemon restarts.
