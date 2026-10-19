@@ -6,8 +6,11 @@ tracks its own parent thread in ordinary terminals and split tmux panes.
 Release builds patch the frontend and keep upstream daemon code unchanged.
 The HUD and Rust completion coordinator work with the official stock daemon.
 
-The 0.163.0-plus.0.4.1 patch release fixes transient input and Ultracode admission
-failures. It retains [reviewed detached jobs](docs/detached-jobs.md):
+The 0.163.0-plus.0.4.2 candidate refines the native status footer, worker role
+prefixes and status colors, places Plus goal status above input, and fixes
+exact-turn admission readiness. Complete native package qualification is pending;
+see the [draft release note](docs/releases/0.163.0-plus.0.4.2.md).
+It retains [reviewed detached jobs](docs/detached-jobs.md):
 workers prepare expensive work, the root reviews and launches it, and local
 executors preserve results across qualified TUI and stock-daemon restarts.
 It retains [Plus-owned goals](docs/goals.md) and genuine Idle waiting. Plus goal

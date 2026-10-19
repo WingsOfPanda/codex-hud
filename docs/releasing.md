@@ -13,11 +13,20 @@ updates; increment its patch component for Plus fixes and its minor component
 for Plus features. Every new combination still needs qualified target packages.
 Existing published `plus.N` releases retain their original identities.
 
-The current detached-job/Ultracode patch release is `0.163.0-plus.0.4.1`: coordinator protocol 5 and
+The current native UI/admission patch candidate is `0.163.0-plus.0.4.2`: coordinator protocol 5 and
 package `execution_record_format: 1`, with the same pinned official 0.163.0 daemon.
 The execution format describes durable executor records separately from
 coordinator/upstream compatibility. These identities do not establish package
 qualification, publication or installation.
+
+For the 0.4.2 candidate, complete native qualification and actual 0.4.1/0.4.2
+mixed-version checks remain pending. Use `quiet_checkpoint: true`,
+`executions: wait`, `daemon_restart: false` and `session_restart: required` to
+load the changed frontend. Retain qualified 0.4.1 as the rollback floor and all
+packages still referenced by processes or unresolved executions. Global AGENTS
+instructions are unchanged. Do not create a qualified handoff or publish archive
+hashes before the final source freeze and per-target qualification; track the
+remaining gates in the [draft companion note](releases/0.163.0-plus.0.4.2.md).
 
 ## Native binaries
 
