@@ -1,3 +1,32 @@
+# Codex Plus 0.163.0-plus.0.4.4
+
+The default advisor is Claude Opus 5.5 at `xhigh`, run on the central host
+`xjp-l20-2` through existing passwordless SSH, or locally when already on that
+host. Each consultation is a fresh process with tools disabled and receives
+only the brief, bounded Git metadata and explicitly attached context files.
+The previous native Codex advisor is available through `--provider astra`;
+there is no automatic model fallback or automatic retry.
+
+`codex-plus advisor --help` contains the complete workflow. The new global
+Advisor section points to that command and ships with the package, not before it.
+Native status and transcript rendering accept the exact Claude model, display
+`Opus 5.5 (xhigh)` after status is available, and recognize routing/context
+options. Before the first call, readiness is neutral rather than inferred from
+the Codex model catalog.
+
+Protocol 5, execution-record format 1, and the official Codex 0.163.0 daemon
+remain unchanged. No daemon restart or new SSH key is required. Native package
+qualification, quiet rollback to 0.4.3, and both-direction maintenance holds
+are release gates, not established by the development trials alone.
+See [the source release note](releases/0.163.0-plus.0.4.4.md).
+
+Install the central host before other callers. Drain advisor consultations on
+both callers and the central host before switching packages. Restart TUIs to
+load the Claude-aware frontend and global instructions. A running 0.4.3 TUI
+does not understand Claude advisor status, even though shell commands may
+already resolve to a newer helper. The qualified companion and handoff will
+state the exact compatibility evidence and any remaining limits.
+
 # Codex Plus 0.163.0-plus.0.4.3
 
 Workers hand back commands expected to exceed sixteen minutes before launch.

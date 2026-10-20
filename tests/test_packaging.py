@@ -39,7 +39,7 @@ class ReleaseIdentityTests(unittest.TestCase):
         lock = tomllib.loads((ROOT / 'rust-runtime/Cargo.lock').read_text())
         runtime = next(package for package in lock['package']
                        if package['name'] == 'codex-plus-runtime')
-        self.assertEqual(package_release.RELEASE, '0.163.0-plus.0.4.3')
+        self.assertEqual(package_release.RELEASE, '0.163.0-plus.0.4.4')
         self.assertEqual(manifest['package']['version'], package_release.PLUS_VERSION)
         self.assertEqual(runtime['version'], package_release.PLUS_VERSION)
         self.assertIn(f'docs/releases/{package_release.RELEASE}.md', package_release.DOCS)
