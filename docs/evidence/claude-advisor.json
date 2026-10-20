@@ -1,0 +1,87 @@
+{
+  "schema": 1,
+  "date": "2026-10-20",
+  "scope": "Development command and native frontend integration; not a published or installed release",
+  "base_commit": "4214eae0a81ffa7e0e4a83b50e36a74c18958ba2",
+  "default": {
+    "model": "claude-opus-5-5",
+    "effort": "xhigh",
+    "central_ssh_alias": "xjp-l20-2",
+    "local_hostname": "XJP-2card-L20-2",
+    "tools": "disabled",
+    "fallback": "none; Astra requires explicit --provider astra"
+  },
+  "contracts": {
+    "root_authorization": "local daemon thread/read, no transcript or daemon mutation",
+    "context": "explicit bounded UTF-8 regular files, no symlinks",
+    "response_binding": "request UUID, prompt SHA256, protocol and architecture-independent worker source identity",
+    "process_ownership": "existing subreaper guards plus open SSH request-channel lifeline",
+    "remote_uncertainty": "a partition may leave the worker running until disconnect detection or its 25-minute deadline; do not automatically retry"
+  },
+  "checks": {
+    "rust_advisor_units": 14,
+    "claude_blackbox_local": 6,
+    "real_ssh_roundtrip_and_caller_sigkill_cleanup": 2,
+    "explicit_astra_lifecycle_regressions": 13,
+    "native_advisor_filter": 19,
+    "native_worker_hud_filter": 55,
+    "launcher": 11,
+    "packaging": 42,
+    "native_filters_overlap": true,
+    "native_test_rust_min_stack": 33554432,
+    "clean_patch_application_and_reconstruction": true,
+    "changed_native_patch_sections": [
+      "codex-rs/tui/src/app/advisor.rs",
+      "codex-rs/tui/src/app/worker_hud.rs",
+      "codex-rs/tui/src/bottom_pane/worker_hud.rs",
+      "codex-rs/tui/src/exec_cell/advisor.rs"
+    ],
+    "other_patch_sections_unchanged": true,
+    "terminal_smoke": {
+      "passed_scenarios": 4,
+      "direct_command_options": [
+        "--host local",
+        "--context-file with spaces"
+      ],
+      "log": "/home/liupan/.codex/codex-plus/logs/75063b09-76f1-4635-b71a-58b4c7284531.log",
+      "captures": "/home/liupan/Aerius/codex-plus/.build/claude-advisor/terminal-smoke-final"
+    }
+  },
+  "live_provider": {
+    "x86_to_x86_real_ssh": {
+      "passed": true,
+      "model": "claude-opus-5-5",
+      "effort_requested": "xhigh",
+      "log": "/home/liupan/.codex/codex-plus/logs/1ea54138-3c87-460d-b20f-a82efef6cedf.log"
+    },
+    "native_arm_to_x86_real_ssh": {
+      "passed": true,
+      "model": "claude-opus-5-5",
+      "effort_requested": "xhigh",
+      "duration_seconds": 13.34006706206128,
+      "authorization": "private root RPC fixture; no live ARM session changed",
+      "log": "/home/liupan/.codex/codex-plus/logs/cc5f92ed-8975-43b7-841b-61e9fca645e3.log"
+    },
+    "effort_limit": "CLI accepts explicit xhigh; its result identifies the actual model but does not echo effective effort"
+  },
+  "artifacts": {
+    "directory": "/home/liupan/Aerius/codex-plus/.build/claude-advisor",
+    "worker_source_identity": "0557d5fca5b3838231601fe5c227f69c70ae69728545e7a92ff7cc48a2aac8e5",
+    "final_arm_helper_sha256": "2e17ec7a648124395b115e14f4603f2552a2a7256ee9c391141ce600b8e27297",
+    "global_pointer_sha256": "365dd4e9e27c584c3c94756bd91ac8fa078bb566bfb7a9ec4bf0f09e60f3f66f",
+    "frontend_patch_sha256": "caefa0227c491273d7540b2c5f4af336cac67b89f5e9c0b9367d9e55f7c3a4a4",
+    "workflow_sha256": "443a3a33c66ec0346896e183b033200edb2e2215f66482ba2ac344804acf8541"
+  },
+  "retained_failures": [
+    "Installed 0.4.3 fails new help and context-option contracts as expected.",
+    "Old native parser rejects advisor invocations with context/routing options; corrected and covered.",
+    "Direct native test invocation without the qualified 32 MiB stack aborts an upstream rate-limit test; rerun with the existing qualified environment passes.",
+    "Initial full-help document lacked the existing usage synopsis contract; restored synopsis and all 11 launcher tests pass."
+  ],
+  "limits": [
+    "No public release, fleet package installation, or daemon restart.",
+    "Native frontend acceptance is x86; native ARM helper compiled and tested separately.",
+    "Global pointer activation must follow installation of the command that exposes the complete workflow.",
+    "An ARM rustup preflight unexpectedly populated Rust 1.99.1 in a build-only cache; no installed fleet package, shared configuration, or service changed."
+  ]
+}

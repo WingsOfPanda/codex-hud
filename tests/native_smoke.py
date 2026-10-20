@@ -627,7 +627,7 @@ request_max_retries=0
 stream_max_retries=0
 ''')
 
-    def publish(identifier, state, *, model='gpt-6-astra', age=0, **changes):
+    def publish(identifier, state, *, model='claude-opus-5-5', age=0, **changes):
         now = time.time()
         value = dict(version=1, parent=identifier, model=model, effort='xhigh', state=state,
                      started_at=now - 83, updated_at=now - age,
@@ -683,9 +683,9 @@ stream_max_retries=0
         before = provider.count
         terminals = [Terminal(binary, home, workspace, parent=parent) for parent in parents]
         first, second = terminals
-        ready = 'Advisor · GPT-6-Astra (xhigh) · ready · 0 calls'
+        ready = 'Advisor · ready · 0 calls'
         wait(terminals, lambda: ready in first.text and ready in second.text,
-             'explicit Astra catalog did not show zero-call readiness', 30)
+             'neutral zero-call readiness missing', 30)
         assert not any(advisor_transcript_rows(t.text) for t in terminals), 'resumed old commands invented an advisor transcript'
         for index, terminal in enumerate(terminals):
             os.write(terminal.master, f'advisor-draft-{index}'.encode())
@@ -696,7 +696,7 @@ stream_max_retries=0
         capture('ready')
         publish(parents[0], 'running')
         publish(parents[1], 'done', model='gpt-7.2-astra', calls=1)
-        wait(terminals, lambda: 'GPT-6-Astra (xhigh) · reviewing · 1:' in first.text and
+        wait(terminals, lambda: 'Opus 5.5 (xhigh) · reviewing · 1:' in first.text and
              'GPT-7.2-Astra (xhigh) · 1 call · last 3:42' in second.text,
              'running and completed status did not remain isolated per pane')
         wait(terminals, lambda: len(shell_rows(first.text)) == 1,
@@ -713,14 +713,14 @@ stream_max_retries=0
              'done count/duration missing or finished advisor suppressed a shell')
         capture('done')
         publish(parents[0], 'error')
-        wait(terminals, lambda: 'GPT-6-Astra (xhigh) · error' in first.text, 'advisor error missing')
+        wait(terminals, lambda: 'Opus 5.5 (xhigh) · error' in first.text, 'advisor error missing')
         capture('error')
         publish(parents[0], 'running', age=20)
-        wait(terminals, lambda: 'GPT-6-Astra (xhigh) · unavailable' in first.text,
+        wait(terminals, lambda: 'Opus 5.5 (xhigh) · unavailable' in first.text,
              'stale advisor heartbeat still looked active')
         capture('stale')
         path = publish(parents[0], 'running', parent=parents[1])
-        wait(terminals, lambda: 'Advisor · ? (xhigh) · unavailable' in first.text,
+        wait(terminals, lambda: 'Advisor · unavailable' in first.text,
              'mismatched parent status was accepted')
         path.write_text('{invalid')
         observed = time.monotonic()
@@ -791,7 +791,7 @@ home = pathlib.Path(os.environ['CODEX_HOME']) / 'codex-plus'
 home.mkdir(exist_ok=True)
 parent = os.environ['CODEX_THREAD_ID']
 path = home / (parent + '.advisor.json')
-value = dict(version=1, parent=parent, model='gpt-6-astra', effort='xhigh',
+value = dict(version=1, parent=parent, model='claude-opus-5-5', effort='xhigh',
     state='running', started_at=time.time(), updated_at=time.time(), finished_at=None,
     calls=1, last_duration_secs=None, error=None)
 while True:
@@ -804,7 +804,7 @@ while True:
         temporary.write_text(json.dumps(value))
         temporary.replace(path)
     if value['state'] != 'running':
-        print(json.dumps(dict(model='gpt-6-astra', effort='xhigh', verdict='approve')))
+        print(json.dumps(dict(model='claude-opus-5-5', effort='xhigh', verdict='approve')))
         sys.exit({1 if failed else 0})
     time.sleep(.2)
 ''')
@@ -816,8 +816,11 @@ while True:
             command = ('# codex-plus-shell: foreground\n# codex-plus-advisor: ' + topic + '\n' +
                        shlex.join([sys.executable, str(script_path)]))
         else:
+            context = workspace / 'context file.txt'
+            context.write_text('Explicit advisor fixture evidence.\n')
             command = '# codex-plus-shell: foreground\n' + shlex.join([
-                str(launcher), 'run', '--', str(launcher), 'advisor', '--brief', topic])
+                str(launcher), 'run', '--', str(launcher), 'advisor', '--brief', topic,
+                '--host', 'local', '--context-file', str(context)])
         script = wait_script(command, budget_ms=45000, outer_ms=50000).replace('yield_time_ms: 250', 'yield_time_ms: 1000')
         if wrapper:
             unrelated = 'bash -c ' + shlex.quote(
@@ -883,7 +886,7 @@ stream_max_retries=0
                 assert 'Running # codex-plus-advisor:' not in terminal.text, terminal.text
             else:
                 assert 'Running ' not in terminal.text, 'advisor kept its ordinary running command header'
-            assert any('GPT-6-Astra (xhigh)' in row and 'reviewing' in row
+            assert any('Opus 5.5 (xhigh)' in row and 'reviewing' in row
                        for row in advisor_rows(terminal.text)), terminal.text
             assert_compact_hud(terminal.text, idle=False)
             os.write(terminal.master, b'advisor-live-draft')

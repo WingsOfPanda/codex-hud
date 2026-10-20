@@ -43,7 +43,7 @@ def run(binary, runtime, evidence):
         command = '# codex-plus-shell: foreground\n' + shlex.join([
             'env', f'CODEX_HOME={advisor_home}', f'CODEX_THREAD_ID={PARENT}',
             str(runtime), 'run', '--', str(runtime), '--package-root', str(package),
-            'advisor', '--brief', 'Private cancellation fixture; no provider call.'])
+            'advisor', '--provider', 'astra', '--brief', 'Private cancellation fixture; no provider call.'])
         provider = ShellPolicyProvider(command, yield_time_ms=1000)
         configure(home, workspace, provider)
         terminal, pids = None, []

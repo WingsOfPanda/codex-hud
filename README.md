@@ -242,7 +242,7 @@ remain standalone rows. Grouping never guesses purpose from timing or similar
 names and makes no model calls.
 The six-row limit and `+N more` count groups, standalone workers, native shells and detached jobs.
 
-## Astra advisor
+## Advisor
 
 From the main session, request an explicit, read-only second opinion:
 
@@ -250,10 +250,13 @@ From the main session, request an explicit, read-only second opinion:
 ./bin/codex-plus advisor --brief 'Review the proposed approach and its main risks.'
 ```
 
-The helper selects the newest available numeric Astra model supporting `xhigh`,
-then runs one isolated read-only consultation with the packaged native client.
-Supply a self-contained brief: the advisor receives clipped Git status and diff
-statistics, without the session transcript or diff contents. The footer shows
+The default is Claude Opus 5.5 at `xhigh`, run on the central host `xjp-l20-2`
+through existing passwordless SSH (locally when already on that host).
+Supply a self-contained brief and optional `--context-file PATH` attachments.
+Claude receives clipped Git metadata and those explicit files, with tools disabled;
+it does not receive the session transcript or inspect the caller's filesystem.
+Use `--provider astra` explicitly for the previous local native Codex advisor.
+Run `./bin/codex-plus advisor --help` for the embedded workflow. The footer shows
 readiness, the current consultation, and the completed call count and duration;
 refreshing it makes no model calls. Consultations needed before the next decision
 stay foreground, with a live conversation row such as

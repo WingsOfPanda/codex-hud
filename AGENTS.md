@@ -57,7 +57,8 @@ Before a native subagent waits for a shell result, read
 [worker shell waits](docs/shell-workflow.md#native-subagent-waits).
 
 For an independent read-only second opinion, the root session can use the
-[Astra advisor](docs/advisor.md). Supply a self-contained brief; the main agent
+[advisor](docs/advisor.md). Run `codex-plus advisor --help` for the built-in
+workflow. Supply a self-contained brief; the main agent
 owns the decision after reviewing the advisor's findings. Consultations needed
 for the next decision stay foreground in one bounded local wait; read the advisor
 workflow before launching one. Use background only when independent work can

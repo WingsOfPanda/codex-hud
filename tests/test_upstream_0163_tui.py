@@ -199,7 +199,7 @@ def managed_shell_status(binary, root, evidence):
              'idle shell observation did not cover a HUD refresh', 4)
         assert shell_rows(terminal.text), terminal.text
         assert len(advisor_rows(terminal.text)) == 1, terminal.text
-        assert '(xhigh) · ready · 0 calls' in advisor_rows(terminal.text)[0], terminal.text
+        assert 'Advisor · ready · 0 calls' in advisor_rows(terminal.text)[0], terminal.text
         assert_compact_hud(terminal.text, rows=2)
         assert program_statuses(terminal.output)[-1] == 'working', program_statuses(terminal.output)
         assert 'esc to interrupt' not in terminal.text.lower(), terminal.text

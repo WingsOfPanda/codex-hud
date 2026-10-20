@@ -54,7 +54,7 @@ def run(binary, evidence, seconds=65):
         wrapper.chmod(0o755)
         command = '# codex-plus-shell: foreground\n' + shlex.join([
             str(package / 'bin/codex-plus'), 'run', '--',
-            str(package / 'bin/codex-plus'), 'advisor', '--brief',
+            str(package / 'bin/codex-plus'), 'advisor', '--provider', 'astra', '--brief',
             'Assess this decision before the root continues.'])
         script = (REPO / 'docs/advisor.md').read_text().split('```js\n', 1)[1].split('```', 1)[0]
         command_line = next(line for line in script.splitlines() if line.strip().startswith('cmd:'))

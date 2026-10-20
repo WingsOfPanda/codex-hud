@@ -1567,48 +1567,18 @@ index 1b07e9826..cb9e4d6db 100644
                          && self.transcript_view.history
 diff --git a/codex-rs/tui/src/app/advisor.rs b/codex-rs/tui/src/app/advisor.rs
 new file mode 100644
-index 000000000..b3d14e3b9
+index 000000000..887906dc3
 --- /dev/null
 +++ b/codex-rs/tui/src/app/advisor.rs
-@@ -0,0 +1,290 @@
+@@ -0,0 +1,259 @@
 +//! Local advisory status only; consulting the model belongs to the explicit CLI helper.
 +
 +use super::worker_hud::read_status_bytes;
 +use crate::bottom_pane::worker_hud::AdvisorRow;
 +use crate::bottom_pane::worker_hud::AdvisorState;
++use crate::bottom_pane::worker_hud::supported_advisor_model;
 +use codex_protocol::ThreadId;
-+use codex_protocol::openai_models::ModelPreset;
-+use codex_protocol::openai_models::ReasoningEffort;
 +use std::path::Path;
-+
-+fn astra_version(model: &str) -> Option<Vec<u64>> {
-+    model
-+        .strip_prefix("gpt-")?
-+        .strip_suffix("-astra")?
-+        .split('.')
-+        .map(|part| {
-+            if part.is_empty() || !part.bytes().all(|ch| ch.is_ascii_digit()) {
-+                return None;
-+            }
-+            part.parse().ok()
-+        })
-+        .collect()
-+}
-+
-+pub(super) fn ready_model(models: &[ModelPreset]) -> Option<String> {
-+    models
-+        .iter()
-+        .filter(|model| model.show_in_picker)
-+        .filter(|model| {
-+            model
-+                .supported_reasoning_efforts
-+                .iter()
-+                .any(|effort| effort.effort == ReasoningEffort::XHigh)
-+        })
-+        .filter_map(|model| Some((astra_version(&model.model)?, &model.model)))
-+        .max_by(|(a, _), (b, _)| a.cmp(b))
-+        .map(|(_, model)| model.clone())
-+}
 +
 +pub(super) fn unavailable() -> AdvisorRow {
 +    AdvisorRow {
@@ -1642,18 +1612,13 @@ index 000000000..b3d14e3b9
 +    error: Option<String>,
 +}
 +
-+pub(super) fn read_advisor(
-+    path: &Path,
-+    root: ThreadId,
-+    now: f64,
-+    ready: Option<String>,
-+) -> Option<AdvisorRow> {
++pub(super) fn read_advisor(path: &Path, root: ThreadId, now: f64) -> Option<AdvisorRow> {
 +    let bytes = match read_status_bytes(path) {
 +        Ok(Some(bytes)) => bytes,
 +        Ok(None) => {
-+            return ready.map(|model| AdvisorRow {
++            return Some(AdvisorRow {
 +                started_at_ms: None,
-+                model: Some(model),
++                model: None,
 +                state: AdvisorState::Ready,
 +            });
 +        }
@@ -1665,7 +1630,7 @@ index 000000000..b3d14e3b9
 +    let epoch = |time: f64| time.is_finite() && time >= 0.0;
 +    if status.version != 1
 +        || status.parent != root
-+        || astra_version(&status.model).is_none()
++        || !supported_advisor_model(&status.model)
 +        || status.effort != "xhigh"
 +        || status.calls == 0
 +        || !epoch(status.started_at)
@@ -1717,7 +1682,6 @@ index 000000000..b3d14e3b9
 +#[cfg(test)]
 +mod tests {
 +    use super::*;
-+    use codex_protocol::openai_models::ReasoningEffortPreset;
 +
 +    fn status(root: ThreadId, state: &str) -> serde_json::Value {
 +        serde_json::json!({"version":1,"parent":root.to_string(),"model":"gpt-6-astra","effort":"xhigh",
@@ -1726,74 +1690,32 @@ index 000000000..b3d14e3b9
 +    }
 +
 +    #[test]
-+    fn advisor_ready_uses_newest_numeric_astra_with_xhigh_only() {
-+        fn preset(model: &str, effort: ReasoningEffort) -> ModelPreset {
-+            let value = serde_json::json!({
-+                "id":model, "model":model, "display_name":model, "description":"",
-+                "default_reasoning_effort":"high", "supported_reasoning_efforts":[],
-+                "is_default":false, "show_in_picker":true, "supported_in_api":true
-+            });
-+            let mut preset: ModelPreset = serde_json::from_value(value).unwrap();
-+            preset.supported_reasoning_efforts = vec![ReasoningEffortPreset {
-+                effort,
-+                description: String::new(),
-+            }];
-+            preset
-+        }
-+        let mut hidden = preset("gpt-99-astra", ReasoningEffort::XHigh);
-+        hidden.show_in_picker = false;
-+        let models = vec![
-+            hidden,
-+            preset("gpt-6.9-astra", ReasoningEffort::XHigh),
-+            preset("gpt-6.10-astra", ReasoningEffort::XHigh),
-+            preset("gpt-7-astra", ReasoningEffort::High),
-+            preset("gpt-9-sol", ReasoningEffort::XHigh),
-+            preset("gpt-latest-astra", ReasoningEffort::XHigh),
-+            preset("provider/gpt-8-astra", ReasoningEffort::XHigh),
-+        ];
-+        assert_eq!(ready_model(&models).as_deref(), Some("gpt-6.10-astra"));
-+        assert_eq!(ready_model(&[]), None);
-+        for slug in [
-+            "gpt-6..1-astra",
-+            "gpt--astra",
-+            "gpt-6-astra-foo",
-+            "gpt-999999999999999999999-astra",
-+        ] {
-+            assert_eq!(astra_version(slug), None);
-+        }
-+    }
-+
-+    #[test]
 +    fn advisor_missing_ready_and_persistent_terminal_states() {
 +        let dir = tempfile::tempdir().unwrap();
 +        let path = dir.path().join("advisor.json");
 +        let root = ThreadId::new();
-+        assert_eq!(read_advisor(&path, root, 110.0, None), None);
++        let ready = read_advisor(&path, root, 110.0).unwrap();
++        assert_eq!(ready.state, AdvisorState::Ready);
++        assert_eq!(ready.model, None);
 +        assert!(!path.exists());
-+        assert_eq!(
-+            read_advisor(&path, root, 110.0, Some("gpt-7.2-astra".into()))
-+                .unwrap()
-+                .state,
-+            AdvisorState::Ready
-+        );
 +        let mut value = status(root, "running");
 +        std::fs::write(&path, value.to_string()).unwrap();
-+        let row = read_advisor(&path, root, 110.0, Some("gpt-7-astra".into())).unwrap();
++        let row = read_advisor(&path, root, 110.0).unwrap();
 +        assert_eq!(row.model.as_deref(), Some("gpt-6-astra"));
 +        assert_eq!(row.state, AdvisorState::Running(10));
 +        assert_eq!(
-+            read_advisor(&path, root, 120.0, None).unwrap().state,
++            read_advisor(&path, root, 120.0).unwrap().state,
 +            AdvisorState::Running(20)
 +        );
 +        assert_eq!(
-+            read_advisor(&path, root, 120.1, None).unwrap().state,
++            read_advisor(&path, root, 120.1).unwrap().state,
 +            AdvisorState::Unavailable
 +        );
 +        value["state"] = serde_json::json!("done");
 +        value["finished_at"] = serde_json::json!(110.0);
 +        std::fs::write(&path, value.to_string()).unwrap();
 +        assert_eq!(
-+            read_advisor(&path, root, 9999.0, None).unwrap().state,
++            read_advisor(&path, root, 9999.0).unwrap().state,
 +            AdvisorState::Done {
 +                calls: 2,
 +                last_secs: 222
@@ -1803,9 +1725,56 @@ index 000000000..b3d14e3b9
 +        value["error"] = serde_json::json!("exec_failed");
 +        std::fs::write(&path, value.to_string()).unwrap();
 +        assert_eq!(
-+            read_advisor(&path, root, 9999.0, None).unwrap().state,
++            read_advisor(&path, root, 9999.0).unwrap().state,
 +            AdvisorState::Error
 +        );
++    }
++
++    #[test]
++    fn advisor_accepts_exact_claude_status_and_preserves_lifecycle() {
++        let dir = tempfile::tempdir().unwrap();
++        let path = dir.path().join("advisor.json");
++        let root = ThreadId::new();
++        let mut value = status(root, "running");
++        value["model"] = serde_json::json!("claude-opus-5-5");
++        std::fs::write(&path, value.to_string()).unwrap();
++        let row = read_advisor(&path, root, 110.0).unwrap();
++        assert_eq!(row.model.as_deref(), Some("claude-opus-5-5"));
++        assert_eq!(row.state, AdvisorState::Running(10));
++        assert_eq!(
++            read_advisor(&path, root, 120.1).unwrap().state,
++            AdvisorState::Unavailable
++        );
++        value["state"] = serde_json::json!("done");
++        value["finished_at"] = serde_json::json!(110.0);
++        std::fs::write(&path, value.to_string()).unwrap();
++        assert_eq!(
++            read_advisor(&path, root, 9999.0).unwrap().state,
++            AdvisorState::Done {
++                calls: 2,
++                last_secs: 222
++            }
++        );
++        value["state"] = serde_json::json!("error");
++        value["error"] = serde_json::json!("exec_failed");
++        std::fs::write(&path, value.to_string()).unwrap();
++        assert_eq!(
++            read_advisor(&path, root, 9999.0).unwrap().state,
++            AdvisorState::Error
++        );
++        for model in [
++            "claude-opus-5-5-preview",
++            "provider/claude-opus-5-5",
++            "claude-opus-5-5\nsecret",
++        ] {
++            value["model"] = serde_json::json!(model);
++            std::fs::write(&path, value.to_string()).unwrap();
++            assert_eq!(
++                read_advisor(&path, root, 110.0),
++                Some(unavailable()),
++                "{model}"
++            );
++        }
 +    }
 +
 +    #[cfg(unix)]
@@ -1818,12 +1787,12 @@ index 000000000..b3d14e3b9
 +        let source = dir.path().join("source");
 +        std::fs::write(&source, status(root, "running").to_string()).unwrap();
 +        std::os::unix::fs::symlink(&source, &path).unwrap();
-+        assert_eq!(read_advisor(&path, root, 110.0, None), Some(unavailable()));
++        assert_eq!(read_advisor(&path, root, 110.0), Some(unavailable()));
 +        std::fs::remove_file(&path).unwrap();
 +        let cpath = std::ffi::CString::new(path.as_os_str().as_bytes()).unwrap();
 +        assert_eq!(unsafe { libc::mkfifo(cpath.as_ptr(), 0o600) }, 0);
 +        let at = std::time::Instant::now();
-+        assert_eq!(read_advisor(&path, root, 110.0, None), Some(unavailable()));
++        assert_eq!(read_advisor(&path, root, 110.0), Some(unavailable()));
 +        assert!(at.elapsed() < std::time::Duration::from_millis(250));
 +    }
 +
@@ -1850,14 +1819,14 @@ index 000000000..b3d14e3b9
 +            invalid[key] = value;
 +            std::fs::write(&path, invalid.to_string()).unwrap();
 +            assert_eq!(
-+                read_advisor(&path, root, 110.0, None),
++                read_advisor(&path, root, 110.0),
 +                Some(unavailable()),
 +                "{key}"
 +            );
 +        }
 +        for bytes in [b"broken".to_vec(), vec![b' '; 16385]] {
 +            std::fs::write(&path, bytes).unwrap();
-+            assert_eq!(read_advisor(&path, root, 110.0, None), Some(unavailable()));
++            assert_eq!(read_advisor(&path, root, 110.0), Some(unavailable()));
 +        }
 +    }
 +}
@@ -5387,10 +5356,10 @@ index c8d16dc9c..6cf52a01c 100644
                  self.handle_skills_list_result(
 diff --git a/codex-rs/tui/src/app/worker_hud.rs b/codex-rs/tui/src/app/worker_hud.rs
 new file mode 100644
-index 000000000..58fa43169
+index 000000000..84ded88bf
 --- /dev/null
 +++ b/codex-rs/tui/src/app/worker_hud.rs
-@@ -0,0 +1,1902 @@
+@@ -0,0 +1,1901 @@
 +//! Per-client worker metadata refresh. These requests never start or steer a turn.
 +
 +use super::*;
@@ -5900,7 +5869,6 @@ index 000000000..58fa43169
 +            .codex_home
 +            .join("codex-plus")
 +            .join(format!("{root}.advisor.json"));
-+        let ready = super::advisor::ready_model(&self.model_catalog.models);
 +        let app_event_tx = self.app_event_tx.clone();
 +        let goal_home = self.config.codex_home.clone();
 +        let fallback_goal = self.worker_hud.goal.clone().map(|(id, label)| {
@@ -5922,7 +5890,7 @@ index 000000000..58fa43169
 +                (
 +                    super::execution_hud::read(goal_home.as_path(), root, now),
 +                    read_watcher_health(path.as_path(), root, now),
-+                    super::advisor::read_advisor(&advisor_path, root, now, ready),
++                    super::advisor::read_advisor(&advisor_path, root, now),
 +                    match crate::plus_goals::read(goal_home.as_path(), root) {
 +                        Ok(Some(snapshot)) => {
 +                            let id = snapshot
@@ -10663,10 +10631,10 @@ index f717e2426..7a49ebb6a 100644
 +                                                   100% context left
 diff --git a/codex-rs/tui/src/bottom_pane/worker_hud.rs b/codex-rs/tui/src/bottom_pane/worker_hud.rs
 new file mode 100644
-index 000000000..72ebda43c
+index 000000000..b91f034d2
 --- /dev/null
 +++ b/codex-rs/tui/src/bottom_pane/worker_hud.rs
-@@ -0,0 +1,1809 @@
+@@ -0,0 +1,1986 @@
 +//! Read-only worker summary; clipping never takes space from the composer.
 +
 +use crate::line_truncation::truncate_line_with_ellipsis_if_overflow;
@@ -10804,9 +10772,22 @@ index 000000000..72ebda43c
 +    Unavailable,
 +}
 +
++pub(crate) fn supported_advisor_model(model: &str) -> bool {
++    model == "claude-opus-5-5"
++        || model
++            .strip_prefix("gpt-")
++            .and_then(|version| version.strip_suffix("-astra"))
++            .is_some_and(|version| {
++                version.split('.').all(|part| {
++                    !part.is_empty()
++                        && part.bytes().all(|ch| ch.is_ascii_digit())
++                        && part.parse::<u64>().is_ok()
++                })
++            })
++}
++
 +impl AdvisorRow {
 +    fn line(&self) -> Line<'static> {
-+        let model = model_label(self.model.as_deref());
 +        let status = match self.state {
 +            AdvisorState::Ready => "ready · 0 calls".to_string(),
 +            AdvisorState::Running(secs) => format!("reviewing · {}:{:02}", secs / 60, secs % 60),
@@ -10819,7 +10800,11 @@ index 000000000..72ebda43c
 +            AdvisorState::Error => "error".to_string(),
 +            AdvisorState::Unavailable => "unavailable".to_string(),
 +        };
-+        let line = Line::from(format!("  Advisor · {model} (xhigh) · {status}"));
++        let label = match self.model.as_deref() {
++            Some(model) => format!("Advisor · {} (xhigh)", model_label(Some(model))),
++            None => "Advisor".to_string(),
++        };
++        let line = Line::from(format!("  {label} · {status}"));
 +        if matches!(self.state, AdvisorState::Error | AdvisorState::Unavailable) {
 +            line.not_dim()
 +        } else {
@@ -11129,8 +11114,54 @@ index 000000000..72ebda43c
 +            || (std::path::Path::new(program).is_absolute()
 +                && program.ends_with("/bin/codex-plus"));
 +        if launcher {
-+            if args.len() == 4 && args[1] == "advisor" && args[2] == "--brief" {
-+                let brief: String = args[3]
++            if args.get(1).is_some_and(|arg| arg == "advisor") {
++                let mut options = HashMap::new();
++                let mut context_files = 0;
++                let mut claude_options = false;
++                let mut args = args[2..].iter();
++                while let Some(arg) = args.next() {
++                    let (flag, value) = match arg.split_once('=') {
++                        Some(pair) => pair,
++                        None => (arg.as_str(), args.next()?.as_str()),
++                    };
++                    if flag != "--context-file" && options.insert(flag, value).is_some() {
++                        return None;
++                    }
++                    match flag {
++                        "--brief" => {}
++                        "--provider" if matches!(value, "claude" | "astra") => {}
++                        "--host"
++                            if !value.is_empty()
++                                && value.len() <= 253
++                                && !value.starts_with('-')
++                                && value.bytes().all(|byte| {
++                                    byte.is_ascii_alphanumeric()
++                                        || matches!(byte, b'-' | b'_' | b'.')
++                                }) =>
++                        {
++                            claude_options = true;
++                        }
++                        "--remote-command"
++                            if !value.is_empty()
++                                && value.len() <= 4096
++                                && !value.chars().any(char::is_control) =>
++                        {
++                            claude_options = true;
++                        }
++                        "--context-file"
++                            if context_files < 8 && !value.is_empty() && value.len() <= 4096 =>
++                        {
++                            context_files += 1;
++                            claude_options = true;
++                        }
++                        _ => return None,
++                    }
++                }
++                if options.get("--provider") == Some(&"astra") && claude_options {
++                    return None;
++                }
++                let brief: String = options
++                    .get("--brief")?
 +                    .chars()
 +                    .map(|ch| if ch.is_control() { ' ' } else { ch })
 +                    .collect();
@@ -11355,6 +11386,9 @@ index 000000000..72ebda43c
 +        .map(|ch| if ch.is_control() { ' ' } else { ch })
 +        .collect();
 +    let model = model.trim();
++    if model == "claude-opus-5-5" {
++        return "Opus 5.5".to_string();
++    }
 +    let mut parts = model.splitn(4, '-');
 +    if let (Some(prefix), Some(version), Some(family)) = (parts.next(), parts.next(), parts.next())
 +        && prefix.eq_ignore_ascii_case("gpt")
@@ -11555,6 +11589,43 @@ index 000000000..72ebda43c
 +    }
 +
 +    #[test]
++    fn advisor_ready_is_neutral_and_claude_rows_report_actual_model() {
++        let mut row = AdvisorRow {
++            started_at_ms: None,
++            model: None,
++            state: AdvisorState::Ready,
++        };
++        assert_eq!(row.line().to_string(), "  Advisor · ready · 0 calls");
++        row.model = Some("claude-opus-5-5".into());
++        for (state, status) in [
++            (AdvisorState::Running(83), "reviewing · 1:23"),
++            (
++                AdvisorState::Done {
++                    calls: 2,
++                    last_secs: 222,
++                },
++                "2 calls · last 3:42",
++            ),
++            (AdvisorState::Error, "error"),
++        ] {
++            row.state = state;
++            assert_eq!(
++                row.line().to_string(),
++                format!("  Advisor · Opus 5.5 (xhigh) · {status}")
++            );
++        }
++        for model in [
++            "gpt-6..1-astra",
++            "gpt--astra",
++            "gpt-6-astra-foo",
++            "gpt-999999999999999999999-astra",
++            "gpt-+6-astra",
++        ] {
++            assert!(!supported_advisor_model(model), "{model}");
++        }
++    }
++
++    #[test]
 +    fn advisor_rows_keep_warnings_priority_and_six_total_rows() {
 +        for advisor_state in [
 +            AdvisorState::Ready,
@@ -11614,6 +11685,79 @@ index 000000000..72ebda43c
 +                    }
 +                }
 +            }
++        }
++    }
++
++    #[test]
++    fn advisor_topics_accept_supported_options_and_reject_invalid_invocations() {
++        for args in [
++            vec![
++                "--brief",
++                "review changes",
++                "--context-file",
++                "/tmp/context file",
++            ],
++            vec!["--provider", "astra", "--brief", "review changes"],
++            vec![
++                "--host",
++                "xjp-l20-2",
++                "--remote-command",
++                "/tmp/advisor worker",
++                "--brief",
++                "review changes",
++            ],
++            vec![
++                "--provider=claude",
++                "--context-file=one",
++                "--context-file",
++                "two",
++                "--host=local",
++                "--brief=review changes",
++            ],
++        ] {
++            let command =
++                shlex::try_join(["codex-plus", "advisor"].into_iter().chain(args)).unwrap();
++            for command in [
++                command.clone(),
++                format!("codex-plus run -- {command}"),
++                shlex::try_join(["bash", "-lc", command.as_str()]).unwrap(),
++            ] {
++                assert_eq!(
++                    advisor_topic(&command).as_deref(),
++                    Some("review changes"),
++                    "{command}"
++                );
++            }
++        }
++        for args in [
++            vec!["--brief", "task", "--extra", "value"],
++            vec!["--brief", "task", "--brief", "again"],
++            vec![
++                "--brief",
++                "task",
++                "--provider",
++                "claude",
++                "--provider=astra",
++            ],
++            vec!["--brief", "task", "--provider", "other"],
++            vec!["--brief", "task", "--host", "local", "--host=other"],
++            vec!["--brief", "task", "--host=-other"],
++            vec!["--brief", "task", "--host=bad/host"],
++            vec![
++                "--brief",
++                "task",
++                "--remote-command=one",
++                "--remote-command=two",
++            ],
++            vec!["--brief", "task", "--remote-command="],
++            vec!["--brief", "task", "--context-file"],
++            vec!["--brief", "task", "--provider=astra", "--context-file=one"],
++            vec!["--brief", "task", "--provider=astra", "--host=local"],
++            vec!["--context-file", "one"],
++        ] {
++            let command =
++                shlex::try_join(["codex-plus", "advisor"].into_iter().chain(args)).unwrap();
++            assert_eq!(advisor_topic(&command), None, "{command}");
 +        }
 +    }
 +
@@ -12444,6 +12588,7 @@ index 000000000..72ebda43c
 +    #[test]
 +    fn worker_hud_full_model_labels_preserve_versions_suffixes_and_unknown_ids() {
 +        for (model, expected) in [
++            ("claude-opus-5-5", "Opus 5.5"),
 +            ("gpt-6-sol", "GPT-6-Sol"),
 +            ("GPT-6.1-SOL", "GPT-6.1-Sol"),
 +            ("gpt-6-astra", "GPT-6-Astra"),
@@ -15906,14 +16051,16 @@ index f8681dc8a..4687db854 100644
  
 diff --git a/codex-rs/tui/src/exec_cell/advisor.rs b/codex-rs/tui/src/exec_cell/advisor.rs
 new file mode 100644
-index 000000000..07dc951bd
+index 000000000..091d6b725
 --- /dev/null
 +++ b/codex-rs/tui/src/exec_cell/advisor.rs
-@@ -0,0 +1,261 @@
+@@ -0,0 +1,286 @@
 +//! Compact advisor presentation; execution and detailed output remain ordinary shell history.
 +
 +use super::model::ExecCell;
-+use crate::bottom_pane::worker_hud::{AdvisorRow, AdvisorState, advisor_topic};
++use crate::bottom_pane::worker_hud::{
++    AdvisorRow, AdvisorState, advisor_topic, supported_advisor_model,
++};
 +use crate::chatwidget::shell_policy::{ShellVisibility, eligible_shell, shell_directive};
 +use crate::exec_command::escape_command;
 +use crate::terminal_hyperlinks::HyperlinkLine;
@@ -15973,15 +16120,8 @@ index 000000000..07dc951bd
 +                output.lines().find_map(|line| {
 +                    let value: serde_json::Value = serde_json::from_str(&line).ok()?;
 +                    let model = value.get("model")?.as_str()?;
-+                    (value.get("effort")?.as_str()? == "xhigh"
-+                        && model
-+                            .strip_prefix("gpt-")?
-+                            .strip_suffix("-astra")?
-+                            .split('.')
-+                            .all(|part| {
-+                                !part.is_empty() && part.bytes().all(|c| c.is_ascii_digit())
-+                            }))
-+                    .then_some(())
++                    (value.get("effort")?.as_str()? == "xhigh" && supported_advisor_model(model))
++                        .then_some(())
 +                })?;
 +                ("Advised on", duration.as_secs())
 +            }
@@ -16149,6 +16289,36 @@ index 000000000..07dc951bd
 +            Duration::from_secs(7),
 +        );
 +        assert!(malformed.advisor_lines(100).is_none());
++    }
++
++    #[test]
++    fn advisor_transcript_accepts_exact_claude_result_only() {
++        for (model, effort, accepted) in [
++            ("claude-opus-5-5", "xhigh", true),
++            ("claude-opus-5-5-preview", "xhigh", false),
++            ("provider/claude-opus-5-5", "xhigh", false),
++            ("claude-opus-5-5\nSECRET", "xhigh", false),
++            ("claude-opus-5-5", "high", false),
++        ] {
++            let mut replay =
++                cell("codex-plus advisor --context-file 'review context.txt' --brief task");
++            replay.complete_call(
++                "advisor",
++                CommandOutput::new(
++                    0,
++                    serde_json::json!({ "model": model, "effort": effort }).to_string(),
++                ),
++                Duration::from_secs(65),
++            );
++            assert_eq!(
++                replay.advisor_lines(100).is_some(),
++                accepted,
++                "{model} {effort}"
++            );
++            if accepted {
++                assert_eq!(text(&replay), "• Advised on task · 1:05");
++            }
++        }
 +    }
 +
 +    #[test]

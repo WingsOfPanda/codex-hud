@@ -98,7 +98,7 @@ def run(binary, evidence):
         env = {key: value for key, value in os.environ.items()
                if not any(secret in key.upper() for secret in ('API_KEY', 'AUTH_TOKEN', 'BASE_URL'))}
         env.update(CODEX_HOME=str(home), CODEX_THREAD_ID=PARENT, HOME=str(root), RUST_LOG='warn')
-        command = [str(package / 'bin/codex-plus'), 'advisor', '--brief',
+        command = [str(package / 'bin/codex-plus'), 'advisor', '--provider', 'astra', '--brief',
                    'Inspect evidence.txt and check whether repository writes are prohibited.']
 
         def status():

@@ -78,7 +78,7 @@ class AdvisorRegressions(unittest.TestCase):
         self.addCleanup(self.server.close)
         self.env = dict(os.environ, CODEX_HOME=str(self.home), CODEX_THREAD_ID=PARENT)
         self.env.pop('CODEX_PLUS_ADVISOR_ACTIVE', None)
-        self.command = [str(RUNTIME), '--package-root', str(self.package), 'advisor', '--brief', 'Local fixture only.']
+        self.command = [str(RUNTIME), '--package-root', str(self.package), 'advisor', '--provider', 'astra', '--brief', 'Local fixture only.']
         self.write_native('''import os,sys
 from pathlib import Path
 Path(sys.argv[sys.argv.index('--output-last-message')+1]).write_bytes(
