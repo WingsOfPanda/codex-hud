@@ -658,6 +658,43 @@ fn malformed_cancel_does_not_kill_and_live_descendants_require_cleanup() {
 }
 
 #[test]
+fn living_executor_reconciliation_leaves_startup_lock_untouched() {
+    for state in [State::Launching, State::Running] {
+        let (temp, root, mut record, dir) = setup("exit 0");
+        record.state = state;
+        record.executor = Some(identity(std::process::id()).unwrap());
+        dir.atomic("state.json", &record).unwrap();
+
+        let current = reconcile(temp.path(), &root, &record.id).unwrap();
+        assert_eq!(current["state"], serde_json::to_value(state).unwrap());
+        assert_eq!(current["executor"], serde_json::to_value(&record.executor).unwrap());
+        assert!(
+            !dir.path.join("executor.lock").exists(),
+            "a live executor may be about to acquire its startup lock"
+        );
+    }
+}
+
+#[test]
+fn unavailable_executor_reconciliation_still_checks_lock_ownership() {
+    let mut stale = identity(std::process::id()).unwrap();
+    stale.start_ticks += 1;
+    for executor in [None, Some(stale)] {
+        let (temp, root, mut record, dir) = setup("exit 0");
+        record.state = State::Launching;
+        record.executor = executor;
+        dir.atomic("state.json", &record).unwrap();
+
+        let owner = Lock::acquire(&dir, "executor.lock", false).unwrap().unwrap();
+        assert_eq!(reconcile(temp.path(), &root, &record.id).unwrap()["state"], "launching");
+        drop(owner);
+        let current = reconcile(temp.path(), &root, &record.id).unwrap();
+        assert_eq!(current["state"], "unknown");
+        assert!(current["error"].as_str().unwrap().contains("never replay this UUID"));
+    }
+}
+
+#[test]
 fn duplicate_executor_entry_cannot_corrupt_prepared_or_live_execution() {
     let (temp, root, mut record, dir) = setup("exit 0");
     assert_eq!(execute(temp.path(), temp.path(), &root, &record.id), 1);

@@ -439,8 +439,7 @@ pub fn reconcile(home: &Path, root: &str, id: &str) -> Result<Value> {
                 .map(alive)
                 .transpose()?
                 .unwrap_or(false);
-            let executor_busy = Lock::acquire(&dir, "executor.lock", true)?.is_none();
-            if !living && !executor_busy {
+            if !living && Lock::acquire(&dir, "executor.lock", true)?.is_some() {
                 unknown(home,&dir,&mut record,"executor unavailable without a durable terminal receipt; never replay this UUID".into())?;
             }
         }
