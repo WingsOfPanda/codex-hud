@@ -4,6 +4,45 @@ Target: Codex 0.163.0, commit
 `83086188ae0614bd882818ff1aa23f3194962012`, Linux x86_64 and ARM64,
 Rust 1.99.1. Keep the ordinary installed Codex and global configuration intact.
 
+## Saved native results
+
+Build the selected Rust test executable once in a stable checkout with the
+required toolchain, profile, target and features. Capture Cargo's
+`--message-format=json` output from `cargo test --no-run`, select the intended
+`compiler-artifact` with `profile.test` and a non-null `executable`, and record
+its absolute path, digest and build inputs. Do not guess the hashed filename or
+select a binary from another target. Preserve it before another build can
+replace it. Run each filter's list and tests from that same executable and
+environment, recording the native command's actual exit status:
+
+```sh
+"$TEST_BINARY" "$FILTER" --list > "$EVIDENCE/list.txt" || exit 1
+if "$TEST_BINARY" "$FILTER" --test-threads=8 --color never \
+  --logfile "$EVIDENCE/results.libtest" > "$EVIDENCE/stdout.txt" 2>&1; then
+  native_exit=0
+else
+  native_exit=$?
+fi
+# Perform and record owned-process cleanup independently of test/parser success.
+python3 scripts/native-results.py --name "$FILTER" \
+  --list "$EVIDENCE/list.txt" --logfile "$EVIDENCE/results.libtest" \
+  --stdout "$EVIDENCE/stdout.txt" --exit-code "$native_exit"
+```
+
+Use a new evidence directory for each execution. The controller must handle a
+nonzero command explicitly, including when using shell `set -e`; never skip
+cleanup on failure. List failure aborts execution. Apply the same test-selection
+flags to both invocations. Ignored tests require `--ignored-reasons FILE`, a
+reviewed JSON object mapping exact test names to exact libtest reason strings
+(an empty string for an ignored test without a reason). No ignored tests or
+baseline failures are accepted implicitly.
+
+The validator compares the independent list, dedicated result file, exit status
+and stdout summary. It ignores terminal-rendered test rows because UI output can
+join or obscure them. Keep raw inputs and command receipts: parser-only fixes can
+be replayed offline without recompiling or executing tests. Such a replay proves
+the recorded execution, not a new execution or a changed source tree.
+
 ## Expanded footer candidate gate
 
 The prepared footer change raises the activity budget to six rows independently

@@ -40,6 +40,11 @@ not satisfy that final gate.
 
 ## Native binaries
 
+Before expensive work, follow the [release preflight](release-performance.md#run-the-preflight)
+with the exact interpreter, staged inputs and raw socket paths selected by the
+qualification plan. Run it again on the remote host after staging. A passing
+preflight checks setup only; it does not replace native qualification.
+
 Build natively on each target with Rust 1.99.1, the pinned upstream source and only
 the frontend patch. Use `--locked`, `--release`, and an explicit GNU target.
 On 910b, keep the checkout, Rust homes, Cargo target directory, downloads,
@@ -69,6 +74,11 @@ matching hashes, then repackage the new helper and qualify each complete archive
 on its native host. Reuse does not establish compatibility with a different
 upstream version or patch.
 
+Keep the verified upstream checkout and Cargo target directory stable across
+retries. Preserve source, toolchain, target, feature, lockfile and build-environment
+identities with each binary. For test-only retries, use the already-built test
+executable when those inputs are unchanged; see [saved native results](verification.md#saved-native-results).
+
 The existing native build needs a C toolchain, pkg-config, OpenSSL development
 headers and libcap development headers for bwrap. The normal V8 path uses pinned
 prebuilt archive/bindings; a source-build fallback has different prerequisites.
@@ -81,6 +91,12 @@ Assemble and qualify each archive on its native build host using the same clean
 Plus commit. This avoids transferring ARM binaries away and then returning the
 archive for testing. Central assembly remains supported; it copies each target's
 binaries and fetches pinned runtime resources without running foreign binaries.
+Transfer reports, logs, captures and dedicated result files separately from the
+shipping archive. Do not include source clones, Cargo output or extracted package
+duplicates in routine evidence bundles. Fetch each accepted archive once and
+verify its digest. Preserve passed stage receipts with their original identities;
+rerun only stages whose inputs or required behavior changed, with that selection
+reviewed explicitly. A failed run remains failed even when later work succeeds.
 The native directory must contain `codex`, `codex-plus-runtime`,
 `codex-code-mode-host`, and `bwrap`.
 
