@@ -1,0 +1,39 @@
+{
+  "release": "0.163.0-plus.0.4.6",
+  "plus_commit": "95e632a56723b44fea5260d95d29a5f623ef4eaf",
+  "coordinator_protocol": 5,
+  "execution_record_format": 1,
+  "upstream": {
+    "version": "0.163.0",
+    "tag": "rust-v0.163.0",
+    "commit": "83086188ae0614bd882818ff1aa23f3194962012"
+  },
+  "note": "docs/releases/0.163.0-plus.0.4.6.md",
+  "targets": {
+    "x86_64": {
+      "triple": "x86_64-unknown-linux-gnu",
+      "asset": "codex-plus-0.163.0-plus.0.4.6-x86_64-unknown-linux-gnu.tar.gz",
+      "sha256": "e23d5b5f3fdd00f40323abbd1d2599a800fc83e24e7fce388322a5609ae31c5d",
+      "tree_sha256": "1389e37edecfb9db5a67366e9f2e619292bcefef2403ae64ee566cbf954239f2",
+      "manifest_sha256": "3c5d9fa621b9f199194f751d65cf373fa1e6a3a0e0f24e050db87b053e92c99a"
+    },
+    "aarch64": {
+      "triple": "aarch64-unknown-linux-gnu",
+      "asset": "codex-plus-0.163.0-plus.0.4.6-aarch64-unknown-linux-gnu.tar.gz",
+      "sha256": "a226efb054e02c99f28aa60701513301433fc2ed5d2992bebb7b09d8f5f3b95f",
+      "tree_sha256": "2019bb6ef10b3d088324a71a3be46cf62d63d33b54cac344c7641584387c1b15",
+      "manifest_sha256": "f987edca7a5ab212c8c855217ca93079a13e2e8b9e0b23759e3bda2ddf86cbc4"
+    }
+  },
+  "rollout": {
+    "daemon_restart": false,
+    "quiet_checkpoint": true,
+    "executions": "wait",
+    "session_restart": "required",
+    "agents_md": null,
+    "retain": [
+      "0.163.0-plus.0.4.5"
+    ],
+    "notes": "Native packages, quiet rollback to 0.4.5, both-direction holds, old TUI/new wrapper result, AP 0.7.35 captures/replay and three real SSH transport cases qualified. Drain advisor consultations on both callers and central host, turns, jobs, callbacks and unresolved executions. Install central host first and finish callers before consulting; old/new advisor worker identities refuse mixed calls. Retain 0.4.5 and every process/job-referenced package. 0.4.4 stops being retained and becomes removable once unused. Preserve the stock daemon and existing global instructions. Restart TUIs to load the changed frontend. compact-display is optional and unselected by default; it indicates folding, it does not toggle it. Morandi is opt-in through existing tui.theme=\"morandi\"; no configuration is rewritten. The user requested both features; fleet-config owns their staged enablement and rollout approval. Footer bounds are 8 normal rows or 9 with explicit help/search; require released AP 0.7.35 native captures/replay per architecture. No paid model calls were required by release fixtures; providers were private loopback stubs, including real SSH transport tests. Fleet-config owns pins/install; publication is not installation authorization."
+  }
+}
