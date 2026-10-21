@@ -233,6 +233,12 @@ result, and worker stderr under `$CODEX_HOME/codex-plus/logs`; these logs are no
 automatically deleted. The central worker uses temporary prompt/output files
 and removes them when it exits. Claude's own account/cache behavior is separate.
 
+When model validation fails, the caller's private log also contains an
+`advisor model metadata:` JSON line with the expected model, returned model names,
+and canonical-model metadata. This diagnostic is bounded and excludes the prompt,
+answer, and usage counters. It is available for both local and SSH consultations;
+the error remains `model_mismatch`, with no automatic fallback or retry.
+
 This repository supplies implementation and verification. Fleet-config owns the
 installed helper wrapper and global instructions. The wrapper must route
 `advisor` to this package's helper before installed use.
