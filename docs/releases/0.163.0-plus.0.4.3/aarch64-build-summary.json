@@ -1,0 +1,147 @@
+{
+  "passed": true,
+  "plus_commit": "ecddea18279ede7774749c150ded30e7ef3b1d87",
+  "release": "0.163.0-plus.0.4.3",
+  "archive_sha256": "52f1e448bb6f4e3b9a3e43bb2ecfae361426f38521bb89eca498de74c952dff3",
+  "manifest_sha256": "8699753296c7c39ed97c458f706e0603d99448279bf259a89c03770013c03352",
+  "tree_sha256": "463bd4764fd08a65db5982c17ea6c2d78596e59e98198c53da91aef4354f51c0",
+  "helper": {
+    "sha256": "153b80d9ab63862a8e482de2ef853097df8add1bf04d3ee912c56988e7ae7883",
+    "source_commit": "ecddea18279ede7774749c150ded30e7ef3b1d87",
+    "new_release_build": true
+  },
+  "native_filters": {
+    "bottom_pane": {
+      "passed": 1135,
+      "failed": 0,
+      "platform_ignored": [
+        {
+          "test": "bottom_pane::textarea::tests::altgr_ctrl_alt_char_inserts_literal",
+          "reason": "AltGr modifier only applies on Windows",
+          "platform": "linux"
+        }
+      ]
+    },
+    "goal": {
+      "passed": 74,
+      "failed": 0,
+      "platform_ignored": []
+    },
+    "style::contrast::tests": {
+      "passed": 5,
+      "failed": 0,
+      "platform_ignored": []
+    },
+    "worker_hud": {
+      "passed": 53,
+      "failed": 0,
+      "platform_ignored": []
+    },
+    "plus_ultracode": {
+      "passed": 7,
+      "failed": 0,
+      "platform_ignored": []
+    },
+    "ultracode_footer_reads_projection": {
+      "passed": 1,
+      "failed": 0,
+      "platform_ignored": []
+    },
+    "status_line": {
+      "passed": 94,
+      "failed": 0,
+      "platform_ignored": []
+    },
+    "status_surface": {
+      "passed": 44,
+      "failed": 0,
+      "platform_ignored": []
+    },
+    "app::owned_transcript::tests::worker_hud_footer_selection_and_config_panel_preserve_the_draft": {
+      "passed": 1,
+      "failed": 0,
+      "platform_ignored": []
+    },
+    "bottom_pane::chat_composer::status_surface::tests::shell_and_side_conversation_input_context_keep_the_hint_row": {
+      "passed": 1,
+      "failed": 0,
+      "platform_ignored": []
+    },
+    "bottom_pane::chat_composer::tests::footer_collapse_snapshots": {
+      "passed": 1,
+      "failed": 0,
+      "platform_ignored": []
+    },
+    "plus_goal": {
+      "passed": 22,
+      "failed": 0,
+      "platform_ignored": []
+    },
+    "bottom_pane::footer::tests": {
+      "passed": 5,
+      "failed": 0,
+      "platform_ignored": []
+    },
+    "weekly_reset": {
+      "passed": 3,
+      "failed": 0,
+      "platform_ignored": []
+    },
+    "config_panel": {
+      "passed": 21,
+      "failed": 0,
+      "platform_ignored": []
+    },
+    "ultracode": {
+      "passed": 13,
+      "failed": 0,
+      "platform_ignored": []
+    },
+    "shell_policy": {
+      "passed": 21,
+      "failed": 0,
+      "platform_ignored": []
+    },
+    "exec_flow": {
+      "passed": 53,
+      "failed": 0,
+      "platform_ignored": []
+    },
+    "thread_transcript::tools::tests": {
+      "passed": 6,
+      "failed": 0,
+      "platform_ignored": []
+    },
+    "slash_commands": {
+      "passed": 160,
+      "failed": 0,
+      "platform_ignored": []
+    }
+  },
+  "official_unchanged": true,
+  "source_clean": true,
+  "coordinator_protocol": 5,
+  "execution_record_format": 1,
+  "exit": 0,
+  "known_baseline_disclosure": {
+    "classification": "Historical x86 source evidence: six app-session assertions failed identically on candidate and preserved0.4.2; full upstream suite is not green. This record is disclosure, not an ARM run or acceptance waiver.",
+    "evidence_source": "/home/liupan/Aerius/codex-plus/.build/ultracode-startup043/tests-triage/output/baseline-comparison.json",
+    "matched_failures": [
+      "app_server_session::tests::shared_thread_start_preserves_explicit_session_overrides",
+      "app_server_session::tests::terminal_visualization_instructions_are_gated_for_all_tui_thread_flows",
+      "app_server_session::tests::thread_fork_params_forward_instruction_overrides",
+      "app_server_session::tests::thread_lifecycle_params_forward_config_overrides_and_service_tier",
+      "app_server_session::tests::thread_resume_params_can_rejoin_without_overriding_existing_settings",
+      "app_server_session::tests::thread_resume_params_can_restore_persisted_model_settings"
+    ],
+    "root_host_limit": "Root reported bwrap user-namespace sandbox unavailable on its host. ARM bwrap is tested natively by the package resources gate; root host restrictions do not establish ARM compatibility and no security policy is changed. If the ARM gate fails, preserve exact output and report its own host limitation; do not silently skip it.",
+    "full_upstream_suite_run_in_this_recipe": false
+  },
+  "skipped": [
+    "No publication, installation, fleet changes or shared service restarts.",
+    "Full upstream Rust suite and hardware/serving experiments not requested.",
+    "Separate oracle-based advisor foreground suite and dedicated SSH logout acceptance are not run in this batch."
+  ],
+  "original_path": ".build/release043/arm-runtime-final-prep/remote-summary.json",
+  "original_sha256": "f19a05060885f2e2a8cb37a6b801166fcb700e3d2d0f4bbee6b0fcddfec21644"
+}

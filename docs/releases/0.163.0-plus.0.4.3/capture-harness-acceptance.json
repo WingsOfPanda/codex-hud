@@ -1,0 +1,17 @@
+{
+  "accepted": true,
+  "offline_only": true,
+  "checks": 44,
+  "files": {
+    "capture.py": "dc751cc1c41f8e8067f7a58ca720d3c1d7d5f60f2518ec2ff4a57253b4085243",
+    "verify.py": "a661244591c244d92874650ed1bee30cfddb5e545785b543f210c04bef779a4f",
+    "frontend_equivalence.py": "35d355428270fe5ee1d98cbbb19c7e8431c6efd60bb6b2034fd91dd6cd3bbd0e"
+  },
+  "known_pair": [
+    "3598e7a61543e9ae0f09c1da88b5ca89e27afe9b",
+    "ecddea18279ede7774749c150ded30e7ef3b1d87"
+  ],
+  "root_log": "/home/liupan/.codex/codex-plus/logs/276f6620-680a-4d98-8ed9-a4647dfa9cfb.log",
+  "fixture_body_unchanged": true,
+  "candidate_capture_performed": false
+}

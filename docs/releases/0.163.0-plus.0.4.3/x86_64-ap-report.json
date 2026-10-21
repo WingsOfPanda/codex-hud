@@ -1,0 +1,150 @@
+{
+  "ap_commit": "4a3a9afd76967b9b1d53403006174b1e4e938748 (fix/cursor-bound-pane-reads: the classifier and stall hash under test; the fixtures and this report are committed in the branch's next commit, which cannot name its own hash)",
+  "ap_branch": "fix/cursor-bound-pane-reads",
+  "ap_test": "tests/codex-plus-footer.test.ts",
+  "bundle_index": "/home/liupan/Aerius/codex-plus/.build/release043/x86-runtime-final/cursor-v2/ap-replay-index.json",
+  "bundle_tar_sha256": "22f08e87bf7d00c735372c65cd0066dd392f56219c14bf7a5d4b053c11eec7bf",
+  "bundle_version": 2,
+  "candidate_acceptance": true,
+  "binary_source_commit": "3598e7a61543e9ae0f09c1da88b5ca89e27afe9b",
+  "replayed_at": "2026-10-19T13:46:28+00:00",
+  "ap_release": "not yet released or installed: the ap release carrying this branch and its installation wait for the operator's word",
+  "states": [
+    {
+      "state": "high-100x40-idle-empty",
+      "bundle_expected": "idle",
+      "ap_actual": "idle",
+      "pass": true
+    },
+    {
+      "state": "high-100x40-idle-help",
+      "bundle_expected": "idle",
+      "ap_actual": "idle",
+      "pass": true
+    },
+    {
+      "state": "high-100x40-busy-midturn-t0",
+      "bundle_expected": "busy",
+      "ap_actual": "busy",
+      "pass": true
+    },
+    {
+      "state": "high-100x40-busy-midturn-t5",
+      "bundle_expected": "busy",
+      "ap_actual": "busy",
+      "pass": true
+    },
+    {
+      "state": "high-100x40-busy-typed",
+      "bundle_expected": "busy",
+      "ap_actual": "busy",
+      "pass": true
+    },
+    {
+      "state": "high-100x40-idle-two-row-draft",
+      "bundle_expected": "unknown",
+      "ap_actual": "unknown",
+      "pass": true
+    },
+    {
+      "state": "high-80-split-idle-empty",
+      "bundle_expected": "idle",
+      "ap_actual": "idle",
+      "pass": true
+    },
+    {
+      "state": "high-80-split-idle-help",
+      "bundle_expected": "idle",
+      "ap_actual": "idle",
+      "pass": true
+    },
+    {
+      "state": "high-80-split-busy-midturn-t0",
+      "bundle_expected": "busy",
+      "ap_actual": "busy",
+      "pass": true
+    },
+    {
+      "state": "high-80-split-busy-midturn-t5",
+      "bundle_expected": "busy",
+      "ap_actual": "busy",
+      "pass": true
+    },
+    {
+      "state": "high-80-split-busy-typed",
+      "bundle_expected": "busy",
+      "ap_actual": "busy",
+      "pass": true
+    },
+    {
+      "state": "high-80-split-idle-two-row-draft",
+      "bundle_expected": "unknown",
+      "ap_actual": "unknown",
+      "pass": true
+    },
+    {
+      "state": "high-80-split-approval-dialog",
+      "bundle_expected": "unknown",
+      "ap_actual": "unknown",
+      "pass": true
+    },
+    {
+      "state": "high-100x40-approval-dialog",
+      "bundle_expected": "unknown",
+      "ap_actual": "unknown",
+      "pass": true
+    },
+    {
+      "state": "ultra-100x40-idle-empty",
+      "bundle_expected": "idle",
+      "ap_actual": "idle",
+      "pass": true
+    },
+    {
+      "state": "ultra-80-split-idle-empty",
+      "bundle_expected": "idle",
+      "ap_actual": "idle",
+      "pass": true
+    },
+    {
+      "state": "form-100x40-request-user-input-notes",
+      "bundle_expected": "unknown",
+      "ap_actual": "unknown",
+      "pass": true
+    },
+    {
+      "state": "form-80-split-request-user-input-notes",
+      "bundle_expected": "unknown",
+      "ap_actual": "unknown",
+      "pass": true
+    },
+    {
+      "state": "form-100x40-mcp-text-elicitation",
+      "bundle_expected": "unknown",
+      "ap_actual": "unknown",
+      "pass": true
+    },
+    {
+      "state": "form-80-split-mcp-text-elicitation",
+      "bundle_expected": "unknown",
+      "ap_actual": "unknown",
+      "pass": true
+    }
+  ],
+  "busy_pair_hash_checks": [
+    {
+      "check": "100x40: a running turn changes the cursor-bounded screen between t0 and t5 (the stall probe sees it)",
+      "pass": true
+    },
+    {
+      "check": "80-split: a running turn changes the cursor-bounded screen between t0 and t5 (the stall probe sees it)",
+      "pass": true
+    }
+  ],
+  "summary": {
+    "states": 20,
+    "passed": 20,
+    "pairs": 2,
+    "pairs_passed": 2
+  }
+}

@@ -1,0 +1,134 @@
+{
+  "passed": true,
+  "busy_hash_passed": true,
+  "ap_commit": "3ee82567b4007fa80b31bd012fb3f531c7d476a7",
+  "classifier_commit": "4a3a9afd76967b9b1d53403006174b1e4e938748",
+  "bundle_sha256": "22f08e87bf7d00c735372c65cd0066dd392f56219c14bf7a5d4b053c11eec7bf",
+  "expected_verdicts": [
+    {
+      "state": "high-100x40-idle-empty",
+      "expected": "idle",
+      "actual": "idle",
+      "passed": true
+    },
+    {
+      "state": "high-100x40-idle-help",
+      "expected": "idle",
+      "actual": "idle",
+      "passed": true
+    },
+    {
+      "state": "high-100x40-busy-midturn-t0",
+      "expected": "busy",
+      "actual": "busy",
+      "passed": true
+    },
+    {
+      "state": "high-100x40-busy-midturn-t5",
+      "expected": "busy",
+      "actual": "busy",
+      "passed": true
+    },
+    {
+      "state": "high-100x40-busy-typed",
+      "expected": "busy",
+      "actual": "busy",
+      "passed": true
+    },
+    {
+      "state": "high-100x40-idle-two-row-draft",
+      "expected": "unknown",
+      "actual": "unknown",
+      "passed": true
+    },
+    {
+      "state": "high-80-split-idle-empty",
+      "expected": "idle",
+      "actual": "idle",
+      "passed": true
+    },
+    {
+      "state": "high-80-split-idle-help",
+      "expected": "idle",
+      "actual": "idle",
+      "passed": true
+    },
+    {
+      "state": "high-80-split-busy-midturn-t0",
+      "expected": "busy",
+      "actual": "busy",
+      "passed": true
+    },
+    {
+      "state": "high-80-split-busy-midturn-t5",
+      "expected": "busy",
+      "actual": "busy",
+      "passed": true
+    },
+    {
+      "state": "high-80-split-busy-typed",
+      "expected": "busy",
+      "actual": "busy",
+      "passed": true
+    },
+    {
+      "state": "high-80-split-idle-two-row-draft",
+      "expected": "unknown",
+      "actual": "unknown",
+      "passed": true
+    },
+    {
+      "state": "high-80-split-approval-dialog",
+      "expected": "unknown",
+      "actual": "unknown",
+      "passed": true
+    },
+    {
+      "state": "high-100x40-approval-dialog",
+      "expected": "unknown",
+      "actual": "unknown",
+      "passed": true
+    },
+    {
+      "state": "ultra-100x40-idle-empty",
+      "expected": "idle",
+      "actual": "idle",
+      "passed": true
+    },
+    {
+      "state": "ultra-80-split-idle-empty",
+      "expected": "idle",
+      "actual": "idle",
+      "passed": true
+    },
+    {
+      "state": "form-100x40-request-user-input-notes",
+      "expected": "unknown",
+      "actual": "unknown",
+      "passed": true
+    },
+    {
+      "state": "form-80-split-request-user-input-notes",
+      "expected": "unknown",
+      "actual": "unknown",
+      "passed": true
+    },
+    {
+      "state": "form-100x40-mcp-text-elicitation",
+      "expected": "unknown",
+      "actual": "unknown",
+      "passed": true
+    },
+    {
+      "state": "form-80-split-mcp-text-elicitation",
+      "expected": "unknown",
+      "actual": "unknown",
+      "passed": true
+    }
+  ],
+  "original_report_sha256": "4b03a4ada0b9313928bb5d57da650dcef8e465baf7c368126af8e878cd217ac5",
+  "provenance": "Amended AP report verified from Git; only classifier commit spelling changed; fixtures/verdicts/busy-pair results identical.",
+  "ap_release_installed": false,
+  "original_report_path": ".build/release043/x86-runtime-final/ap-replay/amended-report.json",
+  "superseded_report_commit": "c44fa7eafb0b425cf8364cabda3dcbc2f5b88672"
+}

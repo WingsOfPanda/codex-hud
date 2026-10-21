@@ -119,6 +119,8 @@ class InstalledLauncherTests(unittest.TestCase):
         result = self.launch('advisor', '--help')
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn('--brief', result.stdout)
+        self.assertIn('claude-opus-5-5', result.stdout)
+        self.assertIn('--context-file', result.stdout)
         result = self.launch('goal', '--help')
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn('checkpoint', result.stdout)

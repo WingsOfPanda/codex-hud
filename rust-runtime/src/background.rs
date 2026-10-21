@@ -134,33 +134,85 @@ pub(crate) fn goal_current_turn(client: &mut Client, thread: &str) -> Result<Val
     latest(client, thread)
 }
 
-pub(crate) fn goal_known_turn(client: &mut Client, thread: &str, ident: &str) -> Result<bool> {
-    let mut retries = 0;
-    let mut original_error = None;
+fn temporary_goal_history_error(error: &anyhow::Error, home: &Path, thread: &str) -> bool {
+    let Some(rpc) = error.downcast_ref::<crate::rpc::RpcError>() else {
+        return false;
+    };
+    if rpc.method != "thread/turns/list" {
+        return false;
+    }
+    if rpc.error["code"].as_i64() == Some(-32601) {
+        return rpc.error["message"].as_str() == Some("list_turns is not supported yet");
+    }
+    if rpc.error["code"].as_i64() != Some(-32603) {
+        return false;
+    }
+    let Some((path, repeated)) = rpc.error["message"]
+        .as_str()
+        .and_then(|message| message.strip_prefix("failed to read thread: thread-store internal error: failed to read session metadata "))
+        .and_then(|message| message.split_once(": rollout at "))
+    else {
+        return false;
+    };
+    if repeated != format!("{path} is empty") || !Path::new(path).is_absolute() {
+        return false;
+    }
+    let (Ok(sessions), Ok(rollout)) = (
+        home.join("sessions").canonicalize(),
+        Path::new(path).canonicalize(),
+    ) else {
+        return false;
+    };
+    if Path::new(path).file_name() != rollout.file_name() {
+        return false;
+    }
+    let Some(relative) = rollout.strip_prefix(sessions).ok().and_then(Path::to_str) else {
+        return false;
+    };
+    let Some((date, filename)) = relative.rsplit_once('/') else {
+        return false;
+    };
+    let Some(stamp) = filename
+        .strip_prefix("rollout-")
+        .and_then(|name| name.strip_suffix(&format!("-{thread}.jsonl")))
+    else {
+        return false;
+    };
+    stamp.len() == 19
+        && stamp.bytes().enumerate().all(|(index, byte)| match index {
+            4 | 7 | 13 | 16 => byte == b'-',
+            10 => byte == b'T',
+            _ => byte.is_ascii_digit(),
+        })
+        && date == stamp[..10].replace('-', "/")
+}
+
+pub(crate) fn goal_known_turn(
+    client: &mut Client,
+    thread: &str,
+    ident: &str,
+    home: &Path,
+) -> Result<bool> {
+    let deadline = Instant::now() + Duration::from_secs(2);
     loop {
         match turn(client, thread, ident) {
-            Ok(found) => return Ok(found.is_some()),
+            Ok(Some(_)) => return Ok(true),
+            Ok(None) => {
+                if Instant::now() >= deadline {
+                    return Ok(false);
+                }
+            }
             Err(error) => {
-                let temporary = error
-                    .downcast_ref::<crate::rpc::RpcError>()
-                    .is_some_and(|rpc| {
-                        rpc.method == "thread/turns/list"
-                            && rpc.error["code"].as_i64() == Some(-32601)
-                            && rpc.error["message"].as_str()
-                                == Some("list_turns is not supported yet")
-                    });
-                if !temporary {
+                if !temporary_goal_history_error(&error, home, thread) || Instant::now() >= deadline
+                {
                     return Err(error);
                 }
-                if retries == 3 {
-                    return Err(original_error.unwrap_or(error));
-                }
-                original_error.get_or_insert(error);
-                retries += 1;
-                // Allow brief turn-history unavailability before settling the input receipt.
-                std::thread::sleep(Duration::from_millis(100));
             }
         }
+        // Accepted turns can precede the rollout header or its turn-history entry.
+        std::thread::sleep(
+            Duration::from_millis(100).min(deadline.saturating_duration_since(Instant::now())),
+        );
     }
 }
 
@@ -2499,6 +2551,145 @@ fn run_main(args: &Arguments, argv: &[OsString], package_root: &Path, parent: &s
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn goal_history_retry_requires_exact_owned_rollout_error() {
+        let home = tempfile::tempdir().unwrap();
+        let root = "11111111-1111-4111-8111-111111111111";
+        let path = home.path().join(format!(
+            "sessions/2026/10/19/rollout-2026-10-19T15-05-17-{root}.jsonl"
+        ));
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::write(&path, "").unwrap();
+        let message = format!(
+            "failed to read thread: thread-store internal error: failed to read session metadata {}: rollout at {} is empty",
+            path.display(),
+            path.display()
+        );
+        let error = |method: &str, code: i64, message: &str| {
+            anyhow::Error::new(crate::rpc::RpcError {
+                method: method.into(),
+                error: json!({"code":code,"message":message}),
+            })
+        };
+        assert!(temporary_goal_history_error(
+            &error("thread/turns/list", -32603, &message),
+            home.path(),
+            root
+        ));
+        for (method, code, message) in [
+            ("thread/items/list", -32603, message.clone()),
+            ("thread/turns/list", -32601, message.clone()),
+            (
+                "thread/turns/list",
+                -32603,
+                message.replace("is empty", "does not start with session metadata"),
+            ),
+            (
+                "thread/turns/list",
+                -32603,
+                message.replace("is empty", "Permission denied (os error 13)"),
+            ),
+            (
+                "thread/turns/list",
+                -32603,
+                message.replacen(": rollout at ", ": rollout at /wrong", 1),
+            ),
+            ("thread/turns/list", -32603, "database is locked".into()),
+        ] {
+            assert!(
+                !temporary_goal_history_error(&error(method, code, &message), home.path(), root),
+                "{method} {code} {message}"
+            );
+        }
+        assert!(!temporary_goal_history_error(
+            &error("thread/turns/list", -32603, &message),
+            home.path(),
+            "22222222-2222-4222-8222-222222222222"
+        ));
+        let unrelated = tempfile::tempdir().unwrap();
+        assert!(!temporary_goal_history_error(
+            &error("thread/turns/list", -32603, &message),
+            unrelated.path(),
+            root
+        ));
+        let wrong_date = path.with_file_name(format!("rollout-2026-10-18T15-05-17-{root}.jsonl"));
+        std::fs::write(&wrong_date, "").unwrap();
+        let wrong_date_message =
+            message.replace(path.to_str().unwrap(), wrong_date.to_str().unwrap());
+        assert!(!temporary_goal_history_error(
+            &error("thread/turns/list", -32603, &wrong_date_message),
+            home.path(),
+            root
+        ));
+        assert!(temporary_goal_history_error(
+            &error(
+                "thread/turns/list",
+                -32601,
+                "list_turns is not supported yet"
+            ),
+            unrelated.path(),
+            root
+        ));
+        assert!(!temporary_goal_history_error(
+            &anyhow!("not an RPC error"),
+            home.path(),
+            root
+        ));
+    }
+
+    #[test]
+    fn goal_history_retry_normalizes_home_but_rejects_rollout_escape() {
+        let home = tempfile::tempdir_in(".").unwrap();
+        let root = "11111111-1111-4111-8111-111111111111";
+        let relative = format!("sessions/2026/10/19/rollout-2026-10-19T15-05-17-{root}.jsonl");
+        let path = home.path().join(&relative);
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::write(&path, "").unwrap();
+        let alias = tempfile::tempdir().unwrap();
+        let alias_home = alias.path().join("home");
+        std::os::unix::fs::symlink(home.path().canonicalize().unwrap(), &alias_home).unwrap();
+        let error = |path: &Path| {
+            anyhow::Error::new(crate::rpc::RpcError {
+                method: "thread/turns/list".into(),
+                error: json!({"code":-32603,"message":format!("failed to read thread: thread-store internal error: failed to read session metadata {}: rollout at {} is empty", path.display(), path.display())}),
+            })
+        };
+        let absolute = path.canonicalize().unwrap();
+        assert!(temporary_goal_history_error(
+            &error(&absolute),
+            home.path(),
+            root
+        ));
+        assert!(temporary_goal_history_error(
+            &error(&absolute),
+            &alias_home,
+            root
+        ));
+        assert!(temporary_goal_history_error(
+            &error(&alias_home.join(&relative)),
+            home.path(),
+            root
+        ));
+        let wrong_root = path.with_file_name(
+            "rollout-2026-10-19T15-05-17-22222222-2222-4222-8222-222222222222.jsonl",
+        );
+        std::os::unix::fs::symlink(&absolute, &wrong_root).unwrap();
+        assert!(!temporary_goal_history_error(
+            &error(&absolute.with_file_name(wrong_root.file_name().unwrap())),
+            home.path(),
+            root
+        ));
+        std::fs::remove_file(&path).unwrap();
+        let outside = alias.path().join(path.file_name().unwrap());
+        std::fs::write(&outside, "").unwrap();
+        std::os::unix::fs::symlink(&outside, &path).unwrap();
+        assert!(!temporary_goal_history_error(
+            &error(&absolute),
+            home.path(),
+            root
+        ));
+    }
 
     #[test]
     fn detached_outcomes_require_launched_identity_and_preserve_unknown() {

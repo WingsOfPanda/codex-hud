@@ -1,0 +1,22 @@
+{
+  "accepted": true,
+  "root_review_log_prefix": "f165cbeb",
+  "scope": "Exact test-only wait correction plus declared remote REPO adaptation; no product/source edits",
+  "base_source_commit": "ecddea18279ede7774749c150ded30e7ef3b1d87",
+  "base_source": "/home/liupan/Aerius/codex-plus/.build/release043/runtime-final-source/tests/test_rust_runtime_acceptance.py",
+  "base_sha256": "4feea7befa63857b2d731df328d3b1004a5b47ae3aa536a52b9f79a1b2c9e422",
+  "sidecar": "test_rust_runtime_acceptance.single-snapshot.py",
+  "sidecar_sha256": "bf7238cf4a0ac0c85e046afd09f5c74891c4a91351ded9e88042313023ecd0de",
+  "patch_sha256": "a03b535bddda5e7191c23d86de83bf910ef2914f118f22731e8e88a0313ea459",
+  "literal_replacements": {
+    "            wait(lambda: f.delivered() and len(f.state()['callbacks']) == 2,\n                 'different registration origins were merged')": "            wait(lambda: len(callbacks := f.state()['callbacks']) == 2\n                 and all(c['state'] == 'delivered' for c in callbacks),\n                 'different registration origins were merged')",
+    "REPO = Path(__file__).resolve().parents[1]": "REPO = Path('/data/liupan/codex-plus-build/s4/plus-source')"
+  },
+  "tests_required": 29,
+  "preserved_assertions": [
+    "two distinct job callback IDs",
+    "two actual starts",
+    "all LIVE COMPLETION"
+  ],
+  "source_followup": "Apply accepted-single-snapshot.patch in the later release companion commit, after package-source freeze; keep ecddea immutable."
+}

@@ -169,7 +169,7 @@ def run_case(binary, root_directory, evidence, bootstrap, *, empty=False, unqual
             project_effective(home, root, True)
             if not empty:
                 wait([terminal], lambda: any(root in line and "ultracode" in line.lower()
-                    and "pending" not in line for line in footer(terminal)), "active mode was not on configured status line")
+                    and "pending" not in line for line in footer(terminal)), "saved on setting was not on configured status line")
         os.write(terminal.master, b"ultracode-editable-draft")
         wait([terminal], lambda: "ultracode-editable-draft" in terminal.text, "mode refresh blocked composer")
         assert_compact_hud(terminal.text)
@@ -191,8 +191,9 @@ def run_case(binary, root_directory, evidence, bootstrap, *, empty=False, unqual
             temporary = projection_path.with_suffix(".tmp")
             temporary.write_text(json.dumps(unresolved))
             temporary.replace(projection_path)
-            wait([terminal], lambda: any("ultracode unavailable" in line.lower()
-                 for line in footer(terminal)), "unresolved mode confirmation stayed pending")
+            wait([terminal], lambda: any("ultracode" in line.lower()
+                 and "unavailable" not in line.lower() and "pending" not in line.lower()
+                 for line in footer(terminal)), "unresolved confirmation changed the saved-setting badge")
         command("status")
         if not empty and not unqualified:
             wait([terminal], lambda: "Message history confirmation unavailable" in terminal.text,
@@ -207,7 +208,7 @@ def run_case(binary, root_directory, evidence, bootstrap, *, empty=False, unqual
             wait([terminal], lambda: "Ultracode off pending" in terminal.text, "off request lost pending acknowledgement")
             project_effective(home, root, False)
             if not empty:
-                wait([terminal], lambda: not any(root in line and "ultracode" in line.lower() for line in footer(terminal)), "effective off retained active badge")
+                wait([terminal], lambda: not any(root in line and "ultracode" in line.lower() for line in footer(terminal)), "saved off setting retained a badge")
         os.write(terminal.master, b"after-off-draft")
         wait([terminal], lambda: "after-off-draft" in terminal.text, "off command blocked composer")
         assert_compact_hud(terminal.text)
@@ -221,7 +222,7 @@ def run_case(binary, root_directory, evidence, bootstrap, *, empty=False, unqual
         assert [call["args"][1] for call in control] == ["on", "status", "off"], control
         assert all(call["stdin_bytes"] == 0 and call["inherited_thread_removed"] for call in control)
         report.update(model_turn_requests=0, controls=["on", "status", "off"],
-            configured_status_line_preserved=True, composer_editable=True, hud_maximum_rows=3)
+            configured_status_line_preserved=True, composer_editable=True, hud_maximum_rows=6)
         passed = True
     finally:
         if terminal:

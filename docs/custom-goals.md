@@ -1,5 +1,9 @@
 # Codex Plus goals — approved design and implementation
 
+Current UI: [Plus goal status](goals.md#use-a-goal) now uses one blue row above
+the editable input, replacing the right-footer placement discussed below. The
+earlier design answers and qualification record remain historical evidence.
+
 Status: Q1–Q18 agreed. The Rust coordinator and native client are implemented
 for `0.163.0-plus.0.3.2`; source acceptance is recorded in
 [verification](verification.md) and [the evidence record](evidence/custom-goals.json).
@@ -172,7 +176,7 @@ Implement and verify in this order, preserving the existing release gates:
 3. Route the Plus `/goal` UI to the same mutation interface and read-only status
    snapshot, independently of native goal feature gates. Verify right-position
    labels, Plan precedence, narrow layouts, completion dismissal, composer input
-   and the three-row activity/AP readiness constraint.
+   and the six-row activity/editable composer constraint.
 4. Qualify native isolation using the official daemon and private homes across
    fresh starts, cold resumes and managed restarts. Control Plus overrides;
    refuse unsafe scheduling when isolation cannot be established. Cover observer
@@ -217,7 +221,7 @@ clear. [The workflow](goals.md) describes the implemented interface and recovery
 limits. Native goal tools must not create a competing scheduler.
 
 The compact goal indicator uses the existing right-aligned input-area
-footer/status surface. Keep the three-row activity limit and AP readiness. Goal
+footer/status surface. Keep the six-row activity limit and composer visibility. Goal
 status refresh is local and read-only; use the labels agreed in Q6.
 
 ## Measured native-runtime isolation facts
@@ -320,8 +324,8 @@ Use private homes, the official daemon and loopback providers to prove:
   callback identity and uncertainty without blind resends or job reruns.
 - Optional hourly/two-hour reviews do not become a model-polling loop while work
   remains active, and stop when the goal is paused or complete.
-- Existing worker-token alignment, long-history registration, three-row HUD and
-  advisor behavior retain their qualification. Exact release archives still
+- Existing worker-token alignment, long-history registration and advisor behavior
+  require regression checks with the expanded six-row HUD. Exact release archives still
   require native x86_64 and aarch64 acceptance.
 
 ## Astra review — advice, not user decisions

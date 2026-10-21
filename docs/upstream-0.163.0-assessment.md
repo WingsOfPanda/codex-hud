@@ -65,8 +65,8 @@ unit, 11 interruption, seven stock recovery and nine cooperative scenarios:
   and reused with a new turn. Preserve exact thread/turn ownership and terminal
   evidence. [Residency](https://github.com/openai/codex/blob/rust-v0.163.0/codex-rs/core/src/agent/control/residency.rs#L35-L108).
 - Rerun native HUD and shell acceptance with footer selection, `/config`, new
-  status styling and terminal program status. Preserve the three-row total cap,
-  AP's prompt within the last six nonempty lines, editable composer, pane
+  status styling and terminal program status. Preserve the six-row activity cap,
+  AP's cursor/busy-indicator contract, editable composer, pane
   isolation, compact shell history and zero model calls for display refresh.
   Clean patch application of these hooks does not establish rendered correctness.
   [Footer routing](https://github.com/openai/codex/blob/rust-v0.163.0/codex-rs/tui/src/app/footer_selection.rs),

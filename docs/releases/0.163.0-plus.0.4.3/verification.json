@@ -1,0 +1,58 @@
+{
+  "release": "0.163.0-plus.0.4.3",
+  "plus_commit": "ecddea18279ede7774749c150ded30e7ef3b1d87",
+  "release_qualification_complete": true,
+  "published": false,
+  "handoff_compiled": false,
+  "upstream": {
+    "version": "0.163.0",
+    "commit": "83086188ae0614bd882818ff1aa23f3194962012"
+  },
+  "coordinator_protocol": 5,
+  "execution_record_format": 1,
+  "targets": {
+    "x86_64": {
+      "native_archive_root_accepted": true,
+      "archive_sha256": "d03b795fb8e7069c8697b3f3479ed32b881dd9517b0c147006ab67b8d89c83d4",
+      "manifest_sha256": "27950a50fac920eb5cbdbb4812608d0dc19de602cbd06c8e0e2f9139cd731200",
+      "tree_sha256": "a0cee085064c7ca94687e13ef7506c459aa8bce9f42b2248df2b5d99dcc7006a",
+      "compat042": "passed: x86_64-compat042.json",
+      "ap_replay": "passed: x86_64-ap-replay.json"
+    },
+    "aarch64": {
+      "native_archive_root_accepted": true,
+      "root_acceptance_provenance": "aarch64-root-acceptance.json",
+      "archive_sha256": "52f1e448bb6f4e3b9a3e43bb2ecfae361426f38521bb89eca498de74c952dff3",
+      "manifest_sha256": "8699753296c7c39ed97c458f706e0603d99448279bf259a89c03770013c03352",
+      "tree_sha256": "463bd4764fd08a65db5982c17ea6c2d78596e59e98198c53da91aef4354f51c0",
+      "compat042": "passed: aarch64-compat042.json",
+      "ap_replay": "passed: aarch64-ap-replay.json"
+    }
+  },
+  "pending": [],
+  "ap_deployment": {
+    "owner_reported_release": "v0.7.34",
+    "owner_reported_installed_x86_hosts": 3,
+    "reload_caveat": true,
+    "independently_verified_by_this_companion_task": false,
+    "fleet_staging_gate": "AP release installation and live process reload remain fleet-owned checks",
+    "released_commit": "f88d93b5675fa9712217a7763351d87bee81ca17"
+  },
+  "rollout": {
+    "quiet_checkpoint": true,
+    "executions": "wait",
+    "daemon_restart": false,
+    "session_restart": "required",
+    "retain": [
+      "0.163.0-plus.0.4.2"
+    ],
+    "agents_md_sha256": "f0f0e24b94a3c9617421ce96852ed8297b0ded29b080c3f9a9296c3c063fcadb",
+    "config_changes": false
+  },
+  "ARM_AP_bundle_sha256": "00000fd76d140461733b56a316f15dd49908c1b0d87423b1a5ab8d8bcf8c4882",
+  "remaining_publication_steps": [
+    "Root copy final compiled handoff and reviewed footer receipt",
+    "Root companion review/commit",
+    "Remote tag and exact five GitHub asset digest verification before publication completion"
+  ]
+}

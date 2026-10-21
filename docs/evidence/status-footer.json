@@ -1,0 +1,160 @@
+{
+  "schema": 1,
+  "scope": "Native two-line status footer and worker role prefixes, with exact-turn admission readiness repair",
+  "source_commit": "3d1bff31f1d4fc17115cb130502cad481b295fce",
+  "upstream_commit": "83086188ae0614bd882818ff1aa23f3194962012",
+  "platform": "x86_64-unknown-linux-gnu",
+  "installed": false,
+  "layout": {
+    "identity": "model and Ultracode, directory, active agent; existing selected identity items retain order",
+    "statistics": [
+      "context-remaining",
+      "weekly-limit",
+      "weekly-reset"
+    ],
+    "worker_prefix": "model (effort) [role]",
+    "unknown_role": "general",
+    "group_roles": "shared role, mixed known roles, or general for missing metadata"
+  },
+  "patch_sha256": "6ec69a606584745a87f111a97c4fb3cbbc3d9ccc673b10c9ead5f4bef4260666",
+  "checks": {
+    "native_status_line": {
+      "passed": 92,
+      "failed": 0
+    },
+    "native_remaining_filters": [
+      {
+        "filter": "bottom_pane::footer::tests",
+        "exit": 0,
+        "summary": [
+          "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 5875 filtered out; finished in 0.01s"
+        ],
+        "log": "/home/liupan/Aerius/codex-plus/.build/status-lines/triage/candidate-filters/bottom_pane__footer__tests.log"
+      },
+      {
+        "filter": "status_surface",
+        "exit": 0,
+        "summary": [
+          "test result: ok. 43 passed; 0 failed; 0 ignored; 0 measured; 5836 filtered out; finished in 0.09s"
+        ],
+        "log": "/home/liupan/Aerius/codex-plus/.build/status-lines/triage/candidate-filters/status_surface.log"
+      },
+      {
+        "filter": "weekly_reset",
+        "exit": 0,
+        "summary": [
+          "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 5876 filtered out; finished in 0.03s"
+        ],
+        "log": "/home/liupan/Aerius/codex-plus/.build/status-lines/triage/candidate-filters/weekly_reset.log"
+      },
+      {
+        "filter": "resumed_session_hides_unknown_token_usage",
+        "exit": 0,
+        "summary": [
+          "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 5878 filtered out; finished in 0.03s"
+        ],
+        "log": "/home/liupan/Aerius/codex-plus/.build/status-lines/triage/candidate-filters/resumed_session_hides_unknown_token_usage.log"
+      },
+      {
+        "filter": "worker_hud",
+        "exit": 0,
+        "summary": [
+          "test result: ok. 50 passed; 0 failed; 0 ignored; 0 measured; 5829 filtered out; finished in 0.22s"
+        ],
+        "log": "/home/liupan/Aerius/codex-plus/.build/status-lines/triage/candidate-filters/worker_hud.log"
+      },
+      {
+        "filter": "shell_policy",
+        "exit": 0,
+        "summary": [
+          "test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 5858 filtered out; finished in 0.11s"
+        ],
+        "log": "/home/liupan/Aerius/codex-plus/.build/status-lines/triage/candidate-filters/shell_policy.log"
+      },
+      {
+        "filter": "chatwidget::tests::exec_flow",
+        "exit": 0,
+        "summary": [
+          "test result: ok. 53 passed; 0 failed; 0 ignored; 0 measured; 5826 filtered out; finished in 0.16s"
+        ],
+        "log": "/home/liupan/Aerius/codex-plus/.build/status-lines/triage/candidate-filters/chatwidget__tests__exec_flow.log"
+      },
+      {
+        "filter": "thread_transcript::tools::tests",
+        "exit": 0,
+        "summary": [
+          "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 5873 filtered out; finished in 0.07s"
+        ],
+        "log": "/home/liupan/Aerius/codex-plus/.build/status-lines/triage/candidate-filters/thread_transcript__tools__tests.log"
+      }
+    ],
+    "native_filter_counts_overlap": true,
+    "broad_footer": {
+      "passed": 83,
+      "failed": 1,
+      "preexisting_failure": "app::owned_transcript::empty_state_animation_tests::empty_state_animation_preserves_header_cursor_and_footer",
+      "baseline_proof": "Exact same snapshot diff on role-only baseline; root repeated exact test and compared diff bytes",
+      "evidence": "/home/liupan/Aerius/codex-plus/.build/status-lines/triage/snapshot-diff-comparison.json"
+    },
+    "status_pty": {
+      "passed": true,
+      "cases": 4,
+      "stages": 9,
+      "display_model_requests": 0
+    },
+    "ultracode_pty": {
+      "passed": true,
+      "cases": 4
+    },
+    "weekly_reset_pty": {
+      "passed": true,
+      "stages": 4
+    },
+    "role_pty": {
+      "passed": true,
+      "stages": 14
+    },
+    "full_native_smoke": {
+      "passed": true,
+      "stages": 23,
+      "extra_model_calls": 0
+    },
+    "patch": "clean application, reverse application and exact native reconstruction; no native whitespace errors",
+    "integration": {
+      "passed": true,
+      "status_cases": 4,
+      "role_stages": 14,
+      "admission_tests": 2,
+      "skips": 0,
+      "logs": [
+        "/home/liupan/.codex/codex-plus/logs/79ce952b-27ab-45d7-824d-bd5cbe503bcd.log",
+        "/home/liupan/.codex/codex-plus/logs/18048742-a737-4664-9396-449a168789a1.log",
+        "/home/liupan/.codex/codex-plus/logs/5d4eb0fd-7c3b-4d14-8b57-35d2264ff9cf.log"
+      ]
+    }
+  },
+  "artifacts": {
+    "root_baseline": "/home/liupan/Aerius/codex-plus/.build/status-lines/root-baseline",
+    "status_pty": "/home/liupan/Aerius/codex-plus/.build/status-lines/acceptance/status-lines/report.json",
+    "ultracode_pty": "/home/liupan/Aerius/codex-plus/.build/status-lines/acceptance/ultracode/report.json",
+    "weekly_reset_pty": "/home/liupan/Aerius/codex-plus/.build/status-lines/acceptance/weekly-reset-settled/report.json",
+    "role_pty": "/home/liupan/Aerius/codex-plus/.build/status-lines/acceptance/roles/report.json",
+    "full_native_smoke": "/home/liupan/Aerius/codex-plus/.build/status-lines/acceptance/smoke/report.json"
+  },
+  "preserved_failures": [
+    "Managed test job41aa52fc stopped on reproduced preexisting startup snapshot; remaining filters passed on copied candidate test executable",
+    "Managed build job1478f076 compiled successfully, then test incorrectly required header clipped in short terminal; corrected to visible close hint and retained physical-row checks",
+    "Weekly reset fixture checked workers before metadata refresh; now waits for actual worker rows"
+  ],
+  "limits": [
+    "Source qualification only; no release, main merge or fleet installation",
+    "ARM qualification not run",
+    "One preexisting startup snapshot mismatch remains; it was not updated or counted as a pass",
+    "Private UI fixtures establish rendering behavior, not arbitrary daemon compatibility"
+  ],
+  "binaries": {
+    "codex": "6359770d5bdd69971f597079da225e86364d8018c186d19d6777ef34f42c1576",
+    "codex-code-mode-host": "c5a0d6c2971363a43ed844a09f7f427f583ff7a148ebe9f56744ffba01869b29",
+    "codex-plus-runtime": "5e74477a2005af51f2734152387bb134d5fc2dfa3d6112c67eb77e194191c6ae"
+  }
+}

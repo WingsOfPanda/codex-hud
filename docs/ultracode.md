@@ -9,14 +9,17 @@ completion wakes. It adds no workflow scripting engine or model polling loop.
 
 Use `/ultracode on`, `/ultracode off` or `/ultracode status` in a qualified local
 Plus root TUI. Remote workspaces, side conversations and unqualified forks are
-outside this first version. The existing status line shows effective, pending or unavailable mode;
-the activity strip keeps its three-row limit. Turning mode off preserves workers,
+outside this first version. The existing status line shows `ultracode` when the
+saved requested setting is on and omits the badge when it is off; the activity
+strip keeps its six-row limit. Turning mode off preserves workers,
 jobs and their result delivery. Native Ultra effort retains its upstream meaning.
 The mode appears beside the model and effort, for example
 `GPT-6-Astra high ultracode`. It prefers the model-with-reasoning item, falls back
 to the model item, and appears only once when both are selected. A status line
 without either model item gets a standalone mode label; an explicitly disabled
-status line stays disabled. Pending and unavailable states remain explicit.
+status line stays disabled. Missing or unreadable mode projections omit the badge.
+The badge does not confirm the current turn's effective mode; `/ultracode status`
+reports the admitted snapshot, pending changes and unavailable reasons.
 
 For operators, the corresponding helper is `codex-plus ultracode` with `on`,
 `off`, or `status`, `--thread ROOT_UUID`, and optional `--json`. Models inspect
@@ -46,8 +49,8 @@ unresolved input remain for review.
 Ultracode also needs the turn's initial user message to confirm its mode. A
 temporary `list_items is not supported yet` response gets the same bounded read
 retry. If mode confirmation fails, the accepted message stays accepted and the
-status shows `Ultracode unavailable`; `/ultracode status` explains the failure and
-can recover once the history is readable. An already-confirmed turn keeps its
+diagnostic status shows `Ultracode unavailable`; `/ultracode status` explains the
+failure and can recover once the history is readable. An already-confirmed turn keeps its
 original mode through steering. Neither confirmation path resends user input.
 
 Plus stores the complete original startup developer instructions privately and
@@ -71,7 +74,7 @@ Ordinary direct-child watches expire after 24 hours with local attention, withou
 a guaranteed model wake. Per-child completion may cause multiple useful root
 wakes; unchanged work causes no observer model calls.
 
-Workers hand back expected executions over eight minutes before launch. The root
+Workers hand back expected executions over sixteen minutes before launch. The root
 uses [detached jobs](detached-jobs.md) only where the qualified commands are
 installed. Unexpected overruns of permitted short checks may finish. Prepared
 work is pending until execution acceptance passes.

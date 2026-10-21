@@ -658,6 +658,43 @@ fn malformed_cancel_does_not_kill_and_live_descendants_require_cleanup() {
 }
 
 #[test]
+fn living_executor_reconciliation_leaves_startup_lock_untouched() {
+    for state in [State::Launching, State::Running] {
+        let (temp, root, mut record, dir) = setup("exit 0");
+        record.state = state;
+        record.executor = Some(identity(std::process::id()).unwrap());
+        dir.atomic("state.json", &record).unwrap();
+
+        let current = reconcile(temp.path(), &root, &record.id).unwrap();
+        assert_eq!(current["state"], serde_json::to_value(state).unwrap());
+        assert_eq!(current["executor"], serde_json::to_value(&record.executor).unwrap());
+        assert!(
+            !dir.path.join("executor.lock").exists(),
+            "a live executor may be about to acquire its startup lock"
+        );
+    }
+}
+
+#[test]
+fn unavailable_executor_reconciliation_still_checks_lock_ownership() {
+    let mut stale = identity(std::process::id()).unwrap();
+    stale.start_ticks += 1;
+    for executor in [None, Some(stale)] {
+        let (temp, root, mut record, dir) = setup("exit 0");
+        record.state = State::Launching;
+        record.executor = executor;
+        dir.atomic("state.json", &record).unwrap();
+
+        let owner = Lock::acquire(&dir, "executor.lock", false).unwrap().unwrap();
+        assert_eq!(reconcile(temp.path(), &root, &record.id).unwrap()["state"], "launching");
+        drop(owner);
+        let current = reconcile(temp.path(), &root, &record.id).unwrap();
+        assert_eq!(current["state"], "unknown");
+        assert!(current["error"].as_str().unwrap().contains("never replay this UUID"));
+    }
+}
+
+#[test]
 fn duplicate_executor_entry_cannot_corrupt_prepared_or_live_execution() {
     let (temp, root, mut record, dir) = setup("exit 0");
     assert_eq!(execute(temp.path(), temp.path(), &root, &record.id), 1);
@@ -691,6 +728,57 @@ fn lost_initialized_resource_registry_refuses_new_claims_and_maintenance_scan() 
     .unwrap();
     assert!(claim(temp.path(), &record, false).is_err());
     assert!(roots(temp.path()).is_err());
+}
+
+#[test]
+fn group_scan_skips_vanished_stat_and_still_detects_live_members() {
+    let fixture = tempfile::tempdir().unwrap();
+    for pid in [1, 2] {
+        fs::create_dir(fixture.path().join(pid.to_string())).unwrap();
+    }
+    // Assign roles in directory order, so the vanished process is scanned first.
+    let entries: Vec<_> = fs::read_dir(fixture.path())
+        .unwrap()
+        .map(|entry| entry.unwrap().path())
+        .collect();
+    let vanished = entries[0].join("stat");
+    let live = entries[1].join("stat");
+    let mut child = Command::new("/bin/sleep").arg("30").spawn().unwrap();
+    let stat = File::open(format!("/proc/{}/stat", child.id())).unwrap();
+    child.kill().unwrap();
+    child.wait().unwrap();
+    std::os::unix::fs::symlink(format!("/proc/self/fd/{}", stat.as_raw_fd()), &vanished).unwrap();
+    assert_eq!(
+        fs::read_to_string(&vanished).unwrap_err().raw_os_error(),
+        Some(libc::ESRCH)
+    );
+    let own = identity(std::process::id()).unwrap();
+    let groups = BTreeSet::from([(own.pgid, own.sid)]);
+    assert!(!live_groups_at(&groups, fixture.path()).unwrap());
+
+    std::os::unix::fs::symlink(format!("/proc/{}/stat", own.pid), &live).unwrap();
+    assert_eq!(
+        fs::read_dir(fixture.path())
+            .unwrap()
+            .next()
+            .unwrap()
+            .unwrap()
+            .path(),
+        entries[0]
+    );
+    assert!(live_groups_at(&groups, fixture.path()).unwrap());
+
+    fs::remove_file(&vanished).unwrap();
+    assert!(live_groups_at(&groups, fixture.path()).unwrap());
+    fs::write(&vanished, "invalid process metadata").unwrap();
+    assert!(live_groups_at(&groups, fixture.path()).is_err());
+    fs::remove_file(&vanished).unwrap();
+    std::os::unix::fs::symlink("stat", &vanished).unwrap();
+    let error = live_groups_at(&groups, fixture.path()).unwrap_err();
+    assert_eq!(
+        error.downcast_ref::<io::Error>().unwrap().raw_os_error(),
+        Some(libc::ELOOP)
+    );
 }
 
 #[test]

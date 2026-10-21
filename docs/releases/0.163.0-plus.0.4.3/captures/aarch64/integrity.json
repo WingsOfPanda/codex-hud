@@ -1,0 +1,33 @@
+{
+  "passed": true,
+  "raw_tmux_pairs": 20,
+  "baseline_only": false,
+  "development_pre_package": false,
+  "candidate_acceptance": true,
+  "coherence": "cursor/dimensions before and after each pair",
+  "busy_pairs_seconds": 5,
+  "busy_working_row_verified_above_cursor": true,
+  "working_row_positions": [
+    {
+      "size": "100x40",
+      "row": 27,
+      "position": "above"
+    },
+    {
+      "size": "80-split",
+      "row": 27,
+      "position": "above"
+    }
+  ],
+  "model_calls": 0,
+  "AP_replay_performed": false,
+  "frontend_equivalence": {
+    "path": "frontend-equivalence.json",
+    "sha256": "2ac6c96a8bca20f4773763cd05d195353477ac877e88d47597bb759e91951627",
+    "architecture": "aarch64",
+    "package_manifest": {
+      "path": "frontend-package-manifest.json",
+      "sha256": "8699753296c7c39ed97c458f706e0603d99448279bf259a89c03770013c03352"
+    }
+  }
+}

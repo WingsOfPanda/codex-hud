@@ -1,0 +1,15 @@
+{
+  "accepted": true,
+  "cleanup_passed": true,
+  "source": "ecddea18279ede7774749c150ded30e7ef3b1d87",
+  "archive_sha256": "52f1e448bb6f4e3b9a3e43bb2ecfae361426f38521bb89eca498de74c952dff3",
+  "manifest_sha256": "8699753296c7c39ed97c458f706e0603d99448279bf259a89c03770013c03352",
+  "tree_sha256": "463bd4764fd08a65db5982c17ea6c2d78596e59e98198c53da91aef4354f51c0",
+  "execution": "d4509643-7abc-4eeb-821d-82ef848f3b4b",
+  "runtime_units": 186,
+  "runtime_acceptance": 29,
+  "detached_cases": 22,
+  "qualification_checks": 73,
+  "root_evidence_log": "/home/liupan/.codex/codex-plus/logs/de27b9da-2c0a-48a9-b35e-94a0d2ace065.log",
+  "native_compatibility": "/home/liupan/Aerius/codex-plus/.build/release043/compat-maintenance-corrected-prep/root-arm-042/gate.json"
+}

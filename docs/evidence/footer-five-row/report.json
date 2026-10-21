@@ -1,0 +1,74 @@
+{
+  "schema": 1,
+  "implementation_commit": "87099623310f65b807742156cbeb7bb1dbe9d0af",
+  "patch_sha256": "1bcb9b754f5bf2d0b43635fbd2bd5d6dcf77b9a812c58e940fc0041d0a1deced",
+  "frontend_sha256": "81e6a014ad864742a3027783b990eb37df0725b17d849e36a9a7bd817bb8eb01",
+  "root_contract_passed": true,
+  "contract_sha256": "205ede3c738d9aa3821673a351fb676d303db1caea7652ed5980e953a3399011",
+  "stages": [
+    {
+      "name": "wide-empty",
+      "nonempty_below_prompt": 5,
+      "actual_ap_classification": "idle"
+    },
+    {
+      "name": "wide-draft",
+      "nonempty_below_prompt": 5,
+      "actual_ap_classification": "idle"
+    },
+    {
+      "name": "narrow-draft",
+      "nonempty_below_prompt": 5,
+      "actual_ap_classification": "idle"
+    },
+    {
+      "name": "shortcuts",
+      "nonempty_below_prompt": 5,
+      "actual_ap_classification": "idle"
+    },
+    {
+      "name": "narrow-shortcuts",
+      "nonempty_below_prompt": 5,
+      "actual_ap_classification": "idle"
+    },
+    {
+      "name": "escape-idle",
+      "nonempty_below_prompt": 5,
+      "actual_ap_classification": "idle"
+    },
+    {
+      "name": "history-search",
+      "nonempty_below_prompt": 5,
+      "actual_ap_classification": "idle"
+    }
+  ],
+  "config": {
+    "status_line": [
+      "model-with-reasoning",
+      "context-remaining",
+      "weekly-limit",
+      "current-dir",
+      "pull-request-number",
+      "weekly-reset"
+    ],
+    "status_line_use_colors": true,
+    "preserved": true,
+    "new_status_keys": []
+  },
+  "native_filters": {
+    "goal": 74,
+    "status_line": 94,
+    "status_surface": 44,
+    "config_panel": 21,
+    "contrast": 5,
+    "worker_hud": 54,
+    "shell_policy": 21,
+    "exec_flow": 53,
+    "transcript": 6
+  },
+  "native_failures": 0,
+  "native_ignored": 0,
+  "root_log": "0a49ab4a-d787-46c2-ab45-22978f945de0.log",
+  "cleanup": "passed",
+  "scope": "Private native x86 PTY and actual AP classifier replay; final archive and ARM qualification recorded separately"
+}

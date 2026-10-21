@@ -1,0 +1,14 @@
+{
+  "classification": "Historical x86 source evidence: six app-session assertions failed identically on candidate and preserved0.4.2; full upstream suite is not green. This record is disclosure, not an ARM run or acceptance waiver.",
+  "evidence_source": "/home/liupan/Aerius/codex-plus/.build/ultracode-startup043/tests-triage/output/baseline-comparison.json",
+  "matched_failures": [
+    "app_server_session::tests::shared_thread_start_preserves_explicit_session_overrides",
+    "app_server_session::tests::terminal_visualization_instructions_are_gated_for_all_tui_thread_flows",
+    "app_server_session::tests::thread_fork_params_forward_instruction_overrides",
+    "app_server_session::tests::thread_lifecycle_params_forward_config_overrides_and_service_tier",
+    "app_server_session::tests::thread_resume_params_can_rejoin_without_overriding_existing_settings",
+    "app_server_session::tests::thread_resume_params_can_restore_persisted_model_settings"
+  ],
+  "root_host_limit": "Root reported bwrap user-namespace sandbox unavailable on its host. ARM bwrap is tested natively by the package resources gate; root host restrictions do not establish ARM compatibility and no security policy is changed. If the ARM gate fails, preserve exact output and report its own host limitation; do not silently skip it.",
+  "full_upstream_suite_run_in_this_recipe": false
+}

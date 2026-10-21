@@ -1,0 +1,90 @@
+{
+  "release": "0.163.0-plus.0.4.4",
+  "plus_commit": "e8e10f6d9fff3124ebac3a85b930a1201c816c91",
+  "upstream": {
+    "version": "0.163.0",
+    "tag": "rust-v0.163.0",
+    "commit": "83086188ae0614bd882818ff1aa23f3194962012"
+  },
+  "coordinator_protocol": 5,
+  "execution_record_format": 1,
+  "targets": {
+    "x86_64": {
+      "triple": "x86_64-unknown-linux-gnu",
+      "asset": "codex-plus-0.163.0-plus.0.4.4-x86_64-unknown-linux-gnu.tar.gz",
+      "sha256": "1007f5d0cdf34ccc5debd7f7c42a43c38450e8a1fd3602c11552cd50ece463b6",
+      "tree_sha256": "b83da2833d3874f8438d516628ff8b31f10b9c670e1bfa3e75061281a03b9aae",
+      "manifest_sha256": "b78463ac1da6163a4c1e520c594d4132416b615f455324eaf86f00274ee5d903"
+    },
+    "aarch64": {
+      "triple": "aarch64-unknown-linux-gnu",
+      "asset": "codex-plus-0.163.0-plus.0.4.4-aarch64-unknown-linux-gnu.tar.gz",
+      "sha256": "5e940842b01a27598b276756ca59190fcf527a83af4eb30f3ea98b0616393170",
+      "tree_sha256": "965ae8730f4c66b5a6b0849d4e8cfbb5a55efb69e331e69c6e500feb1a69e7c4",
+      "manifest_sha256": "771fc0dfbf86ac41fbd8793b24e4f37437843d26bbbc6fe9a69ff3f51a03fd6f"
+    }
+  },
+  "frontend_compile_origin": "4a96db52c2e0aeab108ed3e0645bc3ed804a0227",
+  "frontend_patch_sha256": "caefa0227c491273d7540b2c5f4af336cac67b89f5e9c0b9367d9e55f7c3a4a4",
+  "native_checks_each_architecture": {
+    "runtime_units": 193,
+    "closed_stdio": 2,
+    "local_advisor_contracts": 6,
+    "startup_regressions": 3,
+    "rollback_and_holds": 7,
+    "advisor_mixes": 7,
+    "old_TUI_root_result": true
+  },
+  "crosshost": {
+    "success": true,
+    "caller_sigkill_cleanup": true,
+    "worker_implementation": "08d5098d457389d6d363f47a6c2342a987b1418943faebb65b9f80378f707094",
+    "real_ssh": true,
+    "fake_claude_provider": true,
+    "paid_provider_calls": 0,
+    "command_exit": 0,
+    "cleanup": "independently reconciled idle ControlPersist transport; original record preserved"
+  },
+  "retained_frontend_tests": {
+    "passed": 5809,
+    "baseline_failures": 82,
+    "ignored": 4,
+    "full_suite_green": false
+  },
+  "retained_AP_replay": {
+    "version": "0.7.34",
+    "states_each_architecture": 20,
+    "busy_pairs_each_architecture": 2,
+    "original_capture_sources_preserved": true
+  },
+  "rollback_floor": "0.163.0-plus.0.4.3",
+  "agents_block_sha256": "2e5f0b01f3ac15834b8da7c90e436b91e0cc81e3c5ac79d584c2d30603dd8a59",
+  "handoff_sha256": "1217fc7df9356ea44c92ad0cc22eb525a6a72834080fc0155091407d55aef91d",
+  "assets": [
+    {
+      "name": "codex-plus-0.163.0-plus.0.4.4-x86_64-unknown-linux-gnu.tar.gz",
+      "sha256": "1007f5d0cdf34ccc5debd7f7c42a43c38450e8a1fd3602c11552cd50ece463b6",
+      "bytes": 136981996
+    },
+    {
+      "name": "codex-plus-0.163.0-plus.0.4.4-x86_64-unknown-linux-gnu.tar.gz.sha256",
+      "sha256": "8ef9724d056f74a66b23b8ccfcefb3104c447d6868e07a87de954d7910bc9187",
+      "bytes": 128
+    },
+    {
+      "name": "codex-plus-0.163.0-plus.0.4.4-aarch64-unknown-linux-gnu.tar.gz",
+      "sha256": "5e940842b01a27598b276756ca59190fcf527a83af4eb30f3ea98b0616393170",
+      "bytes": 129179934
+    },
+    {
+      "name": "codex-plus-0.163.0-plus.0.4.4-aarch64-unknown-linux-gnu.tar.gz.sha256",
+      "sha256": "ef1f30b87227bf4e0c5bde5db7ffebf448aa404e5bc7d69f3aa2c703a647be3f",
+      "bytes": 129
+    },
+    {
+      "name": "handoff.json",
+      "sha256": "1217fc7df9356ea44c92ad0cc22eb525a6a72834080fc0155091407d55aef91d",
+      "bytes": 6190
+    }
+  ]
+}

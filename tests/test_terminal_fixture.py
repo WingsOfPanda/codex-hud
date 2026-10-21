@@ -51,7 +51,7 @@ class CompactHudAssertionTests(unittest.TestCase):
         self.assertEqual(len(worker_rows(text)), 1)
         self.assertEqual(len(shell_rows(text)), 1)
 
-    def test_combined_alert_and_overflow_keep_composer_in_last_six(self):
+    def test_combined_alert_and_overflow_keep_composer_in_expanded_budget(self):
         text = self.screen(['Watcher unavailable · Workers stale · counts unavailable',
                             'mixed (mixed) · topic (3 agents) · 2:00 · ? tok', '+3 more'])
         assert_compact_hud(text, rows=3)
@@ -62,10 +62,9 @@ class CompactHudAssertionTests(unittest.TestCase):
                             'GPT-6.1-Sol (high) · task · 0:12 · ? tok'])
         self.assertEqual(advisor_rows(text), [advisor])
         assert_compact_hud(text, rows=3)
-        with self.assertRaises(AssertionError):
-            assert_compact_hud(text + '\n+2 more')
+        assert_compact_hud(text + '\n+2 more', rows=4)
 
-    def test_advisor_transcript_is_separate_from_three_row_footer(self):
+    def test_advisor_transcript_is_separate_from_activity_footer(self):
         transcript = ['• Advisor on wake and cancellation fixes · 5:01',
                       '• Advised on wake and cancellation fixes · 1:05',
                       '• Advisor failed on wake and cancellation fixes · 1:05']
@@ -89,24 +88,32 @@ class CompactHudAssertionTests(unittest.TestCase):
 
     def test_typed_draft_does_not_require_shortcuts_footer(self):
         assert_compact_hud('› draft\nroot-status\nBackground · command · seen 0:12', rows=1)
-        assert_compact_hud('› draft\ntab to queue message\nBackground · command · seen 0:12',
-                           rows=1, idle=False)
+        with self.assertRaises(AssertionError):
+            assert_compact_hud('› draft\ntab to queue message\nBackground · command · seen 0:12',
+                               rows=1, idle=False)
 
     def test_removed_navigation_hints_are_rejected(self):
         for hint in ('← for agents · ? for shortcuts', '? for shortcuts'):
             with self.subTest(hint=hint), self.assertRaises(AssertionError):
                 assert_compact_hud('› draft\n' + hint)
 
-    def test_old_summary_and_four_total_rows_are_rejected(self):
-        for rows in (['Workers 6 active'], ['Workers stale · counts unavailable',
-                'GPT-6.1-Sol (high) · first · 0:12 · ? tok',
-                'GPT-6-Astra (medium) · second · 0:12 · ? tok', '+4 more']):
+    def test_removed_background_aggregate_banner_is_rejected(self):
+        with self.assertRaises(AssertionError):
+            assert_compact_hud('› draft\nBackground status unavailable')
+
+    def test_old_summary_and_seven_activity_rows_are_rejected(self):
+        for rows in (['Workers 6 active'], [
+                f'GPT-6.1-Sol (high) · task{n} · 0:12 · ? tok' for n in range(7)]):
             with self.subTest(rows=rows), self.assertRaises(AssertionError):
                 assert_compact_hud(self.screen(rows))
 
-    def test_idle_composer_outside_last_six_is_rejected(self):
+    def test_six_activity_rows_and_two_status_rows_are_allowed(self):
+        rows = [f'GPT-6.1-Sol (high) · task{n} · 0:12 · ? tok' for n in range(6)]
+        assert_compact_hud('› draft\nidentity\nstats\n' + '\n'.join(rows), rows=6)
+
+    def test_idle_composer_outside_expanded_budget_is_rejected(self):
         with self.assertRaises(AssertionError):
-            assert_compact_hud('› draft\n' + '\n'.join(f'line {n}' for n in range(6)))
+            assert_compact_hud('› draft\n' + '\n'.join(f'line {n}' for n in range(9)))
 
     def test_worker_recognition_preserves_full_custom_and_unknown_models(self):
         rows = ['GPT-6.1-Sol (high) · first · 0:12 · ? tok',

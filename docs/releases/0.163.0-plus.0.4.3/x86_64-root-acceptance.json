@@ -1,0 +1,22 @@
+{
+  "accepted": true,
+  "cleanup_passed": true,
+  "source": "ecddea18279ede7774749c150ded30e7ef3b1d87",
+  "archive_sha256": "d03b795fb8e7069c8697b3f3479ed32b881dd9517b0c147006ab67b8d89c83d4",
+  "manifest_sha256": "27950a50fac920eb5cbdbb4812608d0dc19de602cbd06c8e0e2f9139cd731200",
+  "tree_sha256": "a0cee085064c7ca94687e13ef7506c459aa8bce9f42b2248df2b5d99dcc7006a",
+  "execution": "e0caaa66-b572-430d-a961-f10c6a1cdcf7",
+  "qualification": "qualified-with-host-limitation",
+  "host_limitation": "Raw bwrap uid-map denied identically for official and Plus; both CLI read-only sandboxes passed.",
+  "root_verification_log": "/home/liupan/.codex/codex-plus/logs/b86d2a55-c7dd-433e-a362-3fe5e7a4d8b4.log",
+  "runtime_units": 186,
+  "runtime_blackbox": 29,
+  "inherited_checks": 15,
+  "fresh_checks": 84,
+  "not_run": [],
+  "limits": [
+    "Full upstream suite is not green: six pre-existing app_server_session assertions remain outside the scoped native gate."
+  ],
+  "AP_replay": "pending",
+  "crossversion_native": "running separately"
+}

@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "target": "planned 0.4.3; not released",
+  "implementation_commit": "176a60b01d2dfd1a986304946ed7a286845e9562",
+  "baseline": "0.4.2 final source483912b9ed2783cf239e62f3aec3922730979905",
+  "behavior": "Successful item history without an initial user message shares the existing three100ms retries with temporary unsupported-items errors; exact binding remains required",
+  "root_contracts": {
+    "input_settle_subcases": 13,
+    "status_empty_pages": 2,
+    "status_single_call_recovered": true,
+    "no_mutation_replay": true,
+    "persistent_failure_remains_unavailable": true
+  },
+  "tests": {
+    "runtime_acceptance": 29,
+    "runtime_units": 183,
+    "failed": 0,
+    "ignored": 0
+  },
+  "runtime_sha256": "4ab60fe5a08d78167ee63e336849324b13f9c74cb193c33d86ee410764750717",
+  "contract_sha256": "4feea7befa63857b2d731df328d3b1004a5b47ae3aa536a52b9f79a1b2c9e422",
+  "logs": [
+    "ef66d596-5af5-452f-9d25-1a387716ed87.log",
+    "e47f6984-7eec-4c51-b259-ae1d9eb86df6.log",
+    "eb915c7f-ce68-43ef-bf17-8fb5a958f01e.log",
+    "fcdaea63-d759-4f53-a6b7-04ffad98ae6b.log",
+    "d29b1b6d-bd74-4e86-a183-3eaeef511272.log",
+    "4fe90752-1b9c-48d2-9c31-974300fb7a6c.log"
+  ],
+  "limits": [
+    "Private x86 helper fixtures; native ARM and complete 0.4.3 release qualification pending",
+    "Original live blink not captured; fix covers deterministic empty-history reproduction",
+    "Retry count is bounded; existing RPC timeouts still apply",
+    "No installation or publication"
+  ]
+}

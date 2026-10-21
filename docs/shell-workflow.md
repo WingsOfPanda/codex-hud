@@ -8,7 +8,7 @@ stays unchanged. Fleet-config owns installation and the shared agent policy.
 ## Choose before launching
 
 For interactive roots and their native workers, first apply
-[reviewed job handoff](detached-jobs.md#agent-workflow). Expected runs over eight
+[reviewed job handoff](detached-jobs.md#agent-workflow). Expected runs over sixteen
 minutes, hardware trials, serving experiments and service restarts are prepared
 by workers and reviewed/launched by the root as detached executions. This is a
 planning boundary, separate from the two-second display yield below. Independent
@@ -114,7 +114,7 @@ save model turns. Ending the main turn and avoiding repeated model polling do.
 
 The root's worker brief names preparation outputs, permitted quick checks and
 the handoff point. Workers return expected-long execution recipes before launch,
-then finish their turns. Eight minutes is an estimate, not a kill deadline.
+then finish their turns. Sixteen minutes is an estimate, not a kill deadline.
 
 An allowed short check that unexpectedly overruns stays with that worker until
 it finishes, using a bounded local wait without repeated model polling. Do not

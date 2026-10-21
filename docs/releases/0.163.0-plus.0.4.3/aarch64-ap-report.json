@@ -1,0 +1,150 @@
+{
+  "ap_commit": "f88d93b5675fa9712217a7763351d87bee81ca17",
+  "ap_version": "0.7.34 (tag v0.7.34; the classifier and stall hash are those of 4a3a9afd76967b9b1d53403006174b1e4e938748, unchanged since the x86 replay)",
+  "ap_test": "tests/codex-plus-footer.test.ts (AP_CAPTURE_INDEX replay; the committed fixtures remain the x86 bundle)",
+  "bundle_index": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/root-review/qualification/cursor-v2/ap-replay-index.json",
+  "bundle_tar_sha256": "00000fd76d140461733b56a316f15dd49908c1b0d87423b1a5ab8d8bcf8c4882",
+  "bundle_version": 2,
+  "candidate_acceptance": true,
+  "development_pre_package": false,
+  "binary_source_commit": "3598e7a61543e9ae0f09c1da88b5ca89e27afe9b",
+  "replayed_at": "2026-10-19T15:09:12+00:00",
+  "states": [
+    {
+      "state": "high-100x40-idle-empty",
+      "bundle_expected": "idle",
+      "ap_actual": "idle",
+      "pass": true
+    },
+    {
+      "state": "high-100x40-idle-help",
+      "bundle_expected": "idle",
+      "ap_actual": "idle",
+      "pass": true
+    },
+    {
+      "state": "high-100x40-busy-midturn-t0",
+      "bundle_expected": "busy",
+      "ap_actual": "busy",
+      "pass": true
+    },
+    {
+      "state": "high-100x40-busy-midturn-t5",
+      "bundle_expected": "busy",
+      "ap_actual": "busy",
+      "pass": true
+    },
+    {
+      "state": "high-100x40-busy-typed",
+      "bundle_expected": "busy",
+      "ap_actual": "busy",
+      "pass": true
+    },
+    {
+      "state": "high-100x40-idle-two-row-draft",
+      "bundle_expected": "unknown",
+      "ap_actual": "unknown",
+      "pass": true
+    },
+    {
+      "state": "high-80-split-idle-empty",
+      "bundle_expected": "idle",
+      "ap_actual": "idle",
+      "pass": true
+    },
+    {
+      "state": "high-80-split-idle-help",
+      "bundle_expected": "idle",
+      "ap_actual": "idle",
+      "pass": true
+    },
+    {
+      "state": "high-80-split-busy-midturn-t0",
+      "bundle_expected": "busy",
+      "ap_actual": "busy",
+      "pass": true
+    },
+    {
+      "state": "high-80-split-busy-midturn-t5",
+      "bundle_expected": "busy",
+      "ap_actual": "busy",
+      "pass": true
+    },
+    {
+      "state": "high-80-split-busy-typed",
+      "bundle_expected": "busy",
+      "ap_actual": "busy",
+      "pass": true
+    },
+    {
+      "state": "high-80-split-idle-two-row-draft",
+      "bundle_expected": "unknown",
+      "ap_actual": "unknown",
+      "pass": true
+    },
+    {
+      "state": "high-80-split-approval-dialog",
+      "bundle_expected": "unknown",
+      "ap_actual": "unknown",
+      "pass": true
+    },
+    {
+      "state": "high-100x40-approval-dialog",
+      "bundle_expected": "unknown",
+      "ap_actual": "unknown",
+      "pass": true
+    },
+    {
+      "state": "ultra-100x40-idle-empty",
+      "bundle_expected": "idle",
+      "ap_actual": "idle",
+      "pass": true
+    },
+    {
+      "state": "ultra-80-split-idle-empty",
+      "bundle_expected": "idle",
+      "ap_actual": "idle",
+      "pass": true
+    },
+    {
+      "state": "form-100x40-request-user-input-notes",
+      "bundle_expected": "unknown",
+      "ap_actual": "unknown",
+      "pass": true
+    },
+    {
+      "state": "form-80-split-request-user-input-notes",
+      "bundle_expected": "unknown",
+      "ap_actual": "unknown",
+      "pass": true
+    },
+    {
+      "state": "form-100x40-mcp-text-elicitation",
+      "bundle_expected": "unknown",
+      "ap_actual": "unknown",
+      "pass": true
+    },
+    {
+      "state": "form-80-split-mcp-text-elicitation",
+      "bundle_expected": "unknown",
+      "ap_actual": "unknown",
+      "pass": true
+    }
+  ],
+  "busy_pair_hash_checks": [
+    {
+      "check": "100x40: a running turn changes the cursor-bounded screen between t0 and t5 (the stall probe sees it)",
+      "pass": true
+    },
+    {
+      "check": "80-split: a running turn changes the cursor-bounded screen between t0 and t5 (the stall probe sees it)",
+      "pass": true
+    }
+  ],
+  "summary": {
+    "states": 20,
+    "passed": 20,
+    "pairs": 2,
+    "pairs_passed": 2
+  }
+}

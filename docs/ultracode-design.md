@@ -55,7 +55,7 @@ of single-agent operation: normal Codex/user/AGENTS delegation still applies.
 Show `ultracode` beside the selected model and effort in the existing status line
 when active, with pending or unavailable state when synchronization is not
 established. If no model item is selected, use a standalone label. Add no activity row.
-Keep the current three-row worker/background/advisor budget, editable composer and
+Keep the six-row worker/background/advisor budget, editable composer and
 existing Plus goal indicator. `/ultracode status` can explain state and the active
 phase's artifact location; a full run browser is deferred.
 
@@ -224,10 +224,10 @@ move this follow-on into MVP scope rather than claiming current park provides it
 ## Long execution handoff
 
 Use the already agreed [detached-job workflow](detached-jobs.md), not a second
-execution store or a tmux/job-watch requirement. Expected commands over eight
+execution store or a tmux/job-watch requirement. Expected commands over sixteen
 minutes, hardware trials, serving experiments and service restarts return to the
 root before launch. Unexpected overruns of permitted short checks finish through
-a bounded local wait; eight minutes is not an automatic termination deadline.
+a bounded local wait; sixteen minutes is not an automatic termination deadline.
 
 Workers return exact command/script, cwd, reviewed inputs/environment references,
 resource effects, expected duration, logs/results, success checks and cleanup.

@@ -39,9 +39,9 @@ from the watch/callback ledger, so observation loss cannot authorize replay or
 erase a result. The [handoff workflow](detached-jobs.md) owns the CLI and manifest
 contract; this document does not duplicate their schema.
 
-Native workers prepare expected runs over eight minutes and hand them to the
+Native workers prepare expected runs over sixteen minutes and hand them to the
 root before launch. An allowed quick check that overruns finishes in a bounded
-local wait. Eight minutes is an estimate, not an execution deadline or transfer.
+local wait. Sixteen minutes is an estimate, not an execution deadline or transfer.
 
 The migration preserves ledger schema and status JSON version 1, exact job and
 callback identities, frozen payloads, uncertainty, and cancellation provenance.

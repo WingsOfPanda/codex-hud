@@ -1,0 +1,539 @@
+{
+  "passed": true,
+  "checks": {
+    "runner": {
+      "passed": true,
+      "exit": 0,
+      "check_count": 19,
+      "skipped_count": 3,
+      "skipped_names": [
+        "test_short_writes_are_completed",
+        "test_write_failure_reports_child_outcome",
+        "test_zero_log_write_is_an_error"
+      ],
+      "log": "/data/liupan/codex-plus-build/s4/qualification/runner.log",
+      "seconds": 5.5
+    },
+    "acceptance": {
+      "passed": true,
+      "exit": 0,
+      "check_count": 29,
+      "skipped_count": 0,
+      "skipped_names": [],
+      "log": "/data/liupan/codex-plus-build/s4/qualification/acceptance.log",
+      "seconds": 66.98
+    },
+    "upgrade": {
+      "passed": true,
+      "exit": 0,
+      "check_count": 7,
+      "skipped_count": 0,
+      "skipped_names": [],
+      "log": "/data/liupan/codex-plus-build/s4/qualification/upgrade.log",
+      "seconds": 12.91
+    },
+    "stock-integration": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/stock-integration.log",
+      "seconds": 82.36
+    },
+    "stock-lifecycle": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/stock-lifecycle.log",
+      "seconds": 34.82
+    },
+    "runtime-advisor": {
+      "passed": true,
+      "exit": 0,
+      "check_count": 13,
+      "skipped_count": 0,
+      "skipped_names": [],
+      "log": "/data/liupan/codex-plus-build/s4/qualification/runtime-advisor.log",
+      "seconds": 25.68
+    },
+    "actual-stop": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/actual-stop.log",
+      "seconds": 4.31
+    },
+    "detached-completion": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/detached-completion.log",
+      "seconds": 5.73
+    },
+    "detached-daemon-graceful": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/detached-daemon-graceful.log",
+      "seconds": 8.82
+    },
+    "detached-daemon-abrupt": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/detached-daemon-abrupt.log",
+      "seconds": 8.73
+    },
+    "detached-observation-gap": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/detached-observation-gap.log",
+      "seconds": 4.73
+    },
+    "detached-changed-input": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/detached-changed-input.log",
+      "seconds": 2.42
+    },
+    "detached-stale-turn": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/detached-stale-turn.log",
+      "seconds": 2.65
+    },
+    "detached-root-mismatch": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/detached-root-mismatch.log",
+      "seconds": 2.3
+    },
+    "detached-read-only": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/detached-read-only.log",
+      "seconds": 2.31
+    },
+    "detached-workspace": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/detached-workspace.log",
+      "seconds": 2.39
+    },
+    "detached-managed-unrestricted": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/detached-managed-unrestricted.log",
+      "seconds": 2.28
+    },
+    "detached-managed-network": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/detached-managed-network.log",
+      "seconds": 2.39
+    },
+    "detached-native-child": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/detached-native-child.log",
+      "seconds": 2.6
+    },
+    "detached-cancellation": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/detached-cancellation.log",
+      "seconds": 6.02
+    },
+    "detached-offline-cancellation": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/detached-offline-cancellation.log",
+      "seconds": 2.98
+    },
+    "detached-maintenance": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/detached-maintenance.log",
+      "seconds": 5.74
+    },
+    "detached-goal-wait": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/detached-goal-wait.log",
+      "seconds": 4.88
+    },
+    "detached-resources": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/detached-resources.log",
+      "seconds": 7.82
+    },
+    "detached-over-24-hours": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/detached-over-24-hours.log",
+      "seconds": 4.66
+    },
+    "detached-watch-recovery": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/detached-watch-recovery.log",
+      "seconds": 5.47
+    },
+    "detached-monitoring-registration-failure": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/detached-monitoring-registration-failure.log",
+      "seconds": 5.24
+    },
+    "detached-package-switch": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/detached-package-switch.log",
+      "seconds": 5.82
+    },
+    "detached-deadline": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/detached-deadline.log",
+      "seconds": 4.59
+    },
+    "detached-job-tui": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/detached-job-tui.log",
+      "seconds": 6.44
+    },
+    "goals-stock": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/goals-stock.log",
+      "seconds": 163.36
+    },
+    "goal-tui": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/goal-tui.log",
+      "seconds": 8.21
+    },
+    "ultracode-admission": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/ultracode-admission.log",
+      "seconds": 9.4
+    },
+    "ultracode-tui": {
+      "passed": true,
+      "exit": 0,
+      "check_count": 4,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/ultracode-tui.log",
+      "seconds": 5.95
+    },
+    "goal-placement-color-0": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/goal-placement-color-0.log",
+      "seconds": 11.55
+    },
+    "goal-placement-color-1": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/goal-placement-color-1.log",
+      "seconds": 11.48
+    },
+    "goal-placement-color-2": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/goal-placement-color-2.log",
+      "seconds": 11.47
+    },
+    "goal-placement-color-3": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/goal-placement-color-3.log",
+      "seconds": 11.49
+    },
+    "goal-placement-empty": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/goal-placement-empty.log",
+      "seconds": 11.45
+    },
+    "status-lines": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/status-lines.log",
+      "seconds": 5.24
+    },
+    "status-lines-off-3": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/status-lines-off-3.log",
+      "seconds": 1.79
+    },
+    "status-lines-branch-off-3": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/status-lines-branch-off-3.log",
+      "seconds": 1.77
+    },
+    "status-lines-on-0": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/status-lines-on-0.log",
+      "seconds": 1.76
+    },
+    "status-lines-branch-on-0": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/status-lines-branch-on-0.log",
+      "seconds": 1.83
+    },
+    "status-lines-on-1": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/status-lines-on-1.log",
+      "seconds": 1.78
+    },
+    "status-lines-branch-on-1": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/status-lines-branch-on-1.log",
+      "seconds": 1.77
+    },
+    "status-lines-on-2": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/status-lines-on-2.log",
+      "seconds": 1.76
+    },
+    "status-lines-branch-on-2": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/status-lines-branch-on-2.log",
+      "seconds": 1.77
+    },
+    "status-lines-on-3": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/status-lines-on-3.log",
+      "seconds": 1.78
+    },
+    "status-lines-branch-on-3": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/status-lines-branch-on-3.log",
+      "seconds": 1.79
+    },
+    "status-lines-branch-no-color-only": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/status-lines-branch-no-color-only.log",
+      "seconds": 1.8
+    },
+    "worker-roles": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/worker-roles.log",
+      "seconds": 12.21
+    },
+    "fleet-footer": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/fleet-footer.log",
+      "seconds": 18.06
+    },
+    "footer-rows": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/footer-rows.log",
+      "seconds": 7.11
+    },
+    "setting-footer": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/setting-footer.log",
+      "seconds": 29.25
+    },
+    "sixteen-minute-policy": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/sixteen-minute-policy.log",
+      "seconds": 0.89
+    },
+    "ultracode-empty-history": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/ultracode-empty-history.log",
+      "seconds": 0.85
+    },
+    "startup-contract": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/startup-contract.log",
+      "seconds": 3.69
+    },
+    "startup-safety": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/startup-safety.log",
+      "seconds": 11.64
+    },
+    "empty-rollout": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/empty-rollout.log",
+      "seconds": 9.54
+    },
+    "cursor-v2-capture": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/cursor-v2-capture.log",
+      "seconds": 23.36
+    },
+    "cursor-v2-verify": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/cursor-v2-verify.log",
+      "seconds": 0.16
+    },
+    "ultracode-bootstrap-0-0": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/ultracode-bootstrap-0-0.log",
+      "seconds": 3.59
+    },
+    "ultracode-bootstrap-0-1": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/ultracode-bootstrap-0-1.log",
+      "seconds": 5.58
+    },
+    "ultracode-bootstrap-1-0": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/ultracode-bootstrap-1-0.log",
+      "seconds": 3.76
+    },
+    "ultracode-bootstrap-1-1": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/ultracode-bootstrap-1-1.log",
+      "seconds": 5.68
+    },
+    "tool-activity": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/tool-activity.log",
+      "seconds": 21.74
+    },
+    "weekly-reset": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/weekly-reset.log",
+      "seconds": 3.46
+    },
+    "shell-topics": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/shell-topics.log",
+      "seconds": 8.94
+    },
+    "detached-hud": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/detached-hud.log",
+      "seconds": 13.4
+    },
+    "native-smoke": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/native-smoke.log",
+      "seconds": 110.71
+    },
+    "package": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/package.log",
+      "seconds": 161.43
+    },
+    "operator-probes": {
+      "passed": true,
+      "exit": 0,
+      "log": "/data/liupan/codex-plus-build/s4/qualification/operator-probes.log",
+      "seconds": 0.2
+    }
+  },
+  "official_sha256": "8a96f66d059d653e68bfd5f3c79337e6f1d7d170d80bf705eb7d0249b34c0ece",
+  "official_unchanged": true,
+  "runtime_unchanged": true,
+  "remote_provider_requests": 0,
+  "detached_scenarios_expected": [
+    "completion",
+    "daemon-graceful",
+    "daemon-abrupt",
+    "observation-gap",
+    "changed-input",
+    "stale-turn",
+    "root-mismatch",
+    "read-only",
+    "workspace",
+    "managed-unrestricted",
+    "managed-network",
+    "native-child",
+    "cancellation",
+    "offline-cancellation",
+    "maintenance",
+    "goal-wait",
+    "resources",
+    "over-24-hours",
+    "watch-recovery",
+    "monitoring-registration-failure",
+    "package-switch",
+    "deadline"
+  ],
+  "detached_scenarios_completed": [
+    "completion",
+    "daemon-graceful",
+    "daemon-abrupt",
+    "observation-gap",
+    "changed-input",
+    "stale-turn",
+    "root-mismatch",
+    "read-only",
+    "workspace",
+    "managed-unrestricted",
+    "managed-network",
+    "native-child",
+    "cancellation",
+    "offline-cancellation",
+    "maintenance",
+    "goal-wait",
+    "resources",
+    "over-24-hours",
+    "watch-recovery",
+    "monitoring-registration-failure",
+    "package-switch",
+    "deadline"
+  ],
+  "accepted_test_correction": {
+    "accepted": true,
+    "root_review_log_prefix": "f165cbeb",
+    "scope": "Exact test-only wait correction plus declared remote REPO adaptation; no product/source edits",
+    "base_source_commit": "ecddea18279ede7774749c150ded30e7ef3b1d87",
+    "base_source": "/home/liupan/Aerius/codex-plus/.build/release043/runtime-final-source/tests/test_rust_runtime_acceptance.py",
+    "base_sha256": "4feea7befa63857b2d731df328d3b1004a5b47ae3aa536a52b9f79a1b2c9e422",
+    "sidecar": "test_rust_runtime_acceptance.single-snapshot.py",
+    "sidecar_sha256": "bf7238cf4a0ac0c85e046afd09f5c74891c4a91351ded9e88042313023ecd0de",
+    "patch_sha256": "a03b535bddda5e7191c23d86de83bf910ef2914f118f22731e8e88a0313ea459",
+    "literal_replacements": {
+      "            wait(lambda: f.delivered() and len(f.state()['callbacks']) == 2,\n                 'different registration origins were merged')": "            wait(lambda: len(callbacks := f.state()['callbacks']) == 2\n                 and all(c['state'] == 'delivered' for c in callbacks),\n                 'different registration origins were merged')",
+      "REPO = Path(__file__).resolve().parents[1]": "REPO = Path('/data/liupan/codex-plus-build/s4/plus-source')"
+    },
+    "tests_required": 29,
+    "preserved_assertions": [
+      "two distinct job callback IDs",
+      "two actual starts",
+      "all LIVE COMPLETION"
+    ],
+    "source_followup": "Apply accepted-single-snapshot.patch in the later release companion commit, after package-source freeze; keep ecddea immutable."
+  },
+  "skipped": [
+    "runner: three Python-only monkeypatch cases explicitly skipped by shipped test; native Rust units cover write_all"
+  ],
+  "original_path": ".build/release043/arm-runtime-final-prep/root-review/qualification/summary.json",
+  "original_sha256": "a1516ef21faac082d1d6349520b37cf7b9d81e77e3dac82a279c8a7586cbec51"
+}

@@ -41,7 +41,7 @@ native-shell path, including independent AP sessions.
 Before assigning or launching expensive work, read the
 [reviewed job workflow](docs/detached-jobs.md#agent-workflow). Interactive roots
 plan preparation, allowed quick checks and the worker's handoff point. Workers
-hand back expected runs over eight minutes and hardware/service operations;
+hand back expected runs over sixteen minutes and hardware/service operations;
 unexpected overruns finish normally. The root reviews and launches detached
 jobs, seeking safe parallelism after checking resources and worktrees.
 
@@ -57,7 +57,8 @@ Before a native subagent waits for a shell result, read
 [worker shell waits](docs/shell-workflow.md#native-subagent-waits).
 
 For an independent read-only second opinion, the root session can use the
-[Astra advisor](docs/advisor.md). Supply a self-contained brief; the main agent
+[advisor](docs/advisor.md). Run `codex-plus advisor --help` for the built-in
+workflow. Supply a self-contained brief; the main agent
 owns the decision after reviewing the advisor's findings. Consultations needed
 for the next decision stay foreground in one bounded local wait; read the advisor
 workflow before launching one. Use background only when independent work can

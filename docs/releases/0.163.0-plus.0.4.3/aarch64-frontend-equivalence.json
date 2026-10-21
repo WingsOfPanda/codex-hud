@@ -1,0 +1,15 @@
+{
+  "accepted": true,
+  "exact_native_production_tree_comparison": true,
+  "old_source_commit": "3598e7a61543e9ae0f09c1da88b5ca89e27afe9b",
+  "new_source_commit": "ecddea18279ede7774749c150ded30e7ef3b1d87",
+  "architecture": "aarch64",
+  "manifest_sha256": "8699753296c7c39ed97c458f706e0603d99448279bf259a89c03770013c03352",
+  "old_patch_sha256": "140e16702e66da4a54e968539c6ca4cc4547f8dbcceeaba2bcbc78f1e4a34fd4",
+  "new_patch_sha256": "140e16702e66da4a54e968539c6ca4cc4547f8dbcceeaba2bcbc78f1e4a34fd4",
+  "old_native_production_tree_sha256": "91d3db77a763dc4b3a51c09e01c9239eeaacfc6e6bdb6a2ce39dcf7a6e08be24",
+  "new_native_production_tree_sha256": "91d3db77a763dc4b3a51c09e01c9239eeaacfc6e6bdb6a2ce39dcf7a6e08be24",
+  "package_manifest_path": "/home/liupan/Aerius/codex-plus/.build/release043/arm-runtime-final-prep/qualified-package-manifest.json",
+  "binary_sha256": "37d3d5c03e8614a18b2bbbba54ce37702a78f7f30bcd14607c41041490de7da0",
+  "code_mode_host_sha256": "7dcf06832150734b040254ef3c5b79494c8855805bd61fa7dbcb0766371dbc1f"
+}

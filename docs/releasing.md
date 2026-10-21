@@ -13,11 +13,30 @@ updates; increment its patch component for Plus fixes and its minor component
 for Plus features. Every new combination still needs qualified target packages.
 Existing published `plus.N` releases retain their original identities.
 
-The current detached-job/Ultracode patch release is `0.163.0-plus.0.4.1`: coordinator protocol 5 and
+The current advisor revision is `0.163.0-plus.0.4.4`: coordinator protocol 5 and
 package `execution_record_format: 1`, with the same pinned official 0.163.0 daemon.
 The execution format describes durable executor records separately from
 coordinator/upstream compatibility. These identities do not establish package
 qualification, publication or installation.
+
+For 0.4.4, require complete native qualification and actual 0.4.3/0.4.4
+mixed-version checks. Use `quiet_checkpoint: true`,
+`executions: wait`, `daemon_restart: false` and `session_restart: required` to
+load the changed frontend and instructions. Propose 0.4.3 as the rollback floor,
+subject to native quiet-rollback qualification, and preserve all packages still
+referenced by processes or unresolved executions. Include the complete reviewed
+shell/advisor/goal block from
+`docs/releases/0.163.0-plus.0.4.4/agents-block.md` in `rollout.agents_md`.
+Install the central Claude host first and drain all advisor consultations on
+both sides before switching packages; command transport and global help must
+be installed together. Do not create a qualified handoff or publish archive
+hashes before the final source freeze and per-target qualification. The
+[source companion note](releases/0.163.0-plus.0.4.4.md) lists the required gates;
+the release handoff records their executed results separately.
+The expanded footer requires a compatible AP release installed on every box
+where AP drives Codex workers before fleet staging. Replay actual packaged
+screen/cursor captures against AP's classifier; development captures alone do
+not satisfy that final gate.
 
 ## Native binaries
 
@@ -234,7 +253,7 @@ protocol-5 package as the rollback floor until explicitly retired by tested
 qualification. Private feature evidence does not qualify complete combined
 archives; record final qualification for each architecture in the companion note.
 See the [reviewed handoff contract](detached-jobs.md): workers prepare expected
-runs over eight minutes for root review; the estimate never imposes a timeout.
+runs over sixteen minutes for root review; the estimate never imposes a timeout.
 
 The earlier custom-goal cutover requires a quiet protocol-2 to protocol-3 transition,
 `daemon_restart: true` and `session_restart: required`, even though the upstream

@@ -1,0 +1,40 @@
+
+  >_ OpenAI Codex (v0.163.0)
+     /tmp/fc043-d64dx34y/w
+  permissions: YOLO mode
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+» Ask Codex to do anything
+
+  gpt-6.1-sol ultra · /tmp/fc043-d64dx34y/w
+  Context 100% left
+  Advisor · GPT-6-Astra (xhigh) · 1 call · last 0:05
+  GPT-6.1-Sol (high) [general] · worker 1 · 0:14 · ? tok
+  GPT-6-Astra (medium) [general] · worker 2 · 0:14 · ? tok
+  Background · cursor-native-shell · seen 0:01
+  Background · cursor-detached-0 · unknown · 0:06
+  +5 more

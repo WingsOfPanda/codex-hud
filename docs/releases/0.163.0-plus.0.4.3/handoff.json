@@ -1,0 +1,39 @@
+{
+  "release": "0.163.0-plus.0.4.3",
+  "plus_commit": "ecddea18279ede7774749c150ded30e7ef3b1d87",
+  "coordinator_protocol": 5,
+  "execution_record_format": 1,
+  "upstream": {
+    "version": "0.163.0",
+    "tag": "rust-v0.163.0",
+    "commit": "83086188ae0614bd882818ff1aa23f3194962012"
+  },
+  "note": "docs/releases/0.163.0-plus.0.4.3.md",
+  "targets": {
+    "x86_64": {
+      "triple": "x86_64-unknown-linux-gnu",
+      "asset": "codex-plus-0.163.0-plus.0.4.3-x86_64-unknown-linux-gnu.tar.gz",
+      "sha256": "d03b795fb8e7069c8697b3f3479ed32b881dd9517b0c147006ab67b8d89c83d4",
+      "tree_sha256": "a0cee085064c7ca94687e13ef7506c459aa8bce9f42b2248df2b5d99dcc7006a",
+      "manifest_sha256": "27950a50fac920eb5cbdbb4812608d0dc19de602cbd06c8e0e2f9139cd731200"
+    },
+    "aarch64": {
+      "triple": "aarch64-unknown-linux-gnu",
+      "asset": "codex-plus-0.163.0-plus.0.4.3-aarch64-unknown-linux-gnu.tar.gz",
+      "sha256": "52f1e448bb6f4e3b9a3e43bb2ecfae361426f38521bb89eca498de74c952dff3",
+      "tree_sha256": "463bd4764fd08a65db5982c17ea6c2d78596e59e98198c53da91aef4354f51c0",
+      "manifest_sha256": "8699753296c7c39ed97c458f706e0603d99448279bf259a89c03770013c03352"
+    }
+  },
+  "rollout": {
+    "daemon_restart": false,
+    "quiet_checkpoint": true,
+    "executions": "wait",
+    "session_restart": "required",
+    "agents_md": "## Codex Plus shell work and completion wakes\n\nApply this workflow in every repository, including independent AP sessions.\n\nFor finite noninteractive shell work, capture logs from launch:\n\n```sh\n# codex-plus-shell: auto\n# codex-plus-task: Verify runtime tests\ncodex-plus run -- PROGRAM ARGUMENTS\n```\n\nPut the mode marker first, then a printable `# codex-plus-task: TOPIC` line\nwith a three-to-six-word purpose (at most 120 characters). Choose:\n- `# codex-plus-shell: auto`: short or uncertain duration; request `yield_time_ms=2000`.\n- `# codex-plus-shell: background`: known long work; request a short yield, such as `250`.\n- `# codex-plus-shell: foreground`: explicitly requested foreground work.\n\nUse an explicit shell for shell syntax: `codex-plus run -- bash -c 'COMMAND'`.\nThe runner closes stdin. Keep interactive or unclassified commands in ordinary\nvisible execution. For persistent services, check readiness with finite work.\nOn completion, inspect the result and give a concise outcome with its log path.\n\nWhen a root session has only finite background work remaining, register it:\n\n```sh\ncodex-plus park --process TOOL_SESSION_ID --worker CHILD_THREAD_ID --reason \"Review results and continue the task\"\n```\n\nUse only applicable options; repeat them for multiple jobs. Process IDs are native\nshell-tool session IDs, not OS PIDs. Workers must be direct children, selected by\nthread UUID or canonical path. Keep the reason within 240 printable characters.\nAP workers finish their brief within the turn; parking is for interactive root sessions.\nNative subagents return results to their parent.\nPlan native-worker assignments around preparation, quick checks and a clear handoff.\nWorkers return expected runs over sixteen minutes, hardware trials, serving experiments\nand service restarts before launch. The root reviews and launches them with\n[reviewed detached jobs](/home/liupan/.local/share/fleet-config/codex-plus/current/docs/detached-jobs.md#agent-workflow),\nusing existing authorization and safe parallelism across worktrees/resources.\nSixteen minutes is an estimate: an allowed quick check that overruns finishes in\none bounded local wait. Before a permitted worker shell wait, read\n[worker shell waits](/home/liupan/.local/share/fleet-config/codex-plus/current/docs/shell-workflow.md#native-subagent-waits).\nAP workers use native shell work and finish within their turn; managed detached jobs are for interactive roots. Leave `job maintenance\nenter/leave` to the host operator.\n\nConfirm jobs are armed or already registered, give a short waiting notice, and\nend the turn. Let the local observer monitor them. Review already-finished jobs\nimmediately. If registration fails, resolve or report the monitoring failure.\n\nOn `LIVE COMPLETION`, inspect results and continue the currently authorized task;\nend the turn again when only registered work remains. On `REPORT ONLY`, report\noutcomes and await renewed direction before resuming old follow-up actions.\n\nFor uncertain delivery, lost outcomes, or unavailable watcher health, inspect\n`codex-plus park --status`, preserve the ledger, and report what remains unknown.\nUse verified evidence before recovery; avoid blind callback resends or job reruns.\n\n## Astra advisor\n\nFor an independent second opinion, the main root session may call\n`codex-plus advisor --brief TEXT`. Supply the decision, constraints, and review\nfocus. It uses the newest available Astra at `xhigh` in a read-only sandbox;\ntreat its findings as advice. For advice needed before the next decision, use\n`# codex-plus-shell: foreground` and keep the turn open in one bounded local\nCode Mode cell with a 26-minute wait budget and 27-minute outer yield. Inspect\nthe exit status and JSON before continuing. Use background/park only when independent\nwork can continue before the advice is needed. Keep the task pending until the\nconsultation is reviewed.\n\n## Plus-owned goals\n\nFor Plus-owned `/goal` work, read\n[goal checkpoints and recovery](/home/liupan/.local/share/fleet-config/codex-plus/current/docs/goals.md#model-workflow)\non start/resume, before ending a goal turn, or when goal status needs input.\nUse the admitted identity and structured checkpoint; while registered jobs run,\nend the turn and let the local observer wake you. Preserve newer user direction,\nreport-only barriers and existing action approvals.\n",
+    "retain": [
+      "0.163.0-plus.0.4.2"
+    ],
+    "notes": "Quiet cutover and rollback only; wait for actual work and unresolved executions. Replace the global shell/wake policy with the exact approved 77-line agents_md block: reviewed worker handoff threshold is sixteen minutes. Preserve ledger, disabled native goals, updater policy, official daemon and all in-use packages. Restart sessions for the new frontend. Retain qualified 0.4.2 as rollback floor after both native rollback gates pass; unused 0.4.1 may be removed unless referenced. Helper tests do not establish simultaneous native TUI interaction or running-executor rollback. AP compatible release publication and installation are separate fleet staging gates. Fleet-config owns staging, pins and deployment."
+  }
+}

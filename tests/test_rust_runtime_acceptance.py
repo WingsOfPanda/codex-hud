@@ -229,14 +229,19 @@ class RuntimeAcceptance(unittest.TestCase):
         unsupported = {'code': -32601, 'message': 'list_turns is not supported yet'}
         origin, other = str(uuid.uuid4()), str(uuid.uuid4())
         cases = [
-            ('recovers', unsupported, 2, origin, True),
-            ('persistent', unsupported, 100, origin, False),
-            ('wrong_code', dict(unsupported, code=-32603), 1, origin, False),
-            ('other_error', dict(unsupported, message='permission denied'), 1, origin, False),
-            ('wrong_turn', unsupported, 2, other, False),
-            ('unknown_turn', unsupported, 0, other, False),
+            ('recovers', {'error': unsupported}, 2, origin, True),
+            ('recovers_late', {'error': unsupported}, 6, origin, True),
+            ('empty_then_exact', {'result': {'data': [], 'nextCursor': None}}, 2, origin, True),
+            ('previous_then_exact', {'result': {'data': [
+                {'id': other, 'status': 'completed'}], 'nextCursor': None}}, 2, origin, True),
+            ('persistent', {'error': unsupported}, 100, origin, False),
+            ('wrong_code', {'error': dict(unsupported, code=-32603)}, 1, origin, False),
+            ('other_error', {'error': dict(unsupported, message='permission denied')}, 1, origin, False),
+            ('wrong_turn', {'error': unsupported}, 2, other, False),
+            ('unknown_turn', None, 0, other, False),
+            ('absent_turn', None, 0, None, False),
         ]
-        for label, error, failures, known_turn, accepted in cases:
+        for label, response, failures, known_turn, accepted in cases:
             with self.subTest(label=label), self.fixture(label=label) as f:
                 f.env.pop('CODEX_THREAD_ID')
                 f.fake.parent_turns = []
@@ -248,8 +253,11 @@ class RuntimeAcceptance(unittest.TestCase):
                 self.assertEqual(result.returncode, 0, (result.stdout, result.stderr))
                 f.cli('ultracode', 'on', '--thread', PARENT, '--json')
                 submission = str(uuid.uuid4())
-                f.cli('goal', 'input', '--thread', PARENT, '--submission-id', submission, '--json')
-                f.fake.parent_turns = [{'id': known_turn, 'status': 'inProgress'}]
+                submitted = json.loads(f.cli('goal', 'input', '--thread', PARENT,
+                    '--submission-id', submission, '--json').stdout)
+                f.fake.parent_turns = ([{'id': known_turn, 'status': 'inProgress'}]
+                                       if known_turn else [])
+                f.fake.child_turns = [{'id': origin, 'status': 'inProgress'}]
                 f.fake.entries = [{'turnId': known_turn, 'item': {
                     'type': 'userMessage', 'clientId': submission,
                 }}]
@@ -260,7 +268,7 @@ class RuntimeAcceptance(unittest.TestCase):
                     if method == 'thread/turns/list':
                         reads.append(dict(params))
                         if len(reads) <= failures:
-                            return {'error': error}
+                            return response
                     return original_reply(method, params)
 
                 f.server.reply = reply
@@ -274,15 +282,23 @@ class RuntimeAcceptance(unittest.TestCase):
                 self.assertTrue(all(p['threadId'] == PARENT for p in reads))
                 if label == 'persistent':
                     self.assertGreater(len(reads), 1)
-                    self.assertLessEqual(len(reads), 6)
                     self.assertIn(unsupported['message'], result.stdout)
+                elif accepted:
+                    self.assertEqual(len(reads), failures + 1)
+                    if label == 'recovers_late':
+                        self.assertGreater(elapsed, .3, 'fixture must outlast the original readiness window')
+                elif label in ('wrong_code', 'other_error'):
+                    self.assertEqual(len(reads), 1)
                 else:
-                    self.assertEqual(len(reads), 3 if label in ('recovers', 'wrong_turn') else 1)
+                    self.assertGreaterEqual(len(reads), failures + 1)
+                    self.assertIn('exact known root turn', result.stdout)
                 self.assertTrue(all(r.get('method') in (
                     'initialize', 'initialized', 'thread/turns/list', 'thread/items/list',
                 ) for r in f.server.requests[before:]), 'settlement replayed a mutation')
                 status = json.loads(f.cli('goal', 'history', '--thread', PARENT, '--json').stdout)
                 projection = json.loads((f.home / 'codex-plus/ultracode' / f'{PARENT}.json').read_text())
+                self.assertEqual(status['root'], PARENT)
+                self.assertEqual(status['input_epoch'], submitted['input_epoch'])
                 if accepted:
                     self.assertEqual(result.stderr, '')
                     self.assertIsNone(status['pending_input'])
@@ -291,21 +307,31 @@ class RuntimeAcceptance(unittest.TestCase):
                     self.assertTrue(projection['effective']['enabled'])
                 else:
                     self.assertEqual(status['pending_input']['submission_id'], submission)
+                    self.assertEqual(status['pending_input']['state'], 'submitting')
+                    self.assertIsNone(status['pending_input']['turn'])
                     self.assertIsNone(projection['effective'])
 
     def test_ultracode_item_readiness_preserves_input_and_reports_unavailable(self):
         unsupported = {'code': -32601, 'message': 'list_items is not supported yet'}
+        empty = {'result': {'data': [], 'nextCursor': None}}
         cases = [
-            ('recovers', {'error': unsupported}, 2, True),
-            ('persistent', {'error': unsupported}, 100, False),
-            ('wrong_code', {'error': dict(unsupported, code=-32603)}, 1, False),
-            ('other_error', {'error': dict(unsupported, message='permission denied')}, 1, False),
-            ('empty_items', {'result': {'data': [], 'nextCursor': None}}, 1, False),
+            ('recovers', {'error': unsupported}, 2, True, 3),
+            ('persistent', {'error': unsupported}, 100, False, 4),
+            ('wrong_code', {'error': dict(unsupported, code=-32603)}, 1, False, 1),
+            ('other_error', {'error': dict(unsupported, message='permission denied')}, 1, False, 1),
+            ('empty_once', empty, 1, True, 2),
+            ('empty_twice', empty, 2, True, 3),
+            ('empty_three', empty, 3, True, 4),
+            ('empty_items', empty, 100, False, 4),
+            ('mixed_recovers', [empty, {'error': unsupported}, empty], 3, True, 4),
+            ('mixed_exhausted', [empty, {'error': unsupported}, empty, {'error': unsupported}], 4, False, 4),
+            ('missing_client', None, 1, False, 1),
+            ('unreserved', None, 1, False, 1),
             ('foreign_item', {'result': {'data': [{'turnId': str(uuid.uuid4()),
                 'item': {'type': 'userMessage', 'clientId': str(uuid.uuid4())}}],
-                'nextCursor': None}}, 1, False),
+                'nextCursor': None}}, 1, False, 1),
         ]
-        for label, response, failures, recovered in cases:
+        for label, response, failures, recovered, expected_reads in cases:
             with self.subTest(label=label), self.fixture(label=label) as f:
                 f.env.pop('CODEX_THREAD_ID')
                 f.fake.parent_turns = []
@@ -329,7 +355,12 @@ class RuntimeAcceptance(unittest.TestCase):
                     if method == 'thread/items/list':
                         reads.append(dict(params))
                         if len(reads) <= failures:
-                            return response
+                            if label in ('missing_client', 'unreserved'):
+                                item = {'type': 'userMessage'}
+                                if label == 'unreserved':
+                                    item['clientId'] = str(uuid.uuid4())
+                                return {'result': {'data': [{'turnId': turn, 'item': item}], 'nextCursor': None}}
+                            return response[len(reads) - 1] if isinstance(response, list) else response
                     return original_reply(method, params)
 
                 f.server.reply = reply
@@ -342,9 +373,9 @@ class RuntimeAcceptance(unittest.TestCase):
                 projection_path = f.home / 'codex-plus/ultracode' / f'{PARENT}.json'
                 projection = json.loads(projection_path.read_text())
                 self.assertTrue(all(p['threadId'] == PARENT and p['turnId'] == turn for p in reads))
+                self.assertEqual(len(reads), expected_reads)
                 if recovered:
                     self.assertEqual(result.stderr, '')
-                    self.assertEqual(len(reads), 3)
                     self.assertEqual(projection['availability'], 'available')
                     self.assertEqual(projection['effective']['submission'], submission)
                     self.assertEqual(projection['effective']['turn'], turn)
@@ -354,15 +385,13 @@ class RuntimeAcceptance(unittest.TestCase):
                     self.assertIsNone(projection['effective'])
                     self.assertEqual(projection['instructions'], '')
                     self.assertIn(submission, [p['submission'] for p in projection['pending']])
-                    if label == 'persistent':
-                        self.assertGreater(len(reads), 1)
-                        self.assertLessEqual(len(reads), 6)
+                    if label in ('persistent', 'empty_items'):
                         # A status read must not conceal the still-unresolved error.
                         status = json.loads(f.cli('ultracode', 'status', '--thread', PARENT, '--json').stdout)
                         self.assertEqual(status['availability'], 'unavailable')
-                        self.assertIn(unsupported['message'], status['unavailable_reason'])
-                    else:
-                        self.assertEqual(len(reads), 1)
+                        reason = unsupported['message'] if label == 'persistent' else 'initial user submission is not yet visible'
+                        self.assertIn(reason, status['unavailable_reason'])
+                        self.assertEqual(len(reads), expected_reads * 2)
                 self.assertTrue(all(r.get('method') in (
                     'initialize', 'initialized', 'thread/read', 'thread/turns/list', 'thread/items/list',
                 ) for r in f.server.requests[before:]), 'mode confirmation replayed a mutation')
@@ -843,7 +872,8 @@ class RuntimeAcceptance(unittest.TestCase):
                 'status': 'completed', 'exitCode': 0}})
             f.fake.parent_turns[0]['status'] = 'completed'
             f.fake.parent_status = 'idle'
-            wait(lambda: f.delivered() and len(f.state()['callbacks']) == 2,
+            wait(lambda: len(callbacks := f.state()['callbacks']) == 2
+                 and all(c['state'] == 'delivered' for c in callbacks),
                  'different registration origins were merged')
             state = f.state()
             self.assertEqual(len({j['callback'] for j in state['jobs']}), 2)

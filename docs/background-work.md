@@ -103,7 +103,7 @@ ambiguous-delivery window or add exactly-once model/tool execution.
 Healthy waiting and clean idle state add no watcher row: existing worker and
 background rows already represent the work. Pending delivery, uncertain wakes,
 an unavailable observer, and restart reports remain visible even without active
-workers. These notices share the HUD's three-row total limit with activity and
+workers. These notices share the HUD's six-row total limit with activity and
 overflow; delivery problems and restart reports use normal brightness.
 
 The coordinator atomically writes a small private status file beside its ledger:

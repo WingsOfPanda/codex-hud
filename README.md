@@ -6,11 +6,17 @@ tracks its own parent thread in ordinary terminals and split tmux panes.
 Release builds patch the frontend and keep upstream daemon code unchanged.
 The HUD and Rust completion coordinator work with the official stock daemon.
 
-The 0.163.0-plus.0.4.1 patch release fixes transient input and Ultracode admission
-failures. It retains [reviewed detached jobs](docs/detached-jobs.md):
+The 0.163.0-plus.0.4.2 update refines the native status footer, worker role
+prefixes and status colors, places Plus goal status above input, and fixes
+exact-turn admission readiness. See the
+[release note](docs/releases/0.163.0-plus.0.4.2.md); native archive qualification
+and identities are recorded separately in the release handoff.
+It retains [reviewed detached jobs](docs/detached-jobs.md):
 workers prepare expensive work, the root reviews and launches it, and local
 executors preserve results across qualified TUI and stock-daemon restarts.
-It retains [Plus-owned goals](docs/goals.md) and genuine Idle waiting.
+It retains [Plus-owned goals](docs/goals.md) and genuine Idle waiting. Plus goal
+status appears in one blue row above the editable input; status and worker rows
+remain below it. Terminals without color use readable plain text.
 This checkout is not a fleet installation; fleet-config owns the quiet initial
 protocol transition and later qualified upgrades.
 
@@ -99,28 +105,48 @@ The one-time Python-to-Rust rollout needs a
 
 ## Display behavior
 
-Select **Weekly reset** in `/statusline` to show `resets in 2d 5h` alongside
-your existing items (`weekly-reset` in `tui.status_line`). The countdown uses
+The status footer puts model, Ultracode, working directory and active agent on
+the first row. Selected **Context remaining**, **Weekly limit** and **Weekly reset**
+items appear on a second row, retaining their configured order and styling.
+When status line colors are enabled, model and Ultracode use cyan, directory
+blue, branch peach, context green, weekly remaining yellow, weekly reset purple, and PR number
+red. Active agent and separators stay neutral. Colors adapt to terminal contrast
+and supported depth; other selected items retain theme accents.
+The worker HUD follows both rows. A selection with only stats uses one row when
+there is no agent label or mode indicator; selections without stats keep one row.
+The activity strip uses up to six rows independently of the status footer.
+Warnings, Advisor, worker groups, native shells, detached jobs and overflow share
+this budget. Every nonempty activity category keeps at least one row, including
+while typing or displaying a warning and Advisor. Advisor and overflow remain
+separate rows. Two status rows plus six activity rows give at most eight nonempty
+rows below the prompt; explicitly opened help/search can add a close/search row.
+Small terminals may clip rows to preserve the editable input.
+
+Select **Weekly reset** in `/statusline` to show `resets in 2d 5h`
+(`weekly-reset` in `tui.status_line`). The countdown uses
 Codex's reported weekly reset timestamp and the local clock; refreshing it makes
 no model calls or extra quota requests. Missing timestamps show `reset unknown`;
 an elapsed timestamp shows `reset due` until updated quota data arrives. This
-item is optional and adds no extra footer row.
+item is optional and shares the stats row with the other selected stats.
 
 The strip shows active and waiting direct workers without a count header:
 
 ```text
-GPT-6.1-Sol (high) · integration probe · 3:42 · 123.4K tok
+GPT-6.1-Sol (high) [worker] · implement fix · 1:20 · 25K tok
 ```
 
-Rows start with the full reported model and reasoning effort, followed by a short task
-name, current-turn elapsed time, and current-turn reported tokens. Routine active
+Rows start with the full reported model, reasoning effort, and agent role,
+followed by a short task name, current-turn elapsed time, and current-turn reported
+tokens. Routine active
 state is implicit; approval/input waits and stale data remain explicit. Long names shorten
 to leave room for metrics. Activity rows are dim; warnings use normal brightness.
 Recognized GPT Sol/Astra names use display casing while preserving their version
 and suffixes; custom and provider-prefixed identifiers remain intact. The model
 comes from Codex's thread metadata, which is not per-turn execution telemetry.
-Unknown values, including missing effort, show `?`. Finished,
-interrupted, failed, and idle workers disappear. The strip hides once no activity
+Unknown model, effort, time, and token values show `?`; a missing or empty role
+shows `[general]`. Custom roles retain their reported names with control characters
+replaced by spaces. Finished, interrupted, failed, and idle workers disappear.
+The strip hides once no activity
 or warnings remain. Small terminals clip rows to preserve the prompt.
 
 Native background shell commands belonging to this root session also appear in
@@ -135,13 +161,18 @@ model or token fields. The stock terminal API has no start timestamp: **seen
 measures time observed by this client**, not the command's total runtime, and resets when the
 client restarts or sees a new command identity.
 
-Workers, background commands, advisor status, warnings, and any `+N more` line share a strict
-three-row total limit below the prompt footer. The automatic
-`← for agents · ? for shortcuts` hint row is hidden; the shortcuts remain active.
-Contextual footer information and explicit help remain available. This keeps the composer within
-AP's last-six-nonempty-lines readiness window. When space permits, mixed activity
-shows both a worker and a background command. Warnings take priority within the
-same limit; overflow represents activity that does not fit.
+Workers, background commands, Advisor status, warnings and `+N more` share a
+six-row activity limit. At least one worker group, native shell and detached job
+is shown when each category has activity. Warnings retain priority, and overflow
+counts activity that does not fit. Automatic shortcut, queue and Escape hints
+are hidden; their keys still work. Explicit `?` help, search, quit confirmation,
+warnings and operational transcript state remain available. The working status
+keeps the literal `esc to interrupt` indicator. AP integrations must use the
+composer cursor and busy indicator; the old last-six-nonempty-lines detector is
+incompatible with this expanded footer.
+The generic `Background status unavailable` banner is omitted. Existing per-job
+unknown/stale labels and detailed job status remain; display does not dismiss a
+failure, resolve cleanup or rewrite execution records.
 Worker and shell queries fail independently, so unavailable shell metadata does
 not hide valid workers. A successful terminal-list refresh removes commands no
 longer present; disappearance does not claim successful completion.
@@ -189,7 +220,7 @@ belong to the existing batch. Each member name remains unique.
 These names produce one row:
 
 ```text
-GPT-6.1-Sol (high) · hud styling (3 agents) · 1:20 · 250K tok
+GPT-6.1-Sol (high) [worker] · hud styling (3 agents) · 1:20 · 250K tok
 ```
 
 The count includes only active/waiting members: 3 becomes 2, then 1, and the group
@@ -202,13 +233,16 @@ lifetime totals can include inherited usage. Use a fresh batch for a new dispatc
 Standalone rows pair latest-turn elapsed time with that same turn's usage. Missing metrics remain
 unknown. Model and effort come
 from the remaining active/waiting members; differing known settings show `mixed`.
+The role prefix also uses only active/waiting members: matching roles share their
+name, differing known roles show `[mixed]`, and any missing or empty role shows
+`[general]`. Finished members do not change the role prefix.
 
 Different batches and parent threads stay separate. Untagged or malformed names
 remain standalone rows. Grouping never guesses purpose from timing or similar
 names and makes no model calls.
-The three-row limit and `+N more` count groups, standalone workers, and shell jobs.
+The six-row limit and `+N more` count groups, standalone workers, native shells and detached jobs.
 
-## Astra advisor
+## Advisor
 
 From the main session, request an explicit, read-only second opinion:
 
@@ -216,10 +250,13 @@ From the main session, request an explicit, read-only second opinion:
 ./bin/codex-plus advisor --brief 'Review the proposed approach and its main risks.'
 ```
 
-The helper selects the newest available numeric Astra model supporting `xhigh`,
-then runs one isolated read-only consultation with the packaged native client.
-Supply a self-contained brief: the advisor receives clipped Git status and diff
-statistics, without the session transcript or diff contents. The footer shows
+The default is Claude Opus 5.5 at `xhigh`, run on the central host `xjp-l20-2`
+through existing passwordless SSH (locally when already on that host).
+Supply a self-contained brief and optional `--context-file PATH` attachments.
+Claude receives clipped Git metadata and those explicit files, with tools disabled;
+it does not receive the session transcript or inspect the caller's filesystem.
+Use `--provider astra` explicitly for the previous local native Codex advisor.
+Run `./bin/codex-plus advisor --help` for the embedded workflow. The footer shows
 readiness, the current consultation, and the completed call count and duration;
 refreshing it makes no model calls. Consultations needed before the next decision
 stay foreground, with a live conversation row such as
