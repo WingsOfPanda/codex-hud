@@ -183,6 +183,41 @@ class ClaudeAdvisor(unittest.TestCase):
                 self.assertNotEqual(result.returncode, 0)
                 self.assertFalse((self.root / "invoked.json").exists())
 
+    def check_model_mismatch_diagnostic(self, host="local", remote_command=None):
+        (self.root / "mode").write_text("wrong-model")
+        private_result = dict(RESULT, summary="RESPONSE_MUST_NOT_BE_LOGGED")
+        (self.root / "result.json").write_text(json.dumps(private_result))
+        args = ["--remote-command", str(remote_command)] if remote_command else []
+        result = self.run_cli(*args, host=host)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(self.status()["error"], "model_mismatch")
+        self.assertFalse(result.stdout.strip(), result.stdout)
+        log = Path(result.stderr.strip().split("log=", 1)[1]).read_text()
+        prefix = "advisor model metadata: "
+        diagnostics = [json.loads(line[len(prefix):]) for line in log.splitlines()
+                       if line.startswith(prefix)]
+        self.assertEqual(len(diagnostics), 1, log[-1000:])
+        metadata = diagnostics[0]
+        self.assertEqual(metadata["expected_model"], MODEL)
+        self.assertEqual([{key: model[key] for key in ("model", "canonical_model")}
+                          for model in metadata["models"]], [
+            {"model": "claude-fable-5-1", "canonical_model": "claude-fable-5-1"}])
+        self.assertEqual(metadata["model_usage_type"], "object")
+        self.assertEqual(metadata["model_count"], 1)
+        self.assertEqual(metadata["models"][0]["canonical_model_type"], "string")
+        self.assertNotIn("RESPONSE_MUST_NOT_BE_LOGGED", log)
+        self.assertNotIn("Review this general engineering question", json.dumps(metadata))
+
+    def test_model_mismatch_logs_returned_metadata(self):
+        self.check_model_mismatch_diagnostic()
+
+    @unittest.skipUnless(os.environ.get("CODEX_PLUS_TEST_SSH_HOST"),
+                         "set CODEX_PLUS_TEST_SSH_HOST for real SSH diagnostics")
+    def test_real_ssh_model_mismatch_logs_returned_metadata(self):
+        self.check_model_mismatch_diagnostic(
+            host=os.environ["CODEX_PLUS_TEST_SSH_HOST"],
+            remote_command=self.remote_fixture())
+
     def test_root_required(self):
         self.env["CODEX_THREAD_ID"] = ""
         result = self.run_cli()
