@@ -447,16 +447,22 @@ pub(super) fn worker_main() -> i32 {
     let (value, error) = match result {
         Ok(value) => (value, Value::Null),
         Err(error) => {
-            eprintln!("advisor worker: {error}");
+            let _ = writeln!(std::io::stderr(), "advisor worker: {error}");
             (Value::Null, json!(stable_error(&error)))
         }
     };
-    println!(
+    if writeln!(
+        std::io::stdout(),
         "{}",
         json!({"protocol":1,"worker":worker_identity(),"model":MODEL,"effort":EFFORT,"result":value,"error":error,
             "request_id":binding.request_id,"prompt_sha256":binding.prompt_sha256})
-    );
-    0
+    )
+    .is_ok()
+    {
+        0
+    } else {
+        1
+    }
 }
 
 #[cfg(test)]
