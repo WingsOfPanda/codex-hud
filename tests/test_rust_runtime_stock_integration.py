@@ -10,6 +10,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import select
 import shutil
 import signal
 import subprocess
@@ -69,6 +70,9 @@ def stop_rust_observers(home):
                     descriptor = os.pidfd_open(int(entry.name))
                     try:
                         signal.pidfd_send_signal(descriptor, signal.SIGTERM)
+                        if not select.select([descriptor], [], [], 3)[0]:
+                            signal.pidfd_send_signal(descriptor, signal.SIGKILL)
+                            assert select.select([descriptor], [], [], 3)[0], 'fixture coordinator did not exit'
                     finally:
                         os.close(descriptor)
             except (OSError, ProcessLookupError):

@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import shlex
 import shutil
+import select
 import signal
 import sys
 import time
@@ -12,6 +13,7 @@ import time
 from fixtures.custom_goal_server import CustomGoalServer
 from fixtures.upstream_0163 import execute, function, message
 from test_background_integration import coordinator_state, wait
+from test_rust_runtime_stock_integration import stop_rust_observers
 
 
 class DetachedJobServer(CustomGoalServer):
@@ -147,23 +149,48 @@ print('complete',flush=True)
         self.report.setdefault("daemon_generations", []).append([old, self.rpc.generation])
 
     def close(self, passed):
-        for release in getattr(self, "releases", []):
-            release.touch()
-        end = time.monotonic() + 4
-        while time.monotonic() < end:
-            states = [json.loads(path.read_text()) for path in
-                      self.home.glob("codex-plus/executions/v1/*/*/state.json")]
-            if all(state["state"] in ("prepared", "completed", "failed", "cancelled", "unknown")
-                   for state in states):
-                break
-            time.sleep(.05)
-        # Receipts, logs and frozen manifests remain reviewable after private-home cleanup.
-        execution_root = self.home / "codex-plus/executions"
-        if execution_root.exists():
-            shutil.copytree(execution_root, self.evidence / "executions", dirs_exist_ok=True)
-        if self.work.exists():
-            shutil.copytree(self.work, self.evidence / "work", dirs_exist_ok=True)
-        super().close(passed)
+        copied = False
+        try:
+            for release in getattr(self, "releases", []):
+                release.touch()
+            end = time.monotonic() + 4
+            while time.monotonic() < end:
+                states = [json.loads(path.read_text()) for path in
+                          self.home.glob("codex-plus/executions/v1/*/*/state.json")]
+                if all(state["state"] in ("prepared", "completed", "failed", "cancelled", "unknown")
+                       for state in states):
+                    break
+                time.sleep(.05)
+            stop_rust_observers(self.home)
+            boot = Path('/proc/sys/kernel/random/boot_id').read_text().strip()
+            for state in states:
+                executor = state.get("executor")
+                if not executor or executor["boot_id"] != boot:
+                    continue
+                try:
+                    descriptor = os.pidfd_open(executor["pid"])
+                except ProcessLookupError:
+                    continue
+                try:
+                    process = Path('/proc') / str(executor["pid"])
+                    try:
+                        fields = (process / 'stat').read_text().rsplit(')', 1)[1].split()
+                    except FileNotFoundError:
+                        continue
+                    if int(fields[19]) == executor["start_ticks"]:
+                        # A durable result precedes the executor's last registry rename.
+                        assert select.select([descriptor], [], [], 4)[0], 'fixture executor did not exit'
+                finally:
+                    os.close(descriptor)
+            # Receipts, logs and frozen manifests remain reviewable after private-home cleanup.
+            execution_root = self.home / "codex-plus/executions"
+            if execution_root.exists():
+                shutil.copytree(execution_root, self.evidence / "executions", dirs_exist_ok=True)
+            if self.work.exists():
+                shutil.copytree(self.work, self.evidence / "work", dirs_exist_ok=True)
+            copied = True
+        finally:
+            super().close(passed and copied)
 
 
 NATIVE_DRIVER = '''import json,subprocess,sys,time
