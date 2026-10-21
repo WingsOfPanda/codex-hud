@@ -1,5 +1,6 @@
 """Catch release preparation failures before an expensive build or test stage."""
 import hashlib
+import importlib.util
 import io
 import json
 import os
@@ -26,7 +27,7 @@ class ReleasePreflightTests(unittest.TestCase):
 
     def run_preflight(self, spec, *, umask=None):
         config = self.root / 'input.json'
-        config.write_text(json.dumps(dict(schema_version=1, **spec)))
+        config.write_text(json.dumps({'schema_version': 1} | spec))
         report = self.root / 'report.json'
         report.unlink(missing_ok=True)
         result = subprocess.run([sys.executable, '-B', str(SCRIPT), str(config),
@@ -50,6 +51,19 @@ class ReleasePreflightTests(unittest.TestCase):
         self.assertEqual(Path(value['python']['executable']).resolve(), Path(sys.executable).resolve())
         self.assertEqual(value['checks']['imports']['modules'][0]['origin'], str(self.root / 'release_fixture.py'))
         self.assertFalse((self.root / '__pycache__').exists())
+        spec = self.import_spec()
+        spec['imports'][0]['symbols'] = []
+        self.assertTrue(self.run_preflight(spec)['passed'])
+
+    def test_wrong_origin_module_is_not_executed(self):
+        spec = self.import_spec(origin=self.root / 'reviewed/release_fixture.py')
+        marker = self.root / 'wrong-module-executed'
+        (self.root / 'release_fixture.py').write_text(
+            'from pathlib import Path\nPath(' + repr(str(marker)) + ').touch()\nselected = object()\n')
+        value = self.run_preflight(spec)
+        self.assertFalse(value['passed'])
+        self.assertIn('origin', value['checks']['imports']['error'])
+        self.assertFalse(marker.exists())
 
     def test_missing_symbol_and_wrong_origin_are_rejected(self):
         for spec, message in [(self.import_spec('stale_name'), 'stale_name'),
@@ -162,6 +176,23 @@ class ReleasePreflightTests(unittest.TestCase):
         self.assertEqual(value['checks']['archive']['tree_sha256'], fixture.manifest['tree_sha256'])
         self.assertEqual(hashlib.sha256(Path(spec['archive']['path']).read_bytes()).hexdigest(), before)
 
+    def test_archive_directory_modes_survive_umask077(self):
+        spec, fixture = self.archive_spec()
+        loader = importlib.util.spec_from_file_location('release_preflight', SCRIPT)
+        preflight = importlib.util.module_from_spec(loader)
+        loader.loader.exec_module(preflight)
+        previous = os.umask(0o077)
+        try:
+            value = preflight.check_archive(spec['archive'], self.scratch)
+        finally:
+            os.umask(previous)
+        self.assertEqual(value['tree_sha256'], fixture.manifest['tree_sha256'])
+        with tarfile.open(spec['archive']['path']) as archive:
+            directories = [entry for entry in archive if entry.isdir()]
+        self.assertGreater(len(directories), 1)
+        for entry in directories:
+            self.assertEqual((self.scratch / 'archive' / entry.name).stat().st_mode & 0o777, entry.mode)
+
     def test_archive_hash_and_manifest_corruption_are_rejected(self):
         spec, fixture = self.archive_spec()
         spec['archive']['sha256'] = '0' * 64
@@ -213,6 +244,17 @@ class ReleasePreflightTests(unittest.TestCase):
         value = self.run_preflight(dict(socket_path=[]))
         self.assertFalse(value['passed'])
         self.assertIn('unknown selection', value['error'])
+
+    def test_boolean_schema_version_is_rejected(self):
+        spec = self.import_spec()
+        spec['schema_version'] = True
+        self.assertFalse(self.run_preflight(spec)['passed'])
+
+    def test_empty_import_and_socket_groups_are_rejected(self):
+        for spec in [dict(imports=[]), dict(socket_paths=[]),
+                     dict(imports=[], socket_paths=[dict(name='control', path='/tmp/socket')])]:
+            with self.subTest(spec=spec):
+                self.assertFalse(self.run_preflight(spec)['passed'])
 
 
 if __name__ == '__main__':

@@ -5,7 +5,8 @@ Invoke with the exact fixture Python interpreter/environment. JSON schema_versio
 selects imports [{module, origin, symbols}] and optional python_path, staged_inputs
 {root, files: {relative_path: sha256}}, socket_paths [{name, path}], and archive
 {path, sha256}. Paths are absolute except staged file names. Imports execute trusted
-reviewed code, including its import side effects; this is not a sandbox.
+reviewed code, including its import side effects; resolving dotted names can also
+import their trusted parents. This is not a sandbox.
 
 Socket evidence is a raw Linux path budget plus a scratch bind at equivalent byte
 length (or the minimum scratch length for shorter paths), not a bind at the supplied
@@ -57,10 +58,16 @@ def check_imports(spec):
     sys.path[:0] = list(map(str, paths))
     modules = []
     for row in spec['imports']:
+        expected_origin = absolute(row['origin']).resolve()
+        with redirect_stdout(sys.stderr):
+            found = importlib.util.find_spec(row['module'])
+        origin = getattr(found, 'origin', None)
+        if origin is None or Path(origin).resolve() != expected_origin:
+            raise ValueError(f"Wrong module origin for {row['module']}: {origin}; expected {row['origin']}")
         with redirect_stdout(sys.stderr):
             module = importlib.import_module(row['module'])
         origin = getattr(module, '__file__', None)
-        if origin is None or Path(origin).resolve() != absolute(row['origin']).resolve():
+        if origin is None or Path(origin).resolve() != expected_origin:
             raise ValueError(f"Wrong module origin for {row['module']}: {origin}; expected {row['origin']}")
         if not isinstance(row['symbols'], list):
             raise ValueError('Import symbols must be a list')
@@ -147,6 +154,9 @@ def check_archive(spec, scratch):
                 with archive.extractfile(member) as source_file, target.open('xb') as output:
                     shutil.copyfileobj(source_file, output)
                 target.chmod(member.mode)
+        for member in sorted((item for item in members if item.isdir()),
+                             key=lambda item: len(PurePosixPath(item.name).parts), reverse=True):
+            (extracted / member.name).chmod(member.mode)
     verifier_path = Path(__file__).with_name('package-release.py')
     module_spec = importlib.util.spec_from_file_location('preflight_package_release', verifier_path)
     verifier = importlib.util.module_from_spec(module_spec)
@@ -166,11 +176,14 @@ def main():
     started = time.monotonic()
     try:
         spec = json.loads(args.input.read_text())
-        if spec.get('schema_version') != 1 or set(spec) - {
+        if type(spec.get('schema_version')) is not int or spec['schema_version'] != 1 or set(spec) - {
                 'schema_version', 'python_path', 'imports', 'staged_inputs', 'socket_paths', 'archive'}:
             raise ValueError('Unsupported preflight schema or unknown selection')
         if not any(name in spec for name in ('imports', 'staged_inputs', 'socket_paths', 'archive')):
             raise ValueError('Select at least one preflight check')
+        for name in ('imports', 'socket_paths'):
+            if name in spec and (not isinstance(spec[name], list) or not spec[name]):
+                raise ValueError(f'{name} must be a nonempty list')
         with tempfile.TemporaryDirectory(prefix='cp-preflight-', dir=args.scratch_parent) as temporary:
             scratch = Path(temporary)
             checks = [('staged_inputs', lambda: check_staged(spec['staged_inputs'])),
