@@ -1,3 +1,24 @@
+# Codex Plus 0.163.0-plus.0.4.5
+
+This release adds build-time preflight and native-test result validation tools,
+plus the measured release-performance guide. Preflight verifies selected Python
+imports, staged input hashes, raw Unix socket path budgets and package archive
+integrity. Native result validation uses dedicated libtest records, the selected
+test list, captured exit status and exact ignored reasons instead of terminal
+rendering. These Python tools run in the source checkout; the installed runtime
+remains native and does not acquire a Python dependency.
+
+The frontend patch, runtime implementation, advisor defaults, coordinator
+protocol 5, execution format 1 and official Codex 0.163.0 daemon are unchanged.
+The helper is rebuilt with the new package version. The existing global agent
+instructions remain unchanged. No shared-daemon restart is needed.
+
+The release run measures stage durations and records reused frontend artifacts
+separately from fresh build and package checks. It is a helper-only release
+measurement, not a cold frontend build or a controlled CPU-scaling benchmark.
+See [the release companion](releases/0.163.0-plus.0.4.5.md) for qualification and
+[the performance guide](release-performance.md) for the workflow and its limits.
+
 # Codex Plus 0.163.0-plus.0.4.4
 
 The default advisor is Claude Opus 5.5 at `xhigh`, run on the central host

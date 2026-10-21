@@ -13,7 +13,16 @@ updates; increment its patch component for Plus fixes and its minor component
 for Plus features. Every new combination still needs qualified target packages.
 Existing published `plus.N` releases retain their original identities.
 
-The current advisor revision is `0.163.0-plus.0.4.4`: coordinator protocol 5 and
+The current revision is `0.163.0-plus.0.4.5`, a timed release of build tooling
+and documentation with a version-only helper rebuild. Use the unchanged
+qualified 0.4.4 frontend only after verifying its exact binaries and compile
+origin. Run fresh native package, helper and compatibility checks on both
+targets; record retained frontend evidence separately. The source companion is
+[0.4.5](releases/0.163.0-plus.0.4.5.md). Once qualified, propose 0.4.4 as the
+rollback floor, no daemon restart, quiet checkpoint, drained executions and
+`agents_md: null`. No global instruction change is part of this revision.
+
+The preceding advisor revision is `0.163.0-plus.0.4.4`: coordinator protocol 5 and
 package `execution_record_format: 1`, with the same pinned official 0.163.0 daemon.
 The execution format describes durable executor records separately from
 coordinator/upstream compatibility. These identities do not establish package

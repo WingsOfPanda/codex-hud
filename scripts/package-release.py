@@ -30,7 +30,7 @@ from urllib.request import urlopen
 ROOT = Path(__file__).resolve().parents[1]
 UPSTREAM_COMMIT = '83086188ae0614bd882818ff1aa23f3194962012'
 UPSTREAM_VERSION = '0.163.0'
-PLUS_VERSION = '0.4.4'
+PLUS_VERSION = '0.4.5'
 RELEASE = f'{UPSTREAM_VERSION}-plus.{PLUS_VERSION}'
 COORDINATOR_PROTOCOL = 5
 EXECUTION_RECORD_FORMAT = 1
@@ -38,6 +38,7 @@ PATCH = 'patches/codex-0.163.0-worker-hud.patch'
 TARGETS = {'x86_64-unknown-linux-gnu': 62, 'aarch64-unknown-linux-gnu': 183}
 DOCS = ('README.md', 'GLOSSARY.md', 'docs/background-work.md',
         'docs/shell-workflow.md', 'docs/verification.md', 'docs/release-notes.md',
+        'docs/releases/0.163.0-plus.0.4.5.md', 'docs/release-performance.md',
         'docs/releases/0.163.0-plus.0.4.4.md',
         'docs/releases/0.163.0-plus.0.4.4/agents-block.md',
         'docs/releasing.md', 'docs/advisor.md', 'docs/rust-runtime.md',
@@ -70,7 +71,8 @@ SOURCE_FILES = RUNTIME_SOURCES + DOCS + ('bin/codex-plus', 'LICENSE', PATCH,
     'rust-runtime/Cargo.toml', 'rust-runtime/Cargo.lock', 'scripts/build-runtime.sh',
     'scripts/build-native.sh', 'scripts/package-release.py', 'scripts/build-release.sh',
     'scripts/runtime-notices.py', 'scripts/native-license-sources.json',
-    'scripts/build-artifacts.py')
+    'scripts/build-artifacts.py', 'scripts/release-preflight.py',
+    'scripts/native-results.py')
 EXECUTABLES = ('bin/codex', 'bin/codex-plus-runtime', 'bin/codex-code-mode-host', 'codex-resources/bwrap',
                'codex-path/rg')
 # Licenses are pinned independently because the binary archives omit them.
