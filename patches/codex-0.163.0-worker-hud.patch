@@ -1528,6 +1528,115 @@ index ea0894b3e..90d3aa931 100644
  strum = { workspace = true }
  strum_macros = { workspace = true }
  supports-color = { workspace = true }
+diff --git a/codex-rs/tui/assets/themes/morandi.tmTheme b/codex-rs/tui/assets/themes/morandi.tmTheme
+new file mode 100644
+index 000000000..e21c23aca
+--- /dev/null
++++ b/codex-rs/tui/assets/themes/morandi.tmTheme
+@@ -0,0 +1,103 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
++<plist version="1.0">
++<dict>
++  <key>name</key><string>Morandi Cool</string>
++  <key>settings</key>
++  <array>
++    <dict><key>settings</key><dict><key>foreground</key><string>#CBD1D5</string></dict></dict>
++    <dict>
++      <key>scope</key><string>codex.accent</string>
++      <key>settings</key><dict><key>foreground</key><string>#93A8B5</string></dict>
++    </dict>
++    <dict>
++      <key>scope</key><string>codex.ui.foreground</string>
++      <key>settings</key><dict><key>foreground</key><string>#CBD1D5</string></dict>
++    </dict>
++    <dict>
++      <key>scope</key><string>codex.ui.muted, comment, punctuation.definition.comment</string>
++      <key>settings</key><dict><key>foreground</key><string>#919AA1</string></dict>
++    </dict>
++    <dict>
++      <key>scope</key><string>codex.ui.red, invalid, markup.deleted</string>
++      <key>settings</key><dict><key>foreground</key><string>#B1847A</string></dict>
++    </dict>
++    <dict>
++      <key>scope</key><string>codex.ui.green, string, punctuation.definition.string, markup.inserted</string>
++      <key>settings</key><dict><key>foreground</key><string>#9CA994</string></dict>
++    </dict>
++    <dict>
++      <key>scope</key><string>codex.ui.yellow, constant, constant.numeric, markup.changed</string>
++      <key>settings</key><dict><key>foreground</key><string>#B3A273</string></dict>
++    </dict>
++    <dict>
++      <key>scope</key><string>codex.ui.blue, entity.name.function, markup.underline.link</string>
++      <key>settings</key><dict><key>foreground</key><string>#879DAE</string></dict>
++    </dict>
++    <dict>
++      <key>scope</key><string>codex.ui.magenta, keyword, storage, markup.heading, entity.name.section</string>
++      <key>settings</key><dict><key>foreground</key><string>#A09AAC</string></dict>
++    </dict>
++    <dict>
++      <key>scope</key><string>codex.ui.cyan, support.type, support.class, entity.name.type, entity.name.tag</string>
++      <key>settings</key><dict><key>foreground</key><string>#8FA7A0</string></dict>
++    </dict>
++    <dict>
++      <key>scope</key><string>codex.ui.selection</string>
++      <key>settings</key><dict><key>foreground</key><string>#505E68</string></dict>
++    </dict>
++    <dict>
++      <key>scope</key><string>punctuation, keyword.operator, variable, markup.raw, markup.quote</string>
++      <key>settings</key><dict><key>foreground</key><string>#AFB8BD</string></dict>
++    </dict>
++    <dict>
++      <key>scope</key><string>markup.bold</string>
++      <key>settings</key><dict><key>fontStyle</key><string>bold</string></dict>
++    </dict>
++    <dict>
++      <key>scope</key><string>markup.italic</string>
++      <key>settings</key><dict><key>fontStyle</key><string>italic</string></dict>
++    </dict>
++    <dict>
++      <key>scope</key><string>markup.inserted</string>
++      <key>settings</key><dict><key>background</key><string>#303C36</string></dict>
++    </dict>
++    <dict>
++      <key>scope</key><string>markup.deleted</string>
++      <key>settings</key><dict><key>background</key><string>#453734</string></dict>
++    </dict>
++    <dict>
++      <key>scope</key><string>codex.status.model</string>
++      <key>settings</key><dict><key>foreground</key><string>#666E75</string></dict>
++    </dict>
++    <dict>
++      <key>scope</key><string>codex.status.path</string>
++      <key>settings</key><dict><key>foreground</key><string>#7082A9</string></dict>
++    </dict>
++    <dict>
++      <key>scope</key><string>codex.status.branch</string>
++      <key>settings</key><dict><key>foreground</key><string>#9A7F69</string></dict>
++    </dict>
++    <dict>
++      <key>scope</key><string>codex.status.compact</string>
++      <key>settings</key><dict><key>foreground</key><string>#8FA7A0</string></dict>
++    </dict>
++    <dict>
++      <key>scope</key><string>codex.status.context</string>
++      <key>settings</key><dict><key>foreground</key><string>#819D73</string></dict>
++    </dict>
++    <dict>
++      <key>scope</key><string>codex.status.weekly</string>
++      <key>settings</key><dict><key>foreground</key><string>#B2A067</string></dict>
++    </dict>
++    <dict>
++      <key>scope</key><string>codex.status.reset</string>
++      <key>settings</key><dict><key>foreground</key><string>#9482A3</string></dict>
++    </dict>
++    <dict>
++      <key>scope</key><string>codex.status.pr</string>
++      <key>settings</key><dict><key>foreground</key><string>#B56F6A</string></dict>
++    </dict>
++  </array>
++</dict>
++</plist>
 diff --git a/codex-rs/tui/src/app.rs b/codex-rs/tui/src/app.rs
 index 1b07e9826..cb9e4d6db 100644
 --- a/codex-rs/tui/src/app.rs
@@ -10364,7 +10473,7 @@ index 9567424fb..6312138a3 100644
      fn project_name_is_canonical_and_accepts_legacy_ids() {
          assert_eq!(StatusLineItem::ProjectRoot.to_string(), "project-name");
 diff --git a/codex-rs/tui/src/bottom_pane/status_line_style.rs b/codex-rs/tui/src/bottom_pane/status_line_style.rs
-index 6ef9003c5..283f52ec2 100644
+index 6ef9003c5..110f2505a 100644
 --- a/codex-rs/tui/src/bottom_pane/status_line_style.rs
 +++ b/codex-rs/tui/src/bottom_pane/status_line_style.rs
 @@ -1,4 +1,4 @@
@@ -10381,32 +10490,38 @@ index 6ef9003c5..283f52ec2 100644
  use crate::thread_color::thread_color;
  use codex_protocol::ThreadId;
  
-@@ -19,6 +20,24 @@ const STATUS_LINE_SEPARATOR: &str = " · ";
+@@ -19,6 +20,30 @@ const STATUS_LINE_SEPARATOR: &str = " · ";
  const STATUS_LINE_COLOR_SATURATION_PERCENT: u16 = 85;
  const STATUS_LINE_COLOR_BRIGHTNESS_PERCENT: u16 = 100;
  
 +fn status_line_item_colors(item: StatusLineItem) -> Option<(Color, Color)> {
 +    // Adjacent status items stay distinct even when a syntax theme reuses accents.
-+    let (rgb, ansi) = match item {
++    let (scope, rgb, ansi) = match item {
 +        StatusLineItem::ModelName | StatusLineItem::ModelWithReasoning => {
-+            ((137, 220, 235), Color::Cyan)
++            ("codex.status.model", (137, 220, 235), Color::Cyan)
 +        }
-+        StatusLineItem::CurrentDir => ((137, 180, 250), Color::Blue),
-+        StatusLineItem::GitBranch => ((250, 179, 135), Color::LightRed),
-+        StatusLineItem::CompactDisplay => ((245, 194, 231), Color::LightMagenta),
-+        StatusLineItem::ContextRemaining => ((166, 227, 161), Color::Green),
-+        StatusLineItem::WeeklyLimit => ((249, 226, 175), Color::Yellow),
-+        StatusLineItem::WeeklyReset => ((203, 166, 247), Color::Magenta),
-+        StatusLineItem::PullRequestNumber => ((243, 139, 168), Color::Red),
++        StatusLineItem::CurrentDir => ("codex.status.path", (137, 180, 250), Color::Blue),
++        StatusLineItem::GitBranch => ("codex.status.branch", (250, 179, 135), Color::LightRed),
++        StatusLineItem::CompactDisplay => {
++            ("codex.status.compact", (143, 167, 160), Color::LightCyan)
++        }
++        StatusLineItem::ContextRemaining => ("codex.status.context", (166, 227, 161), Color::Green),
++        StatusLineItem::WeeklyLimit => ("codex.status.weekly", (249, 226, 175), Color::Yellow),
++        StatusLineItem::WeeklyReset => ("codex.status.reset", (203, 166, 247), Color::Magenta),
++        StatusLineItem::PullRequestNumber => ("codex.status.pr", (243, 139, 168), Color::Red),
 +        _ => return None,
 +    };
-+    Some((rgb_color(rgb), ansi))
++    let themed = crate::morandi::is_active()
++        .then(|| foreground_style_for_scopes(&[scope]))
++        .flatten()
++        .and_then(|style| style.fg);
++    Some((themed.unwrap_or_else(|| rgb_color(rgb)), ansi))
 +}
 +
  #[derive(Clone, Copy, Debug, Eq, PartialEq)]
  enum StatusLineAccent {
      Model,
-@@ -52,13 +71,16 @@ impl StatusLineAccent {
+@@ -52,13 +77,16 @@ impl StatusLineAccent {
              | StatusLineItem::TotalOutputTokens
              | StatusLineItem::ThreadCredits
              | StatusLineItem::EstimatedThreadCost => Self::Usage,
@@ -10427,7 +10542,7 @@ index 6ef9003c5..283f52ec2 100644
              StatusLineItem::Permissions => Self::Mode,
              StatusLineItem::ApprovalMode => Self::Mode,
              StatusLineItem::ThreadName
-@@ -117,6 +139,7 @@ where
+@@ -117,6 +145,7 @@ where
  {
      let mut spans = Vec::new();
      for (item, text) in segments {
@@ -10435,7 +10550,7 @@ index 6ef9003c5..283f52ec2 100644
          if !spans.is_empty() {
              spans.push(STATUS_LINE_SEPARATOR.set_style(secondary_text_style()));
          }
-@@ -128,6 +151,8 @@ where
+@@ -128,6 +157,8 @@ where
              && let Some(thread_id) = thread_id
          {
              Style::default().fg(thread_color(thread_id))
@@ -10444,7 +10559,7 @@ index 6ef9003c5..283f52ec2 100644
          } else if use_theme_colors {
              let accent = StatusLineAccent::for_item(item);
              soften_status_line_style(
-@@ -141,7 +166,10 @@ where
+@@ -141,7 +172,10 @@ where
              if effective_stdout_color_level() == StdoutColorLevel::Ansi16
                  && matches!(foreground, Color::Rgb(..) | Color::Indexed(16..))
              {
@@ -10456,7 +10571,7 @@ index 6ef9003c5..283f52ec2 100644
              } else {
                  style.fg(readable_color_on(foreground, /*background*/ None))
              }
-@@ -217,6 +245,7 @@ mod tests {
+@@ -217,6 +251,7 @@ mod tests {
      use super::*;
      use pretty_assertions::assert_eq;
      use ratatui::style::Modifier;
@@ -10464,7 +10579,35 @@ index 6ef9003c5..283f52ec2 100644
  
      fn line_text(line: &Line<'static>) -> String {
          line.spans
-@@ -229,9 +258,9 @@ mod tests {
+@@ -225,13 +260,37 @@ mod tests {
+             .collect::<String>()
+     }
+ 
++    fn contrast_ratio(foreground: Color, background: (u8, u8, u8)) -> f64 {
++        let foreground = match foreground {
++            Color::Rgb(r, g, b) => (r, g, b),
++            Color::Indexed(index) if index >= 16 => {
++                crate::terminal_palette::XTERM_COLORS[usize::from(index)]
++            }
++            _ => panic!("contrast requires a measured color"),
++        };
++        let luminance = |rgb: (u8, u8, u8)| {
++            let [r, g, b] = [rgb.0, rgb.1, rgb.2].map(|channel| {
++                let value = f64::from(channel) / 255.0;
++                if value <= 0.04045 {
++                    value / 12.92
++                } else {
++                    ((value + 0.055) / 1.055).powf(2.4)
++                }
++            });
++            0.2126 * r + 0.7152 * g + 0.0722 * b
++        };
++        let foreground = luminance(foreground);
++        let background = luminance(background);
++        (foreground.max(background) + 0.05) / (foreground.min(background) + 0.05)
++    }
++
+     #[test]
      fn status_line_segments_preserve_order_and_plain_text() {
          let line = status_line_from_segments_with_resolver(
              [
@@ -10477,7 +10620,7 @@ index 6ef9003c5..283f52ec2 100644
              ],
              /*use_theme_colors*/ true,
              /*thread_id*/ None,
-@@ -252,7 +281,7 @@ mod tests {
+@@ -252,7 +311,7 @@ mod tests {
      fn status_line_segments_use_secondary_separators_and_theme_styles_first() {
          let line = status_line_from_segments_with_resolver(
              [
@@ -10486,7 +10629,7 @@ index 6ef9003c5..283f52ec2 100644
                  (StatusLineItem::ContextUsed, "Context 12% used".to_string()),
              ],
              /*use_theme_colors*/ true,
-@@ -298,7 +327,7 @@ mod tests {
+@@ -298,7 +357,7 @@ mod tests {
          };
          crate::terminal_palette::with_test_default_colors(colors, || {
              let line = status_line_from_segments_with_resolver(
@@ -10495,7 +10638,7 @@ index 6ef9003c5..283f52ec2 100644
                  /*use_theme_colors*/ true,
                  /*thread_id*/ None,
                  |_| Some(Style::default().fg(Color::Rgb(255, 0, 0))),
-@@ -374,8 +403,8 @@ mod tests {
+@@ -374,8 +433,8 @@ mod tests {
          crate::terminal_palette::with_test_default_colors(colors, || {
              let line = status_line_from_segments_with_resolver(
                  [
@@ -10506,7 +10649,7 @@ index 6ef9003c5..283f52ec2 100644
                      (
                          StatusLineItem::Permissions,
                          "Custom permissions".to_string(),
-@@ -402,22 +431,203 @@ mod tests {
+@@ -402,22 +461,408 @@ mod tests {
          });
      }
  
@@ -10524,12 +10667,217 @@ index 6ef9003c5..283f52ec2 100644
 +        (137, 220, 235),
 +        (137, 180, 250),
 +        (250, 179, 135),
-+        (245, 194, 231),
++        (143, 167, 160),
 +        (166, 227, 161),
 +        (249, 226, 175),
 +        (203, 166, 247),
 +        (243, 139, 168),
 +    ];
++    const MORANDI_PALETTE_RGB: [(u8, u8, u8); 8] = [
++        (102, 110, 117),
++        (112, 130, 169),
++        (154, 127, 105),
++        (143, 167, 160),
++        (129, 157, 115),
++        (178, 160, 103),
++        (148, 130, 163),
++        (181, 111, 106),
++    ];
++
++    #[test]
++    fn other_themes_keep_legacy_status_colors_and_cool_compact() {
++        for name in [
++            "ada", "babbage", "curie", "cushman", "dali", "davinci", "dracula",
++        ] {
++            crate::render::highlight::set_syntax_theme(
++                crate::render::highlight::resolve_theme_by_name(name, None).unwrap(),
++            );
++            assert!(!crate::morandi::is_active());
++            for (item, expected) in PALETTE_ITEMS.into_iter().zip(PALETTE_RGB) {
++                assert_eq!(
++                    status_line_item_colors(item).unwrap().0,
++                    rgb_color(expected)
++                );
++            }
++            assert_eq!(
++                status_line_item_colors(StatusLineItem::CompactDisplay)
++                    .unwrap()
++                    .1,
++                Color::LightCyan
++            );
++            assert_ne!(
++                status_line_item_colors(StatusLineItem::CompactDisplay)
++                    .unwrap()
++                    .1,
++                status_line_item_colors(StatusLineItem::ModelName)
++                    .unwrap()
++                    .1
++            );
++        }
++    }
++
++    #[test]
++    fn morandi_status_line_palette_is_distinct_on_light_and_dark_terminals() {
++        crate::render::highlight::set_syntax_theme(
++            crate::render::highlight::resolve_theme_by_name("morandi", None).unwrap(),
++        );
++        for (fg, bg) in [
++            ((255, 255, 255), (0, 0, 0)),
++            ((224, 224, 224), (24, 24, 24)),
++            ((30, 30, 30), (255, 255, 255)),
++        ] {
++            crate::terminal_palette::with_test_default_colors(
++                crate::terminal_probe::DefaultColors { fg, bg },
++                || {
++                    let line = status_line_from_segments(
++                        PALETTE_ITEMS.map(|item| (item, "item".to_owned())),
++                        true,
++                        None,
++                    )
++                    .unwrap();
++                    let colors: Vec<_> = line
++                        .spans
++                        .iter()
++                        .step_by(2)
++                        .map(|span| span.style.fg)
++                        .collect();
++                    assert_eq!(
++                        colors,
++                        MORANDI_PALETTE_RGB
++                            .map(|rgb| Some(readable_color_on(rgb_color(rgb), None)))
++                    );
++                    assert_eq!(
++                        colors.iter().collect::<HashSet<_>>().len(),
++                        PALETTE_ITEMS.len()
++                    );
++                    assert!(
++                        colors
++                            .iter()
++                            .all(|color| contrast_ratio(color.unwrap(), bg) >= 4.5)
++                    );
++                    assert!(
++                        line.spans
++                            .iter()
++                            .all(|span| !span.style.add_modifier.contains(Modifier::DIM))
++                    );
++                    assert!(
++                        line.spans
++                            .last()
++                            .unwrap()
++                            .style
++                            .add_modifier
++                            .contains(Modifier::UNDERLINED)
++                    );
++                    assert!(
++                        line.spans
++                            .iter()
++                            .skip(1)
++                            .step_by(2)
++                            .all(|span| span.style == secondary_text_style())
++                    );
++                    let plain = status_line_from_segments(
++                        PALETTE_ITEMS.map(|item| (item, "item".to_owned())),
++                        false,
++                        None,
++                    )
++                    .unwrap();
++                    assert!(
++                        plain
++                            .spans
++                            .iter()
++                            .all(|span| span.style.fg == secondary_text_style().fg)
++                    );
++                },
++            );
++        }
++    }
++
++    #[test]
++    fn morandi_status_line_palette_at_supported_color_depths() {
++        const CHILD: &str = "CODEX_MORANDI_STATUS_COLOR_TEST_CHILD";
++        let Ok(level) = std::env::var(CHILD) else {
++            for level in ["0", "1", "2", "3"] {
++                let output = std::process::Command::new(std::env::current_exe().unwrap())
++                    .args([
++                        "--exact",
++                        "bottom_pane::status_line_style::tests::morandi_status_line_palette_at_supported_color_depths",
++                    ])
++                    .env(CHILD, level)
++                    .env("FORCE_COLOR", level)
++                    .env("TERM", "dumb")
++                    .env_remove("NO_COLOR")
++                    .output()
++                    .unwrap();
++                assert!(
++                    output.status.success(),
++                    "level {level}: {}\n{}",
++                    String::from_utf8_lossy(&output.stdout),
++                    String::from_utf8_lossy(&output.stderr)
++                );
++            }
++            return;
++        };
++        crate::render::highlight::set_syntax_theme(
++            crate::render::highlight::resolve_theme_by_name("morandi", None).unwrap(),
++        );
++        let line = status_line_from_segments(
++            PALETTE_ITEMS.map(|item| (item, "item".to_owned())),
++            true,
++            None,
++        )
++        .unwrap();
++        let colors: Vec<_> = line
++            .spans
++            .iter()
++            .step_by(2)
++            .map(|span| span.style.fg)
++            .collect();
++        match level.as_str() {
++            "0" => assert_eq!(colors, vec![Some(Color::Reset); PALETTE_ITEMS.len()]),
++            "1" => assert_eq!(
++                colors,
++                [
++                    Color::Cyan,
++                    Color::Blue,
++                    Color::LightRed,
++                    Color::LightCyan,
++                    Color::Green,
++                    Color::Yellow,
++                    Color::Magenta,
++                    Color::Red
++                ]
++                .map(Some)
++            ),
++            "2" => assert_eq!(
++                colors,
++                [242, 67, 137, 109, 108, 144, 103, 131]
++                    .map(|index| Some(crate::terminal_palette::indexed_color(index)))
++            ),
++            "3" => assert_eq!(colors, MORANDI_PALETTE_RGB.map(|rgb| Some(rgb_color(rgb)))),
++            _ => unreachable!(),
++        }
++        if level != "0" {
++            assert_eq!(
++                colors.iter().collect::<HashSet<_>>().len(),
++                PALETTE_ITEMS.len()
++            );
++        }
++        let alias = status_line_from_segments(
++            [(StatusLineItem::ModelWithReasoning, "model high".to_owned())],
++            true,
++            None,
++        )
++        .unwrap();
++        assert_eq!(alias.spans[0].style.fg, colors[0]);
++        assert!(
++            line.spans
++                .last()
++                .unwrap()
++                .style
++                .add_modifier
++                .contains(Modifier::UNDERLINED)
++        );
++    }
 +
 +    #[test]
 +    fn semantic_status_line_palette_is_distinct_on_light_and_dark_terminals() {
@@ -10652,7 +11000,7 @@ index 6ef9003c5..283f52ec2 100644
 +                    Color::Cyan,
 +                    Color::Blue,
 +                    Color::LightRed,
-+                    Color::LightMagenta,
++                    Color::LightCyan,
 +                    Color::Green,
 +                    Color::Yellow,
 +                    Color::Magenta,
@@ -10712,7 +11060,7 @@ index 6ef9003c5..283f52ec2 100644
                      .output()
                      .unwrap();
                  assert!(
-@@ -437,8 +647,8 @@ mod tests {
+@@ -437,8 +882,8 @@ mod tests {
          crate::render::highlight::set_syntax_theme(theme);
          let line = status_line_from_segments(
              [
@@ -16791,6 +17139,222 @@ index f8681dc8a..4687db854 100644
    Status line display     Configure ›          Choose and reorder the information below the composer
    Terminal title display  Configure ›          Choose and reorder the information in your terminal tab or window title
  
+diff --git a/codex-rs/tui/src/custom_terminal.rs b/codex-rs/tui/src/custom_terminal.rs
+index c2a6f0589..9157ec0e9 100644
+--- a/codex-rs/tui/src/custom_terminal.rs
++++ b/codex-rs/tui/src/custom_terminal.rs
+@@ -294,6 +294,7 @@ where
+     /// Obtains a difference between the previous and the current buffer and passes it to the
+     /// current backend for drawing.
+     pub fn flush(&mut self) -> io::Result<()> {
++        crate::morandi::adapt_buffer(self.current_buffer_mut());
+         let updates = diff_buffers(self.previous_buffer(), self.current_buffer());
+         self.flush_updates(updates)
+     }
+@@ -371,6 +372,8 @@ where
+         let cursor_position = frame.cursor_position;
+         let cursor_style = frame.cursor_style;
+ 
++        crate::morandi::adapt_buffer(self.current_buffer_mut());
++
+         // Not every terminal or multiplexer hides intermediate cursor moves inside a
+         // synchronized update, especially when the frame spans multiple writes.
+         let updates = diff_buffers(self.previous_buffer(), self.current_buffer());
+@@ -816,6 +819,9 @@ mod tests {
+     #[path = "cursor_tests.rs"]
+     mod cursor;
+ 
++    #[path = "morandi_tests.rs"]
++    mod morandi;
++
+     struct CaptureBackend {
+         output: Vec<u8>,
+         size: Size,
+diff --git a/codex-rs/tui/src/custom_terminal/tests/morandi_tests.rs b/codex-rs/tui/src/custom_terminal/tests/morandi_tests.rs
+new file mode 100644
+index 000000000..a37edb338
+--- /dev/null
++++ b/codex-rs/tui/src/custom_terminal/tests/morandi_tests.rs
+@@ -0,0 +1,179 @@
++use super::*;
++use crate::morandi::with_test_level;
++use crate::morandi::with_test_theme;
++use crate::terminal_palette::StdoutColorLevel;
++use crate::terminal_palette::with_test_default_colors;
++use crate::terminal_probe::DefaultColors;
++use pretty_assertions::assert_eq;
++
++fn paint(terminal: &mut Terminal<CaptureBackend>, cursor_style: SetCursorStyle) {
++    terminal.backend_mut().output.clear();
++    terminal
++        .draw(|frame| {
++            let buffer = frame.buffer_mut();
++            buffer.set_string(0, 0, "A", Style::default().fg(Color::Red).bold());
++            buffer.set_string(1, 0, "G", Style::default().fg(Color::Rgb(255, 215, 0)));
++            buffer.set_string(
++                2,
++                0,
++                "S",
++                Style::default()
++                    .fg(Color::Reset)
++                    .bg(Color::Rgb(99, 168, 248)),
++            );
++            frame.set_cursor_position((3, 0));
++            frame.set_cursor_style(cursor_style);
++        })
++        .unwrap();
++}
++
++#[test]
++fn morandi_preview_and_cancel_repaint_unchanged_ansi_cells_and_cursor_anchor() {
++    crossterm::style::force_color_output(true);
++    with_test_default_colors(
++        DefaultColors {
++            fg: (224, 224, 224),
++            bg: (24, 24, 24),
++        },
++        || {
++            with_test_theme("ada", || {
++                let mut terminal = Terminal::with_options(CaptureBackend::new(6, 1)).unwrap();
++                terminal.set_viewport_area(Rect::new(0, 0, 6, 1));
++                let mut parser = vt100::Parser::new(1, 6, 0);
++                paint(&mut terminal, SetCursorStyle::BlinkingBar);
++                parser.process(&terminal.backend().output);
++                let original = parser.screen().cell(0, 0).unwrap().fgcolor();
++                assert_eq!(original, vt100::Color::Idx(1));
++                with_test_theme("morandi", || {
++                    paint(&mut terminal, SetCursorStyle::SteadyBar);
++                    let output = terminal.backend().output();
++                    assert!(output.contains('A'), "unchanged ANSI cell must repaint");
++                    assert!(
++                        !output.contains("\x1b]4;")
++                            && !output.contains("\x1b]10;")
++                            && !output.contains("\x1b]11;")
++                    );
++                    parser.process(&terminal.backend().output);
++                    let Color::Rgb(r, g, b) = crate::morandi::colors(Color::Red, Color::Reset).0
++                    else {
++                        panic!("truecolor role")
++                    };
++                    assert_eq!(
++                        parser.screen().cell(0, 0).unwrap().fgcolor(),
++                        vt100::Color::Rgb(r, g, b)
++                    );
++                    assert!(parser.screen().cell(0, 0).unwrap().bold());
++                    assert_ne!(
++                        parser.screen().cell(0, 1).unwrap().fgcolor(),
++                        vt100::Color::Rgb(255, 215, 0)
++                    );
++                    assert_ne!(
++                        parser.screen().cell(0, 2).unwrap().bgcolor(),
++                        vt100::Color::Default
++                    );
++                });
++                paint(&mut terminal, SetCursorStyle::BlinkingBar);
++                assert!(
++                    terminal.backend().output().contains('A'),
++                    "cancel must repaint unchanged cell"
++                );
++                parser.process(&terminal.backend().output);
++                assert_eq!(parser.screen().cell(0, 0).unwrap().fgcolor(), original);
++                assert_eq!(
++                    parser.screen().cell(0, 1).unwrap().fgcolor(),
++                    vt100::Color::Rgb(255, 215, 0)
++                );
++                assert_eq!(parser.screen().contents(), "AGS");
++            });
++        },
++    );
++}
++
++#[test]
++fn morandi_frame_emits_representable_capabilities_and_keeps_modifiers() {
++    crossterm::style::force_color_output(true);
++    with_test_default_colors(
++        DefaultColors {
++            fg: (224, 224, 224),
++            bg: (24, 24, 24),
++        },
++        || {
++            with_test_theme("morandi", || {
++                for level in [
++                    StdoutColorLevel::Ansi256,
++                    StdoutColorLevel::Ansi16,
++                    StdoutColorLevel::Unknown,
++                ] {
++                    with_test_level(level, || {
++                        let mut terminal =
++                            Terminal::with_options(CaptureBackend::new(6, 1)).unwrap();
++                        terminal.set_viewport_area(Rect::new(0, 0, 6, 1));
++                        paint(&mut terminal, SetCursorStyle::BlinkingBar);
++                        let mut parser = vt100::Parser::new(1, 6, 0);
++                        parser.process(&terminal.backend().output);
++                        assert_eq!(parser.screen().contents(), "AGS");
++                        assert!(parser.screen().cell(0, 0).unwrap().bold());
++                        let text = parser.screen().cell(0, 0).unwrap().fgcolor();
++                        let fill = parser.screen().cell(0, 2).unwrap().bgcolor();
++                        match level {
++                            StdoutColorLevel::Ansi256 => {
++                                assert!(matches!(text, vt100::Color::Idx(16..)))
++                            }
++                            StdoutColorLevel::Ansi16 => {
++                                assert_eq!(text, vt100::Color::Idx(1));
++                                assert_eq!(fill, vt100::Color::Idx(4));
++                            }
++                            StdoutColorLevel::Unknown => {
++                                assert_eq!(text, vt100::Color::Default);
++                                assert_eq!(fill, vt100::Color::Default);
++                            }
++                            _ => unreachable!(),
++                        }
++                    });
++                }
++            });
++        },
++    );
++}
++
++#[test]
++fn morandi_no_color_frame_keeps_text_and_bold() {
++    if std::env::var_os("CODEX_MORANDI_NO_COLOR_CHILD").is_none() {
++        for (name, value) in [("NO_COLOR", "1"), ("FORCE_COLOR", "0")] {
++            let output = std::process::Command::new(std::env::current_exe().unwrap())
++                .args([
++                    "--exact",
++                    "custom_terminal::tests::morandi::morandi_no_color_frame_keeps_text_and_bold",
++                    "--nocapture",
++                ])
++                .env_remove("NO_COLOR")
++                .env_remove("FORCE_COLOR")
++                .env(name, value)
++                .env("CODEX_MORANDI_NO_COLOR_CHILD", "1")
++                .output()
++                .unwrap();
++            assert!(
++                output.status.success(),
++                "{name}: {}\n{}",
++                String::from_utf8_lossy(&output.stdout),
++                String::from_utf8_lossy(&output.stderr)
++            );
++        }
++        return;
++    }
++    with_test_theme("morandi", || {
++        let mut terminal = Terminal::with_options(CaptureBackend::new(6, 1)).unwrap();
++        terminal.set_viewport_area(Rect::new(0, 0, 6, 1));
++        paint(&mut terminal, SetCursorStyle::BlinkingBar);
++        let output = terminal.backend().output();
++        assert!(!output.contains("38;") && !output.contains("48;"));
++        let mut parser = vt100::Parser::new(1, 6, 0);
++        parser.process(output.as_bytes());
++        assert_eq!(parser.screen().contents(), "AGS");
++        assert!(parser.screen().cell(0, 0).unwrap().bold());
++        assert_eq!(
++            parser.screen().cell(0, 0).unwrap().fgcolor(),
++            vt100::Color::Default
++        );
++    });
++}
 diff --git a/codex-rs/tui/src/exec_cell/advisor.rs b/codex-rs/tui/src/exec_cell/advisor.rs
 new file mode 100644
 index 000000000..091d6b725
@@ -17805,11 +18369,164 @@ index e32ccd918..fb9d7eed7 100644
      fn display_lines(&self, width: u16) -> Vec<Line<'static>> {
          let bullet = if self.completed {
              "•".dim()
+diff --git a/codex-rs/tui/src/insert_history.rs b/codex-rs/tui/src/insert_history.rs
+index afa649f70..a8cb5da54 100644
+--- a/codex-rs/tui/src/insert_history.rs
++++ b/codex-rs/tui/src/insert_history.rs
+@@ -306,19 +306,15 @@ fn write_history_line<W: Write>(
+         }
+         queue!(writer, RestorePosition)?;
+     }
++    let (foreground, background) = crate::morandi::colors(
++        line.line.style.fg.unwrap_or(Color::Reset),
++        line.line.style.bg.unwrap_or(Color::Reset),
++    );
+     queue!(
+         writer,
+         SetColors(Colors::new(
+-            line.line
+-                .style
+-                .fg
+-                .map(IntoCrossterm::into_crossterm)
+-                .unwrap_or(CColor::Reset),
+-            line.line
+-                .style
+-                .bg
+-                .map(IntoCrossterm::into_crossterm)
+-                .unwrap_or(CColor::Reset)
++            foreground.into_crossterm(),
++            background.into_crossterm()
+         ))
+     )?;
+     queue!(writer, Clear(ClearType::UntilNewLine))?;
+@@ -401,8 +397,10 @@ where
+             diff.queue(&mut writer)?;
+             last_modifier = modifier;
+         }
+-        let next_fg = span.style.fg.unwrap_or(Color::Reset);
+-        let next_bg = span.style.bg.unwrap_or(Color::Reset);
++        let (next_fg, next_bg) = crate::morandi::colors(
++            span.style.fg.unwrap_or(Color::Reset),
++            span.style.bg.unwrap_or(Color::Reset),
++        );
+         if next_fg != fg || next_bg != bg {
+             queue!(
+                 writer,
+@@ -434,6 +432,101 @@ mod tests {
+     use ratatui::layout::Rect;
+     use ratatui::style::Color;
+ 
++    #[test]
++    fn morandi_history_emits_shared_palette_for_text_fills_and_hyperlinks() {
++        use crate::morandi::with_test_theme;
++        use crate::terminal_palette::with_test_default_colors;
++        use crate::terminal_probe::DefaultColors;
++        use ratatui::style::Style;
++        crossterm::style::force_color_output(true);
++        with_test_default_colors(
++            DefaultColors {
++                fg: (224, 224, 224),
++                bg: (24, 24, 24),
++            },
++            || {
++                with_test_theme("morandi", || {
++                    let url = "https://example.com/";
++                    let mut line =
++                        crate::terminal_hyperlinks::annotate_web_urls_in_line(Line::from(vec![
++                            Span::styled("R", Style::default().fg(Color::Red).bold()),
++                            Span::styled("G ", Style::default().fg(Color::Rgb(255, 215, 0))),
++                            Span::raw(url),
++                        ]));
++                    line.line.style = Style::default().bg(Color::Rgb(99, 168, 248));
++                    let original = line.clone();
++                    let mut output = Vec::new();
++                    write_history_line(&mut output, &line, 40).unwrap();
++                    assert_eq!(line, original);
++                    assert!(
++                        String::from_utf8_lossy(&output).contains(&format!("\x1b]8;;{url}\x07"))
++                    );
++                    let mut parser = vt100::Parser::new(1, 40, 0);
++                    parser.process(&output);
++                    let expected = crate::morandi::colors(Color::Red, Color::Rgb(99, 168, 248));
++                    let convert = |color| match color {
++                        Color::Rgb(r, g, b) => vt100::Color::Rgb(r, g, b),
++                        _ => panic!("truecolor output"),
++                    };
++                    assert_eq!(
++                        parser.screen().cell(0, 0).unwrap().fgcolor(),
++                        convert(expected.0)
++                    );
++                    assert_eq!(
++                        parser.screen().cell(0, 0).unwrap().bgcolor(),
++                        convert(expected.1)
++                    );
++                    assert_eq!(
++                        parser.screen().cell(0, 39).unwrap().bgcolor(),
++                        convert(expected.1)
++                    );
++                    assert!(parser.screen().cell(0, 0).unwrap().bold());
++                    assert!(!parser.screen().cell(0, 1).unwrap().bold());
++                    assert_eq!(parser.screen().contents(), format!("RG {url}"));
++                    assert_eq!(parser.screen().fgcolor(), vt100::Color::Default);
++                    assert_eq!(parser.screen().bgcolor(), vt100::Color::Default);
++                });
++            },
++        );
++    }
++
++    #[test]
++    fn morandi_no_color_history_preserves_text_and_modifiers() {
++        use ratatui::style::Style;
++        if std::env::var_os("CODEX_MORANDI_HISTORY_NO_COLOR_CHILD").is_none() {
++            for (name, value) in [("NO_COLOR", "1"), ("FORCE_COLOR", "0")] {
++                let output = std::process::Command::new(std::env::current_exe().unwrap())
++                    .args(["--exact", "insert_history::tests::morandi_no_color_history_preserves_text_and_modifiers", "--nocapture"])
++                    .env_remove("NO_COLOR").env_remove("FORCE_COLOR")
++                    .env(name, value).env("CODEX_MORANDI_HISTORY_NO_COLOR_CHILD", "1")
++                    .output().unwrap();
++                assert!(
++                    output.status.success(),
++                    "{name}: {}\n{}",
++                    String::from_utf8_lossy(&output.stdout),
++                    String::from_utf8_lossy(&output.stderr)
++                );
++            }
++            return;
++        }
++        crate::morandi::with_test_theme("morandi", || {
++            let line = crate::terminal_hyperlinks::plain_hyperlink_lines(vec![Line::from(
++                Span::styled("warning", Style::default().fg(Color::Yellow).bold()),
++            )]);
++            let mut output = Vec::new();
++            write_history_line(&mut output, &line[0], 12).unwrap();
++            let mut parser = vt100::Parser::new(1, 12, 0);
++            parser.process(&output);
++            assert_eq!(parser.screen().contents(), "warning");
++            assert!(parser.screen().cell(0, 0).unwrap().bold());
++            assert_eq!(
++                parser.screen().cell(0, 0).unwrap().fgcolor(),
++                vt100::Color::Default
++            );
++            assert!(!String::from_utf8_lossy(&output).contains("38;"));
++        });
++    }
++
+     #[test]
+     fn writes_bold_then_regular_spans() {
+         use ratatui::style::Stylize;
 diff --git a/codex-rs/tui/src/lib.rs b/codex-rs/tui/src/lib.rs
-index a3fb5447b..b3ee0ef09 100644
+index a3fb5447b..ca2e01107 100644
 --- a/codex-rs/tui/src/lib.rs
 +++ b/codex-rs/tui/src/lib.rs
-@@ -166,6 +166,8 @@ mod inline_visualization;
+@@ -133,6 +133,7 @@ mod config_panel;
+ mod config_update;
+ mod copy_input_guard;
+ pub(crate) mod custom_terminal;
++mod morandi;
+ mod daybreak;
+ mod experimental_features;
+ mod markdown_copy;
+@@ -166,6 +167,8 @@ mod inline_visualization;
  pub(crate) mod insert_history;
  mod managed_worktree_tool_specs;
  mod managed_worktree_tools;
@@ -17818,6 +18535,639 @@ index a3fb5447b..b3ee0ef09 100644
  mod terminal_program_status;
  pub use insert_history::insert_history_lines;
  mod footer_hint;
+diff --git a/codex-rs/tui/src/morandi.rs b/codex-rs/tui/src/morandi.rs
+new file mode 100644
+index 000000000..46178d16f
+--- /dev/null
++++ b/codex-rs/tui/src/morandi.rs
+@@ -0,0 +1,324 @@
++//! Adapt app-owned output colors for the active Morandi preview, before frame diffing.
++
++use crate::render::highlight;
++use crate::terminal_palette::StdoutColorLevel;
++use crate::terminal_palette::XTERM_COLORS;
++use crate::terminal_palette::best_color_for_level;
++use crate::terminal_palette::default_bg;
++use crate::terminal_palette::effective_stdout_color_level;
++use ratatui::buffer::Buffer;
++use ratatui::style::Color;
++use std::cell::RefCell;
++use std::collections::HashMap;
++use std::collections::HashSet;
++use syntect::highlighting::Theme;
++
++const ROLES: [&str; 9] = [
++    "foreground",
++    "muted",
++    "red",
++    "green",
++    "yellow",
++    "blue",
++    "magenta",
++    "cyan",
++    "selection",
++];
++
++#[derive(Default)]
++struct Cache {
++    revision: Option<u64>,
++    palette: Option<Palette>,
++}
++
++struct Palette {
++    roles: [Color; 9],
++    authored: HashSet<(u8, u8, u8)>,
++    resolved_authored: HashSet<(u8, u8, u8)>,
++    surface: Option<(StdoutColorLevel, Option<(u8, u8, u8)>)>,
++    colors: HashMap<(Color, Color), (Color, Color)>,
++}
++
++thread_local! {
++    // Theme revisions are thread-local in native tests as well.
++    static CACHE: RefCell<Cache> = RefCell::default();
++}
++
++fn with_palette<T>(f: impl FnOnce(Option<&mut Palette>) -> T) -> T {
++    CACHE.with(|cache| {
++        let mut cache = cache.borrow_mut();
++        let revision = highlight::syntax_theme_revision();
++        if cache.revision != Some(revision) {
++            cache.palette = Palette::from_theme(&highlight::current_syntax_theme());
++            cache.revision = Some(revision);
++        }
++        if let Some(palette) = cache.palette.as_mut() {
++            let level = effective_stdout_color_level();
++            let surface = (level, default_bg());
++            if palette.surface != Some(surface) {
++                palette.surface = Some(surface);
++                palette.colors.clear();
++                palette.resolved_authored.clear();
++                for color in &palette.authored {
++                    for level in [StdoutColorLevel::TrueColor, StdoutColorLevel::Ansi256] {
++                        if let Some(color) = rgb(crate::style::readable_color_on_for_level(
++                            Color::Rgb(color.0, color.1, color.2),
++                            None,
++                            level,
++                        )) {
++                            palette.resolved_authored.insert(color);
++                        }
++                    }
++                }
++            }
++        }
++        f(cache.palette.as_mut())
++    })
++}
++
++pub(crate) fn is_active() -> bool {
++    with_palette(|palette| palette.is_some())
++}
++
++pub(crate) fn adapt_buffer(buffer: &mut Buffer) {
++    with_palette(|palette| {
++        if let Some(palette) = palette {
++            for cell in &mut buffer.content {
++                // Skipped cells belong to another renderer, not to this app's paint pass.
++                #[allow(deprecated)]
++                if cell.diff_option == ratatui::buffer::CellDiffOption::Skip
++                    || (cell.skip && cell.diff_option == ratatui::buffer::CellDiffOption::None)
++                {
++                    continue;
++                }
++                (cell.fg, cell.bg) = palette.colors(cell.fg, cell.bg);
++            }
++        }
++    });
++}
++
++pub(crate) fn colors(foreground: Color, background: Color) -> (Color, Color) {
++    with_palette(|palette| {
++        palette.map_or((foreground, background), |palette| {
++            palette.colors(foreground, background)
++        })
++    })
++}
++
++impl Palette {
++    fn from_theme(theme: &Theme) -> Option<Self> {
++        if theme.name.as_deref() != Some("Morandi Cool") {
++            return None;
++        }
++        let roles = ROLES.map(|role| {
++            highlight::foreground_style_for_scopes_with_theme(theme, &[&format!("codex.ui.{role}")])
++                .and_then(|style| style.fg)
++                .unwrap_or(Color::Gray)
++        });
++        let mut authored: HashSet<_> = theme
++            .scopes
++            .iter()
++            .flat_map(|scope| [scope.style.foreground, scope.style.background])
++            .chain([theme.settings.foreground, theme.settings.background])
++            .flatten()
++            .filter(|color| color.a == 255)
++            .map(|color| (color.r, color.g, color.b))
++            .collect();
++        // Theme-derived widgets can already contain their ANSI256 representation.
++        let quantized: Vec<_> = authored
++            .iter()
++            .filter_map(|color| rgb(best_color_for_level(*color, StdoutColorLevel::Ansi256)))
++            .collect();
++        authored.extend(quantized);
++        Some(Self {
++            roles,
++            authored,
++            resolved_authored: HashSet::new(),
++            surface: None,
++            colors: HashMap::new(),
++        })
++    }
++
++    fn colors(&mut self, foreground: Color, background: Color) -> (Color, Color) {
++        if let Some(colors) = self.colors.get(&(foreground, background)) {
++            return *colors;
++        }
++        let level = self.surface.expect("palette surface initialized").0;
++        let result = match level {
++            StdoutColorLevel::Unknown => (Color::Reset, Color::Reset),
++            StdoutColorLevel::Ansi16 => (
++                ansi16(foreground, /*background*/ false),
++                ansi16(background, /*background*/ true),
++            ),
++            StdoutColorLevel::TrueColor | StdoutColorLevel::Ansi256 => {
++                let fill = self.map(background, /*background*/ true);
++                let fill = quantize(fill, level);
++                let preferred = self.map(foreground, /*background*/ false);
++                // Decorative RGB gradients on the default canvas retain brightness ordering.
++                // Semantic text and explicit surfaces use the existing informative-text contrast.
++                let informative = background != Color::Reset
++                    || !matches!(foreground, Color::Rgb(..) | Color::Indexed(16..))
++                    || rgb(foreground).is_some_and(|color| self.is_authored(color));
++                let text = if informative {
++                    crate::style::readable_color_on_for_level(preferred, Some(fill), level)
++                } else {
++                    preferred
++                };
++                (quantize(text, level), fill)
++            }
++        };
++        if self.colors.len() >= 512 {
++            self.colors.clear();
++        }
++        self.colors.insert((foreground, background), result);
++        result
++    }
++
++    fn map(&self, color: Color, background: bool) -> Color {
++        if background && color == Color::Reset {
++            return Color::Reset;
++        }
++        if background && is_selection(color) {
++            return self.roles[8];
++        }
++        let role = match color {
++            Color::Reset | Color::Gray | Color::White => Some(0),
++            Color::Black | Color::DarkGray => Some(1),
++            Color::Red | Color::LightRed => Some(2),
++            Color::Green | Color::LightGreen => Some(3),
++            Color::Yellow | Color::LightYellow => Some(4),
++            Color::Blue | Color::LightBlue => Some(5),
++            Color::Magenta | Color::LightMagenta => Some(6),
++            Color::Cyan | Color::LightCyan => Some(7),
++            Color::Indexed(index) if index < 16 => {
++                return self.map(ANSI16[usize::from(index)], background);
++            }
++            _ => None,
++        };
++        if let Some(role) = role {
++            if matches!(
++                color,
++                Color::LightRed
++                    | Color::LightGreen
++                    | Color::LightYellow
++                    | Color::LightBlue
++                    | Color::LightMagenta
++                    | Color::LightCyan
++            ) && let Some(base) = rgb(self.roles[role])
++                && let Some(text) = rgb(self.roles[0])
++            {
++                let (r, g, b) = crate::color::blend(text, base, 0.2);
++                return Color::Rgb(r, g, b);
++            }
++            return self.roles[role];
++        }
++        rgb(color).map_or(color, |color| {
++            let (r, g, b) = if self.is_authored(color) {
++                color
++            } else {
++                mute(color)
++            };
++            Color::Rgb(r, g, b)
++        })
++    }
++
++    fn is_authored(&self, color: (u8, u8, u8)) -> bool {
++        self.authored.contains(&color) || self.resolved_authored.contains(&color)
++    }
++}
++
++fn rgb(color: Color) -> Option<(u8, u8, u8)> {
++    match color {
++        Color::Rgb(r, g, b) => Some((r, g, b)),
++        Color::Indexed(index) if index >= 16 => Some(XTERM_COLORS[usize::from(index)]),
++        _ => None,
++    }
++}
++
++fn quantize(color: Color, level: StdoutColorLevel) -> Color {
++    rgb(color).map_or(color, |color| best_color_for_level(color, level))
++}
++
++fn mute((r, g, b): (u8, u8, u8)) -> (u8, u8, u8) {
++    let spread = f64::from(r.max(g).max(b) - r.min(g).min(b));
++    if spread <= 64.0 {
++        return (r, g, b);
++    }
++    let scale = (64.0 + 0.1 * (spread - 64.0)) / spread;
++    let luma = 0.2126 * f64::from(r) + 0.7152 * f64::from(g) + 0.0722 * f64::from(b);
++    let channel = |value| (luma + (f64::from(value) - luma) * scale).round() as u8;
++    (channel(r), channel(g), channel(b))
++}
++
++fn is_selection(color: Color) -> bool {
++    matches!(color, Color::Rgb(99, 168, 248) | Color::Rgb(164, 205, 251))
++}
++
++const ANSI16: [Color; 16] = [
++    Color::Black,
++    Color::Red,
++    Color::Green,
++    Color::Yellow,
++    Color::Blue,
++    Color::Magenta,
++    Color::Cyan,
++    Color::Gray,
++    Color::DarkGray,
++    Color::LightRed,
++    Color::LightGreen,
++    Color::LightYellow,
++    Color::LightBlue,
++    Color::LightMagenta,
++    Color::LightCyan,
++    Color::White,
++];
++
++fn ansi16(color: Color, background: bool) -> Color {
++    if background && is_selection(color) {
++        return Color::Blue;
++    }
++    rgb(color).map_or_else(
++        || match color {
++            Color::Indexed(index) => ANSI16[usize::from(index)],
++            _ => color,
++        },
++        |(r, g, b)| {
++            // These are representable terminal-owned slots, not promises of measured RGB values.
++            let index = XTERM_COLORS[..16]
++                .iter()
++                .enumerate()
++                .min_by_key(|(_, candidate)| {
++                    let (cr, cg, cb) = **candidate;
++                    (i32::from(r) - i32::from(cr)).pow(2)
++                        + (i32::from(g) - i32::from(cg)).pow(2)
++                        + (i32::from(b) - i32::from(cb)).pow(2)
++                })
++                .map_or(0, |(index, _)| index);
++            ANSI16[index]
++        },
++    )
++}
++
++#[cfg(test)]
++pub(crate) fn with_test_level<T>(level: StdoutColorLevel, f: impl FnOnce() -> T) -> T {
++    crate::terminal_palette::with_test_color_level(level, f)
++}
++
++#[cfg(test)]
++pub(crate) fn with_test_theme<T>(name: &str, f: impl FnOnce() -> T) -> T {
++    struct Restore(Theme);
++    impl Drop for Restore {
++        fn drop(&mut self) {
++            highlight::set_syntax_theme(self.0.clone());
++        }
++    }
++    let _restore = Restore(highlight::current_syntax_theme());
++    highlight::set_syntax_theme(
++        highlight::resolve_theme_by_name(name, None).expect("bundled theme"),
++    );
++    f()
++}
++
++#[cfg(test)]
++#[path = "morandi_tests.rs"]
++mod tests;
+diff --git a/codex-rs/tui/src/morandi_tests.rs b/codex-rs/tui/src/morandi_tests.rs
+new file mode 100644
+index 000000000..5a0d08674
+--- /dev/null
++++ b/codex-rs/tui/src/morandi_tests.rs
+@@ -0,0 +1,297 @@
++use super::*;
++use crate::terminal_palette::with_test_default_colors;
++use crate::terminal_probe::DefaultColors;
++use ratatui::buffer::CellDiffOption;
++use ratatui::layout::Rect;
++use ratatui::style::Modifier;
++use ratatui::style::Style;
++
++fn terminal<T>(background: (u8, u8, u8), f: impl FnOnce() -> T) -> T {
++    with_test_default_colors(
++        DefaultColors {
++            fg: (224, 224, 224),
++            bg: background,
++        },
++        f,
++    )
++}
++
++#[test]
++fn morandi_changes_colors_only_and_respects_external_cells() {
++    terminal((24, 24, 24), || {
++        with_test_theme("morandi", || {
++            let mut buffer = Buffer::empty(Rect::new(0, 0, 4, 1));
++            buffer.set_string(
++                0,
++                0,
++                "a界",
++                Style::default()
++                    .fg(Color::Cyan)
++                    .bg(Color::Rgb(99, 168, 248))
++                    .bold(),
++            );
++            buffer[(3, 0)].set_symbol("x").set_fg(Color::Red);
++            buffer[(3, 0)].set_diff_option(CellDiffOption::Skip);
++            let original = buffer.clone();
++            adapt_buffer(&mut buffer);
++            assert_ne!(buffer[(0, 0)].fg, Color::Cyan);
++            assert_eq!(buffer[(0, 0)].modifier, Modifier::BOLD);
++            assert_eq!(buffer[(3, 0)], original[(3, 0)]);
++            for (painted, original) in buffer.content.iter_mut().zip(&original.content) {
++                painted.fg = original.fg;
++                painted.bg = original.bg;
++                assert_eq!(&*painted, original);
++            }
++        })
++    });
++}
++
++#[test]
++fn morandi_other_themes_are_exact_identity_even_without_color_support() {
++    terminal((24, 24, 24), || {
++        for name in ["ada", "babbage", "curie", "cushman", "dali", "davinci"] {
++            with_test_theme(name, || {
++                with_test_level(StdoutColorLevel::Unknown, || {
++                    assert!(!is_active());
++                    let mut buffer = Buffer::empty(Rect::new(0, 0, 4, 1));
++                    buffer.set_string(
++                        0,
++                        0,
++                        "same",
++                        Style::default()
++                            .fg(Color::Red)
++                            .bg(Color::Rgb(255, 215, 0))
++                            .bold(),
++                    );
++                    let original = buffer.clone();
++                    adapt_buffer(&mut buffer);
++                    assert_eq!(buffer, original);
++                    assert_eq!(
++                        colors(Color::Red, Color::Rgb(255, 215, 0)),
++                        (Color::Red, Color::Rgb(255, 215, 0))
++                    );
++                })
++            });
++        }
++    });
++}
++
++#[test]
++fn morandi_rgb_compression_is_continuous_and_keeps_decorative_gradients() {
++    assert_eq!(mute((111, 120, 132)), (111, 120, 132));
++    let luma = |(r, g, b): (u8, u8, u8)| {
++        0.2126 * f64::from(r) + 0.7152 * f64::from(g) + 0.0722 * f64::from(b)
++    };
++    let mut previous = 0.0;
++    let mut unique = HashSet::new();
++    for value in (32..=224).step_by(16) {
++        let original = (value, value / 2, value / 4);
++        let muted = mute(original);
++        assert!((luma(original) - luma(muted)).abs() <= 0.6);
++        assert!(luma(muted) > previous);
++        previous = luma(muted);
++        assert!(muted.0 > muted.1 && muted.1 > muted.2);
++        unique.insert(muted);
++    }
++    assert_eq!(unique.len(), 13);
++    // Equal-luminance, equal-hue colors retain chroma differences above the compression knee.
++    let near = mute((180, 100, 100));
++    let far = mute((220, 89, 89));
++    assert_ne!(near.0 - near.1, far.0 - far.1);
++    let before = mute((64, 0, 0));
++    let after = mute((65, 0, 0));
++    assert!((i16::from(before.0) - i16::from(after.0)).abs() <= 1);
++
++    terminal((24, 24, 24), || {
++        with_test_theme("morandi", || {
++            let values: Vec<_> = (32..=224)
++                .step_by(16)
++                .map(|value| colors(Color::Rgb(value, value / 2, value / 4), Color::Reset).0)
++                .collect();
++            assert_eq!(
++                values.iter().copied().collect::<HashSet<_>>().len(),
++                values.len()
++            );
++            assert_eq!(
++                colors(Color::Rgb(111, 120, 132), Color::Reset).0,
++                Color::Rgb(111, 120, 132)
++            );
++            assert_ne!(
++                colors(Color::Rgb(255, 215, 0), Color::Reset).0,
++                Color::Rgb(255, 215, 0)
++            );
++            with_test_level(StdoutColorLevel::Ansi256, || {
++                let colors: Vec<_> = (32..=224)
++                    .step_by(16)
++                    .map(|value| colors(Color::Rgb(value, value / 2, value / 4), Color::Reset).0)
++                    .collect();
++                let representable: Vec<_> = (32..=224)
++                    .step_by(16)
++                    .map(|value| {
++                        best_color_for_level(
++                            mute((value, value / 2, value / 4)),
++                            StdoutColorLevel::Ansi256,
++                        )
++                    })
++                    .collect();
++                // The fixed ANSI256 palette merges nearby steps; retain every representable step.
++                assert_eq!(colors, representable);
++                assert_ne!(colors.first(), colors.last());
++                assert_eq!(
++                    colors.iter().copied().collect::<HashSet<_>>().len(),
++                    representable.iter().copied().collect::<HashSet<_>>().len()
++                );
++            });
++        })
++    });
++}
++
++fn ratio(a: (u8, u8, u8), b: (u8, u8, u8)) -> f64 {
++    let luminance = |(r, g, b): (u8, u8, u8)| {
++        let [r, g, b] = [r, g, b].map(|value| {
++            let channel = f64::from(value) / 255.0;
++            if channel <= 0.04045 {
++                channel / 12.92
++            } else {
++                ((channel + 0.055) / 1.055).powf(2.4)
++            }
++        });
++        0.2126 * r + 0.7152 * g + 0.0722 * b
++    };
++    let (a, b) = (luminance(a), luminance(b));
++    (a.max(b) + 0.05) / (a.min(b) + 0.05)
++}
++
++#[test]
++fn morandi_resolves_semantic_text_against_the_painted_surface() {
++    for background in [(24, 24, 24), (255, 255, 255)] {
++        terminal(background, || {
++            with_test_theme("morandi", || {
++                for level in [StdoutColorLevel::TrueColor, StdoutColorLevel::Ansi256] {
++                    with_test_level(level, || {
++                        let fills = [
++                            Color::Reset,
++                            Color::Rgb(99, 168, 248),
++                            Color::Rgb(29, 54, 44),
++                            Color::Rgb(62, 36, 38),
++                        ];
++                        for fill in fills {
++                            for text in [
++                                Color::Reset,
++                                Color::Red,
++                                Color::Green,
++                                Color::Yellow,
++                                Color::DarkGray,
++                            ] {
++                                let (text, fill) = colors(text, fill);
++                                let text = rgb(text).expect("explicit text");
++                                let fill = rgb(fill).unwrap_or(background);
++                                assert!(
++                                    ratio(text, fill) >= 4.5,
++                                    "{background:?} {level:?} {text:?} {fill:?}"
++                                );
++                            }
++                        }
++                        assert_ne!(
++                            colors(Color::Red, Color::Reset).0,
++                            colors(Color::Yellow, Color::Reset).0
++                        );
++                    });
++                }
++            })
++        });
++    }
++}
++
++#[test]
++fn morandi_limited_capabilities_preserve_roles_and_modifiers() {
++    terminal((24, 24, 24), || {
++        with_test_theme("morandi", || {
++            with_test_level(StdoutColorLevel::Ansi16, || {
++                assert_eq!(colors(Color::Red, Color::Reset), (Color::Red, Color::Reset));
++                assert_eq!(
++                    colors(Color::Yellow, Color::Reset),
++                    (Color::Yellow, Color::Reset)
++                );
++                assert_eq!(
++                    colors(Color::Reset, Color::Rgb(99, 168, 248)),
++                    (Color::Reset, Color::Blue)
++                );
++                assert!(ANSI16.contains(&colors(Color::Rgb(255, 215, 0), Color::Reset).0));
++            });
++            with_test_level(StdoutColorLevel::Unknown, || {
++                let mut buffer = Buffer::empty(Rect::new(0, 0, 1, 1));
++                buffer[(0, 0)].set_symbol("!").set_style(
++                    Style::default()
++                        .fg(Color::Red)
++                        .bg(Color::Blue)
++                        .bold()
++                        .reversed(),
++                );
++                adapt_buffer(&mut buffer);
++                assert_eq!(buffer[(0, 0)].fg, Color::Reset);
++                assert_eq!(buffer[(0, 0)].bg, Color::Reset);
++                assert_eq!(buffer[(0, 0)].modifier, Modifier::BOLD | Modifier::REVERSED);
++                assert_eq!(buffer[(0, 0)].symbol(), "!");
++            });
++        })
++    });
++}
++
++#[test]
++fn morandi_final_status_buffer_keeps_eight_readable_distinct_roles() {
++    use crate::bottom_pane::StatusLineItem;
++    use crate::bottom_pane::status_line_from_segments;
++    use ratatui::widgets::Widget;
++    let items = [
++        StatusLineItem::ModelWithReasoning,
++        StatusLineItem::CurrentDir,
++        StatusLineItem::GitBranch,
++        StatusLineItem::CompactDisplay,
++        StatusLineItem::ContextRemaining,
++        StatusLineItem::WeeklyLimit,
++        StatusLineItem::WeeklyReset,
++        StatusLineItem::PullRequestNumber,
++    ];
++    for background in [(0, 0, 0), (24, 24, 24), (255, 255, 255)] {
++        terminal(background, || {
++            with_test_theme("morandi", || {
++                for level in [StdoutColorLevel::TrueColor, StdoutColorLevel::Ansi256] {
++                    with_test_level(level, || {
++                        assert_eq!(
++                            crate::terminal_palette::effective_stdout_color_level(),
++                            level
++                        );
++                        let line = status_line_from_segments(
++                            items
++                                .into_iter()
++                                .enumerate()
++                                .map(|(index, item)| (item, index.to_string())),
++                            true,
++                            None,
++                        )
++                        .unwrap();
++                        let area = Rect::new(0, 0, 40, 1);
++                        let mut buffer = Buffer::empty(area);
++                        line.render(area, &mut buffer);
++                        adapt_buffer(&mut buffer);
++                        let colors: Vec<_> =
++                            (0..8).map(|index| buffer[(index * 4, 0)].fg).collect();
++                        assert_eq!(
++                            colors.iter().copied().collect::<HashSet<_>>().len(),
++                            8,
++                            "{background:?} {level:?}: {colors:?}"
++                        );
++                        for color in colors {
++                            assert!(
++                                ratio(rgb(color).unwrap(), background) >= 4.5,
++                                "{background:?} {level:?}: {color:?}"
++                            );
++                        }
++                        assert!(buffer[(28, 0)].modifier.contains(Modifier::UNDERLINED));
++                    });
++                }
++            })
++        });
++    }
++}
 diff --git a/codex-rs/tui/src/plus_goals.rs b/codex-rs/tui/src/plus_goals.rs
 new file mode 100644
 index 000000000..557176b27
@@ -18602,6 +19952,114 @@ index 000000000..c9caa3226
 +++ b/codex-rs/tui/src/plus_ultracode_instructions.txt
 @@ -0,0 +1 @@
 +Codex Plus Ultracode is a root-session workflow setting, independent of reasoning effort. At the start of every root turn and after compaction, read `codex-plus ultracode status --thread $CODEX_THREAD_ID --json`. Use only the effective snapshot bound to this exact admitted turn and daemon generation; requested or pending state does not activate the mode. When effective on, follow the complete policy returned by status. When off or unavailable, follow ordinary user and repository instructions. Native children follow their parent's bounded brief instead of calling this command. Mode changes apply to future unadmitted turns; steering keeps the current turn's snapshot. Existing goal checkpoints, report-only recovery and newer user direction retain priority. Ultracode never expands permission to publish, merge, install or change shared configuration.
+diff --git a/codex-rs/tui/src/render/highlight_model_tests.rs b/codex-rs/tui/src/render/highlight_model_tests.rs
+index ded73a70e..72a577441 100644
+--- a/codex-rs/tui/src/render/highlight_model_tests.rs
++++ b/codex-rs/tui/src/render/highlight_model_tests.rs
+@@ -3,6 +3,82 @@
+ use super::*;
+ use pretty_assertions::assert_eq;
+ 
++#[test]
++fn morandi_theme_resolves_once_with_semantic_syntax_markdown_and_diff_scopes() {
++    let theme = resolve_theme_by_name("morandi", /*codex_home*/ None).unwrap();
++    assert_eq!(theme.name.as_deref(), Some("Morandi Cool"));
++    assert!(theme.settings.background.is_none());
++    assert!(validate_theme_name(Some("morandi"), /*codex_home*/ None).is_none());
++    let entries = list_available_themes(/*codex_home*/ None);
++    let matches: Vec<_> = entries
++        .iter()
++        .filter(|entry| entry.name == "morandi")
++        .collect();
++    assert_eq!(matches.len(), 1);
++    assert!(!matches[0].is_custom);
++    for scope in [
++        "codex.accent",
++        "codex.ui.foreground",
++        "codex.ui.muted",
++        "codex.ui.red",
++        "codex.ui.green",
++        "codex.ui.yellow",
++        "codex.ui.blue",
++        "codex.ui.magenta",
++        "codex.ui.cyan",
++        "codex.ui.selection",
++        "keyword",
++        "string",
++        "constant.numeric",
++        "entity.name.function",
++        "markup.heading",
++        "markup.raw",
++        "markup.underline.link",
++        "markup.inserted",
++        "markup.deleted",
++    ] {
++        assert!(
++            foreground_style_for_scopes_with_theme(&theme, &[scope]).is_some(),
++            "missing Morandi foreground for {scope}"
++        );
++    }
++    let backgrounds = diff_scope_backgrounds_for_theme(&theme);
++    assert!(backgrounds.inserted.is_some());
++    assert!(backgrounds.deleted.is_some());
++    assert_ne!(backgrounds.inserted, backgrounds.deleted);
++}
++
++#[test]
++fn morandi_custom_file_keeps_precedence_and_invalid_file_warning() {
++    let home = tempfile::tempdir().unwrap();
++    std::fs::create_dir(home.path().join("themes")).unwrap();
++    let path = custom_theme_path("morandi", home.path());
++    std::fs::write(&path, model_themes::THEMES[0].1).unwrap();
++    assert_eq!(
++        resolve_theme_by_name("morandi", Some(home.path())),
++        resolve_theme_by_name("ada", /*codex_home*/ None)
++    );
++    let entries = list_available_themes(Some(home.path()));
++    let matches: Vec<_> = entries
++        .iter()
++        .filter(|entry| entry.name == "morandi")
++        .collect();
++    assert_eq!(matches.len(), 1);
++    assert!(matches[0].is_custom);
++    std::fs::write(&path, "invalid theme").unwrap();
++    assert!(resolve_theme_by_name("morandi", Some(home.path())).is_none());
++    assert!(
++        validate_theme_name(Some("morandi"), Some(home.path()))
++            .unwrap()
++            .contains("could not be loaded")
++    );
++    assert!(
++        !list_available_themes(Some(home.path()))
++            .iter()
++            .any(|entry| entry.name == "morandi")
++    );
++}
++
+ #[test]
+ fn model_theme_files_preserve_custom_precedence_and_invalid_file_warnings() {
+     let home = tempfile::tempdir().unwrap();
+diff --git a/codex-rs/tui/src/render/model_themes.rs b/codex-rs/tui/src/render/model_themes.rs
+index 971641e7c..85b252468 100644
+--- a/codex-rs/tui/src/render/model_themes.rs
++++ b/codex-rs/tui/src/render/model_themes.rs
+@@ -1,4 +1,4 @@
+-//! Fixed model-named theme assets loaded through the standard TextMate parser.
++//! Bundled theme assets loaded through the standard TextMate parser.
+ 
+ use std::io::Cursor;
+ use syntect::highlighting::Theme;
+@@ -20,6 +20,10 @@ pub(super) const THEMES: &[(&str, &str)] = &[
+         "davinci",
+         include_str!("../../assets/themes/davinci.tmTheme"),
+     ),
++    (
++        "morandi",
++        include_str!("../../assets/themes/morandi.tmTheme"),
++    ),
+ ];
+ 
+ pub(super) fn resolve(name: &str) -> Option<Theme> {
 diff --git a/codex-rs/tui/src/slash_command.rs b/codex-rs/tui/src/slash_command.rs
 index afb372bb7..78fad6cd8 100644
 --- a/codex-rs/tui/src/slash_command.rs
@@ -18765,6 +20223,81 @@ index d84b3d373..b0746c2ef 100644
                  window_minutes: Some(10_080),
              }),
              credits: None,
+diff --git a/codex-rs/tui/src/style.rs b/codex-rs/tui/src/style.rs
+index b9f6d4515..ab8609f37 100644
+--- a/codex-rs/tui/src/style.rs
++++ b/codex-rs/tui/src/style.rs
+@@ -122,6 +122,14 @@ fn background_rgb(background: Option<Color>) -> Option<(u8, u8, u8)> {
+ 
+ /// Keep theme-derived text readable on its painted surface, preserving terminal-owned ANSI colors.
+ pub(crate) fn readable_color_on(preferred: Color, background: Option<Color>) -> Color {
++    readable_color_on_for_level(preferred, background, effective_stdout_color_level())
++}
++
++pub(crate) fn readable_color_on_for_level(
++    preferred: Color,
++    background: Option<Color>,
++    level: StdoutColorLevel,
++) -> Color {
+     let preferred = match preferred {
+         Color::Rgb(r, g, b) => Some((r, g, b)),
+         Color::Indexed(index) if index >= 16 => {
+@@ -131,11 +139,7 @@ pub(crate) fn readable_color_on(preferred: Color, background: Option<Color>) ->
+         _ => return preferred,
+     };
+     preferred.map_or(Color::Reset, |preferred| {
+-        contrast::foreground(
+-            preferred,
+-            background_rgb(background),
+-            effective_stdout_color_level(),
+-        )
++        contrast::foreground(preferred, background_rgb(background), level)
+     })
+ }
+ 
+diff --git a/codex-rs/tui/src/terminal_palette.rs b/codex-rs/tui/src/terminal_palette.rs
+index 8364c6b7d..af8da1210 100644
+--- a/codex-rs/tui/src/terminal_palette.rs
++++ b/codex-rs/tui/src/terminal_palette.rs
+@@ -41,6 +41,10 @@ pub fn best_color_for_level(target: (u8, u8, u8), color_level: StdoutColorLevel)
+ }
+ 
+ pub(crate) fn effective_stdout_color_level() -> StdoutColorLevel {
++    #[cfg(test)]
++    if let Some(level) = TEST_COLOR_LEVEL.with(std::cell::Cell::get) {
++        return level;
++    }
+     #[cfg(test)]
+     if TEST_DEFAULT_COLORS.with(|colors| colors.get().is_some()) {
+         return StdoutColorLevel::TrueColor;
+@@ -96,11 +100,27 @@ pub struct DefaultColors {
+ 
+ #[cfg(test)]
+ thread_local! {
++    static TEST_COLOR_LEVEL: std::cell::Cell<Option<StdoutColorLevel>> = const {
++        std::cell::Cell::new(None)
++    };
+     static TEST_DEFAULT_COLORS: std::cell::Cell<Option<DefaultColors>> = const {
+         std::cell::Cell::new(None)
+     };
+ }
+ 
++/// Scope the capability of every renderer in a native test, including default-color fixtures.
++#[cfg(test)]
++pub(crate) fn with_test_color_level<T>(level: StdoutColorLevel, render: impl FnOnce() -> T) -> T {
++    struct Restore(Option<StdoutColorLevel>);
++    impl Drop for Restore {
++        fn drop(&mut self) {
++            TEST_COLOR_LEVEL.with(|level| level.set(self.0));
++        }
++    }
++    let _restore = Restore(TEST_COLOR_LEVEL.with(|value| value.replace(Some(level))));
++    render()
++}
++
+ pub fn default_colors() -> Option<DefaultColors> {
+     #[cfg(test)]
+     if let Some(colors) = TEST_DEFAULT_COLORS.with(std::cell::Cell::get) {
 diff --git a/codex-rs/tui/src/terminal_visualization_instructions.rs b/codex-rs/tui/src/terminal_visualization_instructions.rs
 index eb59f2d15..842173db0 100644
 --- a/codex-rs/tui/src/terminal_visualization_instructions.rs
@@ -18784,6 +20317,50 @@ index eb59f2d15..842173db0 100644
      if !config
          .features
          .enabled(Feature::TerminalVisualizationInstructions)
+diff --git a/codex-rs/tui/src/theme_picker_model_tests.rs b/codex-rs/tui/src/theme_picker_model_tests.rs
+index 1ebd36301..6c8e41aff 100644
+--- a/codex-rs/tui/src/theme_picker_model_tests.rs
++++ b/codex-rs/tui/src/theme_picker_model_tests.rs
+@@ -5,6 +5,39 @@ use crate::app_event_sender::AppEventSender;
+ use crate::terminal_palette::with_test_default_colors;
+ use pretty_assertions::assert_eq;
+ 
++#[test]
++fn morandi_theme_previews_selects_and_restores_the_active_ui_palette() {
++    let original = highlight::resolve_theme_by_name("ada", /*codex_home*/ None).unwrap();
++    highlight::set_syntax_theme(original.clone());
++    let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
++    let tx = AppEventSender::new(tx);
++    let params = build_theme_picker_params(Some("morandi"), /*codex_home*/ None, Some(120));
++    let idx = params.initial_selected_idx.unwrap();
++    assert_eq!(params.items[idx].search_value.as_deref(), Some("morandi"));
++    params.on_selection_changed.as_ref().unwrap()(idx, &tx);
++    assert!(matches!(
++        rx.try_recv().unwrap(),
++        AppEvent::SyntaxThemePreviewed
++    ));
++    assert!(crate::morandi::is_active());
++    assert_eq!(
++        highlight::current_syntax_theme().name.as_deref(),
++        Some("Morandi Cool")
++    );
++    params.items[idx].actions[0](&tx);
++    assert!(matches!(
++        rx.try_recv().unwrap(),
++        AppEvent::SyntaxThemeSelected { name } if name == "morandi"
++    ));
++    params.on_cancel.as_ref().unwrap()(&tx);
++    assert!(matches!(
++        rx.try_recv().unwrap(),
++        AppEvent::SyntaxThemePreviewed
++    ));
++    assert_eq!(highlight::current_syntax_theme(), original);
++    assert!(!crate::morandi::is_active());
++}
++
+ #[test]
+ fn model_theme_files_preview_select_and_restore() {
+     if std::env::var_os("CODEX_MODEL_THEME_TEST_CHILD").is_none() {
 diff --git a/codex-rs/tui/src/thread_transcript/tools.rs b/codex-rs/tui/src/thread_transcript/tools.rs
 index 73e80d617..1e9f3c057 100644
 --- a/codex-rs/tui/src/thread_transcript/tools.rs

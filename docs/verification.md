@@ -33,6 +33,27 @@ acceptance. The release evidence below retains the limits verified at that time.
 
 ## Current release acceptance
 
+### Morandi theme (development)
+
+[Accepted development evidence](evidence/morandi-theme.json) binds the palette,
+client binary, final patch, test-only corrections and native/terminal results.
+
+Run `tests/test_morandi_tui.py --binary CANDIDATE --expect present --evidence
+NEW_DIRECTORY` with the private native-smoke interpreter. It checks the actual
+selected theme, live preview, cancellation, persistence, restart and zero
+display-driven model requests. The prechange client must fail the present check.
+
+Native `morandi`, `theme_picker`, `render::highlight`, `custom_terminal`,
+`insert_history`, `style::contrast` and status-line style checks cover theme
+resolution, both paint paths, preview invalidation, contrast, color capabilities,
+selection, modifiers and unchanged behavior under the other themes. Preserve
+exact test lists and libtest results. Test the compact command contract with
+`tests/test_command_display_tui.py --theme morandi` as well: changing colors must
+not change command execution, retained results, disclosure or model requests.
+
+The palette is described in [theme behavior](themes.md). Native x86 development
+verification does not establish ARM package qualification or fleet activation.
+
 ### Compact command display (development)
 
 [Development evidence](evidence/compact-command-display.json) records the exact

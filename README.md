@@ -110,13 +110,18 @@ the existing activity disclosure controls. Failed commands keep their exit code
 and one short output excerpt visible. Expansion retains the command and output,
 including live updates, without changing the results supplied to the model.
 See [command display](docs/command-display.md) for scope and grouped explanations.
-The optional **Compact display** item in `/statusline` shows a pink `compact`
+The optional **Compact display** item in `/statusline` shows a cool gray-teal `compact`
 indicator on the first row; its visibility does not toggle command folding.
+
+Select **morandi** in `/theme` for the **Morandi Cool** palette. It applies muted
+colors to syntax, Markdown, menus, prompts, status items, activity rows and
+transcript output. Live preview and Escape work as with the existing themes;
+confirmation saves `tui.theme = "morandi"`. See [theme behavior](docs/themes.md).
 
 The status footer puts model, Ultracode, working directory and active agent on
 the first row. Selected **Context remaining**, **Weekly limit** and **Weekly reset**
 items appear on a second row, retaining their configured order and styling.
-When status line colors are enabled, model and Ultracode use cyan, directory
+With other themes and status line colors enabled, model and Ultracode use cyan, directory
 blue, branch peach, context green, weekly remaining yellow, weekly reset purple, and PR number
 red. Active agent and separators stay neutral. Colors adapt to terminal contrast
 and supported depth; other selected items retain theme accents.

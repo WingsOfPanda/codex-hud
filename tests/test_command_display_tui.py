@@ -100,7 +100,7 @@ def fixture_command(workspace, case, launcher):
     return command, list(FAILURES if failed else OUTPUT)
 
 
-def run_case(binary, launcher, root, evidence, case):
+def run_case(binary, launcher, root, evidence, case, theme=None):
     evidence.mkdir(parents=True)
     home, workspace = root / 'h', root / 'w'
     command, retained = fixture_command(workspace, case, launcher)
@@ -110,6 +110,8 @@ def run_case(binary, launcher, root, evidence, case):
     configure(home, workspace, provider)
     config = home / 'config.toml'
     config.write_text('tui.fullscreen_transcript=true\ntui.alternate_screen="always"\n' + config.read_text())
+    if theme:
+        config.write_text('tui.theme=' + json.dumps(theme) + '\n' + config.read_text())
     terminal = replay = None
     stages = []
     report = {'case': case, 'passed': False, 'stages': stages}
@@ -258,7 +260,7 @@ class ContractSelfTest(unittest.TestCase):
         compact_contract('• Running python finite.py …\n+ Show details', running=True)
 
 
-def run(binary, launcher, evidence, cases):
+def run(binary, launcher, evidence, cases, theme=None):
     evidence.mkdir(parents=True, exist_ok=True)
     report = {'binary': str(binary), 'binary_sha256': hashlib.sha256(binary.read_bytes()).hexdigest(),
               'launcher': str(launcher), 'requested_cases': list(cases), 'cases': [], 'passed': False,
@@ -266,7 +268,8 @@ def run(binary, launcher, evidence, cases):
     try:
         for case in cases:
             with tempfile.TemporaryDirectory(prefix='plus-display-') as temporary:
-                report['cases'].append(run_case(binary, launcher, Path(temporary), evidence / case, case))
+                report['cases'].append(run_case(binary, launcher, Path(temporary), evidence / case, case, theme))
+        report['theme'] = theme
         report['passed'] = True
     finally:
         (evidence / 'report.json').write_text(json.dumps(report, indent=2) + '\n')
@@ -279,6 +282,7 @@ if __name__ == '__main__':
     parser.add_argument('--launcher', type=Path)
     parser.add_argument('--evidence', type=Path)
     parser.add_argument('--cases', nargs='+', choices=CASES, default=CASES)
+    parser.add_argument('--theme', help='Exercise the same display contract under a theme')
     parser.add_argument('--self-test', action='store_true')
     args = parser.parse_args()
     if args.self_test:
@@ -286,4 +290,4 @@ if __name__ == '__main__':
     else:
         if not args.binary or not args.launcher or not args.evidence:
             parser.error('binary, --launcher, and --evidence are required')
-        run(args.binary.resolve(strict=True), args.launcher.resolve(strict=True), args.evidence.resolve(), args.cases)
+        run(args.binary.resolve(strict=True), args.launcher.resolve(strict=True), args.evidence.resolve(), args.cases, args.theme)

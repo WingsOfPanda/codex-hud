@@ -28,9 +28,10 @@ list. Place it after `git-branch` to show it before the appended agent label.
 The item reports the display mode; selecting or hiding it does not change
 command folding. It is optional and does not rewrite existing selections.
 
-With status-line colors enabled, the indicator uses pink, distinct from the
+With status-line colors enabled, the indicator uses cool gray-teal, distinct from the
 model, directory, branch, usage, and reset colors. Color-disabled terminals keep
-the text readable in monochrome.
+the text readable in monochrome. The Morandi theme supplies its own coordinated
+status palette through the same item selection.
 
 ## Explain related commands together
 

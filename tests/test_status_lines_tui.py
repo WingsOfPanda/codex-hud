@@ -280,10 +280,10 @@ def run_case(binary, directory, evidence, name):
             if args.compact:
                 foreground = report['colors']['items']['compact']['foreground']
                 if args.color_level == '1':
-                    assert foreground == 'ff00ff', report['colors']
+                    assert foreground == '00ffff', report['colors']
                 else:
                     red, green, blue = (int(foreground[i:i+2], 16) for i in (0, 2, 4))
-                    assert red > green and blue > green, report['colors']
+                    assert green > red and blue > red, report['colors']
         if name in ('mixed', 'branch') and (args.colors == 'off' or args.color_level == '0' or args.no_color):
             foregrounds = {value['foreground'] for value in report['colors']['items'].values()}
             assert len(foregrounds) == 1, report['colors']
