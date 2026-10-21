@@ -1,0 +1,117 @@
+{
+  "qualified": true,
+  "release": "0.163.0-plus.0.4.5",
+  "source_commit": "64742e5c5a00d6e7cd754845da421fae329a6e87",
+  "targets": {
+    "x86_64": {
+      "triple": "x86_64-unknown-linux-gnu",
+      "asset": "codex-plus-0.163.0-plus.0.4.5-x86_64-unknown-linux-gnu.tar.gz",
+      "sha256": "9ef516de5a7fc3fe1e6625661d6a5627adfec1d7f042628593236131a9d968dd",
+      "tree_sha256": "3e495434ca204693e38ac7eb81479182ee7df2f9302a1f60d54a8d230fecc1d4",
+      "manifest_sha256": "a1ed184d279d3bbc63c929a29651a9f941d969be9cc9110d01b00f87afede54a"
+    },
+    "aarch64": {
+      "triple": "aarch64-unknown-linux-gnu",
+      "asset": "codex-plus-0.163.0-plus.0.4.5-aarch64-unknown-linux-gnu.tar.gz",
+      "sha256": "fe6e58cee78e3cdba3e8b82a4251a0804690dcefb3a346105118e18846eccb0e",
+      "tree_sha256": "7eac9b8efa6ecf2e78dc69d56892df5bf27af7a062248b2b2470739848f8098c",
+      "manifest_sha256": "07548ae01817eed08b957882973c3ba1d383fe8abe1a725bce9a9775da924a70"
+    }
+  },
+  "package_checks": {
+    "runtime_units_per_arch": 193,
+    "advisor_per_arch": 6,
+    "stdio_per_arch": 2,
+    "startup_per_arch": 3,
+    "package_checks_per_arch": 7,
+    "source_tests": 66,
+    "new_arm_python_tests": 24
+  },
+  "fresh_compatibility": {
+    "rollback_floor": "0.4.4",
+    "rollback_checks_per_arch": 7,
+    "advisor_checks_per_arch": 7,
+    "maintenance_holds": "both directions",
+    "old_tui": "0.4.4 with 0.4.5 wrapper; actual root result and Claude display",
+    "crosshost": "real SSH ARM-to-x86 success and caller-death cleanup; fake provider"
+  },
+  "retained_frontend": {
+    "accepted": true,
+    "retained_not_rerun": true,
+    "source": "64742e5c5a00d6e7cd754845da421fae329a6e87",
+    "original_proof": {
+      "path": "/home/liupan/Aerius/codex-plus/.build/release044/pipe-final-root/footer-proof.json",
+      "sha256": "b6fae853adc5d7e32501bf6bc0411a3fd459d2ea8f0f8046c727fd15a08a67a6"
+    },
+    "targets": {
+      "x86_64": {
+        "archive_sha256": "9ef516de5a7fc3fe1e6625661d6a5627adfec1d7f042628593236131a9d968dd",
+        "manifest_sha256": "a1ed184d279d3bbc63c929a29651a9f941d969be9cc9110d01b00f87afede54a",
+        "binary_sha256": "680e7d63b05865cd73eb26de75caa832b312ad99c0b437f4f2fff7de60468d20",
+        "code_mode_host_sha256": "a451e4e6762f24f3d349b14a29de69a9520f8c543e3ddbdaa3d9a5d4308b7e53",
+        "capture_source_commit": "4a96db52c2e0aeab108ed3e0645bc3ed804a0227",
+        "binary_source_commit": "4a96db52c2e0aeab108ed3e0645bc3ed804a0227",
+        "retained_bundle_sha256": "ab03da8937ae4875623605e9feb2e5dd8da6ab6ef1061a988777e8cd353a035c",
+        "states": 20,
+        "original_capture_package_manifest": "293b107c88099aa8e41ff74af0dd42224234e47c47e7c1df344bfe837347768c",
+        "original_capture_package_archive": "24e7f5055ba0c301aaf660c7bf3da50cb5cdb0fc79cf6920ed664736ce783c2c",
+        "fresh_capture": false
+      },
+      "aarch64": {
+        "archive_sha256": "fe6e58cee78e3cdba3e8b82a4251a0804690dcefb3a346105118e18846eccb0e",
+        "manifest_sha256": "07548ae01817eed08b957882973c3ba1d383fe8abe1a725bce9a9775da924a70",
+        "binary_sha256": "0b2445337deb828ed9be2b23791e338bb74b11879e10da7c0bafadbea4a56627",
+        "code_mode_host_sha256": "7a0eb28f240725c7d54e085001de976101937ce9bc5d15bd16beefa4a72a12f6",
+        "capture_source_commit": "93e53436e741c66794a4db1780fe2560c99d810c",
+        "binary_source_commit": "4a96db52c2e0aeab108ed3e0645bc3ed804a0227",
+        "retained_bundle_sha256": "877aa8d0721d1a17a6bcf603c0dff79e8d56acfb1d1df9b8e4c935a0432e9b46",
+        "states": 20,
+        "original_capture_package_manifest": "b25b05f86e60c8cfcd27a78191e2d9c8f9a693880898b5f8cd4016d859a73dcc",
+        "original_capture_package_archive": "9eb8f519998a47e532a82111d9c9ef4950ac94af3eed415c32dda6cc8c1625bb",
+        "fresh_capture": false
+      }
+    }
+  },
+  "limits": [
+    "x86 raw bwrap uid-map denial matched official; both CLI read-only probes passed",
+    "Unchanged frontend tests/captures retained, not rerun; prior native suite 5809 passed,82 reviewed baseline failures,4 ignored",
+    "Helper-only warm-cache release measurement; not cold build, controlled CPU scaling, or full frontend qualification rerun",
+    "No paid-provider call in final release gates; global instructions unchanged; no fleet installation"
+  ],
+  "timing": {
+    "x86_build_package_seconds": 106.71540784835815,
+    "arm_native_seconds": 176.964731,
+    "arm_with_transfer_seconds": 473.0193314552307,
+    "x86_compat_seconds": 27.297199964523315,
+    "arm_compat_seconds": 43.13007402420044,
+    "crosshost_seconds": 21.382665634155273,
+    "timing_requested_at_epoch": 1792551488
+  },
+  "evidence": {
+    "x86": {
+      "path": "/home/liupan/Aerius/codex-plus/.build/release045/root-review/x86-acceptance.json",
+      "sha256": "cd95ce571871938331d3cbe5fa16a9c53cd15040eebd791890441e4c1398d2c6",
+      "execution": "b9e00009-8e29-4d49-aee0-94f542e59a71"
+    },
+    "arm": {
+      "path": "/home/liupan/Aerius/codex-plus/.build/release045/root-review/arm-acceptance.json",
+      "sha256": "d4a37ffcf2cd0e9726c900acbc0297826465665e3a178b461177f5ca10c5ea19",
+      "execution": "d7b81281-3b4b-4f9e-b07e-70426944005f"
+    },
+    "x86-compat": {
+      "path": "/home/liupan/Aerius/codex-plus/.build/release045/root-review/x86-compat-acceptance.json",
+      "sha256": "535ccd2763241075bc73cf6489dad4cb64a33c5c8bf17bcb061baac6bc6be17e",
+      "execution": "6b39c191-516e-46cc-b07e-ecd31d641524"
+    },
+    "arm-compat": {
+      "path": "/home/liupan/Aerius/codex-plus/.build/release045/root-review/arm-compat-acceptance.json",
+      "sha256": "9d3687b2fe1122ca328d49b954c5f2827ada2d279c024589abd13c955238240e",
+      "execution": "57c2ce4a-2d70-46ab-96da-baafd343acdb"
+    },
+    "crosshost": {
+      "path": "/home/liupan/Aerius/codex-plus/.build/release045/root-review/crosshost-acceptance.json",
+      "sha256": "1a72c856824dccb268375b41af0e2629de8945be779414c9b6a749e10b8f0502",
+      "execution": "ce83cd82-6341-4ba0-acb4-41242e2d6139"
+    }
+  }
+}
