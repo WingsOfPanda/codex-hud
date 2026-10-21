@@ -1,0 +1,181 @@
+{
+  "schema": 1,
+  "status": "complete local development acceptance; not released or installed",
+  "base_feature_commit": "2be0b26f273ace9e6f662b5da3e893959fe3e8dd",
+  "upstream_commit": "83086188ae0614bd882818ff1aa23f3194962012",
+  "final_patch_sha256": "0662deac236ce32c9355758741abb0df4626e4fd2d95659bd93225cdb91f5c35",
+  "production_equivalence": {
+    "path": "/home/liupan/.codex/codex-plus/executions/v1/01a14f7f-caf5-73b3-aada-5db7355097bf/f56ff4b2-3d4e-4ee2-b35a-4f9d565540f1/verification/candidate",
+    "sha256": {
+      "codex": "3d02971c1c43716912edd3d97ed8b99c7fd9a5f6dbbe75a9b0843e061ba955e0",
+      "codex-code-mode-host": "dcfa35170e41231e363f84cf43908c6033521386c96ec2d30c60b085df900f70"
+    },
+    "compiled_patch": "f6a2615273cacc43eb351dc606a86540a205f3c1cd9f7426273d425a28e9ac1b",
+    "reviewed_test_only_delta": "/home/liupan/Aerius/codex-plus/.build/morandi/test-repair.diff",
+    "delta_sha256": "9c2bdf66dd65be84a6e9e9a84c1a6cff9a897acdc59ab42f2041c898c4d6e761",
+    "reason": "Four files differ solely in cfg(test) items/branches; native production color implementation unchanged; reviewed exact diff."
+  },
+  "palette": {
+    "schema": 1,
+    "selection": "morandi",
+    "name": "Morandi Cool",
+    "asset_sha256": "f22f096852aec5ed446fd215112324760e5e59f9dc77c82506412b3bb1a19db4",
+    "colors": {
+      "default": {
+        "foreground": "#CBD1D5"
+      },
+      "codex.accent": {
+        "foreground": "#93A8B5"
+      },
+      "codex.ui.foreground": {
+        "foreground": "#CBD1D5"
+      },
+      "codex.ui.muted, comment, punctuation.definition.comment": {
+        "foreground": "#919AA1"
+      },
+      "codex.ui.red, invalid, markup.deleted": {
+        "foreground": "#B1847A"
+      },
+      "codex.ui.green, string, punctuation.definition.string, markup.inserted": {
+        "foreground": "#9CA994"
+      },
+      "codex.ui.yellow, constant, constant.numeric, markup.changed": {
+        "foreground": "#B3A273"
+      },
+      "codex.ui.blue, entity.name.function, markup.underline.link": {
+        "foreground": "#879DAE"
+      },
+      "codex.ui.magenta, keyword, storage, markup.heading, entity.name.section": {
+        "foreground": "#A09AAC"
+      },
+      "codex.ui.cyan, support.type, support.class, entity.name.type, entity.name.tag": {
+        "foreground": "#8FA7A0"
+      },
+      "codex.ui.selection": {
+        "foreground": "#505E68"
+      },
+      "punctuation, keyword.operator, variable, markup.raw, markup.quote": {
+        "foreground": "#AFB8BD"
+      },
+      "markup.bold": {
+        "fontStyle": "bold"
+      },
+      "markup.italic": {
+        "fontStyle": "italic"
+      },
+      "markup.inserted": {
+        "background": "#303C36"
+      },
+      "markup.deleted": {
+        "background": "#453734"
+      },
+      "codex.status.model": {
+        "foreground": "#666E75"
+      },
+      "codex.status.path": {
+        "foreground": "#7082A9"
+      },
+      "codex.status.branch": {
+        "foreground": "#9A7F69"
+      },
+      "codex.status.compact": {
+        "foreground": "#8FA7A0"
+      },
+      "codex.status.context": {
+        "foreground": "#819D73"
+      },
+      "codex.status.weekly": {
+        "foreground": "#B2A067"
+      },
+      "codex.status.reset": {
+        "foreground": "#9482A3"
+      },
+      "codex.status.pr": {
+        "foreground": "#B56F6A"
+      }
+    },
+    "legacy_compact": {
+      "rgb": "#8FA7A0",
+      "ansi16": "LightCyan"
+    },
+    "review": "Root accepted cool muted palette, semantic warning/error scopes and eight distinct status roles; renderer emission acceptance pending"
+  },
+  "native": {
+    "unique_tests_passed": 483,
+    "details": "/home/liupan/Aerius/codex-plus/.build/morandi/native-acceptance.json",
+    "details_sha256": "5eca8405c1c763e9d8205a5afe30d318bde86d4ebc7a81be58a097a3529d6555",
+    "final_execution": "0b3f3699-07e1-4e70-aab4-6de8b8845477",
+    "retained_unaffected_execution": "f56ff4b2-3d4e-4ee2-b35a-4f9d565540f1"
+  },
+  "terminal": {
+    "picker": {
+      "stages": 6,
+      "path": "/home/liupan/Aerius/codex-plus/.build/morandi/acceptance/picker-final/report.json"
+    },
+    "commands": {
+      "cases": 9,
+      "stages": 63,
+      "path": "/home/liupan/Aerius/codex-plus/.build/morandi/acceptance/command-display/report.json",
+      "theme": "morandi",
+      "display_model_requests": 0,
+      "raw_tool_results_preserved": true
+    },
+    "compact_colors": {
+      "cases": [
+        {
+          "case": "truecolor",
+          "exit": 0
+        },
+        {
+          "case": "ansi256",
+          "exit": 0
+        },
+        {
+          "case": "ansi16",
+          "exit": 0
+        },
+        {
+          "case": "disabled",
+          "exit": 0
+        },
+        {
+          "case": "no-color",
+          "exit": 0
+        },
+        {
+          "case": "no-color-env",
+          "exit": 0
+        }
+      ],
+      "path": "/home/liupan/Aerius/codex-plus/.build/morandi/acceptance/colors-summary.json"
+    },
+    "native_smoke": {
+      "stages": 23,
+      "path": "/home/liupan/Aerius/codex-plus/.build/morandi/acceptance/native-smoke/report.json",
+      "sha256": "21f8e3dec670adb886073179f003fef50df257f75c282784bb47b567385e738c",
+      "display_model_requests": 0
+    }
+  },
+  "reviewed_failures": [
+    "Missing explicit test assertion import: compile failed before any tests, repaired.",
+    "Test capability override mixed TrueColor builder with ANSI256 renderer: unified test-only override, production unchanged.",
+    "Gradient fixture expected more steps than nearest ANSI256 palette could represent: now requires every representable step plus truecolor continuity.",
+    "Hyperlink fixture concatenated RG and URL without whitespace; fixed fixture boundary.",
+    "Picker test matched fixture path and later sampled an incomplete cancel frame; exact filter and completed footer predicates now required.",
+    "Terminal matrix launcher resolved virtualenv symlink to system Python; no tests ran on those attempts. Corrected literal interpreter path passes."
+  ],
+  "limits": [
+    "Native Linux x86_64 development candidate only; no ARM package qualification",
+    "No install, publication, main merge or shared configuration changes",
+    "ANSI16 colors depend on terminal palette; no numeric contrast claim for unknown palette",
+    "Decorative RGB on default background preserves luminance hierarchy; informative and explicit surfaces use existing contrast resolver"
+  ],
+  "clean_patch_application": true,
+  "production_source_guard": true,
+  "contract_sha256": {
+    "source/tests/test_morandi_tui.py": "794536ab3046bfee971622e94e9fb34d6dc8d166400c8df1feaf62911b5d1dc1",
+    "source/tests/test_command_display_tui.py": "9b46697badd6f2c639840cc8dd9b105eb190e6b35887ccdbae7aa38acc20fc25",
+    "source/tests/test_status_lines_tui.py": "904dd14d34132e6914d091eb1d3c5473a78785a57e30707b5b90495a2d557ed8",
+    "contracts/acceptance.md": "9d8aa46519679050f67aab0ae5f6736d9eb5a83c903793a6375e331ed28694da"
+  }
+}

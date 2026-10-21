@@ -421,7 +421,8 @@ stream_max_retries=0
         wait([terminal], lambda: provider.count == 2, 'real local command did not yield to loopback final response', 30)
         assert not finished.exists(), 'finite shell completed before its release'
         provider.final_gate.set()
-        wait([terminal], lambda: completed_turns() == 1 and shell_rows(terminal.text) and 'seen ' in terminal.text,
+        wait([terminal], lambda: completed_turns() == 1 and shell_rows(terminal.text) and 'seen ' in terminal.text
+             and advisor_rows(terminal.text) == ['Advisor · ready · 0 calls'],
              'real idle local root did not show its still-running background shell', 30)
         assert_no_park_records(home)
         if task_topic:
@@ -429,7 +430,8 @@ stream_max_retries=0
                        for row in shell_rows(terminal.text)), terminal.text
         assert provider.count == 2, f'expected two fixture model calls, got {provider.count}; see local-shell-provider-requests.json'
         assert not finished.exists(), 'command stopped before editable idle interval'
-        assert_compact_hud(terminal.text, rows=1)
+        assert advisor_rows(terminal.text) == ['Advisor · ready · 0 calls'], terminal.text
+        assert_compact_hud(terminal.text, rows=2)
         os.write(terminal.master, b'local-shell-idle-draft')
         wait([terminal], lambda: 'local-shell-idle-draft' in terminal.text and shell_rows(terminal.text),
              'idle real-shell HUD blocked draft editing')
@@ -518,6 +520,7 @@ stream_max_retries=0
         terminals = [Terminal(binary, home, workspace, parent=parent) for parent in parents]
         first, second = terminals
         wait(terminals, lambda: all(composer_ready(t.text) for t in terminals) and
+             all(advisor_rows(t.text) == ['Advisor · ready · 0 calls'] for t in terminals) and
              'Watcher' not in first.text and 'Workers' not in first.text and 'Watcher' not in second.text,
              'healthy nonempty waiting health did not remain hidden', 30)
         assert 'Workers' not in first.text and 'Watcher' not in second.text, '\n'.join(t.text for t in terminals)
@@ -525,19 +528,19 @@ stream_max_retries=0
             os.write(terminal.master, f'health-draft-{index}'.encode())
         wait(terminals, lambda: all(f'health-draft-{index}' in terminal.text
              for index, terminal in enumerate(terminals)), 'local health blocked draft editing')
-        assert_compact_hud(first.text, rows=0)
+        assert_compact_hud(first.text, rows=1)
         (evidence / 'health-waiting-screen.txt').write_text(first.text + '\n')
         write_health(home, parents[0], 'waiting', jobs=0)
         wait(terminals, lambda: 'Wake pending' in first.text, 'waiting zero lost its pending distinction')
-        assert_compact_hud(first.text, rows=1)
+        assert_compact_hud(first.text, rows=2)
         (evidence / 'health-pending-zero-screen.txt').write_text(first.text + '\n')
         write_health(home, parents[0], 'waiting', jobs=1)
         wait(terminals, lambda: 'Wake pending' not in first.text and 'Watcher' not in first.text,
              'healthy waiting failed to hide the pending-zero warning')
-        assert_compact_hud(first.text, rows=0)
+        assert_compact_hud(first.text, rows=1)
         write_health(home, parents[0], 'waiting', jobs=1, age=20)
         wait(terminals, lambda: 'Watcher unavailable' in first.text, 'old heartbeat was not shown as unavailable')
-        assert_compact_hud(first.text, rows=1)
+        assert_compact_hud(first.text, rows=2)
         assert 'Watcher' not in second.text, second.text
         (evidence / 'health-stale-screen.txt').write_text(first.text + '\n')
         write_health(home, parents[0], 'uncertain', uncertain=1)
@@ -548,13 +551,13 @@ stream_max_retries=0
              'narrow terminal lost health warning or draft')
         os.write(first.master, b'-narrow')
         wait(terminals, lambda: 'health-draft-0-narrow' in first.text, 'health warning blocked narrow draft editing')
-        assert_compact_hud(first.text, rows=1)
+        assert_compact_hud(first.text, rows=2)
         (evidence / 'health-uncertain-narrow-screen.txt').write_text(first.text + '\n')
         first.resize(32, 120)
         write_health(home, parents[0], 'report', reports=1)
         wait(terminals, lambda: 'Restart report ready' in first.text and
              'health-draft-0-narrow' in first.text, 'restart report did not replace uncertain warning')
-        assert_compact_hud(first.text, rows=1)
+        assert_compact_hud(first.text, rows=2)
         assert 'Watcher' not in second.text and 'Wake delivery' not in second.text and 'Restart report' not in second.text, second.text
         (evidence / 'health-report-screen.txt').write_text(first.text + '\n')
         write_health(home, parents[0], 'idle')
@@ -1057,7 +1060,8 @@ def worker_history_smoke(binary, root, evidence):
         assert '343M tok' not in line, line
         age = re.search(r' · (\d+):(\d{2}) · ', line)
         assert 108 <= int(age[1]) * 60 + int(age[2]) < 130, line
-        assert_compact_hud(terminal.text, rows=1)
+        assert advisor_rows(terminal.text) == ['Advisor · ready · 0 calls'], terminal.text
+        assert_compact_hud(terminal.text, rows=2)
         (evidence / 'history-current-turn-screen.txt').write_text(terminal.text + '\n')
         turn.update(id='followup-turn', startedAt=int(time.time()))
         wait([terminal], lambda: '? tok' in active_line(), 'new turn inherited prior or lifetime tokens')
@@ -1072,7 +1076,8 @@ def worker_history_smoke(binary, root, evidence):
         wait([terminal], lambda: '1.23K tok' in active_line(), 'restart lost reported current-turn usage', 30)
         os.write(terminal.master, b'token-draft')
         wait([terminal], lambda: 'token-draft' in terminal.text, 'token refresh blocked composer')
-        assert_compact_hud(terminal.text, rows=1)
+        assert advisor_rows(terminal.text) == ['Advisor · ready · 0 calls'], terminal.text
+        assert_compact_hud(terminal.text, rows=2)
         (evidence / 'history-restarted-turn-screen.txt').write_text(terminal.text + '\n')
         # Keep inactive members in an active group, including its oldest creation time.
         for index, member in enumerate(('finished', 'error', 'active')):

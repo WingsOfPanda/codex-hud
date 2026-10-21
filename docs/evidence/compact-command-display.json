@@ -1,0 +1,88 @@
+{
+  "schema": 1,
+  "status": "Linux x86_64 development acceptance; not installed or release-qualified",
+  "upstream": "83086188ae0614bd882818ff1aa23f3194962012",
+  "product_base": "181ca5f78222e75edd2b8948fdcc92c2e6c372da",
+  "source_equivalence": {
+    "compiled_patch_sha256": "db7ff8cb659d1ed0d3e8c5748f89d8f9301439bff724ff879707888090005f39",
+    "final_patch_sha256": "89a9524e2abaebbf9fc9a82f8c93865ba883996b2d23f8560cea8eb8c8367ea3",
+    "snapshot_only_delta": [
+      "codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__interrupt_preserves_unified_exec_wait_streak.snap",
+      "codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__unified_exec_empty_then_non_empty_after.snap",
+      "codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__unified_exec_non_empty_then_empty_active.snap",
+      "codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__unified_exec_non_empty_then_empty_after.snap",
+      "codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__unified_exec_wait_after_final_agent_message.snap",
+      "codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__unified_exec_wait_before_streamed_agent_message.snap",
+      "codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__unified_exec_waiting_multiple_empty_after.snap"
+    ],
+    "production_source_equivalent": true,
+    "clean_apply": true,
+    "exact_reconstruction": true,
+    "reverse_apply": true
+  },
+  "candidate_sha256": "8fe12201c67455966c7e0073c70c617c966fe5b40b23416d4a3c67e250e6552f",
+  "code_mode_host_sha256": "dcfa35170e41231e363f84cf43908c6033521386c96ec2d30c60b085df900f70",
+  "scope": [
+    "Compact agent shell and exploration rows with retained disclosure",
+    "Retained live managed and unmarked startup rows",
+    "One failure excerpt with exit and grouped failure count",
+    "Optional compact-display first-row pink indicator",
+    "Grouped main-agent command explanations"
+  ],
+  "verification": {
+    "native_unique_tests_current": 400,
+    "terminal_cases": 9,
+    "terminal_stages": 63,
+    "color_modes": [
+      "truecolor",
+      "ansi256",
+      "ansi16",
+      "disabled",
+      "no-color",
+      "no-color-env"
+    ],
+    "native_smoke_stages": 23,
+    "shell_policy_cases": 8,
+    "parallel_panes": {
+      "parallel_roots": 2,
+      "isolated_policies": true,
+      "editable_composers": true
+    },
+    "cancellation": {
+      "ctrl_c_preserves_tracked_processes": true,
+      "native_stop_kills_process_group": true,
+      "terminated_known_child_pids": [
+        2697624,
+        2697626,
+        2697625
+      ],
+      "partial_log_preserved": true
+    },
+    "stock_park": {
+      "official_daemon": "/home/liupan/Aerius/codex-plus/.build/upstream-0163/official-x86/bin/codex",
+      "launcher": "/home/liupan/.local/share/fleet-config/codex-plus/codex-plus-0.163.0-plus.0.4.5-x86_64-unknown-linux-gnu/bin/codex-plus",
+      "queueIdempotency": false,
+      "loopback_requests": 3,
+      "callbacks": 1,
+      "turns": 2,
+      "passed": true
+    },
+    "shell_topic_stages": 5,
+    "detached_hud_stages": 9,
+    "model_visible_tool_results_unchanged": true,
+    "display_model_calls": 0,
+    "native_results": "Dedicated libtest logs and exact listed test names; reviewed snapshots rerun with INSTA_UPDATE=no"
+  },
+  "evidence_directory": ".build/command-display",
+  "fixture_corrections": [
+    "Existing defaultAdvisor row and ready text verified on installed0.4.5",
+    "Use qualified package launcher for isolated stock park check",
+    "Running output assertion follows actual backend-delivered deltas; completeaggregate retains initialbytes"
+  ],
+  "limits": [
+    "No ARM native build or release packaging in this change",
+    "No fleet/global configuration changes",
+    "Manual user-shell, advisor and raw/native fallback preserve existing behavior",
+    "Stock backend may omit pre-subscription live output; full retained aggregate appears at completion"
+  ]
+}

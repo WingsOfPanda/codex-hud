@@ -10,7 +10,7 @@ import time
 import uuid
 
 from fixtures.native_server import AppServer
-from native_smoke import Terminal, assert_compact_hud, composer_ready, wait
+from native_smoke import Terminal, advisor_rows, assert_compact_hud, composer_ready, wait
 
 
 def run(binary, evidence):
@@ -47,6 +47,7 @@ def run(binary, evidence):
 
         def capture(label):
             assert 'Background status unavailable' not in terminals[0].text
+            assert advisor_rows(terminals[0].text) == ['Advisor · ready · 0 calls'], terminals[0].text
             (evidence / f'{label}.txt').write_text(terminals[0].text + '\n')
 
         try:
@@ -57,7 +58,7 @@ def run(binary, evidence):
                  'Background · compile 模型 · link · 2:' in terminal.text and
                  'Workers stale' not in terminal.text and 'Shells stale' not in terminal.text,
                  'detached execution absent or durable elapsed lost', 30)
-            assert_compact_hud(terminal.text, rows=1)
+            assert_compact_hud(terminal.text, rows=2)
             assert 'seen' not in terminal.text
             capture('active')
             os.write(terminal.master, b'detached-draft')
@@ -67,7 +68,7 @@ def run(binary, evidence):
                  ' · link · ' not in terminal.text, 'optional stage was inferred or retained')
             publish(state='unknown')
             wait(terminals, lambda: 'compile 模型 · unknown' in terminal.text, 'unknown outcome hidden')
-            assert_compact_hud(terminal.text, rows=1)
+            assert_compact_hud(terminal.text, rows=2)
             capture('unknown')
             publish(age=20)
             wait(terminals, lambda: 'compile 模型 · stale' in terminal.text, 'stale heartbeat hidden')
@@ -75,7 +76,7 @@ def run(binary, evidence):
             wait(terminals, lambda: terminal.resized_frame(replies) and
                  'detached-draft' in terminal.text and 'compile 模型 · stale' in terminal.text,
                  'narrow status lost input or warning')
-            assert_compact_hud(terminal.text, rows=1)
+            assert_compact_hud(terminal.text, rows=2)
             capture('stale-narrow')
             replies = terminal.resize(32, 120)
             publish(error='monitoring unavailable')
@@ -86,7 +87,7 @@ def run(binary, evidence):
             # Unrelated native jobs remain native rows; all activity shares one cap.
             server.shells = [server.shell(42, 'unrelated-native-job')]
             wait(terminals, lambda: 'unrelated-native-job' in terminal.text, 'native job hidden by detached identity')
-            assert_compact_hud(terminal.text, rows=2)
+            assert_compact_hud(terminal.text, rows=3)
             capture('mixed')
             published = path.read_text()
             path.write_text('{')
