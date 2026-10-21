@@ -1,3 +1,35 @@
+# Codex Plus 0.163.0-plus.0.4.6
+
+Agent shell activities show one short command header with output folded behind
+the existing disclosure controls. Failures retain their exit status and one
+short excerpt; expansion retains live updates and complete retained output.
+Command execution and model-visible results are unchanged. The optional
+`compact-display` status item shows `compact` in cool gray-teal on the identity
+row; it indicates the display mode rather than toggling folding.
+
+The new `morandi` choice in `/theme` applies the Morandi Cool palette to syntax,
+Markdown, controls, menus, composer, status and activity rows, and transcript
+output. Preview, Escape, save and restart use the existing `tui.theme` setting.
+Other themes remain available. The theme preserves terminal backgrounds,
+color-depth and no-color behavior; it does not change the terminal's global
+palette. See [theme behavior](themes.md) and [command display](command-display.md).
+
+Claude advisor model mismatches now record bounded, allowlisted returned-model
+metadata in the private consultation log. Prompt and answer text are excluded;
+mismatches still fail validation. The built-in workflow permits one root-reviewed
+rephrased retry after the prior consultation has ended, preserving the question's
+meaning, constraints, requested model and effort. There is no automatic fallback
+or retry loop, and a rephrasing must not disguise a provider refusal.
+
+OpenAI Codex 0.163.0, coordinator protocol 5, execution-record format 1 and the
+shared stock daemon remain unchanged. This release needs fresh native frontend
+builds; 0.4.5's helper-only frontend reuse does not apply. Restart TUIs to load the
+new UI. Drain advisor calls on both callers and the central host before switching
+packages: the changed advisor worker identity rejects old/new helper pairings.
+Install the central host first and finish the caller rollout before consulting.
+No global agent-instruction change is required. Final native package,
+rollback, mixed-operation and AP results belong in the qualified companion note.
+
 # Codex Plus 0.163.0-plus.0.4.5
 
 This release adds build-time preflight and native-test result validation tools,

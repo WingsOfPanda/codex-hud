@@ -13,7 +13,20 @@ updates; increment its patch component for Plus fixes and its minor component
 for Plus features. Every new combination still needs qualified target packages.
 Existing published `plus.N` releases retain their original identities.
 
-The current revision is `0.163.0-plus.0.4.5`, a timed release of build tooling
+The current revision is `0.163.0-plus.0.4.6`: compact command display, the Morandi
+theme, and advisor model diagnostics. Build the changed frontend and helper
+natively on both architectures. Reuse verified caches and unchanged-stage
+receipts only with exact source identity; do not reuse the previous frontend
+binaries. Qualify quiet rollback to 0.4.5, both-direction holds, old-TUI/new-helper
+operation, package-backed UI/AP captures and same-version cross-host advisor
+success and caller-death cleanup. Mixed advisor helper versions must refuse the
+changed worker identity. Drain consultations before switching, install central
+host first, and finish the caller rollout before consulting. Use protocol 5,
+execution format 1, no daemon restart, quiet checkpoint, drained executions,
+session restart required and `agents_md: null`. The proposed retention floor is
+0.4.5, subject to executed native qualification.
+
+The preceding revision is `0.163.0-plus.0.4.5`, a timed release of build tooling
 and documentation with a version-only helper rebuild. Use the unchanged
 qualified 0.4.4 frontend only after verifying its exact binaries and compile
 origin. Run fresh native package, helper and compatibility checks on both
