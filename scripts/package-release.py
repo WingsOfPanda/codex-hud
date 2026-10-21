@@ -37,7 +37,8 @@ EXECUTION_RECORD_FORMAT = 1
 PATCH = 'patches/codex-0.163.0-worker-hud.patch'
 TARGETS = {'x86_64-unknown-linux-gnu': 62, 'aarch64-unknown-linux-gnu': 183}
 DOCS = ('README.md', 'GLOSSARY.md', 'docs/background-work.md',
-        'docs/shell-workflow.md', 'docs/verification.md', 'docs/release-notes.md',
+        'docs/shell-workflow.md', 'docs/command-display.md',
+        'docs/evidence/compact-command-display.json', 'docs/verification.md', 'docs/release-notes.md',
         'docs/releases/0.163.0-plus.0.4.4.md',
         'docs/releases/0.163.0-plus.0.4.4/agents-block.md',
         'docs/releasing.md', 'docs/advisor.md', 'docs/rust-runtime.md',

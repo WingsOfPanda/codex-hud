@@ -105,6 +105,14 @@ The one-time Python-to-Rust rollout needs a
 
 ## Display behavior
 
+Agent shell commands use a one-line command preview with output folded behind
+the existing activity disclosure controls. Failed commands keep their exit code
+and one short output excerpt visible. Expansion retains the command and output,
+including live updates, without changing the results supplied to the model.
+See [command display](docs/command-display.md) for scope and grouped explanations.
+The optional **Compact display** item in `/statusline` shows a pink `compact`
+indicator on the first row; its visibility does not toggle command folding.
+
 The status footer puts model, Ultracode, working directory and active agent on
 the first row. Selected **Context remaining**, **Weekly limit** and **Weekly reset**
 items appear on a second row, retaining their configured order and styling.

@@ -6,7 +6,7 @@ from pathlib import Path
 import tempfile
 
 from fixtures.native_server import AppServer
-from native_smoke import Terminal, assert_compact_hud, composer_ready, local_shell_smoke, shell_rows, wait
+from native_smoke import Terminal, advisor_rows, assert_compact_hud, composer_ready, local_shell_smoke, shell_rows, wait
 
 
 def run(binary, evidence):
@@ -44,13 +44,15 @@ def run(binary, evidence):
             assert named(), terminal.text
             assert 'CARGO_TARGET_DIR' not in terminal.text and '.build/' not in terminal.text
             assert [row['command'] for row in server.shells] == commands, 'display changed raw commands'
-            assert_compact_hud(terminal.text, rows=2)
+            assert advisor_rows(terminal.text) == ['Advisor · ready · 0 calls'], terminal.text
+            assert_compact_hud(terminal.text, rows=3)
             os.write(terminal.master, b'topic-draft')
             wait([terminal], lambda: 'topic-draft' in terminal.text, 'topic blocked composer')
             replies = terminal.resize(12, 65)
             wait([terminal], lambda: terminal.resized_frame(replies) and named() and 'topic-draft' in terminal.text,
                  'narrow topic rows lost names or draft')
-            assert_compact_hud(terminal.text, rows=2)
+            assert advisor_rows(terminal.text) == ['Advisor · ready · 0 calls'], terminal.text
+            assert_compact_hud(terminal.text, rows=3)
             (evidence / 'named-narrow.txt').write_text(terminal.text)
             (evidence / 'first.ansi').write_bytes(terminal.output)
             terminal.close()

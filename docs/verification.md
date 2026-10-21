@@ -33,6 +33,34 @@ acceptance. The release evidence below retains the limits verified at that time.
 
 ## Current release acceptance
 
+### Compact command display (development)
+
+[Development evidence](evidence/compact-command-display.json) records the exact
+candidate and patch identity, passing checks, reviewed fixture corrections, and
+platform limits. Fleet installation and release qualification are separate.
+
+Use `tests/test_command_display_tui.py BINARY --launcher MATCHING_HELPER
+--evidence NEW_DIRECTORY` in the private smoke-test Python environment. Its nine
+cases cover quick, unmarked, background, failed, exploring and running commands;
+local expansion, narrow input, completion and restart; and equality of stored
+tool results with model-visible results. The display must add no model requests.
+Initial bytes that the stock backend does not stream remain available in the
+final aggregate; live checks use a marker emitted after the activity is visible.
+
+Check the optional status item with `tests/test_status_lines_tui.py --binary
+BINARY --source PLUS_SOURCE --evidence NEW_DIRECTORY --case branch --compact
+--colors on --color-level 3`, repeated for color levels 2 and 1, colors off,
+and NO_COLOR. The first row must place `compact` after the branch, use a distinct
+color when enabled, and keep statistics on the second row.
+
+Native checks include `command_display`, `compact_display`, `shell_policy`,
+`chatwidget::tests::exec_flow`, `exec_cell`, `transcript_view`, `native_history`,
+and status-line picker/style/preview filters. Preserve the existing shell-policy,
+native smoke, shell-topic and detached-HUD regression gates. Record exact test
+lists and dedicated libtest results; snapshot updates require review against
+the approved display contract. These development checks do not install or
+qualify release packages on the fleet.
+
 ### Short background topics
 
 [Source evidence](evidence/shell-topics.json) records 127 passing native filter
@@ -637,6 +665,7 @@ the stock daemon, with private homes and loopback providers:
 ```sh
 .venv/bin/python tests/test_shell_policy_integration.py .build/codex \
   --stock-daemon /path/to/official/codex \
+  --stock-launcher /path/to/qualified-plus-package/bin/codex-plus \
   --evidence .build/shell-policy/acceptance
 ```
 

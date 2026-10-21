@@ -2846,7 +2846,7 @@ index ca29929c1..6487d3ca1 100644
              self.insert_history_cell_lines_with_initial_replay_buffer(tui, cell.as_ref(), width);
              self.last_rendered_history_tail = None;
 diff --git a/codex-rs/tui/src/app/native_history.rs b/codex-rs/tui/src/app/native_history.rs
-index b34523e28..4c3cfc2d5 100644
+index b34523e28..389188376 100644
 --- a/codex-rs/tui/src/app/native_history.rs
 +++ b/codex-rs/tui/src/app/native_history.rs
 @@ -23,6 +23,10 @@ pub(super) fn is_pending(cell: &dyn HistoryCell) -> bool {
@@ -2856,7 +2856,7 @@ index b34523e28..4c3cfc2d5 100644
 +        || cell
 +            .as_any()
 +            .downcast_ref::<history_cell::RetainedToolCallCell>()
-+            .is_some_and(history_cell::RetainedToolCallCell::is_active)
++            .is_some_and(history_cell::RetainedToolCallCell::blocks_native_history)
  }
  
  impl NativeHistory {
@@ -2886,13 +2886,65 @@ index b34523e28..4c3cfc2d5 100644
          if tui.is_owned_screen() || self.overlay.is_some() {
              return;
 diff --git a/codex-rs/tui/src/app/native_history_tests.rs b/codex-rs/tui/src/app/native_history_tests.rs
-index 6e340c424..aaf27274d 100644
+index 6e340c424..10f3ad0ec 100644
 --- a/codex-rs/tui/src/app/native_history_tests.rs
 +++ b/codex-rs/tui/src/app/native_history_tests.rs
-@@ -5,6 +5,145 @@ use codex_app_server_protocol::DynamicToolCallOutputContentItem;
+@@ -5,6 +5,197 @@ use codex_app_server_protocol::DynamicToolCallOutputContentItem;
  use codex_app_server_protocol::DynamicToolCallStatus;
  use pretty_assertions::assert_eq;
  
++#[tokio::test]
++async fn command_display_background_shell_does_not_block_native_history() -> Result<()> {
++    let mut app = crate::app::test_support::make_test_app().await;
++    let mut tui = crate::tui::test_support::make_test_tui()?;
++    let shell = history_cell::RetainedToolCallCell::new(crate::exec_cell::new_active_exec_command(
++        "shell".into(),
++        vec!["echo".into(), "task".into()],
++        vec![],
++        codex_app_server_protocol::CommandExecutionSource::Agent,
++        None,
++        false,
++    ));
++    app.insert_history_cell(&mut tui, Box::new(shell.clone()));
++    app.insert_history_cell(
++        &mut tui,
++        Box::new(history_cell::PlainHistoryCell::new(vec![
++            "later message".into(),
++        ])),
++    );
++    app.flush_native_history(&mut tui);
++    let text = tui
++        .pending_history_lines_for_test()
++        .iter()
++        .map(|line| line.line.to_string())
++        .collect::<Vec<_>>()
++        .join("\n");
++    assert!(text.contains("later message"));
++    assert!(!text.contains("Running"));
++    assert!(app.native_history.pending.is_empty());
++    shell.finish(|cell| {
++        cell.as_any_mut()
++            .downcast_mut::<crate::exec_cell::ExecCell>()
++            .unwrap()
++            .complete_call(
++                "shell",
++                crate::exec_cell::CommandOutput::new(0, "final output\n".into()),
++                std::time::Duration::ZERO,
++            );
++    });
++    app.refresh_retained_tool_call(&mut tui, &shell);
++    app.flush_native_history(&mut tui);
++    let text = tui
++        .pending_history_lines_for_test()
++        .iter()
++        .map(|line| line.line.to_string())
++        .collect::<Vec<_>>()
++        .join("\n");
++    assert_eq!(text.matches("final output").count(), 1);
++    assert_eq!(app.transcript_cells.len(), 2);
++    Ok(())
++}
++
 +#[tokio::test]
 +async fn parallel_mcp_and_web_wait_for_settled_rows_before_native_commit() -> Result<()> {
 +    let mut app = crate::app::test_support::make_test_app().await;
@@ -10112,7 +10164,7 @@ index 0b45f6d1c..40fc876db 100644
 -  ? for shortcuts            100% context left
 +                             100% context left
 diff --git a/codex-rs/tui/src/bottom_pane/status_line_setup.rs b/codex-rs/tui/src/bottom_pane/status_line_setup.rs
-index 9567424fb..fc268784d 100644
+index 9567424fb..6312138a3 100644
 --- a/codex-rs/tui/src/bottom_pane/status_line_setup.rs
 +++ b/codex-rs/tui/src/bottom_pane/status_line_setup.rs
 @@ -113,6 +113,9 @@ pub(crate) enum StatusLineItem {
@@ -10125,7 +10177,17 @@ index 9567424fb..fc268784d 100644
      /// Codex application version.
      CodexVersion,
  
-@@ -192,6 +195,7 @@ impl StatusLineItem {
+@@ -147,6 +150,9 @@ pub(crate) enum StatusLineItem {
+     /// Whether raw scrollback mode is currently active.
+     RawOutput,
+ 
++    /// Whether the owned rich transcript uses compact command display.
++    CompactDisplay,
++
+     /// Current thread name, omitted when unnamed.
+     ThreadName,
+ 
+@@ -192,6 +198,7 @@ impl StatusLineItem {
              StatusLineItem::WeeklyLimit => {
                  "Remaining usage on the secondary usage limit (omitted when unavailable)"
              }
@@ -10133,7 +10195,17 @@ index 9567424fb..fc268784d 100644
              StatusLineItem::CodexVersion => "Codex application version",
              StatusLineItem::ContextWindowSize => {
                  "Total context window size in tokens (omitted when unknown)"
-@@ -240,6 +244,7 @@ impl StatusLineItem {
+@@ -209,6 +216,9 @@ impl StatusLineItem {
+             StatusLineItem::FastMode => "Whether Fast mode is currently active",
+             StatusLineItem::Daybreak => "Whether Daybreak is enabled for this thread",
+             StatusLineItem::RawOutput => "Whether raw scrollback mode is active",
++            StatusLineItem::CompactDisplay => {
++                "Show the compact display indicator only; does not change command folding"
++            }
+             StatusLineItem::ThreadName => "Current thread name (omitted when unnamed)",
+             StatusLineItem::ThreadTitle => {
+                 "Current thread title, or thread identifier when unnamed"
+@@ -240,6 +250,7 @@ impl StatusLineItem {
              StatusLineItem::ContextUsed => StatusSurfacePreviewItem::ContextUsed,
              StatusLineItem::FiveHourLimit => StatusSurfacePreviewItem::FiveHourLimit,
              StatusLineItem::WeeklyLimit => StatusSurfacePreviewItem::WeeklyLimit,
@@ -10141,7 +10213,15 @@ index 9567424fb..fc268784d 100644
              StatusLineItem::CodexVersion => StatusSurfacePreviewItem::CodexVersion,
              StatusLineItem::ContextWindowSize => StatusSurfacePreviewItem::ContextWindowSize,
              StatusLineItem::UsedTokens => StatusSurfacePreviewItem::UsedTokens,
-@@ -278,8 +283,8 @@ impl StatusLineSetupView {
+@@ -251,6 +262,7 @@ impl StatusLineItem {
+             StatusLineItem::FastMode => StatusSurfacePreviewItem::FastMode,
+             StatusLineItem::Daybreak => StatusSurfacePreviewItem::Daybreak,
+             StatusLineItem::RawOutput => StatusSurfacePreviewItem::RawOutput,
++            StatusLineItem::CompactDisplay => StatusSurfacePreviewItem::CompactDisplay,
+             StatusLineItem::ThreadName => StatusSurfacePreviewItem::ThreadName,
+             StatusLineItem::ThreadTitle => StatusSurfacePreviewItem::ThreadTitle,
+             StatusLineItem::WorkspaceHeadline => StatusSurfacePreviewItem::WorkspaceHeadline,
+@@ -278,8 +290,8 @@ impl StatusLineSetupView {
      ///
      /// * `status_line_items` - Currently configured item IDs (in display order),
      ///   or `None` to start with all items disabled
@@ -10152,7 +10232,7 @@ index 9567424fb..fc268784d 100644
      /// * `app_event_tx` - Event sender for dispatching configuration changes
      ///
      /// Items from `status_line_items` are shown first (in order) and marked as
-@@ -294,8 +299,8 @@ impl StatusLineSetupView {
+@@ -294,8 +306,8 @@ impl StatusLineSetupView {
          let mut used_ids = HashSet::new();
          let mut items = vec![MultiSelectItem {
              id: STATUS_LINE_USE_THEME_COLORS_ITEM_ID.to_string(),
@@ -10163,15 +10243,97 @@ index 9567424fb..fc268784d 100644
              enabled: use_theme_colors,
              orderable: false,
              section_break_after: true,
-@@ -382,6 +387,7 @@ impl StatusLineSetupView {
+@@ -382,6 +394,10 @@ impl StatusLineSetupView {
          let default_name = item.to_string();
          let default_description = item.description();
          let (name, description) = match item {
 +            StatusLineItem::WeeklyReset => ("Weekly reset".into(), default_description.into()),
++            StatusLineItem::CompactDisplay => {
++                ("Compact display".into(), default_description.into())
++            }
              StatusLineItem::FiveHourLimit | StatusLineItem::WeeklyLimit => (
                  preview_data.rate_limit_item_name(item.preview_item(), &default_name),
                  preview_data.rate_limit_item_description(item.preview_item(), default_description),
-@@ -483,6 +489,29 @@ mod tests {
+@@ -446,6 +462,78 @@ mod tests {
+ 
+     use crate::app_event::AppEvent;
+ 
++    #[test]
++    fn compact_display_is_an_optional_orderable_indicator() {
++        assert_eq!(
++            "compact-display".parse::<StatusLineItem>(),
++            Ok(StatusLineItem::CompactDisplay)
++        );
++        let item = StatusLineSetupView::status_line_select_item(
++            StatusLineItem::CompactDisplay,
++            false,
++            &StatusSurfacePreviewData::default(),
++        );
++        assert_eq!(item.id, "compact-display");
++        assert_eq!(item.name, "Compact display");
++        assert!(!item.enabled);
++        assert!(item.orderable);
++        assert!(item.description.unwrap().contains("indicator only"));
++
++        for selected in [
++            vec![],
++            vec![
++                StatusLineItem::GitBranch,
++                StatusLineItem::CompactDisplay,
++                StatusLineItem::ModelName,
++            ],
++            StatusLineItem::iter().collect(),
++        ] {
++            let (tx, mut rx) = unbounded_channel();
++            let ids = selected.iter().map(ToString::to_string).collect::<Vec<_>>();
++            let mut view = StatusLineSetupView::new(
++                Some(&ids),
++                false,
++                StatusSurfacePreviewData::default(),
++                AppEventSender::new(tx),
++                crate::keymap::RuntimeKeymap::defaults().list,
++            );
++            view.handle_key_event(crossterm::event::KeyEvent::new(
++                crossterm::event::KeyCode::Enter,
++                crossterm::event::KeyModifiers::NONE,
++            ));
++            match rx.try_recv().unwrap() {
++                AppEvent::StatusLineSetup {
++                    items,
++                    use_theme_colors,
++                } => {
++                    assert_eq!(items, selected);
++                    assert!(!use_theme_colors);
++                }
++                event => panic!("unexpected event: {event:?}"),
++            }
++        }
++    }
++
++    #[test]
++    fn compact_display_preview_requires_live_state_and_preserves_order() {
++        let mut preview = StatusSurfacePreviewData::default();
++        assert_eq!(
++            preview.status_line_for_items([StatusLineItem::CompactDisplay], false),
++            None
++        );
++        preview.set_live(StatusSurfacePreviewItem::CompactDisplay, "compact");
++        assert_eq!(
++            preview
++                .status_line_for_items(
++                    [StatusLineItem::GitBranch, StatusLineItem::CompactDisplay],
++                    false,
++                )
++                .unwrap()
++                .to_string(),
++            "feat/awesome-feature · compact"
++        );
++    }
++
+     #[test]
+     fn context_used_accepts_context_usage_legacy_id() {
+         assert_eq!(StatusLineItem::ContextUsed.to_string(), "context-used");
+@@ -483,6 +571,29 @@ mod tests {
          );
      }
  
@@ -10202,7 +10364,7 @@ index 9567424fb..fc268784d 100644
      fn project_name_is_canonical_and_accepts_legacy_ids() {
          assert_eq!(StatusLineItem::ProjectRoot.to_string(), "project-name");
 diff --git a/codex-rs/tui/src/bottom_pane/status_line_style.rs b/codex-rs/tui/src/bottom_pane/status_line_style.rs
-index 6ef9003c5..380144a48 100644
+index 6ef9003c5..283f52ec2 100644
 --- a/codex-rs/tui/src/bottom_pane/status_line_style.rs
 +++ b/codex-rs/tui/src/bottom_pane/status_line_style.rs
 @@ -1,4 +1,4 @@
@@ -10219,7 +10381,7 @@ index 6ef9003c5..380144a48 100644
  use crate::thread_color::thread_color;
  use codex_protocol::ThreadId;
  
-@@ -19,6 +20,23 @@ const STATUS_LINE_SEPARATOR: &str = " · ";
+@@ -19,6 +20,24 @@ const STATUS_LINE_SEPARATOR: &str = " · ";
  const STATUS_LINE_COLOR_SATURATION_PERCENT: u16 = 85;
  const STATUS_LINE_COLOR_BRIGHTNESS_PERCENT: u16 = 100;
  
@@ -10231,6 +10393,7 @@ index 6ef9003c5..380144a48 100644
 +        }
 +        StatusLineItem::CurrentDir => ((137, 180, 250), Color::Blue),
 +        StatusLineItem::GitBranch => ((250, 179, 135), Color::LightRed),
++        StatusLineItem::CompactDisplay => ((245, 194, 231), Color::LightMagenta),
 +        StatusLineItem::ContextRemaining => ((166, 227, 161), Color::Green),
 +        StatusLineItem::WeeklyLimit => ((249, 226, 175), Color::Yellow),
 +        StatusLineItem::WeeklyReset => ((203, 166, 247), Color::Magenta),
@@ -10243,7 +10406,7 @@ index 6ef9003c5..380144a48 100644
  #[derive(Clone, Copy, Debug, Eq, PartialEq)]
  enum StatusLineAccent {
      Model,
-@@ -52,7 +70,9 @@ impl StatusLineAccent {
+@@ -52,13 +71,16 @@ impl StatusLineAccent {
              | StatusLineItem::TotalOutputTokens
              | StatusLineItem::ThreadCredits
              | StatusLineItem::EstimatedThreadCost => Self::Usage,
@@ -10254,7 +10417,17 @@ index 6ef9003c5..380144a48 100644
              StatusLineItem::CodexVersion | StatusLineItem::Hostname | StatusLineItem::SessionId => {
                  Self::Metadata
              }
-@@ -117,6 +137,7 @@ where
+-            StatusLineItem::FastMode | StatusLineItem::Daybreak | StatusLineItem::RawOutput => {
+-                Self::Mode
+-            }
++            StatusLineItem::FastMode
++            | StatusLineItem::Daybreak
++            | StatusLineItem::RawOutput
++            | StatusLineItem::CompactDisplay => Self::Mode,
+             StatusLineItem::Permissions => Self::Mode,
+             StatusLineItem::ApprovalMode => Self::Mode,
+             StatusLineItem::ThreadName
+@@ -117,6 +139,7 @@ where
  {
      let mut spans = Vec::new();
      for (item, text) in segments {
@@ -10262,7 +10435,7 @@ index 6ef9003c5..380144a48 100644
          if !spans.is_empty() {
              spans.push(STATUS_LINE_SEPARATOR.set_style(secondary_text_style()));
          }
-@@ -128,6 +149,8 @@ where
+@@ -128,6 +151,8 @@ where
              && let Some(thread_id) = thread_id
          {
              Style::default().fg(thread_color(thread_id))
@@ -10271,7 +10444,7 @@ index 6ef9003c5..380144a48 100644
          } else if use_theme_colors {
              let accent = StatusLineAccent::for_item(item);
              soften_status_line_style(
-@@ -141,7 +164,10 @@ where
+@@ -141,7 +166,10 @@ where
              if effective_stdout_color_level() == StdoutColorLevel::Ansi16
                  && matches!(foreground, Color::Rgb(..) | Color::Indexed(16..))
              {
@@ -10283,7 +10456,7 @@ index 6ef9003c5..380144a48 100644
              } else {
                  style.fg(readable_color_on(foreground, /*background*/ None))
              }
-@@ -217,6 +243,7 @@ mod tests {
+@@ -217,6 +245,7 @@ mod tests {
      use super::*;
      use pretty_assertions::assert_eq;
      use ratatui::style::Modifier;
@@ -10291,7 +10464,7 @@ index 6ef9003c5..380144a48 100644
  
      fn line_text(line: &Line<'static>) -> String {
          line.spans
-@@ -229,9 +256,9 @@ mod tests {
+@@ -229,9 +258,9 @@ mod tests {
      fn status_line_segments_preserve_order_and_plain_text() {
          let line = status_line_from_segments_with_resolver(
              [
@@ -10304,7 +10477,7 @@ index 6ef9003c5..380144a48 100644
              ],
              /*use_theme_colors*/ true,
              /*thread_id*/ None,
-@@ -252,7 +279,7 @@ mod tests {
+@@ -252,7 +281,7 @@ mod tests {
      fn status_line_segments_use_secondary_separators_and_theme_styles_first() {
          let line = status_line_from_segments_with_resolver(
              [
@@ -10313,7 +10486,7 @@ index 6ef9003c5..380144a48 100644
                  (StatusLineItem::ContextUsed, "Context 12% used".to_string()),
              ],
              /*use_theme_colors*/ true,
-@@ -298,7 +325,7 @@ mod tests {
+@@ -298,7 +327,7 @@ mod tests {
          };
          crate::terminal_palette::with_test_default_colors(colors, || {
              let line = status_line_from_segments_with_resolver(
@@ -10322,7 +10495,7 @@ index 6ef9003c5..380144a48 100644
                  /*use_theme_colors*/ true,
                  /*thread_id*/ None,
                  |_| Some(Style::default().fg(Color::Rgb(255, 0, 0))),
-@@ -374,8 +401,8 @@ mod tests {
+@@ -374,8 +403,8 @@ mod tests {
          crate::terminal_palette::with_test_default_colors(colors, || {
              let line = status_line_from_segments_with_resolver(
                  [
@@ -10333,23 +10506,25 @@ index 6ef9003c5..380144a48 100644
                      (
                          StatusLineItem::Permissions,
                          "Custom permissions".to_string(),
-@@ -402,22 +429,200 @@ mod tests {
+@@ -402,22 +431,203 @@ mod tests {
          });
      }
  
-+    const PALETTE_ITEMS: [StatusLineItem; 7] = [
++    const PALETTE_ITEMS: [StatusLineItem; 8] = [
 +        StatusLineItem::ModelName,
 +        StatusLineItem::CurrentDir,
 +        StatusLineItem::GitBranch,
++        StatusLineItem::CompactDisplay,
 +        StatusLineItem::ContextRemaining,
 +        StatusLineItem::WeeklyLimit,
 +        StatusLineItem::WeeklyReset,
 +        StatusLineItem::PullRequestNumber,
 +    ];
-+    const PALETTE_RGB: [(u8, u8, u8); 7] = [
++    const PALETTE_RGB: [(u8, u8, u8); 8] = [
 +        (137, 220, 235),
 +        (137, 180, 250),
 +        (250, 179, 135),
++        (245, 194, 231),
 +        (166, 227, 161),
 +        (249, 226, 175),
 +        (203, 166, 247),
@@ -10477,6 +10652,7 @@ index 6ef9003c5..380144a48 100644
 +                    Color::Cyan,
 +                    Color::Blue,
 +                    Color::LightRed,
++                    Color::LightMagenta,
 +                    Color::Green,
 +                    Color::Yellow,
 +                    Color::Magenta,
@@ -10536,7 +10712,7 @@ index 6ef9003c5..380144a48 100644
                      .output()
                      .unwrap();
                  assert!(
-@@ -437,8 +642,8 @@ mod tests {
+@@ -437,8 +647,8 @@ mod tests {
          crate::render::highlight::set_syntax_theme(theme);
          let line = status_line_from_segments(
              [
@@ -10548,7 +10724,7 @@ index 6ef9003c5..380144a48 100644
              ],
              /*use_theme_colors*/ true,
 diff --git a/codex-rs/tui/src/bottom_pane/status_surface_preview.rs b/codex-rs/tui/src/bottom_pane/status_surface_preview.rs
-index 7389236c0..3fbed4438 100644
+index 7389236c0..2e377a462 100644
 --- a/codex-rs/tui/src/bottom_pane/status_surface_preview.rs
 +++ b/codex-rs/tui/src/bottom_pane/status_surface_preview.rs
 @@ -25,6 +25,7 @@ pub(crate) enum StatusSurfacePreviewItem {
@@ -10559,7 +10735,15 @@ index 7389236c0..3fbed4438 100644
      CodexVersion,
      ContextWindowSize,
      UsedTokens,
-@@ -63,6 +64,7 @@ impl StatusSurfacePreviewItem {
+@@ -36,6 +37,7 @@ pub(crate) enum StatusSurfacePreviewItem {
+     FastMode,
+     Daybreak,
+     RawOutput,
++    CompactDisplay,
+     WorkspaceHeadline,
+     Model,
+     ModelWithReasoning,
+@@ -63,6 +65,7 @@ impl StatusSurfacePreviewItem {
              StatusSurfacePreviewItem::ContextUsed => "Context 0% used",
              StatusSurfacePreviewItem::FiveHourLimit => "primary 0%",
              StatusSurfacePreviewItem::WeeklyLimit => "secondary 0%",
@@ -10567,7 +10751,15 @@ index 7389236c0..3fbed4438 100644
              StatusSurfacePreviewItem::CodexVersion => "0.0.0",
              StatusSurfacePreviewItem::ContextWindowSize => "0 window",
              StatusSurfacePreviewItem::UsedTokens => "0 used",
-@@ -101,6 +103,7 @@ impl StatusSurfacePreviewItem {
+@@ -74,6 +77,7 @@ impl StatusSurfacePreviewItem {
+             StatusSurfacePreviewItem::FastMode => "Fast on",
+             StatusSurfacePreviewItem::Daybreak => "Daybreak off",
+             StatusSurfacePreviewItem::RawOutput => "raw output",
++            StatusSurfacePreviewItem::CompactDisplay => "compact",
+             StatusSurfacePreviewItem::WorkspaceHeadline => "Workspace headline",
+             StatusSurfacePreviewItem::Model => "gpt-5.2-codex",
+             StatusSurfacePreviewItem::ModelWithReasoning => "gpt-5.2-codex medium",
+@@ -101,6 +105,7 @@ impl StatusSurfacePreviewItem {
              Self::ContextUsed,
              Self::FiveHourLimit,
              Self::WeeklyLimit,
@@ -10575,6 +10767,23 @@ index 7389236c0..3fbed4438 100644
              Self::CodexVersion,
              Self::ContextWindowSize,
              Self::UsedTokens,
+@@ -112,6 +117,7 @@ impl StatusSurfacePreviewItem {
+             Self::FastMode,
+             Self::Daybreak,
+             Self::RawOutput,
++            Self::CompactDisplay,
+             Self::WorkspaceHeadline,
+             Self::Model,
+             Self::ModelWithReasoning,
+@@ -143,6 +149,8 @@ impl Default for StatusSurfacePreviewData {
+         for item in StatusSurfacePreviewItem::iter() {
+             data.set_placeholder(item, item.placeholder());
+         }
++        // An inactive mode indicator must not appear as a preview placeholder.
++        data.suppress_placeholder(StatusSurfacePreviewItem::CompactDisplay);
+         data
+     }
+ }
 diff --git a/codex-rs/tui/src/bottom_pane/tests/snapshots/codex_tui__bottom_pane__tests__actionable_banner_tests__actionable_banner_with_composer_gap.snap b/codex-rs/tui/src/bottom_pane/tests/snapshots/codex_tui__bottom_pane__tests__actionable_banner_tests__actionable_banner_with_composer_gap.snap
 index 1ec65f630..af5037149 100644
 --- a/codex-rs/tui/src/bottom_pane/tests/snapshots/codex_tui__bottom_pane__tests__actionable_banner_tests__actionable_banner_with_composer_gap.snap
@@ -12782,23 +12991,21 @@ index 2f74f843d..97efb602c 100644
              if let Some(exec) = cell.as_any_mut().downcast_mut::<ExecCell>() {
                  exec.freeze_snapshot();
 diff --git a/codex-rs/tui/src/chatwidget/command_lifecycle.rs b/codex-rs/tui/src/chatwidget/command_lifecycle.rs
-index a0533b315..641b244b8 100644
+index a0533b315..01ffa8811 100644
 --- a/codex-rs/tui/src/chatwidget/command_lifecycle.rs
 +++ b/codex-rs/tui/src/chatwidget/command_lifecycle.rs
-@@ -3,8 +3,12 @@
+@@ -3,8 +3,10 @@
  //! This module owns command start/output/completion rendering, including active
  //! exec-cell grouping and unified exec wait state.
  
-+use super::shell_policy::{
-+    ShellVisibility, eligible_shell, quiet_shell, shell_directive, shell_result,
-+};
++use super::shell_policy::{ShellVisibility, eligible_shell, quiet_shell, shell_directive};
  use super::*;
  use crate::exec_cell::CommandOutput;
 +use codex_protocol::parse_command::ParsedCommand;
  
  impl ChatWidget {
      pub(super) fn flush_unified_exec_wait_streak(&mut self) {
-@@ -30,18 +34,29 @@ impl ChatWidget {
+@@ -30,18 +32,35 @@ impl ChatWidget {
          else {
              return;
          };
@@ -12820,22 +13027,40 @@ index a0533b315..641b244b8 100644
                  self.track_unified_exec_process_begin(id, process_id.as_deref(), command);
              }
 -            if !self.bottom_pane.is_task_running() {
-+            if !managed && !self.bottom_pane.is_task_running() {
++            if !managed
++                && *source != ExecCommandSource::UnifiedExecStartup
++                && !self.bottom_pane.is_task_running()
++            {
                  return;
              }
              // Unified exec may be parsed as Unknown; keep the working indicator visible regardless.
              self.bottom_pane.ensure_status_indicator();
 -            if !is_standard_tool_call(&parsed_cmd) {
-+            if !managed && !is_standard_tool_call(&parsed_cmd) {
++            if !managed
++                && *source != ExecCommandSource::UnifiedExecStartup
++                && !is_standard_tool_call(&parsed_cmd)
++            {
                  return;
              }
          }
-@@ -54,7 +69,15 @@ impl ChatWidget {
+@@ -54,7 +73,27 @@ impl ChatWidget {
  
      pub(super) fn on_exec_command_output_delta(&mut self, call_id: &str, delta: &str) {
          self.track_unified_exec_output_chunk(call_id, delta.as_bytes());
 -        if !self.bottom_pane.is_task_running() {
 +        self.update_shell_visibility();
++        if let Some(cell) = self.transcript.shell_calls.get(call_id) {
++            if cell.is_active() {
++                cell.update(|cell| {
++                    cell.as_any_mut()
++                        .downcast_mut::<ExecCell>()
++                        .expect("managed shell")
++                        .append_output(call_id, delta);
++                });
++            }
++            self.request_redraw();
++            return;
++        }
 +        if self
 +            .managed_shells
 +            .get(call_id)
@@ -12847,7 +13072,7 @@ index a0533b315..641b244b8 100644
              return;
          }
  
-@@ -74,14 +97,37 @@ impl ChatWidget {
+@@ -74,14 +113,37 @@ impl ChatWidget {
      }
  
      pub(super) fn on_terminal_interaction(&mut self, process_id: String, stdin: String) {
@@ -12891,7 +13116,7 @@ index a0533b315..641b244b8 100644
          if stdin.is_empty() && command_display.is_none() {
              return;
          }
-@@ -135,6 +181,7 @@ impl ChatWidget {
+@@ -135,6 +197,7 @@ impl ChatWidget {
      pub(super) fn on_command_execution_completed(&mut self, item: ThreadItem) {
          let ThreadItem::CommandExecution {
              id,
@@ -12899,7 +13124,7 @@ index a0533b315..641b244b8 100644
              process_id,
              source,
              ..
-@@ -142,6 +189,16 @@ impl ChatWidget {
+@@ -142,6 +205,16 @@ impl ChatWidget {
          else {
              return;
          };
@@ -12916,19 +13141,20 @@ index a0533b315..641b244b8 100644
          if is_unified_exec_source(*source) {
              if let Some(process_id) = process_id.as_deref()
                  && self
-@@ -152,7 +209,10 @@ impl ChatWidget {
+@@ -152,7 +225,11 @@ impl ChatWidget {
                  self.flush_unified_exec_wait_streak();
              }
              self.track_unified_exec_process_end(id, process_id.as_deref());
 -            if !self.bottom_pane.is_task_running() {
 +            if !self.managed_shells.contains_key(id)
++                && !self.transcript.shell_calls.contains_key(id)
 +                && !(eligible_shell(*source) && shell_directive(command).is_some())
 +                && !self.bottom_pane.is_task_running()
 +            {
                  return;
              }
          }
-@@ -171,7 +231,9 @@ impl ChatWidget {
+@@ -171,7 +248,9 @@ impl ChatWidget {
      ) {
          let key = process_id.unwrap_or(call_id).to_string();
          let command = split_command_string(command);
@@ -12939,7 +13165,7 @@ index a0533b315..641b244b8 100644
          if let Some(existing) = self
              .unified_exec_processes
              .iter_mut()
-@@ -241,6 +303,8 @@ impl ChatWidget {
+@@ -241,18 +320,63 @@ impl ChatWidget {
      }
  
      pub(crate) fn handle_command_execution_started_now(&mut self, item: ThreadItem) {
@@ -12948,7 +13174,11 @@ index a0533b315..641b244b8 100644
          let ThreadItem::CommandExecution {
              id,
              command,
-@@ -251,8 +315,24 @@ impl ChatWidget {
+             source,
+             command_actions,
++            aggregated_output,
+             ..
+         } = item
          else {
              return;
          };
@@ -12962,11 +13192,37 @@ index a0533b315..641b244b8 100644
 +            command = vec!["bash".to_string(), "-lc".to_string(), body.clone()];
 +            parsed_cmd = vec![ParsedCommand::Unknown { cmd: body }];
 +        }
-+        if self
-+            .managed_shells
-+            .get(&id)
-+            .is_some_and(|shell| shell.quiet)
++        if self.transcript.shell_calls.contains_key(&id) {
++            return;
++        }
++        let retain_startup = source == ExecCommandSource::UnifiedExecStartup
++            && !is_standard_tool_call(&parsed_cmd)
++            && !self.managed_shells.contains_key(&id)
++            && !crate::bottom_pane::worker_hud::advisor_command(
++                &crate::exec_command::escape_command(&command),
++            );
++        if retain_startup
++            || self
++                .managed_shells
++                .get(&id)
++                .is_some_and(|shell| shell.policy != ShellVisibility::Foreground)
 +        {
++            let mut cell = new_active_exec_command(
++                id.clone(),
++                command,
++                parsed_cmd,
++                source,
++                None,
++                self.local_settings.tui.animations && self.local_settings.tui.effects.progress,
++            );
++            if let Some(output) = aggregated_output {
++                cell.append_output(&id, &output);
++            }
++            let cell = history_cell::RetainedToolCallCell::new(cell);
++            self.flush_completed_tool_activity();
++            self.transcript.shell_calls.insert(id, cell.clone());
++            self.app_event_tx
++                .send(AppEvent::InsertHistoryCell(Box::new(cell)));
 +            self.publish_shell_hud();
 +            self.request_redraw();
 +            return;
@@ -12974,7 +13230,7 @@ index a0533b315..641b244b8 100644
          // Ensure the status indicator is visible while the command runs.
          self.bottom_pane.ensure_status_indicator();
          let parsed_cmd = self.annotate_skill_reads_in_parsed_cmd(parsed_cmd);
-@@ -297,14 +377,26 @@ impl ChatWidget {
+@@ -297,14 +421,26 @@ impl ChatWidget {
          } else {
              self.flush_active_cell();
  
@@ -13003,7 +13259,7 @@ index a0533b315..641b244b8 100644
              self.bump_active_cell_revision();
          }
  
-@@ -333,7 +425,7 @@ impl ChatWidget {
+@@ -333,7 +469,7 @@ impl ChatWidget {
          let ThreadItem::CommandExecution {
              id,
              command,
@@ -13012,7 +13268,7 @@ index a0533b315..641b244b8 100644
              source,
              status,
              command_actions,
-@@ -345,11 +437,21 @@ impl ChatWidget {
+@@ -345,11 +481,21 @@ impl ChatWidget {
          else {
              return;
          };
@@ -13036,7 +13292,7 @@ index a0533b315..641b244b8 100644
          let duration = Duration::from_millis(duration_ms.unwrap_or_default().max(0) as u64);
          let exit_code = if status == codex_app_server_protocol::CommandExecutionStatus::Completed {
              exit_code.unwrap_or_default()
-@@ -358,7 +460,52 @@ impl ChatWidget {
+@@ -358,7 +504,72 @@ impl ChatWidget {
          };
          let aggregated_output = aggregated_output.unwrap_or_default();
  
@@ -13074,22 +13330,42 @@ index a0533b315..641b244b8 100644
 +        }
 +        self.publish_shell_hud();
          let running = self.running_commands.remove(&id);
-+        if quiet {
++        let retained = self.transcript.shell_calls.get(&id).cloned();
++        if quiet || retained.is_some() {
 +            self.suppressed_exec_calls.remove(&id);
-+            let cell = PlainHistoryCell::new(shell_result(
-+                command_display.as_deref().unwrap_or(&command),
-+                &aggregated_output,
++            let cell = crate::thread_transcript::tools::CommandHistory {
++                id,
++                command: event_command,
++                parsed: event_parsed,
++                source,
++                aggregated_output,
 +                exit_code,
-+            ));
-+            self.app_event_tx
-+                .send(AppEvent::InsertHistoryCell(Box::new(cell)));
++                duration,
++            }
++            .into_cell();
++            if let Some(retained) = retained {
++                let changed = retained.is_active() || retained.raw_lines() != cell.raw_lines();
++                retained.finish(|target| {
++                    *target
++                        .as_any_mut()
++                        .downcast_mut::<ExecCell>()
++                        .expect("managed shell") = cell;
++                });
++                if changed {
++                    self.app_event_tx
++                        .send(AppEvent::RefreshRetainedToolCall(retained));
++                }
++            } else {
++                self.app_event_tx
++                    .send(AppEvent::InsertHistoryCell(Box::new(cell)));
++            }
 +            self.request_redraw();
 +            return;
 +        }
          if self.suppressed_exec_calls.remove(&id) {
              return;
          }
-@@ -398,6 +545,10 @@ impl ChatWidget {
+@@ -398,6 +609,10 @@ impl ChatWidget {
                      ExecEndTarget::OrphanHistoryWhileActiveExec
                  }
                  None if cell.as_any().is::<McpToolCallCell>()
@@ -13141,10 +13417,10 @@ index 348031a32..9c8b94604 100644
      }
  }
 diff --git a/codex-rs/tui/src/chatwidget/session_flow.rs b/codex-rs/tui/src/chatwidget/session_flow.rs
-index 6077a0f9e..6c512af77 100644
+index 6077a0f9e..b5e4a7cef 100644
 --- a/codex-rs/tui/src/chatwidget/session_flow.rs
 +++ b/codex-rs/tui/src/chatwidget/session_flow.rs
-@@ -60,6 +60,11 @@ impl ChatWidget {
+@@ -60,6 +60,12 @@ impl ChatWidget {
          self.permission_discovery = None;
          self.permission_profiles_menu_opened = false;
          self.transcript.reset_copy_history();
@@ -13152,11 +13428,12 @@ index 6077a0f9e..6c512af77 100644
 +            self.finish_dynamic_activity();
 +            self.transcript.mcp_calls.clear();
 +            self.transcript.web_calls.clear();
++            self.transcript.shell_calls.clear();
 +        }
          let history_metadata = session.message_history.unwrap_or_default();
          self.bottom_pane.set_history_metadata(
              session.thread_id,
-@@ -109,6 +114,7 @@ impl ChatWidget {
+@@ -109,6 +115,7 @@ impl ChatWidget {
          self.clear_safety_buffering();
          self.thread_name = session.thread_name.clone();
          self.current_goal_status_indicator = None;
@@ -13164,7 +13441,7 @@ index 6077a0f9e..6c512af77 100644
          self.current_goal_status = None;
          self.update_collaboration_mode_indicator();
          self.forked_from = session.forked_from_id;
-@@ -330,7 +336,11 @@ impl ChatWidget {
+@@ -330,7 +337,12 @@ impl ChatWidget {
          self.turn_lifecycle.reset_thread();
          self.review = Default::default();
          self.transcript.take_active_cell();
@@ -13173,6 +13450,7 @@ index 6077a0f9e..6c512af77 100644
          self.transcript.reset_copy_history();
 +        self.transcript.mcp_calls.clear();
 +        self.transcript.web_calls.clear();
++        self.transcript.shell_calls.clear();
          self.transcript.reset_turn_flags();
          for turn in retained_turns {
              let mut replaying_delegation = false;
@@ -13253,10 +13531,10 @@ index b0b9674c6..a0095018b 100644
      /// Cycle to the next collaboration mode variant (Plan -> Default -> Plan).
 diff --git a/codex-rs/tui/src/chatwidget/shell_policy.rs b/codex-rs/tui/src/chatwidget/shell_policy.rs
 new file mode 100644
-index 000000000..94210ced0
+index 000000000..7b0351a60
 --- /dev/null
 +++ b/codex-rs/tui/src/chatwidget/shell_policy.rs
-@@ -0,0 +1,352 @@
+@@ -0,0 +1,285 @@
 +//! Explicit presentation policy for noninteractive agent shell commands.
 +
 +use super::*;
@@ -13403,73 +13681,6 @@ index 000000000..94210ced0
 +    policy == ShellVisibility::Background
 +        || (policy == ShellVisibility::Auto
 +            && duration.is_some_and(|duration| duration > SHELL_FOREGROUND_LIMIT))
-+}
-+
-+fn shell_text(text: &str, limit: usize) -> String {
-+    let text = codex_ansi_escape::ansi_escape_line(text)
-+        .spans
-+        .into_iter()
-+        .map(|span| span.content.into_owned())
-+        .collect::<String>();
-+    let mut chars = text
-+        .chars()
-+        .map(|ch| if ch.is_control() { ' ' } else { ch });
-+    let mut clean: String = chars.by_ref().take(limit).collect();
-+    if chars.next().is_some() {
-+        clean.push('…');
-+    }
-+    clean
-+}
-+
-+pub(crate) fn shell_result(command: &str, output: &str, exit: i32) -> Vec<Line<'static>> {
-+    let command = command.split_whitespace().collect::<Vec<_>>().join(" ");
-+    let command = shell_text(&command, 240);
-+    let outcome = if exit == 0 { "completed" } else { "failed" };
-+    let mut lines = vec![Line::from(format!(
-+        "Shell {outcome} (exit {exit}): {command}"
-+    ))];
-+    // Output is untrusted text. A log reference is displayed, never opened or executed.
-+    let first_log = output
-+        .lines()
-+        .next()
-+        .and_then(|line| line.strip_prefix("codex-plus log: "));
-+    let last_result = output
-+        .lines()
-+        .last()
-+        .filter(|line| line.starts_with("codex-plus result: exit="));
-+    let final_log = last_result
-+        .and_then(|line| line.split_once(" log="))
-+        .map(|(_, log)| log.strip_suffix(" log_incomplete=true").unwrap_or(log));
-+    let log = first_log
-+        .or(final_log)
-+        .filter(|log| std::path::Path::new(log).is_absolute());
-+    if let Some(log) = log {
-+        lines.push(Line::from(format!("Log: {}", shell_text(log, 512))));
-+    }
-+    if last_result.is_some_and(|line| line.ends_with(" log_incomplete=true")) {
-+        lines.push(Line::from("Log incomplete"));
-+    } else if log.is_none() {
-+        lines.push(Line::from("Log unavailable"));
-+    }
-+    if exit != 0 {
-+        let excerpt: Vec<_> = output
-+            .lines()
-+            .filter(|line| {
-+                !line.is_empty()
-+                    && !line.starts_with("codex-plus log: ")
-+                    && !line.starts_with("codex-plus result: ")
-+            })
-+            .rev()
-+            .take(5)
-+            .collect();
-+        lines.extend(
-+            excerpt
-+                .into_iter()
-+                .rev()
-+                .map(|line| Line::from(shell_text(line, 240))),
-+        );
-+    }
-+    lines
 +}
 +
 +impl ChatWidget {
@@ -13830,6 +14041,21 @@ index b2b296cb6..000000000
 -"› Ask Codex to do anything                                                      "
 -"                                                                                "
 -"  GPT-5.6-Sol default · /tmp/project              Goal paused (/goal resume)    "
+diff --git a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__interrupt_preserves_unified_exec_wait_streak.snap b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__interrupt_preserves_unified_exec_wait_streak.snap
+index 0e43f3017..ba73383ac 100644
+--- a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__interrupt_preserves_unified_exec_wait_streak.snap
++++ b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__interrupt_preserves_unified_exec_wait_streak.snap
+@@ -2,5 +2,9 @@
+ source: tui/src/chatwidget/tests/exec_flow.rs
+ expression: snapshot
+ ---
+-cells=1
++cells=2
++• Ran just fix
++  └ (no output)
++
++
+ ■ Conversation interrupted - use /feedback if something went wrong
 diff --git a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_goal_active_token_budget_footer.snap b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_goal_active_token_budget_footer.snap
 index d7fddce12..2b6a9656e 100644
 --- a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__status_line_goal_active_token_budget_footer.snap
@@ -13934,6 +14160,97 @@ index 5fe11ae96..a2a8b5196 100644
    ───────────────────────
    [x] workspace-headline    Workspace notification headline (Enterprise workspaces only; omitted wh…
    [ ] model                 Current model name
+diff --git a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__unified_exec_empty_then_non_empty_after.snap b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__unified_exec_empty_then_non_empty_after.snap
+index dcfad97ba..0d5ef696c 100644
+--- a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__unified_exec_empty_then_non_empty_after.snap
++++ b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__unified_exec_empty_then_non_empty_after.snap
+@@ -1,7 +1,9 @@
+ ---
+-source: tui/src/chatwidget/tests.rs
++source: tui/src/chatwidget/tests/exec_flow.rs
+ expression: combined
+ ---
++$ just fix
++
+ • Waited for background terminal · just fix
+ 
+ ↳ Interacted with background terminal · just fix
+diff --git a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__unified_exec_non_empty_then_empty_active.snap b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__unified_exec_non_empty_then_empty_active.snap
+index 93aac7d84..4ce0289c2 100644
+--- a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__unified_exec_non_empty_then_empty_active.snap
++++ b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__unified_exec_non_empty_then_empty_active.snap
+@@ -1,6 +1,8 @@
+ ---
+-source: tui/src/chatwidget/tests.rs
++source: tui/src/chatwidget/tests/exec_flow.rs
+ expression: active_combined
+ ---
++$ just fix
++
+ ↳ Interacted with background terminal · just fix
+   └ pwd
+diff --git a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__unified_exec_non_empty_then_empty_after.snap b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__unified_exec_non_empty_then_empty_after.snap
+index 56d0cf87e..eeff8b563 100644
+--- a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__unified_exec_non_empty_then_empty_after.snap
++++ b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__unified_exec_non_empty_then_empty_after.snap
+@@ -1,8 +1,9 @@
+ ---
+ source: tui/src/chatwidget/tests/exec_flow.rs
+-assertion_line: 1309
+ expression: combined
+ ---
++$ just fix
++
+ ↳ Interacted with background terminal · just fix
+   └ pwd
+ 
+diff --git a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__unified_exec_wait_after_final_agent_message.snap b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__unified_exec_wait_after_final_agent_message.snap
+index 12b80d4b1..2eef087d1 100644
+--- a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__unified_exec_wait_after_final_agent_message.snap
++++ b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__unified_exec_wait_after_final_agent_message.snap
+@@ -1,8 +1,9 @@
+ ---
+ source: tui/src/chatwidget/tests/exec_flow.rs
+-assertion_line: 1068
+ expression: combined
+ ---
++$ cargo test -p codex-core
++
+ • Waited for background terminal · cargo test -p codex-core
+ 
+ • Final response.
+diff --git a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__unified_exec_wait_before_streamed_agent_message.snap b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__unified_exec_wait_before_streamed_agent_message.snap
+index 7fddebca2..ea9a3aac0 100644
+--- a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__unified_exec_wait_before_streamed_agent_message.snap
++++ b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__unified_exec_wait_before_streamed_agent_message.snap
+@@ -1,8 +1,9 @@
+ ---
+ source: tui/src/chatwidget/tests/exec_flow.rs
+-assertion_line: 1092
+ expression: combined
+ ---
++$ cargo test -p codex-core
++
+ • Waited for background terminal · cargo test -p codex-core
+ 
+ • Streaming response.
+diff --git a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__unified_exec_waiting_multiple_empty_after.snap b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__unified_exec_waiting_multiple_empty_after.snap
+index 82b401feb..2997b9d0b 100644
+--- a/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__unified_exec_waiting_multiple_empty_after.snap
++++ b/codex-rs/tui/src/chatwidget/snapshots/codex_tui__chatwidget__tests__unified_exec_waiting_multiple_empty_after.snap
+@@ -1,11 +1,11 @@
+ ---
+ source: tui/src/chatwidget/tests/exec_flow.rs
+-assertion_line: 1229
+ expression: combined
+ ---
+ Chat:
+   Worked for [duration] • [completion time]
+ 
+ Transcript:
++$ just fix
+ • Waited for background terminal · just fix
+   Worked for [duration] • [completion time]
 diff --git a/codex-rs/tui/src/chatwidget/status_controls.rs b/codex-rs/tui/src/chatwidget/status_controls.rs
 index 692eba105..54808699b 100644
 --- a/codex-rs/tui/src/chatwidget/status_controls.rs
@@ -13950,7 +14267,7 @@ index 692eba105..54808699b 100644
      pub(crate) fn set_status_line_hyperlink(&mut self, url: Option<String>) {
          self.bottom_pane.set_status_line_hyperlink(url);
 diff --git a/codex-rs/tui/src/chatwidget/status_surfaces.rs b/codex-rs/tui/src/chatwidget/status_surfaces.rs
-index a3946abd1..913b08195 100644
+index a3946abd1..2d53f8491 100644
 --- a/codex-rs/tui/src/chatwidget/status_surfaces.rs
 +++ b/codex-rs/tui/src/chatwidget/status_surfaces.rs
 @@ -205,6 +205,7 @@ impl ChatWidget {
@@ -14033,7 +14350,17 @@ index a3946abd1..913b08195 100644
              StatusLineItem::CodexVersion => Some(CODEX_CLI_VERSION.to_string()),
              StatusLineItem::ContextWindowSize => self
                  .status_line_context_window_size()
-@@ -883,6 +932,7 @@ impl ChatWidget {
+@@ -840,6 +889,9 @@ impl ChatWidget {
+                 },
+             ),
+             StatusLineItem::RawOutput => self.raw_output_mode().then(|| "raw output".to_string()),
++            StatusLineItem::CompactDisplay => (self.local_settings.transcript_mode.is_owned()
++                && !self.raw_output_mode())
++            .then(|| "compact".to_string()),
+             StatusLineItem::ThreadName => {
+                 self.thread_name.as_deref().and_then(normalize_thread_name)
+             }
+@@ -883,6 +935,7 @@ impl ChatWidget {
              StatusSurfacePreviewItem::ContextUsed => StatusLineItem::ContextUsed,
              StatusSurfacePreviewItem::FiveHourLimit => StatusLineItem::FiveHourLimit,
              StatusSurfacePreviewItem::WeeklyLimit => StatusLineItem::WeeklyLimit,
@@ -14041,7 +14368,15 @@ index a3946abd1..913b08195 100644
              StatusSurfacePreviewItem::CodexVersion => StatusLineItem::CodexVersion,
              StatusSurfacePreviewItem::ContextWindowSize => StatusLineItem::ContextWindowSize,
              StatusSurfacePreviewItem::UsedTokens => StatusLineItem::UsedTokens,
-@@ -1149,6 +1199,80 @@ fn weekly_status_window(
+@@ -894,6 +947,7 @@ impl ChatWidget {
+             StatusSurfacePreviewItem::FastMode => StatusLineItem::FastMode,
+             StatusSurfacePreviewItem::Daybreak => StatusLineItem::Daybreak,
+             StatusSurfacePreviewItem::RawOutput => StatusLineItem::RawOutput,
++            StatusSurfacePreviewItem::CompactDisplay => StatusLineItem::CompactDisplay,
+             StatusSurfacePreviewItem::WorkspaceHeadline => StatusLineItem::WorkspaceHeadline,
+             StatusSurfacePreviewItem::Model => StatusLineItem::ModelName,
+             StatusSurfacePreviewItem::ModelWithReasoning => StatusLineItem::ModelWithReasoning,
+@@ -1149,6 +1203,80 @@ fn weekly_status_window(
          .or_else(|| snapshot.secondary.as_ref().map(|window| (window, true)))
  }
  
@@ -14122,6 +14457,104 @@ index a3946abd1..913b08195 100644
  fn find_codex_window<'a>(
      snapshot: &'a RateLimitSnapshotDisplay,
      label: &str,
+@@ -1291,3 +1419,97 @@ where
+     }
+     (items, invalid)
+ }
++
++#[cfg(test)]
++mod compact_display_tests {
++    use super::*;
++    use crate::chatwidget::tests::make_chatwidget_manual_with_sender;
++    use crate::transcript_mode::TranscriptMode;
++
++    #[tokio::test]
++    async fn compact_display_value_and_preview_follow_effective_rich_owned_mode() {
++        let (mut chat, _sender, _rx, _ops) = make_chatwidget_manual_with_sender().await;
++        assert!(
++            !chat
++                .configured_status_line_items()
++                .contains(&"compact-display".to_string())
++        );
++        for mode in [TranscriptMode::Owned, TranscriptMode::Terminal] {
++            chat.local_settings.transcript_mode = mode;
++            for raw in [false, true] {
++                chat.set_raw_output_mode(raw);
++                let expected = (mode.is_owned() && !raw).then(|| "compact".to_string());
++                assert_eq!(
++                    chat.status_line_value_for_item(StatusLineItem::CompactDisplay),
++                    expected
++                );
++                assert_eq!(
++                    chat.status_surface_preview_data()
++                        .value_for(StatusSurfacePreviewItem::CompactDisplay),
++                    expected.as_deref()
++                );
++                assert_eq!(chat.local_settings.transcript_mode, mode);
++                assert_eq!(chat.raw_output_mode(), raw);
++            }
++        }
++    }
++
++    #[tokio::test]
++    async fn compact_display_preserves_identity_order_and_only_controls_visibility() {
++        let (mut chat, _sender, mut rx, mut ops) = make_chatwidget_manual_with_sender().await;
++        chat.local_settings.transcript_mode = TranscriptMode::Owned;
++        chat.set_raw_output_mode(false);
++        chat.status_line_branch = Some("main".to_string());
++        let items = vec![
++            "model".to_string(),
++            "weekly-reset".to_string(),
++            "git-branch".to_string(),
++            "compact-display".to_string(),
++        ];
++        chat.local_settings.tui.status_line = Some(items.clone());
++        let selections = chat.status_surface_selections();
++        chat.refresh_status_line_from_selections(&selections);
++        let model = chat.model_display_name();
++        assert_eq!(
++            chat.bottom_pane.status_line_text(),
++            Some(format!("{model} · main · compact"))
++        );
++        assert_eq!(
++            chat.bottom_pane.status_line_stats_text().as_deref(),
++            Some("reset unknown")
++        );
++        assert_eq!(chat.configured_status_line_items(), items);
++
++        chat.local_settings.tui.status_line = Some(vec![]);
++        let selections = chat.status_surface_selections();
++        chat.refresh_status_line_from_selections(&selections);
++        assert_eq!(chat.bottom_pane.status_line_text(), None);
++        assert!(chat.local_settings.transcript_mode.is_owned());
++        assert!(!chat.raw_output_mode());
++
++        chat.local_settings.tui.status_line = Some(vec!["compact-display".to_string()]);
++        chat.local_settings.tui.terminal_title = Some(vec![]);
++        while rx.try_recv().is_ok() {}
++        while ops.try_recv().is_ok() {}
++        chat.refresh_status_surfaces();
++        let selections = chat.status_surface_selections();
++        assert!(!selections.uses_git_branch());
++        assert!(!selections.uses_git_summary());
++        assert!(!selections.uses_workspace_headline());
++        assert!(!selections.uses_thread_usage());
++        assert!(rx.try_recv().is_err());
++        assert!(ops.try_recv().is_err());
++        assert_eq!(
++            chat.bottom_pane.status_line_text().as_deref(),
++            Some("compact")
++        );
++
++        chat.set_raw_output_mode(true);
++        assert_eq!(chat.bottom_pane.status_line_text(), None);
++        chat.set_raw_output_mode(false);
++        assert_eq!(
++            chat.bottom_pane.status_line_text().as_deref(),
++            Some("compact")
++        );
++    }
++}
 diff --git a/codex-rs/tui/src/chatwidget/tests.rs b/codex-rs/tui/src/chatwidget/tests.rs
 index 8534d753f..0df6d0931 100644
 --- a/codex-rs/tui/src/chatwidget/tests.rs
@@ -14134,16 +14567,163 @@ index 8534d753f..0df6d0931 100644
  mod goal_menu;
  mod goal_validation;
  mod guardian;
+diff --git a/codex-rs/tui/src/chatwidget/tests/exec_flow.rs b/codex-rs/tui/src/chatwidget/tests/exec_flow.rs
+index 4e1127ba4..e6d4f0a4f 100644
+--- a/codex-rs/tui/src/chatwidget/tests/exec_flow.rs
++++ b/codex-rs/tui/src/chatwidget/tests/exec_flow.rs
+@@ -1,6 +1,32 @@
+ use super::*;
+ use pretty_assertions::assert_eq;
+ 
++fn unstarted_unified_exec(
++    mut item: AppServerThreadItem,
++    call_id: &str,
++    script: &str,
++) -> AppServerThreadItem {
++    let AppServerThreadItem::CommandExecution {
++        id,
++        command,
++        source,
++        command_actions,
++        ..
++    } = &mut item
++    else {
++        unreachable!("command fixture");
++    };
++    *id = call_id.into();
++    *command = codex_shell_command::parse_command::shlex_join(&[
++        "bash".into(),
++        "-lc".into(),
++        script.into(),
++    ]);
++    *source = ExecCommandSource::UnifiedExecStartup;
++    command_actions.clear();
++    item
++}
++
+ #[tokio::test]
+ async fn external_writer_snapshot_freezes_active_command_and_mcp_rows() {
+     let mut rendered = Vec::new();
+@@ -566,12 +592,11 @@ async fn exec_end_without_begin_does_not_flush_unrelated_running_exploring_cell(
+     let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
+     chat.on_task_started();
+ 
+-    begin_exec(&mut chat, "call-exploring", "cat /dev/null");
++    let exploring = begin_exec(&mut chat, "call-exploring", "cat /dev/null");
+     assert!(drain_insert_history(&mut rx).is_empty());
+     assert!(active_blob(&chat).contains("Read null"));
+ 
+-    let orphan =
+-        begin_unified_exec_startup(&mut chat, "call-orphan", "proc-1", "echo repro-marker");
++    let orphan = unstarted_unified_exec(exploring, "call-orphan", "echo repro-marker");
+     assert!(drain_insert_history(&mut rx).is_empty());
+ 
+     end_exec(
+@@ -610,11 +635,11 @@ async fn exec_end_without_begin_flushes_completed_unrelated_exploring_cell() {
+     chat.on_task_started();
+ 
+     let begin_ls = begin_exec(&mut chat, "call-ls", "ls -la");
+-    end_exec(&mut chat, begin_ls, "", "", /*exit_code*/ 0);
++    end_exec(&mut chat, begin_ls.clone(), "", "", /*exit_code*/ 0);
+     assert!(drain_insert_history(&mut rx).is_empty());
+     assert!(active_blob(&chat).contains("ls -la"));
+ 
+-    let orphan = begin_unified_exec_startup(&mut chat, "call-after", "proc-1", "echo after");
++    let orphan = unstarted_unified_exec(begin_ls, "call-after", "echo after");
+     end_exec(&mut chat, orphan, "after\n", "", /*exit_code*/ 0);
+ 
+     let cells = drain_insert_history(&mut rx);
+@@ -686,9 +711,10 @@ async fn exec_history_shows_unified_exec_startup_commands() {
+         "echo unified exec startup",
+         ExecCommandSource::UnifiedExecStartup,
+     );
++    let cell = chat.transcript.shell_calls["call-startup"].clone();
+     assert!(
+-        drain_insert_history(&mut rx).is_empty(),
+-        "exec begin should not flush until completion"
++        drain_insert_history(&mut rx).concat().is_empty(),
++        "running startup should stay out of native terminal history"
+     );
+ 
+     end_exec(
+@@ -699,9 +725,8 @@ async fn exec_history_shows_unified_exec_startup_commands() {
+         /*exit_code*/ 0,
+     );
+ 
+-    let cells = drain_insert_history(&mut rx);
+-    assert_eq!(cells.len(), 1, "expected finalized exec cell to flush");
+-    let blob = lines_to_single_string(&cells[0]);
++    assert!(drain_insert_history(&mut rx).is_empty());
++    let blob = lines_to_single_string(&cell.display_lines(80));
+     assert!(
+         blob.contains("• Ran echo unified exec startup"),
+         "expected startup command to render: {blob:?}"
+@@ -755,7 +780,7 @@ async fn unified_exec_unknown_end_with_active_exploring_cell_snapshot() {
+ }
+ 
+ #[tokio::test]
+-async fn unified_exec_end_after_task_complete_is_suppressed() {
++async fn command_display_unmarked_startup_retains_output_and_late_completion() {
+     let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(/*model_override*/ None).await;
+     chat.on_task_started();
+ 
+@@ -765,18 +790,44 @@ async fn unified_exec_end_after_task_complete_is_suppressed() {
+         "echo unified exec startup",
+         ExecCommandSource::UnifiedExecStartup,
+     );
++    let cell = chat.transcript.shell_calls["call-startup"].clone();
++    let compact = lines_to_single_string(&crate::terminal_hyperlinks::visible_lines(
++        cell.compact_hyperlink_lines(80),
++    ));
++    assert!(compact.contains("Running echo unified exec startup"));
++    assert_eq!(cell.activity_ids(), vec!["exec:call-startup"]);
++    chat.on_exec_command_output_delta("call-startup", "initial output\n");
+     drain_insert_history(&mut rx);
+ 
+     chat.on_task_complete(
+         /*last_agent_message*/ None, /*completion*/ None, /*from_replay*/ false,
+     );
+-    end_exec(&mut chat, begin, "", "", /*exit_code*/ 0);
++    assert!(cell.is_active());
++    chat.on_exec_command_output_delta("call-startup", "late output\n");
++    assert!(
++        lines_to_single_string(&cell.transcript_lines(80)).contains("initial output\nlate output")
++    );
++    end_exec(
++        &mut chat,
++        begin,
++        "initial output\nlate output\n",
++        "",
++        /*exit_code*/ 0,
++    );
+ 
+     let cells = drain_insert_history(&mut rx);
+     assert!(
+         cells.is_empty(),
+-        "expected unified exec end after task complete to be suppressed"
+-    );
++        "late completion must update the original retained row"
++    );
++    assert!(!cell.is_active());
++    assert_eq!(cell.activity_ids(), vec!["exec:call-startup"]);
++    let compact = lines_to_single_string(&crate::terminal_hyperlinks::visible_lines(
++        cell.compact_hyperlink_lines(80),
++    ));
++    assert!(compact.contains("Ran echo unified exec startup"));
++    assert!(!compact.contains("late output"));
++    assert!(lines_to_single_string(&cell.raw_lines()).contains("initial output\nlate output"));
+ }
+ 
+ #[tokio::test]
 diff --git a/codex-rs/tui/src/chatwidget/tests/shell_policy.rs b/codex-rs/tui/src/chatwidget/tests/shell_policy.rs
 new file mode 100644
-index 000000000..374da3b50
+index 000000000..7eb1c4afc
 --- /dev/null
 +++ b/codex-rs/tui/src/chatwidget/tests/shell_policy.rs
-@@ -0,0 +1,588 @@
+@@ -0,0 +1,733 @@
 +use super::*;
 +use crate::chatwidget::shell_policy::{
 +    SHELL_FOREGROUND_LIMIT, ShellVisibility, eligible_shell, quiet_shell, shell_directive,
-+    shell_result,
 +};
 +
 +#[tokio::test]
@@ -14151,7 +14731,10 @@ index 000000000..374da3b50
 +    let (mut chat, _, _) = make_chatwidget_manual(None).await;
 +    chat.on_task_started();
 +    let command = "# codex-plus-shell: foreground\n# codex-plus-advisor: wake and cancellation fixes\npython3 .build/audit-fixes/consult.py";
-+    assert_eq!(shell_directive(command), Some((ShellVisibility::Foreground, command.into())));
++    assert_eq!(
++        shell_directive(command),
++        Some((ShellVisibility::Foreground, command.into()))
++    );
 +    begin_unified_exec_startup(&mut chat, "advisor", "process", command);
 +    let cell = chat
 +        .transcript
@@ -14296,34 +14879,77 @@ index 000000000..374da3b50
 +#[test]
 +fn shell_policy_task_metadata_is_hud_only_after_wrappers() {
 +    use crate::chatwidget::shell_policy::shell_hud_label;
-+    for (marker, policy) in [("auto", ShellVisibility::Auto), ("background", ShellVisibility::Background), ("foreground", ShellVisibility::Foreground)] {
++    for (marker, policy) in [
++        ("auto", ShellVisibility::Auto),
++        ("background", ShellVisibility::Background),
++        ("foreground", ShellVisibility::Foreground),
++    ] {
 +        let command = "bash -c 'set -e; cargo test --locked --release'";
-+        let script = format!("# codex-plus-shell: {marker}\n# codex-plus-task:  x86 qualification 模型  \ncodex-plus run -- {command}");
++        let script = format!(
++            "# codex-plus-shell: {marker}\n# codex-plus-task:  x86 qualification 模型  \ncodex-plus run -- {command}"
++        );
 +        let wrapped = shlex::try_join(["bash", "-lc", &script]).unwrap();
 +        let outer = shlex::try_join(["/bin/zsh", "-lc", &wrapped]).unwrap();
 +        assert_eq!(shell_hud_label(&outer), "x86 qualification 模型");
 +        assert_eq!(shell_directive(&outer), Some((policy, command.into())));
 +    }
-+    for topic in ["".to_string(), " ".into(), "bad\ttopic".into(), "bad\u{1b}topic".into(), "x".repeat(121)] {
-+        let command = format!("# codex-plus-shell: background\n# codex-plus-task: {topic}\ncodex-plus run -- python3 /long/path/run-arm-final.py --release");
-+        assert_eq!(shell_hud_label(&command), "python3 run-arm-final.py", "{topic:?}");
-+        assert_eq!(shell_directive(&command), Some((ShellVisibility::Background, "python3 /long/path/run-arm-final.py --release".into())));
++    for topic in [
++        "".to_string(),
++        " ".into(),
++        "bad\ttopic".into(),
++        "bad\u{1b}topic".into(),
++        "x".repeat(121),
++    ] {
++        let command = format!(
++            "# codex-plus-shell: background\n# codex-plus-task: {topic}\ncodex-plus run -- python3 /long/path/run-arm-final.py --release"
++        );
++        assert_eq!(
++            shell_hud_label(&command),
++            "python3 run-arm-final.py",
++            "{topic:?}"
++        );
++        assert_eq!(
++            shell_directive(&command),
++            Some((
++                ShellVisibility::Background,
++                "python3 /long/path/run-arm-final.py --release".into()
++            ))
++        );
 +    }
-+    let command = format!("# codex-plus-shell: background\n# codex-plus-task: {}\necho actual", "测".repeat(120));
++    let command = format!(
++        "# codex-plus-shell: background\n# codex-plus-task: {}\necho actual",
++        "测".repeat(120)
++    );
 +    assert_eq!(shell_hud_label(&command), "测".repeat(120));
-+    assert_eq!(shell_directive(&command), Some((ShellVisibility::Background, "echo actual".into())));
-+    assert_eq!(shell_hud_label("echo actual\n# codex-plus-task: misplaced"), "Shell task");
++    assert_eq!(
++        shell_directive(&command),
++        Some((ShellVisibility::Background, "echo actual".into()))
++    );
++    assert_eq!(
++        shell_hud_label("echo actual\n# codex-plus-task: misplaced"),
++        "Shell task"
++    );
 +}
 +
 +#[test]
 +fn shell_policy_task_fallback_keeps_short_commands_and_discards_long_arguments() {
 +    use crate::chatwidget::shell_policy::shell_hud_label;
 +    for (command, expected) in [
-+        ("sleep 5", "sleep 5"), ("cargo test 0", "cargo test 0"),
++        ("sleep 5", "sleep 5"),
++        ("cargo test 0", "cargo test 0"),
 +        ("python train.py", "python train.py"),
-+        ("bash /very/long/path/qualify-arm.sh --lots-of-configuration", "bash qualify-arm.sh"),
-+        ("/usr/bin/cargo test --manifest-path /long/project/Cargo.toml", "cargo"),
-+        ("bash -c 'set -e; CARGO_TARGET_DIR=/long/path cargo test'", "Shell task"),
++        (
++            "bash /very/long/path/qualify-arm.sh --lots-of-configuration",
++            "bash qualify-arm.sh",
++        ),
++        (
++            "/usr/bin/cargo test --manifest-path /long/project/Cargo.toml",
++            "cargo",
++        ),
++        (
++            "bash -c 'set -e; CARGO_TARGET_DIR=/long/path cargo test'",
++            "Shell task",
++        ),
 +        ("python3 -c 'import sys; print(sys.version)'", "Shell task"),
 +    ] {
 +        assert_eq!(shell_hud_label(command), expected, "{command}");
@@ -14334,11 +14960,20 @@ index 000000000..374da3b50
 +fn shell_policy_task_metadata_preserves_explicit_advisor_identity() {
 +    let raw = "# codex-plus-shell: foreground\n# codex-plus-task: review qualification\n# codex-plus-advisor: cancellation races\npython3 /long/path/consult.py";
 +    let (_, command) = shell_directive(raw).unwrap();
-+    assert_eq!(command, "# codex-plus-shell: foreground\n# codex-plus-advisor: cancellation races\npython3 /long/path/consult.py");
++    assert_eq!(
++        command,
++        "# codex-plus-shell: foreground\n# codex-plus-advisor: cancellation races\npython3 /long/path/consult.py"
++    );
 +    for candidate in [raw, &command] {
-+        assert_eq!(crate::bottom_pane::worker_hud::advisor_topic(candidate).as_deref(), Some("cancellation races"));
++        assert_eq!(
++            crate::bottom_pane::worker_hud::advisor_topic(candidate).as_deref(),
++            Some("cancellation races")
++        );
 +    }
-+    assert_eq!(crate::chatwidget::shell_policy::shell_hud_label(raw), "review qualification");
++    assert_eq!(
++        crate::chatwidget::shell_policy::shell_hud_label(raw),
++        "review qualification"
++    );
 +}
 +
 +#[test]
@@ -14359,32 +14994,8 @@ index 000000000..374da3b50
 +    ));
 +}
 +
-+#[test]
-+fn shell_policy_bounded_failure_and_untrusted_log() {
-+    let output = format!(
-+        "codex-plus log: /tmp/log\n\x1b[31merror\x1b[0m\r{}\nlast error\ncodex-plus result: exit=7 log=/tmp/log log_incomplete=true\n",
-+        "x".repeat(10000)
-+    );
-+    let lines = shell_result("echo \x1b[2Jbad", &output, 7);
-+    let text = lines_to_single_string(&lines);
-+    assert!(text.contains("exit 7"));
-+    assert!(text.contains("Log: /tmp/log"));
-+    assert!(text.contains("Log incomplete"));
-+    assert!(text.contains("last error"));
-+    assert!(!text.contains('\x1b'));
-+    assert!(!text.contains('\r'));
-+    assert!(text.len() < 1200);
-+    assert!(
-+        lines_to_single_string(&shell_result("ok", "success\n", 0)).contains("Log unavailable")
-+    );
-+    assert!(
-+        lines_to_single_string(&shell_result("ok", "codex-plus log: relative\n", 0))
-+            .contains("Log unavailable")
-+    );
-+}
-+
 +#[tokio::test]
-+async fn shell_policy_auto_timer_hides_preview_without_output_and_keeps_ps() {
++async fn shell_policy_auto_timer_retains_running_details_and_keeps_ps() {
 +    let (mut chat, mut rx, _) = make_chatwidget_manual(None).await;
 +    chat.on_task_started();
 +    let item = begin_unified_exec_startup(
@@ -14393,8 +15004,12 @@ index 000000000..374da3b50
 +        "proc",
 +        "# codex-plus-shell: auto\nsleep 9",
 +    );
-+    assert!(active_blob(&chat).contains("sleep 9"));
-+    assert!(!active_blob(&chat).contains("codex-plus-shell"));
++    let cell = chat.transcript.shell_calls["managed"].clone();
++    let compact = lines_to_single_string(&crate::terminal_hyperlinks::visible_lines(
++        cell.compact_hyperlink_lines(80),
++    ));
++    assert!(compact.contains("Running sleep 9"));
++    assert!(!compact.contains("codex-plus-shell"));
 +    let started = chat.managed_shells["managed"].started;
 +    chat.update_shell_visibility_at(started + SHELL_FOREGROUND_LIMIT);
 +    assert!(!chat.managed_shells["managed"].quiet);
@@ -14403,7 +15018,14 @@ index 000000000..374da3b50
 +    assert!(chat.transcript.active_cell.is_none());
 +    chat.on_exec_command_output_delta("managed", "noise\n");
 +    assert_eq!(chat.unified_exec_processes[0].recent_chunks, vec!["noise"]);
-+    assert!(drain_insert_history(&mut rx).is_empty());
++    assert!(lines_to_single_string(&cell.transcript_lines(80)).contains("noise"));
++    assert!(
++        !lines_to_single_string(&crate::terminal_hyperlinks::visible_lines(
++            cell.compact_hyperlink_lines(80)
++        ))
++        .contains("noise")
++    );
++    assert!(drain_insert_history(&mut rx).concat().is_empty());
 +    handle_exec_end(
 +        &mut chat,
 +        completed(
@@ -14413,12 +15035,114 @@ index 000000000..374da3b50
 +            "codex-plus log: /tmp/run.log\nnoise\ncodex-plus result: exit=0 log=/tmp/run.log\n",
 +        ),
 +    );
-+    let text = lines_to_single_string(&drain_insert_history(&mut rx).concat());
-+    assert!(text.contains("Shell completed (exit 0): sleep 9"));
-+    assert!(text.contains("Log: /tmp/run.log"));
-+    assert!(!text.contains("noise"));
++    let text = lines_to_single_string(&cell.display_lines(80));
++    assert!(text.contains("Ran sleep 9"));
++    assert!(text.contains("noise"));
 +    assert!(chat.managed_shells.is_empty());
 +    assert!(chat.unified_exec_processes.is_empty());
++}
++
++#[tokio::test]
++async fn command_display_retained_startup_seeds_supplied_initial_output() {
++    for policy in [None, Some("auto"), Some("background")] {
++        let (mut chat, _, _) = make_chatwidget_manual(None).await;
++        chat.on_task_started();
++        let command = match policy {
++            Some(policy) => format!("# codex-plus-shell: {policy}\npython finite.py"),
++            None => "python finite.py".into(),
++        };
++        let item = AppServerThreadItem::CommandExecution {
++            id: "initial".into(),
++            model_context: None,
++            sandbox_type: None,
++            plugin_id: None,
++            script_path: None,
++            command: codex_shell_command::parse_command::shlex_join(&[
++                "bash".into(),
++                "-lc".into(),
++                command,
++            ]),
++            cwd: chat.config.cwd.clone().into(),
++            process_id: Some("proc".into()),
++            source: ExecCommandSource::UnifiedExecStartup,
++            status: AppServerCommandExecutionStatus::InProgress,
++            command_actions: vec![],
++            aggregated_output: Some("initial output\n".into()),
++            exit_code: None,
++            duration_ms: None,
++        };
++        handle_exec_begin(&mut chat, item);
++        let cell = chat.transcript.shell_calls["initial"].clone();
++        chat.on_exec_command_output_delta("initial", "streamed output\n");
++        let details = lines_to_single_string(&cell.transcript_lines(80));
++        assert!(details.contains("initial output\nstreamed output"));
++        let compact = lines_to_single_string(&crate::terminal_hyperlinks::visible_lines(
++            cell.compact_hyperlink_lines(80),
++        ));
++        assert!(compact.contains("Running python finite.py"));
++        assert!(!compact.contains("initial output"));
++        assert!(!compact.contains("streamed output"));
++    }
++}
++
++#[tokio::test]
++async fn shell_policy_managed_running_rows_survive_turn_end_and_update_once() {
++    for policy in ["auto", "background"] {
++        let (mut chat, mut rx, _) = make_chatwidget_manual(None).await;
++        chat.on_task_started();
++        let item = begin_unified_exec_startup(
++            &mut chat,
++            "managed",
++            "proc",
++            &format!("# codex-plus-shell: {policy}\nprintf before; sleep 9"),
++        );
++        let cell = chat.transcript.shell_calls["managed"].clone();
++        let mut inserted = Vec::new();
++        while let Ok(event) = rx.try_recv() {
++            if let AppEvent::InsertHistoryCell(cell) = event {
++                inserted.push(cell);
++            }
++        }
++        assert_eq!(inserted.len(), 1);
++        assert_eq!(inserted[0].activity_ids(), vec!["exec:managed"]);
++        chat.on_exec_command_output_delta("managed", "before\n");
++        begin_exec(&mut chat, "other", "cat another-file");
++        chat.on_task_complete(None, None, false);
++        chat.finalize_turn();
++        assert!(cell.is_active());
++        chat.on_exec_command_output_delta("managed", "after\n");
++        let details = lines_to_single_string(&cell.transcript_lines(80));
++        assert!(details.contains("before\nafter"));
++        let compact = lines_to_single_string(&crate::terminal_hyperlinks::visible_lines(
++            cell.compact_hyperlink_lines(80),
++        ));
++        assert!(compact.contains("Running printf"));
++        assert!(!compact.contains("after"));
++        // Discard unrelated finalization events before checking the shell's sole update.
++        while rx.try_recv().is_ok() {}
++        let completed = completed(item, Some(9000), 0, "before\nafter\n");
++        handle_exec_end(&mut chat, completed.clone());
++        handle_exec_end(&mut chat, completed);
++        chat.on_exec_command_output_delta("managed", "late noise\n");
++        assert!(!cell.is_active());
++        assert_eq!(cell.activity_ids(), vec!["exec:managed"]);
++        assert_eq!(inserted[0].raw_lines(), cell.raw_lines());
++        assert!(!lines_to_single_string(&cell.raw_lines()).contains("late noise"));
++        let compact = lines_to_single_string(&crate::terminal_hyperlinks::visible_lines(
++            cell.compact_hyperlink_lines(80),
++        ));
++        assert!(compact.contains("Ran printf"));
++        assert!(!compact.contains("after"));
++        let mut refreshes = 0;
++        while let Ok(event) = rx.try_recv() {
++            match event {
++                AppEvent::RefreshRetainedToolCall(_) => refreshes += 1,
++                AppEvent::InsertHistoryCell(_) => panic!("shell completion inserted a second row"),
++                _ => {}
++            }
++        }
++        assert_eq!(refreshes, 1);
++    }
 +}
 +
 +#[tokio::test]
@@ -14444,7 +15168,10 @@ index 000000000..374da3b50
 +        let (mut chat, mut rx, _) = make_chatwidget_manual(None).await;
 +        chat.on_task_started();
 +        let item = begin_exec_with_source(&mut chat, "call", cmd, source);
-+        assert!(chat.transcript.active_cell.is_some());
++        assert!(
++            chat.transcript.active_cell.is_some()
++                || chat.transcript.shell_calls.contains_key("call")
++        );
 +        assert_eq!(chat.managed_shells.contains_key("call"), marked);
 +        handle_exec_end(&mut chat, completed(item, Some(2000), 0, "fast result\n"));
 +        chat.flush_active_cell();
@@ -14459,12 +15186,7 @@ index 000000000..374da3b50
 +
 +#[tokio::test]
 +async fn shell_policy_reported_duration_replay_and_unknown_duration() {
-+    for (duration, expected_quiet) in [
-+        (Some(2000), false),
-+        (Some(2001), true),
-+        (None, false),
-+        (Some(-1), false),
-+    ] {
++    for duration in [Some(2000), Some(2001), None, Some(-1)] {
 +        let (mut chat, mut rx, _) = make_chatwidget_manual(None).await;
 +        chat.on_task_started();
 +        let item = begin_exec(&mut chat, "call", "# codex-plus-shell: auto\necho result");
@@ -14476,8 +15198,9 @@ index 000000000..374da3b50
 +        replay.handle_command_execution_completed_now(item);
 +        replay.flush_active_cell();
 +        let restored = lines_to_single_string(&drain_insert_history(&mut replay_rx).concat());
-+        assert_eq!(live.contains("Shell completed"), expected_quiet);
-+        assert_eq!(restored.contains("Shell completed"), expected_quiet);
++        assert_eq!(live, restored);
++        assert!(restored.contains("Ran echo result"));
++        assert!(restored.contains("result"));
 +        assert!(!restored.contains("codex-plus-shell"));
 +    }
 +}
@@ -14493,6 +15216,7 @@ index 000000000..374da3b50
 +        "proc",
 +        "# codex-plus-shell: background\necho job",
 +    );
++    let cell = chat.transcript.shell_calls["background"].clone();
 +    assert!(chat.managed_shells["background"].quiet);
 +    assert!(
 +        chat.transcript
@@ -14507,7 +15231,7 @@ index 000000000..374da3b50
 +    );
 +    terminal_interaction(&mut chat, "poll", "proc", "");
 +    assert!(chat.unified_exec_wait_streak.is_none());
-+    assert!(drain_insert_history(&mut rx).is_empty());
++    assert!(drain_insert_history(&mut rx).concat().is_empty());
 +    // An ended agent turn must not swallow this managed command's eventual result.
 +    chat.bottom_pane.set_task_running(false);
 +    handle_exec_end(
@@ -14525,25 +15249,26 @@ index 000000000..374da3b50
 +            .iter_calls()
 +            .any(|call| call.call_id == "foreground")
 +    );
-+    let text = lines_to_single_string(&drain_insert_history(&mut rx).concat());
-+    assert!(text.contains("Shell failed (exit 3)"));
++    let text = lines_to_single_string(&cell.display_lines(80));
++    assert!(text.contains("echo job"));
 +    assert!(text.contains("useful failure"));
 +    assert!(!text.contains("Waited"));
 +}
 +
 +#[tokio::test]
-+async fn shell_policy_transient_preview_never_flushes_progress() {
++async fn shell_policy_retained_progress_does_not_replace_unrelated_activity() {
 +    let (mut chat, mut rx, _) = make_chatwidget_manual(None).await;
 +    chat.on_task_started();
 +    let item = begin_exec(&mut chat, "managed", "# codex-plus-shell: auto\nls");
++    let cell = chat.transcript.shell_calls["managed"].clone();
 +    chat.on_exec_command_output_delta("managed", "progress\n");
 +    begin_exec(&mut chat, "other", "cat another-file");
-+    assert!(drain_insert_history(&mut rx).is_empty());
++    assert!(drain_insert_history(&mut rx).concat().is_empty());
 +    handle_exec_end(&mut chat, completed(item, Some(5000), 0, "progress\n"));
 +    assert!(active_blob(&chat).contains("another-file"));
-+    let text = lines_to_single_string(&drain_insert_history(&mut rx).concat());
-+    assert!(text.contains("Shell completed"));
-+    assert!(!text.contains("progress"));
++    let text = lines_to_single_string(&cell.display_lines(80));
++    assert!(text.contains("Ran ls"));
++    assert!(text.contains("progress"));
 +}
 +
 +#[tokio::test]
@@ -14668,6 +15393,7 @@ index 000000000..374da3b50
 +        "proc",
 +        "# codex-plus-shell: background\nsleep 9",
 +    );
++    let cell = chat.transcript.shell_calls["managed"].clone();
 +    chat.clean_background_terminals();
 +    assert!(chat.managed_shells.is_empty());
 +    chat.bottom_pane.set_task_running(false);
@@ -14681,10 +15407,10 @@ index 000000000..374da3b50
 +            "codex-plus log: /tmp/run.log\nterminated\ncodex-plus result: exit=130 log=/tmp/run.log\n",
 +        ),
 +    );
-+    let text = lines_to_single_string(&drain_insert_history(&mut rx).concat());
-+    assert!(text.contains("Shell failed (exit 130)"));
++    let text = lines_to_single_string(&cell.display_lines(80));
++    assert!(text.contains("Ran sleep 9"));
 +    assert!(text.contains("terminated"));
-+    assert!(text.contains("Log: /tmp/run.log"));
++    assert!(text.contains("codex-plus log: /tmp/run.log"));
 +}
 +
 +#[tokio::test]
@@ -15030,6 +15756,19 @@ index f867a24d5..52bac1379 100644
 +            .any(|line| line.to_string().contains("Usage: /ultracode on|off|status"))
 +    }));
 +}
+diff --git a/codex-rs/tui/src/chatwidget/tests/snapshots/codex_tui__chatwidget__tests__exec_flow__compact_exploration_with_failures.snap b/codex-rs/tui/src/chatwidget/tests/snapshots/codex_tui__chatwidget__tests__exec_flow__compact_exploration_with_failures.snap
+index ced32ee62..8bc593635 100644
+--- a/codex-rs/tui/src/chatwidget/tests/snapshots/codex_tui__chatwidget__tests__exec_flow__compact_exploration_with_failures.snap
++++ b/codex-rs/tui/src/chatwidget/tests/snapshots/codex_tui__chatwidget__tests__exec_flow__compact_exploration_with_failures.snap
+@@ -3,7 +3,4 @@ source: tui/src/chatwidget/tests/exec_flow.rs
+ assertion_line: 175
+ expression: "chat.transcript.active_cell.as_ref().unwrap().compact_hyperlink_lines(24).iter().map(|line|\nline.line.to_string()).collect::<Vec<_>>().join(\"\\n\")"
+ ---
+-• Explored · 4 failed
+-  └ Read first.txt
+-    Read missing.txt (e…
+-         1)
++• Explored (4 failed, e…
 diff --git a/codex-rs/tui/src/chatwidget/tests/snapshots/codex_tui__chatwidget__tests__slash_commands__ultrafast_command_allowed.snap b/codex-rs/tui/src/chatwidget/tests/snapshots/codex_tui__chatwidget__tests__slash_commands__ultrafast_command_allowed.snap
 index 6505ef3a2..b0d34b6cc 100644
 --- a/codex-rs/tui/src/chatwidget/tests/snapshots/codex_tui__chatwidget__tests__slash_commands__ultrafast_command_allowed.snap
@@ -16009,16 +16748,19 @@ index 135aabca8..8954701c0 100644
  
      /// Preserve pending calls and timers, returning the revisions before and after hydration.
 diff --git a/codex-rs/tui/src/chatwidget/transcript.rs b/codex-rs/tui/src/chatwidget/transcript.rs
-index f055cd1b7..0946144be 100644
+index f055cd1b7..87c9c06bc 100644
 --- a/codex-rs/tui/src/chatwidget/transcript.rs
 +++ b/codex-rs/tui/src/chatwidget/transcript.rs
-@@ -37,6 +37,10 @@ pub(super) struct TranscriptState {
+@@ -37,6 +37,13 @@ pub(super) struct TranscriptState {
      /// Shared retained rows for concurrently running dynamic tools, removed on completion.
      pub(super) dynamic_calls:
          std::collections::HashMap<String, crate::history_cell::DynamicToolCallCell>,
 +    pub(super) mcp_calls:
 +        std::collections::HashMap<String, crate::history_cell::RetainedToolCallCell>,
 +    pub(super) web_calls:
++        std::collections::HashMap<String, crate::history_cell::RetainedToolCallCell>,
++    /// Shell rows survive turn-end, stop requests and repeated completion notifications.
++    pub(super) shell_calls:
 +        std::collections::HashMap<String, crate::history_cell::RetainedToolCallCell>,
      /// Monotonic-ish counter used to invalidate transcript overlay caching.
      pub(super) active_cell_revision: u64,
@@ -16341,6 +17083,332 @@ index 000000000..091d6b725
 +        assert!(unrelated.advisor_lines(100).is_none());
 +    }
 +}
+diff --git a/codex-rs/tui/src/exec_cell/compact.rs b/codex-rs/tui/src/exec_cell/compact.rs
+index f8fe1bb9d..04ce7c80e 100644
+--- a/codex-rs/tui/src/exec_cell/compact.rs
++++ b/codex-rs/tui/src/exec_cell/compact.rs
+@@ -4,7 +4,6 @@ use super::model::ExecCell;
+ use crate::exec_command::strip_bash_lc_and_escape;
+ use crate::history_cell::ActivityDisclosure;
+ use crate::history_cell::HistoryRenderMode;
+-use crate::history_cell::activity_preview::DETAIL_PREVIEW_LINES;
+ use crate::history_cell::activity_preview::clipped_line;
+ use crate::motion::MotionMode;
+ use crate::motion::ReducedMotionIndicator;
+@@ -12,7 +11,6 @@ use crate::motion::activity_indicator;
+ use crate::render::highlight::highlight_bash_to_lines;
+ use crate::terminal_hyperlinks::HyperlinkLine;
+ use codex_ansi_escape::ansi_escape_line;
+-use ratatui::style::Modifier;
+ use ratatui::style::Stylize;
+ use ratatui::text::Line;
+ 
+@@ -26,15 +24,12 @@ impl ExecCell {
+             && let Some(output) = &call.output
+         {
+             let retained = output.line_counts().1;
+-            let clipped = output
+-                .lines()
+-                .rev()
+-                .take(DETAIL_PREVIEW_LINES)
+-                .filter(|raw| ansi_escape_line(raw.as_ref()).width() + 4 > usize::from(width))
+-                .count();
+-            let hidden = retained.saturating_sub(DETAIL_PREVIEW_LINES) + clipped;
+-            if hidden > 0 {
+-                return Some(ActivityDisclosure::OutputLines(hidden));
++            if retained > 0 {
++                return Some(if output.exit_code == 0 {
++                    ActivityDisclosure::OutputLines(retained)
++                } else {
++                    ActivityDisclosure::Generic
++                });
+             }
+         }
+         if !self
+@@ -54,15 +49,7 @@ impl ExecCell {
+         {
+             return Some(ActivityDisclosure::Generic);
+         }
+-        call.output
+-            .as_ref()
+-            .is_some_and(|output| {
+-                output.line_counts().1 > DETAIL_PREVIEW_LINES
+-                    || output.transcript_lines().any(|line| {
+-                        ansi_escape_line(line.as_ref()).width() + 4 > usize::from(width)
+-                    })
+-            })
+-            .then_some(ActivityDisclosure::Generic)
++        None
+     }
+ 
+     pub(super) fn compact_command_lines(&self, width: u16) -> Vec<HyperlinkLine> {
+@@ -110,23 +97,250 @@ impl ExecCell {
+             header.push_span(" …");
+         }
+         let mut lines = vec![clipped_line(header, width)];
+-        if let Some(output) = &call.output {
+-            let tail: Vec<_> = output.lines().rev().take(DETAIL_PREVIEW_LINES).collect();
+-            for (index, raw) in tail.into_iter().rev().enumerate() {
+-                let mut line = ansi_escape_line(raw.as_ref());
+-                line.spans.insert(
+-                    /*index*/ 0,
+-                    if index == 0 { "  └ " } else { "    " }.dim(),
+-                );
+-                line.spans.iter_mut().for_each(|span| {
+-                    span.style = span.style.add_modifier(Modifier::DIM);
+-                });
+-                lines.push(clipped_line(line, width));
+-            }
+-            if lines.len() == 1 && !call.is_unified_exec_interaction() {
+-                lines.push(clipped_line(Line::from("  └ (no output)".dim()), width));
+-            }
++        if let Some(excerpt) = self.failure_excerpt(width) {
++            lines.push(excerpt);
++        }
++        lines
++    }
++
++    pub(super) fn compact_exploring_lines(&self, width: u16) -> Vec<HyperlinkLine> {
++        let Some(call) = self.group.calls.first() else {
++            return Vec::new();
++        };
++        let title = if self.is_active() {
++            "Exploring"
++        } else {
++            "Explored"
++        };
++        let script = strip_bash_lc_and_escape(&call.command);
++        let mut header = Line::from(vec!["• ".dim(), title.bold()]);
++        let mut failures = self
++            .group
++            .calls
++            .iter()
++            .filter_map(|call| call.output.as_ref().filter(|output| output.exit_code != 0));
++        if let Some(output) = failures.next() {
++            let count = 1 + failures.count();
++            let status = if count > 1 {
++                format!(" ({count} failed, exit {})", output.exit_code)
++            } else {
++                format!(" (exit {})", output.exit_code)
++            };
++            header.push_span(status.red().bold());
++        }
++        header.push_span(" ");
++        header.spans.extend(
++            highlight_bash_to_lines(&script)
++                .into_iter()
++                .next()
++                .unwrap_or_default()
++                .spans,
++        );
++        if self.group.calls.len() > 1 || script.lines().nth(1).is_some() {
++            header.push_span(" …");
++        }
++        let mut lines = vec![clipped_line(header, width)];
++        if let Some(excerpt) = self.failure_excerpt(width) {
++            lines.push(excerpt);
+         }
+         lines
+     }
++
++    fn failure_excerpt(&self, width: u16) -> Option<HyperlinkLine> {
++        let output = self
++            .group
++            .calls
++            .iter()
++            .find_map(|call| call.output.as_ref().filter(|output| output.exit_code != 0))?;
++        let excerpt = output.lines().rev().find_map(|raw| {
++            let text = ansi_escape_line(raw.as_ref()).to_string();
++            let text: String = text
++                .chars()
++                .map(|ch| if ch.is_control() { ' ' } else { ch })
++                .collect();
++            let text = text.trim();
++            (!text.is_empty()
++                && !text.starts_with("codex-plus log: ")
++                && !text.starts_with("codex-plus result: "))
++            .then(|| text.to_owned())
++        })?;
++        Some(clipped_line(
++            Line::from(format!("  └ Output: {excerpt}").dim()),
++            width,
++        ))
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use crate::exec_cell::{CommandOutput, new_active_exec_command};
++    use crate::history_cell::HistoryCell;
++    use codex_app_server_protocol::CommandExecutionSource;
++    use std::time::Duration;
++
++    fn command(id: &str, script: &str) -> ExecCell {
++        new_active_exec_command(
++            id.into(),
++            vec!["bash".into(), "-lc".into(), script.into()],
++            vec![],
++            CommandExecutionSource::Agent,
++            None,
++            false,
++        )
++    }
++
++    fn compact(cell: &ExecCell, width: u16) -> Vec<String> {
++        cell.compact_hyperlink_lines(width)
++            .iter()
++            .map(|line| line.line.to_string())
++            .collect()
++    }
++
++    #[test]
++    fn command_display_success_and_live_output_stay_folded() {
++        let mut cell = command("run", "printf first\nprintf second");
++        cell.append_output("run", "live output\n");
++        assert_eq!(compact(&cell, 80), vec!["• Running printf first …"]);
++        assert!(
++            cell.transcript_lines(80)
++                .iter()
++                .any(|line| line.to_string() == "live output")
++        );
++        cell.complete_call(
++            "run",
++            CommandOutput::new(0, "first\nsecond\n".into()),
++            Duration::ZERO,
++        );
++        assert_eq!(compact(&cell, 80), vec!["• Ran printf first …"]);
++        assert_eq!(
++            cell.activity_disclosure(80),
++            Some(ActivityDisclosure::OutputLines(2))
++        );
++        assert_eq!(cell.activity_ids(), vec!["exec:run"]);
++        let raw = cell.raw_lines();
++        let detailed = cell.transcript_lines(80);
++        compact(&cell, 12);
++        assert_eq!(cell.raw_lines(), raw);
++        assert_eq!(cell.transcript_lines(80), detailed);
++        assert!(raw.iter().any(|line| line.to_string() == "second"));
++    }
++
++    #[test]
++    fn command_display_headers_clip_unicode_without_output_placeholders() {
++        let mut cell = command("run", &format!("echo {}", "界".repeat(40)));
++        cell.complete_call("run", CommandOutput::new(0, String::new()), Duration::ZERO);
++        for width in [0, 1, 12, 32] {
++            let lines = cell.compact_hyperlink_lines(width);
++            assert_eq!(lines.len(), 1);
++            assert!(lines[0].width() <= usize::from(width));
++        }
++        assert!(compact(&cell, 32)[0].ends_with('…'));
++        assert_eq!(
++            cell.activity_disclosure(32),
++            Some(ActivityDisclosure::Generic)
++        );
++    }
++
++    #[test]
++    fn command_display_failure_shows_one_factual_sanitized_excerpt() {
++        // CR ends a display line; keep the clipping payload before it.
++        let output = format!(
++            "codex-plus log: /tmp/run.log\nfirst diagnostic\n\x1b[31mlast diagnostic{}\x1b[0m\rdiscarded continuation\n\ncodex-plus result: exit=7 log=/tmp/run.log\n",
++            "x".repeat(1000),
++        );
++        let mut cell = command("run", "false");
++        cell.complete_call("run", CommandOutput::new(7, output), Duration::ZERO);
++        let lines = compact(&cell, 48);
++        assert_eq!(lines.len(), 2);
++        assert_eq!(lines[0], "• Failed (exit 7) false");
++        assert!(lines[1].starts_with("  └ Output: last diagnostic"));
++        assert!(lines[1].ends_with('…'));
++        assert!(!lines[1].contains("discarded continuation"));
++        assert!(!lines.join("\n").contains(['\x1b', '\r']));
++        assert!(
++            cell.compact_hyperlink_lines(48)
++                .iter()
++                .all(|line| line.width() <= 48)
++        );
++        assert!(
++            cell.transcript_lines(120)
++                .iter()
++                .any(|line| line.to_string() == "first diagnostic")
++        );
++        let mut empty = command("empty", "false");
++        empty.complete_call(
++            "empty",
++            CommandOutput::new(7, String::new()),
++            Duration::ZERO,
++        );
++        assert_eq!(compact(&empty, 80), vec!["• Failed (exit 7) false"]);
++    }
++
++    #[test]
++    fn command_display_exploration_folds_group_without_losing_calls() {
++        let mut cell = new_active_exec_command(
++            "first".into(),
++            vec!["cat".into(), "first.txt".into()],
++            vec![codex_protocol::parse_command::ParsedCommand::Read {
++                cmd: "cat first.txt".into(),
++                name: "first.txt".into(),
++                path: "first.txt".into(),
++            }],
++            CommandExecutionSource::Agent,
++            None,
++            false,
++        );
++        cell.complete_call(
++            "first",
++            CommandOutput::new(0, "first contents".into()),
++            Duration::ZERO,
++        );
++        assert!(cell.add_call(
++            "second".into(),
++            vec!["cat".into(), "second.txt".into()],
++            vec![codex_protocol::parse_command::ParsedCommand::Read {
++                cmd: "cat second.txt".into(),
++                name: "second.txt".into(),
++                path: "second.txt".into(),
++            }],
++            CommandExecutionSource::Agent,
++            None,
++        ));
++        assert_eq!(compact(&cell, 80), vec!["• Exploring cat first.txt …"]);
++        cell.complete_call(
++            "second",
++            CommandOutput::new(2, "missing file\n".into()),
++            Duration::ZERO,
++        );
++        assert_eq!(
++            compact(&cell, 80),
++            vec![
++                "• Explored (exit 2) cat first.txt …",
++                "  └ Output: missing file"
++            ]
++        );
++        assert_eq!(cell.activity_ids(), vec!["exec:first", "exec:second"]);
++        let detailed = cell
++            .transcript_lines(80)
++            .iter()
++            .map(ToString::to_string)
++            .collect::<Vec<_>>()
++            .join("\n");
++        assert!(detailed.contains("$ cat first.txt\nfirst contents"));
++        assert!(detailed.contains("$ cat second.txt\nmissing file"));
++        cell.complete_call(
++            "first",
++            CommandOutput::new(3, "first failure\n".into()),
++            Duration::ZERO,
++        );
++        assert_eq!(
++            compact(&cell, 80),
++            vec![
++                "• Explored (2 failed, exit 3) cat first.txt …",
++                "  └ Output: first failure"
++            ]
++        );
++        assert!(compact(&cell, 24)[0].contains("2 failed"));
++    }
+ }
 diff --git a/codex-rs/tui/src/exec_cell/mod.rs b/codex-rs/tui/src/exec_cell/mod.rs
 index aaa32e195..6898649f3 100644
 --- a/codex-rs/tui/src/exec_cell/mod.rs
@@ -16376,7 +17444,7 @@ index a99ea4909..8a3e8dd25 100644
      }
  
 diff --git a/codex-rs/tui/src/exec_cell/render.rs b/codex-rs/tui/src/exec_cell/render.rs
-index bae014ea1..1118f1384 100644
+index bae014ea1..126599ac3 100644
 --- a/codex-rs/tui/src/exec_cell/render.rs
 +++ b/codex-rs/tui/src/exec_cell/render.rs
 @@ -220,6 +220,9 @@ impl HistoryCell for ExecCell {
@@ -16389,7 +17457,7 @@ index bae014ea1..1118f1384 100644
          if self.is_exploring_cell() {
              return Some(ActivityDisclosure::Generic);
          }
-@@ -235,6 +238,9 @@ impl HistoryCell for ExecCell {
+@@ -235,33 +238,14 @@ impl HistoryCell for ExecCell {
      }
  
      fn compact_hyperlink_lines(&self, width: u16) -> Vec<HyperlinkLine> {
@@ -16399,7 +17467,35 @@ index bae014ea1..1118f1384 100644
          if self.group.calls.iter().any(ExecCall::is_user_shell_command) {
              return self.display_hyperlink_lines(width);
          }
-@@ -272,6 +278,9 @@ impl HistoryCell for ExecCell {
+         if self.is_exploring_cell() {
+-            let mut lines = self.exploring_display_lines(width);
+-            lines.truncate(1 + crate::history_cell::activity_preview::DETAIL_PREVIEW_LINES);
+-            let failures = self
+-                .group
+-                .calls
+-                .iter()
+-                .filter(|call| {
+-                    call.output
+-                        .as_ref()
+-                        .is_some_and(|output| output.exit_code != 0)
+-                })
+-                .count();
+-            if failures > 0
+-                && let Some(header) = lines.first_mut()
+-            {
+-                header
+-                    .line
+-                    .push_span(format!(" · {failures} failed").red().bold());
+-            }
+-            lines
+-                .into_iter()
+-                .map(|line| crate::history_cell::activity_preview::clipped_line(line.line, width))
+-                .collect()
++            self.compact_exploring_lines(width)
+         } else {
+             self.compact_command_lines(width)
+         }
+@@ -272,6 +256,9 @@ impl HistoryCell for ExecCell {
      }
  
      fn display_hyperlink_lines(&self, width: u16) -> Vec<HyperlinkLine> {
@@ -16420,6 +17516,30 @@ index 000000000..47fc7f8f5
 +expression: text(&cell)
 +---
 +• Advised on task · 4:12
+diff --git a/codex-rs/tui/src/exec_cell/snapshots/codex_tui__exec_cell__render__tests__truncated_live_output_preview_and_transcript.snap b/codex-rs/tui/src/exec_cell/snapshots/codex_tui__exec_cell__render__tests__truncated_live_output_preview_and_transcript.snap
+index bc536ac0d..9fffd2c2b 100644
+--- a/codex-rs/tui/src/exec_cell/snapshots/codex_tui__exec_cell__render__tests__truncated_live_output_preview_and_transcript.snap
++++ b/codex-rs/tui/src/exec_cell/snapshots/codex_tui__exec_cell__render__tests__truncated_live_output_preview_and_transcript.snap
+@@ -1,6 +1,5 @@
+ ---
+ source: tui/src/exec_cell/render.rs
+-assertion_line: 1100
+ expression: "(preview, compact, transcript)"
+ ---
+ (
+@@ -34,10 +33,8 @@ expression: "(preview, compact, transcript)"
+             Span::from(" output").fg(Color::Rgb(205, 214, 244)),
+         ]),
+         Line::from_iter([
+-            Span::from("  └ ").dim(),
+-            Span::from("head error that wraps onto the next row").red().dim(),
+-            Span::from("... 1189804 byte").fg(Color::Reset).bg(Color::Reset).underline_color(Color::Reset).dim().not_bold().not_italic().not_underlined().not_slow_blink().not_rapid_blink().not_reversed().not_hidden().not_crossed_out(),
+-            Span::from("…").fg(Color::Reset).bg(Color::Reset).underline_color(Color::Reset).dim().not_bold().not_italic().not_underlined().not_slow_blink().not_rapid_blink().not_reversed().not_hidden().not_crossed_out(),
++            Span::from("  └ Output: head error that wraps onto the next row... 1189").dim(),
++            Span::from("…").dim(),
+         ]),
+     ],
+     [
 diff --git a/codex-rs/tui/src/history_cell/mod.rs b/codex-rs/tui/src/history_cell/mod.rs
 index ac39aef42..c265e79a4 100644
 --- a/codex-rs/tui/src/history_cell/mod.rs
@@ -16442,11 +17562,11 @@ index ac39aef42..c265e79a4 100644
  pub(crate) use session::*;
 diff --git a/codex-rs/tui/src/history_cell/retained_tool.rs b/codex-rs/tui/src/history_cell/retained_tool.rs
 new file mode 100644
-index 000000000..ad541169c
+index 000000000..f5408a65e
 --- /dev/null
 +++ b/codex-rs/tui/src/history_cell/retained_tool.rs
-@@ -0,0 +1,147 @@
-+//! Shared rows keep overlapping MCP and web completions attached to their original call.
+@@ -0,0 +1,177 @@
++//! Shared rows keep overlapping tool and managed shell updates attached to their original call.
 +
 +use super::*;
 +use std::sync::Arc;
@@ -16480,6 +17600,27 @@ index 000000000..ad541169c
 +            .read()
 +            .unwrap_or_else(std::sync::PoisonError::into_inner)
 +            .active
++    }
++
++    pub(crate) fn blocks_native_history(&self) -> bool {
++        // A background shell must not hold later terminal history until its process exits.
++        self.is_active() && !self.with_cell(|cell| cell.as_any().is::<crate::exec_cell::ExecCell>())
++    }
++
++    fn is_running_shell(&self) -> bool {
++        self.with_cell(|cell| {
++            cell.as_any()
++                .downcast_ref::<crate::exec_cell::ExecCell>()
++                .is_some_and(crate::exec_cell::ExecCell::is_active)
++        })
++    }
++
++    pub(crate) fn update(&self, update: impl FnOnce(&mut dyn HistoryCell)) {
++        let mut data = self
++            .data
++            .write()
++            .unwrap_or_else(std::sync::PoisonError::into_inner);
++        update(data.cell.as_mut());
 +    }
 +
 +    /// Return whether native scrollback already needs a correction for this row.
@@ -16550,6 +17691,9 @@ index 000000000..ad541169c
 +    }
 +
 +    fn display_lines(&self, width: u16) -> Vec<Line<'static>> {
++        if self.is_running_shell() {
++            return Vec::new();
++        }
 +        self.with_cell(|cell| cell.display_lines(width))
 +    }
 +
@@ -16570,6 +17714,9 @@ index 000000000..ad541169c
 +    }
 +
 +    fn display_hyperlink_lines(&self, width: u16) -> Vec<HyperlinkLine> {
++        if self.is_running_shell() {
++            return Vec::new();
++        }
 +        self.with_cell(|cell| cell.display_hyperlink_lines(width))
 +    }
 +
@@ -16586,6 +17733,9 @@ index 000000000..ad541169c
 +    }
 +
 +    fn live_raw_lines(&self) -> Vec<Line<'static>> {
++        if self.is_running_shell() {
++            return Vec::new();
++        }
 +        self.with_cell(|cell| cell.live_raw_lines())
 +    }
 +
@@ -17508,6 +18658,44 @@ index 1aacd04c3..213e51a33 100644
 +      2. Cancel
  
        enter select · esc back
+diff --git a/codex-rs/tui/src/snapshots/codex_tui__transcript_view__tests__terminal_output_disclosure_counts_only_revealable_lines.snap b/codex-rs/tui/src/snapshots/codex_tui__transcript_view__tests__terminal_output_disclosure_counts_only_revealable_lines.snap
+index 6a52f4dec..221546da1 100644
+--- a/codex-rs/tui/src/snapshots/codex_tui__transcript_view__tests__terminal_output_disclosure_counts_only_revealable_lines.snap
++++ b/codex-rs/tui/src/snapshots/codex_tui__transcript_view__tests__terminal_output_disclosure_counts_only_revealable_lines.snap
+@@ -4,30 +4,20 @@ expression: "frames.join(\"\\n\\n\")"
+ ---
+ three visible
+ • Ran echo
+-  └ a
+-    b
+-    c
++    + 3 lines (⌃t to expand)
+ 
+ one hidden
+ • Ran echo
+-  └ b
+-    c
+-    d
+-    + 1 line (⌃t to expand)
++    + 4 lines (⌃t to expand)
+ 
+ clipped line
+ • Ran echo
+-  └ abcdefghijklmno…
+     + 1 line
+ 
+ command only
+ • Ran echo a …
+-  └ (no output)
+     + Show details
+ 
+ storage truncated
+ • Running echo
+-  └ x
+-    x
+-    x
+-    + 97 lines (⌃t to expand)
++    + 100 lines (⌃t to expand)
 diff --git a/codex-rs/tui/src/status/rate_limits.rs b/codex-rs/tui/src/status/rate_limits.rs
 index c22868b62..f8d748390 100644
 --- a/codex-rs/tui/src/status/rate_limits.rs
@@ -17597,58 +18785,18 @@ index eb59f2d15..842173db0 100644
          .features
          .enabled(Feature::TerminalVisualizationInstructions)
 diff --git a/codex-rs/tui/src/thread_transcript/tools.rs b/codex-rs/tui/src/thread_transcript/tools.rs
-index 73e80d617..e665186e2 100644
+index 73e80d617..1e9f3c057 100644
 --- a/codex-rs/tui/src/thread_transcript/tools.rs
 +++ b/codex-rs/tui/src/thread_transcript/tools.rs
 @@ -6,6 +6,7 @@
  
  use std::time::Duration;
  
-+use crate::chatwidget::shell_policy::{eligible_shell, quiet_shell, shell_directive, shell_result};
++use crate::chatwidget::shell_policy::{eligible_shell, shell_directive};
  use crate::exec_cell::CommandOutput;
  use crate::exec_cell::ExecCell;
  use crate::exec_cell::new_active_exec_command;
-@@ -28,6 +29,39 @@ use ratatui::text::Line;
- /// Declined commands never ran, and historical terminal interactions do not carry stdin details.
- /// Pending items retain their last known state without starting a running clock.
- pub(crate) fn historical_tool_fallback(item: &ThreadItem) -> Option<PlainHistoryCell> {
-+    if let ThreadItem::CommandExecution {
-+        command,
-+        source,
-+        status,
-+        aggregated_output,
-+        exit_code,
-+        duration_ms,
-+        ..
-+    } = item
-+        && eligible_shell(*source)
-+        && let Some((policy, command)) = shell_directive(command)
-+        && matches!(
-+            status,
-+            CommandExecutionStatus::Completed | CommandExecutionStatus::Failed
-+        )
-+        && quiet_shell(
-+            policy,
-+            duration_ms
-+                .filter(|ms| *ms >= 0)
-+                .map(|ms| Duration::from_millis(ms as u64)),
-+        )
-+    {
-+        let exit = if *status == CommandExecutionStatus::Completed {
-+            exit_code.unwrap_or_default()
-+        } else {
-+            exit_code.filter(|code| *code != 0).unwrap_or(1)
-+        };
-+        return Some(PlainHistoryCell::new(shell_result(
-+            &command,
-+            aggregated_output.as_deref().unwrap_or_default(),
-+            exit,
-+        )));
-+    }
-     let lines = match item {
-         ThreadItem::CommandExecution {
-             command,
-@@ -156,11 +190,23 @@ impl CommandHistory {
+@@ -156,11 +157,23 @@ impl CommandHistory {
          };
          Some(Self {
              id,
@@ -17678,10 +18826,10 @@ index 73e80d617..e665186e2 100644
              aggregated_output: aggregated_output.unwrap_or_default(),
              exit_code,
 diff --git a/codex-rs/tui/src/thread_transcript/tools_tests.rs b/codex-rs/tui/src/thread_transcript/tools_tests.rs
-index 267168c87..00163ef00 100644
+index 267168c87..465d7269d 100644
 --- a/codex-rs/tui/src/thread_transcript/tools_tests.rs
 +++ b/codex-rs/tui/src/thread_transcript/tools_tests.rs
-@@ -337,3 +337,59 @@ fn agent_tool_fallbacks_preserve_status_without_duplicating_v2_activity() {
+@@ -337,3 +337,63 @@ fn agent_tool_fallbacks_preserve_status_without_duplicating_v2_activity() {
      }
      insta::assert_snapshot!(snapshots.join("\n"));
  }
@@ -17689,12 +18837,12 @@ index 267168c87..00163ef00 100644
 +#[test]
 +fn shell_policy_persisted_pages_match_compact_and_quick_replay() {
 +    let cwd = test_path_buf("/workspace").abs();
-+    for (policy, duration, compact) in [
-+        ("auto", Some(2000), false),
-+        ("auto", Some(2001), true),
-+        ("auto", None, false),
-+        ("background", None, true),
-+        ("foreground", Some(9000), false),
++    for (policy, duration) in [
++        ("auto", Some(2000)),
++        ("auto", Some(2001)),
++        ("auto", None),
++        ("background", None),
++        ("foreground", Some(9000)),
 +    ] {
 +        let mut item = command_item(CommandExecutionStatus::Completed);
 +        if let ThreadItem::CommandExecution {
@@ -17723,21 +18871,112 @@ index 267168c87..00163ef00 100644
 +            RawReasoningVisibility::Hidden,
 +            None,
 +        );
-+        let text = cells
++        let cell = &cells[0];
++        assert_eq!(cell.activity_ids(), vec!["exec:command"]);
++        let compact = cell
++            .compact_hyperlink_lines(80)
 +            .iter()
-+            .flat_map(|cell| cell.transcript_lines(80))
-+            .flat_map(|line| line.spans)
-+            .map(|span| span.content.into_owned())
-+            .collect::<String>();
-+        assert_eq!(
-+            text.contains("Shell completed"),
-+            compact,
-+            "{policy} {duration:?}: {text}"
-+        );
-+        assert_eq!(text.contains("noise"), !compact);
-+        assert!(!text.contains("codex-plus-shell"));
-+        if compact {
-+            assert!(text.contains("Log: /tmp/job.log"));
++            .map(|line| line.line.to_string())
++            .collect::<Vec<_>>();
++        assert_eq!(compact, vec!["• Ran echo result"]);
++        assert!(cell.activity_disclosure(80).is_some());
++        for lines in [cell.transcript_lines(80), cell.raw_lines()] {
++            let text = lines
++                .iter()
++                .map(ToString::to_string)
++                .collect::<Vec<_>>()
++                .join("\n");
++            assert!(text.contains(
++                "codex-plus log: /tmp/job.log\nnoise\ncodex-plus result: exit=0 log=/tmp/job.log"
++            ));
++            assert!(!text.contains("codex-plus-shell"));
 +        }
 +    }
 +}
+diff --git a/codex-rs/tui/src/transcript_view/snapshots/codex_tui__transcript_view__search__tests__find_selective_expansion.snap b/codex-rs/tui/src/transcript_view/snapshots/codex_tui__transcript_view__search__tests__find_selective_expansion.snap
+index 0d2d28c15..069e35fda 100644
+--- a/codex-rs/tui/src/transcript_view/snapshots/codex_tui__transcript_view__search__tests__find_selective_expansion.snap
++++ b/codex-rs/tui/src/transcript_view/snapshots/codex_tui__transcript_view__search__tests__find_selective_expansion.snap
+@@ -3,11 +3,9 @@ source: tui/src/transcript_view/search_tests.rs
+ expression: "crate::transcript_view::tests::text(&buffer)"
+ ---
+ • Running 'echo visible …
+-  └ (no output)
+     + Show details
+ 
+ • Running 'echo visible …
+-  └ (no output)
+     + Show details
+ 
+ $ 'echo visible
+diff --git a/codex-rs/tui/src/transcript_view_tests.rs b/codex-rs/tui/src/transcript_view_tests.rs
+index 92b3eb1ca..7c28097d7 100644
+--- a/codex-rs/tui/src/transcript_view_tests.rs
++++ b/codex-rs/tui/src/transcript_view_tests.rs
+@@ -183,7 +183,7 @@ fn terminal_output_disclosure_follows_live_history_and_keymap() {
+     ));
+     assert_eq!(live, committed);
+     let hint = " (⌃t to expand)";
+-    assert!(live.contains(&format!("+ 5 lines{hint}")));
++    assert!(live.contains(&format!("+ 8 lines{hint}")));
+     // Check where the hint is visible, so the copy/search exclusion cannot pass vacuously.
+     assert!(
+         !view
+@@ -213,6 +213,57 @@ fn terminal_output_disclosure_follows_live_history_and_keymap() {
+     }
+ }
+ 
++#[test]
++fn command_display_expansion_survives_managed_updates_and_resets_for_new_view() {
++    use crate::exec_cell::{CommandOutput, ExecCell, new_active_exec_command};
++    use crate::history_cell::RetainedToolCallCell;
++    use codex_app_server_protocol::CommandExecutionSource;
++
++    let cell = RetainedToolCallCell::new(new_active_exec_command(
++        "running".into(),
++        vec!["echo".into(), "task".into()],
++        vec![],
++        CommandExecutionSource::Agent,
++        None,
++        false,
++    ));
++    let cells: Vec<Arc<dyn HistoryCell>> = vec![Arc::new(cell.clone())];
++    let mut view = TranscriptView::default();
++    cell.update(|cell| {
++        cell.as_any_mut()
++            .downcast_mut::<ExecCell>()
++            .unwrap()
++            .append_output("running", "first output\n");
++    });
++    let collapsed = text(&render(&mut view, &cells, 60, 10));
++    assert!(collapsed.contains("Running echo task"));
++    assert!(!collapsed.contains("first output"));
++    view.disclosure.expanded.insert("exec:running".into());
++    assert!(text(&render(&mut view, &cells, 60, 10)).contains("first output"));
++    cell.update(|cell| {
++        cell.as_any_mut()
++            .downcast_mut::<ExecCell>()
++            .unwrap()
++            .append_output("running", "second output\n");
++    });
++    assert!(text(&render(&mut view, &cells, 60, 10)).contains("first output\nsecond output"));
++    cell.finish(|cell| {
++        cell.as_any_mut()
++            .downcast_mut::<ExecCell>()
++            .unwrap()
++            .complete_call(
++                "running",
++                CommandOutput::new(0, "first output\nsecond output\n".into()),
++                std::time::Duration::ZERO,
++            );
++    });
++    assert!(text(&render(&mut view, &cells, 60, 10)).contains("second output"));
++    let restarted = text(&render(&mut TranscriptView::default(), &cells, 60, 10));
++    assert!(restarted.contains("Ran echo task"));
++    assert!(!restarted.contains("first output"));
++    assert!(!restarted.contains("second output"));
++}
++
+ #[test]
+ fn terminal_output_disclosure_counts_only_revealable_lines() {
+     use crate::exec_cell::CommandOutput;
