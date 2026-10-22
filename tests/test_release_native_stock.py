@@ -344,7 +344,7 @@ def run_case(args):
         if protocol.file_record(fixture.runtime) != protocol.file_record(source_runtime):
             raise Blocked('Private copied executor differs from supplied package')
         shutil.copy2(source_runtime.parents[1] / 'codex-plus.json', fixture.runtime.parents[1] / 'codex-plus.json')
-        operations(fixture, [['job', 'list', '--all']])
+        operations(fixture, [['job', 'list']])
         controls = list(descendants(os.getpid()).values())
         protocol.write_once(evidence / 'kernel-control-baseline.json', controls)
         profile = copy.deepcopy(profile)
