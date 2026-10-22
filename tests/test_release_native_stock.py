@@ -78,12 +78,12 @@ def descendants(pid, proc=Path('/proc')):
         parent = pending.pop()
         try:
             children = child_ids(parent, proc)
-        except FileNotFoundError:
+        except (FileNotFoundError, ProcessLookupError):
             continue
         for child in children:
             try:
                 row = process(child, proc)
-            except FileNotFoundError:
+            except (FileNotFoundError, ProcessLookupError):
                 continue
             if row['parent'] != parent:
                 continue
@@ -435,6 +435,13 @@ def run_case(args):
 
 
 class SelfChecks(unittest.TestCase):
+    def test_descendant_that_exits_during_proc_read_is_not_a_control(self):
+        with patch.dict(globals(), child_ids=Mock(return_value={7}),
+                        process=Mock(side_effect=ProcessLookupError('exited'))):
+            self.assertEqual(descendants(os.getpid()),{})
+        with patch.dict(globals(), child_ids=Mock(side_effect=ProcessLookupError('exited'))):
+            self.assertEqual(descendants(os.getpid()),{})
+
     def test_nonlinux_refuses_before_prctl_or_fixture_spawn(self):
         with patch.object(platform, 'system', return_value='Darwin'), patch.object(ctypes, 'CDLL') as libc:
             with self.assertRaises(Blocked):
