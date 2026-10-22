@@ -26,7 +26,7 @@ RECIPE = Path(__file__).resolve().parent / 'release_recipes/native'
 NATIVE_KEYS = ('upstream_repository', 'cargo_home', 'cargo_target_dir', 'v8_cache',
                'license_cache', 'cargo_jobs', 'test_threads', 'official_binary', 'official_sha256')
 SYSTEM_TOOLS = ('/usr/bin/git', '/usr/bin/strip', '/usr/bin/readelf', '/usr/bin/ldd',
-                '/usr/bin/getconf', '/usr/bin/tar', '/bin/sh')
+                '/usr/bin/getconf', '/usr/bin/tar', '/bin/sh', '/usr/bin/pkg-config')
 
 
 def module(path):
@@ -79,6 +79,39 @@ def fixture_import_probe(profile):
             'print(json.dumps(module.check_imports(json.loads(sys.argv[2]))))')
     return json.loads(checked([profile['python']['path'], '-B', '-c', code, validator,
                                json.dumps({'imports': imports})], env=python_env(profile)))
+
+
+def pkg_config_probe(profile):
+    """Resolve the bwrap crate's actual libcap inputs without compiling anything."""
+    config = profile['native_build'].get('pkg_config')
+    env = python_env(profile)
+    if config is not None:
+        env['PKG_CONFIG_PATH'] = config['path']
+    program = str(Path('/usr/bin/pkg-config').resolve())
+    pc = Path(checked([program, '--path', 'libcap'], env=env).strip())
+    include = Path(checked([program, '--variable=includedir', 'libcap'], env=env).strip())
+    library = Path(checked([program, '--variable=libdir', 'libcap'], env=env).strip()) / 'libcap.so'
+    protocol.require(all(path.is_absolute() for path in (pc, include, library)), 'Relative libcap build input refused')
+    required = {str(path) for path in (pc, include / 'sys/capability.h', library)}
+    declared = config['files'] if config is not None else {}
+    protocol.require(config is None or required <= set(declared), 'Pin the resolved libcap pc, header and linker input')
+    if config is not None:
+        protocol.require(pc.resolve().is_relative_to(Path(config['path']).resolve()), 'Wrong libcap pkg-config origin')
+    inputs = {}
+    for name in sorted(required | set(declared)):
+        path = Path(name)
+        resolved = path.resolve(strict=True)
+        record = protocol.file_record(resolved)
+        protocol.require(config is None or declared[name] == record['sha256'], f'libcap input hash mismatch: {name}')
+        inputs[name] = dict(record, resolved=str(resolved), link=os.readlink(path) if path.is_symlink() else None)
+    with library.open('rb') as stream:
+        header = stream.read(20)
+    protocol.require(header[:6] == b'\x7fELF\x02\x01' and int.from_bytes(header[18:20], 'little') ==
+                     {'x86_64': 62, 'aarch64': 183}[profile['architecture']], 'libcap linker input is not native ELF')
+    return {'pkg_config_path': config['path'] if config is not None else None,
+            'version': checked([program, '--modversion', 'libcap'], env=env).strip(),
+            'cflags': checked([program, '--cflags', 'libcap'], env=env).strip(),
+            'libs': checked([program, '--libs', 'libcap'], env=env).strip(), 'inputs': inputs}
 
 
 def checked(argv, *, cwd=None, env=None):
@@ -201,7 +234,7 @@ def prepare(root, cleanup, *, rehearsal_failure=None):
     protocol.require(rehearsal_failure is None or metadata['rehearsal'] and rehearsal_failure in STAGES,
                      'Failure injection is rehearsal-only')
     build = profile['native_build']
-    protocol.keys(build, NATIVE_KEYS)
+    protocol.keys(build, NATIVE_KEYS, ('pkg_config',))
     for name in ('upstream_repository', 'cargo_home', 'cargo_target_dir', 'v8_cache',
                  'license_cache', 'official_binary'):
         protocol.require(Path(build[name]).is_absolute() and Path(build[name]).exists(), f'Missing native input: {name}')
@@ -214,6 +247,7 @@ def prepare(root, cleanup, *, rehearsal_failure=None):
     protocol.require(sha(build['official_binary']) == build['official_sha256'], 'Official binary mismatch')
     observed, python = observe(profile)
     protocol.require(observed == metadata['native'], 'Native identity changed since init')
+    pkg_config = pkg_config_probe(profile) if not metadata['rehearsal'] or 'pkg_config' in build else None
     _hook(cleanup, root, root / 'outputs/job-cleanup.json')
     ownership_path = str((Path(profile['tooling_root']) / 'scripts/release_ownership.py').resolve())
     common_hook = ownership_path in cleanup['argv'] and 'audit' in cleanup['argv']
@@ -233,6 +267,7 @@ def prepare(root, cleanup, *, rehearsal_failure=None):
                'profile_sha256': protocol.digest(profile), 'closure': closure,
                'seals': sealed, 'python_probe': python, 'cleanup': cleanup, 'final_cleanup': final_cleanup,
                'fixture_closure': fixture_files,
+               'pkg_config': pkg_config,
                'ownership_baseline_sha256': sha(root / 'ownership-baseline.json'),
                'rehearsal_failure': rehearsal_failure}
     protocol.write_once(root / 'native-preparation.json', context)
@@ -260,6 +295,9 @@ def prepare(root, cleanup, *, rehearsal_failure=None):
                            if Path(name).suffix == '.py' or Path(name).parent == RECIPE]
     proposal['inputs'] += [{'source': name, 'path': 'fixture/' + str(number)}
                            for number, name in enumerate(fixture_files) if name not in context['closure']]
+    if pkg_config is not None:
+        proposal['inputs'] += [{'source': record['resolved'], 'path': 'pkg-config/' + str(number)}
+                               for number, record in enumerate(pkg_config['inputs'].values())]
     protocol.write_once(root / 'job-proposal.json', proposal)
     return proposal
 
@@ -275,6 +313,8 @@ def verify(root):
     protocol.require(sha(Path(root) / 'ownership-baseline.json') == context['ownership_baseline_sha256'],
                      'Ownership baseline changed')
     protocol.require(fixture_closure(profile) == context['fixture_closure'], 'Fixture dependency closure changed')
+    if context['pkg_config'] is not None:
+        protocol.require(pkg_config_probe(profile) == context['pkg_config'], 'libcap build inputs changed')
     for name, seal in context['seals'].items():
         protocol.require(seal == checkout_identity(profile[name]), f'Source seal changed: {name}')
     observed, probe = observe(profile)
@@ -507,6 +547,8 @@ class Context:
             self.ENV['CODEX_PLUS_TEST_RUNTIME'] = str(self.PACKAGE / 'bin/codex-plus-runtime')
         if (self.NATIVE / 'bwrap').exists():
             self.ENV['CODEX_BWRAP_SHA256'] = sha(self.NATIVE / 'bwrap')
+        if 'pkg_config' in build:
+            self.ENV['PKG_CONFIG_PATH'] = build['pkg_config']['path']
         previous = self.BASE / 'evidence/frontend-detail.json'
         if previous.exists():
             self.ENV.update({key: value['path'] for key, value in protocol.load(previous).get('v8', {}).items()})

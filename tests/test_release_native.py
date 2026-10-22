@@ -65,6 +65,23 @@ class NativeTests(unittest.TestCase):
         protocol.write_once(root / 'native-preparation.json', context)
         return context
 
+    def libcap_fixture(self):
+        root = self.base / 'libcap'
+        pc = root / 'pkgconfig/libcap.pc'
+        header = root / 'include/sys/capability.h'
+        library = root / 'lib/libcap.so'
+        for path in (pc, header, library):
+            path.parent.mkdir(parents=True, exist_ok=True)
+        header.write_text('/* pinned local libcap header */\n')
+        target = library.with_name('libcap.so.2')
+        target.write_bytes(b'\x7fELF\x02\x01' + b'\0' * 12 + (62).to_bytes(2, 'little'))
+        library.symlink_to(target.name)
+        pc.write_text(f'prefix={root}\nlibdir=${{prefix}}/lib\nincludedir=${{prefix}}/include\n'
+                      'Name: libcap\nDescription: fixture libcap\nVersion: 2.66\n'
+                      'Libs: -L${libdir} -lcap\nCflags: -I${includedir}\n')
+        return {'path': str(pc.parent), 'files': {str(path): native.sha(path.resolve())
+                                                for path in (pc, header, library)}}
+
     def fake_stage(self, argv, *, stdout, **kwargs):
         root = Path(argv[argv.index('--attempt') + 1])
         name = argv[argv.index('--stage') + 1]
@@ -120,6 +137,49 @@ class NativeTests(unittest.TestCase):
         child.write_text('fixture = 2\n')
         self.assertNotEqual(first, native.fixture_closure(self.profile))
 
+    def test_missing_libcap_becomes_available_only_with_scoped_profile_path(self):
+        empty = self.base / 'empty-pkg-config'
+        empty.mkdir()
+        isolated = native.python_env(self.profile) | {'PKG_CONFIG_LIBDIR': str(empty)}
+        original = os.environ.get('PKG_CONFIG_PATH')
+        with patch.object(native, 'python_env', return_value=isolated):
+            with self.assertRaises(subprocess.CalledProcessError):
+                native.pkg_config_probe(self.profile)
+            self.profile['native_build']['pkg_config'] = self.libcap_fixture()
+            result = native.pkg_config_probe(self.profile)
+        self.assertEqual(result['version'], '2.66')
+        self.assertIn('-lcap', result['libs'])
+        self.assertEqual(set(result['inputs']), set(self.profile['native_build']['pkg_config']['files']))
+        self.assertEqual(os.environ.get('PKG_CONFIG_PATH'), original)
+        self.plan['targets']['x86_64']['profile_sha256'] = protocol.digest(self.profile)
+        c = native.Context(self.attempt(), 'frontend')
+        self.assertEqual(c.ENV['PKG_CONFIG_PATH'], self.profile['native_build']['pkg_config']['path'])
+        self.assertNotIn('PKG_CONFIG_PATH', native.python_env(self.profile))
+
+    def test_libcap_required_inputs_and_hashes_are_checked(self):
+        self.profile['native_build']['pkg_config'] = self.libcap_fixture()
+        config = self.profile['native_build']['pkg_config']
+        library = str(self.base / 'libcap/lib/libcap.so')
+        expected = config['files'].pop(library)
+        with self.assertRaisesRegex(ValueError, 'Pin the resolved'):
+            native.pkg_config_probe(self.profile)
+        config['files'][library] = expected
+        (self.base / 'libcap/include/sys/capability.h').write_text('changed header\n')
+        with self.assertRaisesRegex(ValueError, 'hash mismatch'):
+            native.pkg_config_probe(self.profile)
+
+    def test_libcap_frozen_inventory_detects_same_bytes_symlink_retarget(self):
+        self.profile['native_build']['pkg_config'] = self.libcap_fixture()
+        first = native.pkg_config_probe(self.profile)
+        library = self.base / 'libcap/lib/libcap.so'
+        replacement = library.with_name('libcap.so.other')
+        replacement.write_bytes(library.read_bytes())
+        library.unlink()
+        library.symlink_to(replacement.name)
+        second = native.pkg_config_probe(self.profile)
+        self.assertEqual(first['inputs'][str(library)]['sha256'], second['inputs'][str(library)]['sha256'])
+        self.assertNotEqual(first, second)
+
     def test_rehearsal_preflight_exercises_imports_and_real_fixture_setup(self):
         root = self.attempt()
         calls = []
@@ -159,6 +219,7 @@ class NativeTests(unittest.TestCase):
             Path(build[name]).mkdir()
         Path(build['official_binary']).write_text('official')
         build['official_sha256'] = native.sha(build['official_binary'])
+        build['pkg_config'] = self.libcap_fixture()
         self.plan['targets']['x86_64']['profile_sha256'] = protocol.digest(self.profile)
         root = self.attempt()
         closure = {str(ROOT / 'scripts/release_native.py'): protocol.file_record(ROOT / 'scripts/release_native.py')}
@@ -175,6 +236,11 @@ class NativeTests(unittest.TestCase):
         self.assertNotIn('CODEX_PLUS_RELEASE_ATTEMPT', proposal['env'])
         self.assertIn('cleanup', proposal)
         self.assertTrue((root / 'ownership-baseline.json').is_file())
+        prepared = protocol.load(root / 'native-preparation.json')
+        self.assertEqual(set(prepared['pkg_config']['inputs']), set(build['pkg_config']['files']))
+        pkg_snapshots = [row for row in proposal['inputs'] if row['path'].startswith('pkg-config/')]
+        self.assertEqual({row['source'] for row in pkg_snapshots},
+                         {record['resolved'] for record in prepared['pkg_config']['inputs'].values()})
         self.assertEqual(protocol.load(root / 'job-proposal.json'), proposal)
         self.assertEqual(protocol.load(root / 'native-preparation.json')['rehearsal_failure'], 'frontend')
 
