@@ -47,10 +47,11 @@ of native ARM evidence, not execution of ARM binaries on x86.
 ## Failures and recovery
 
 A failed or interrupted stage keeps its original receipt, log and managed
-outcome. Status is read-only. A missing stage can continue only after its inputs
-and all earlier outputs still verify; failed receipts are never overwritten.
-Creating a new attempt is not permission to waive a failed gate or repeat a job
-whose cleanup is unresolved.
+outcome. Status is read-only. Within a still-open attempt, the runner skips
+verified passed receipts; final cleanup seals the attempt and prevents another
+run. Failed receipts and interrupted stage starts also prevent replay. There is
+no cross-attempt receipt or artifact reuse. Creating a new attempt is not
+permission to waive a failed gate or repeat a job whose cleanup is unresolved.
 
 A supervisor's nonzero exit is not proof that its subtree was cleaned. An
 interrupted journal cannot be repaired by inventing a finished entry. For that
@@ -87,6 +88,16 @@ separately. The 0.4.7 ARM total of about 45 minutes already included its roughly
 18-minute test-harness build. Additional CPU cores cannot fix orchestration,
 fixture setup or cleanup mistakes. Change concurrency or cache reuse only after
 measurements and corresponding identity checks justify it.
+
+Before adding a new cache, compare two real attempts with the same plan, profile
+and tooling and no intervening build in their shared Cargo target directory.
+Record Cargo's compiled/fresh artifact counts, build durations and output hashes.
+If the second attempt already reuses workspace outputs, keep the current layout.
+If only workspace units rebuild, investigate the changing checkout paths and
+mtimes; if dependencies and the helper rebuild too, investigate flags and the
+environment first. A stable, verified checkout may be justified by that evidence;
+in-place resume and a separate artifact cache are not prerequisites for a correct
+fresh attempt. Claim fast retries only after measuring them on each architecture.
 
 ## Completion gate for this workflow
 
