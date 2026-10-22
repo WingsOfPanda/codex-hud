@@ -1,4 +1,6 @@
 import importlib.util
+import contextlib
+import io
 import json
 import os
 from pathlib import Path
@@ -355,6 +357,28 @@ class Ownership(unittest.TestCase):
         self.assertEqual(list(first.iterdir()),[])
         self.assertEqual(len(list((self.scope/'socket-cleanup-retries').glob('*-intent.json'))),1)
         self.assertFalse(socket.exists())
+
+    def test_cleanup_cli_seals_absolute_and_relative_report_paths(self):
+        from test_release_protocol import ReleaseProtocolTests
+        fixture = ReleaseProtocolTests()
+        fixture.setUp()
+        self.addCleanup(fixture.doCleanups)
+        for absolute in (True, False):
+            with self.subTest(absolute=absolute):
+                root = fixture.attempt()
+                metadata, _, _ = protocol.read_attempt(root)
+                def clean(*args, **kwargs):
+                    Path(metadata['socket_root']).rmdir()
+                    return dict(passed=True,outcome='clean',owned_remaining=[],unknown=[],
+                                socket_identity=metadata['socket_identity'],socket_removed=True)
+                output = root/'outputs/final-cleanup.json' if absolute else Path('outputs/final-cleanup.json')
+                argv = ['release_ownership.py','cleanup','--attempt',str(root),'--output',str(output)]
+                with contextlib.chdir(root), patch.object(sys,'argv',argv), \
+                     patch.object(ownership,'audit_attempt',side_effect=clean), \
+                     contextlib.redirect_stdout(io.StringIO()):
+                    self.assertEqual(ownership.main(),0)
+                proof = protocol._socket_cleanup_proof(root)
+                self.assertEqual(proof['report'],'outputs/final-cleanup.json')
 
     def test_actual_deleted_cwd_child_and_orphan_stay_owned(self):
         child = '''import json,os,select,sys

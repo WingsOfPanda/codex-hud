@@ -380,7 +380,8 @@ def main():
     import release_protocol as protocol
     protocol.write_once(args.output, result)
     if result['socket_removed']:
-        protocol.seal_socket_cleanup(args.attempt, args.output)
+        report = args.output.resolve().relative_to(args.attempt.resolve()).as_posix()
+        protocol.seal_socket_cleanup(args.attempt, report)
     print(json.dumps(result))
     return 0 if result['passed'] else 1
 
