@@ -248,6 +248,12 @@ def journal(root, event, identity, argv, exit_code=None):
         os.fsync(stream.fileno())
 
 
+def process_identity(pid):
+    fields = Path('/proc', str(pid), 'stat').read_text().rsplit(')', 1)[1].split()
+    return {'boot_id': Path('/proc/sys/kernel/random/boot_id').read_text().strip(),
+            'pid': pid, 'start_ticks': int(fields[19])}
+
+
 def owned_run(argv, *, helper, python, cwd, env, stdout, timeout):
     """Use the fleet-pinned native owned-child subreaper, including readiness ack."""
     reader, writer = socket.socketpair()
@@ -262,9 +268,7 @@ def owned_run(argv, *, helper, python, cwd, env, stdout, timeout):
             guard = subprocess.Popen(guard_argv,
                                      cwd=cwd, env=env, stdin=reader, stdout=stdout, stderr=subprocess.STDOUT,
                                      pass_fds=(input_stream.fileno(),), start_new_session=True)
-        stat_fields = Path('/proc', str(guard.pid), 'stat').read_text().rsplit(')', 1)[1].split()
-        identity = {'boot_id': Path('/proc/sys/kernel/random/boot_id').read_text().strip(),
-                    'pid': guard.pid, 'start_ticks': int(stat_fields[19])}
+        identity = process_identity(guard.pid)
         journal(cwd, 'started', identity, guard_argv)
         reader.close()
         writer.settimeout(5)
@@ -309,6 +313,9 @@ def execution_identity(directory, root, profile):
     protocol.require(record['id'] == directory.name and record['state'] == 'running' and
                      Path(record['package']).resolve() == Path(profile['executor_package_root']).resolve() and
                      record['runtime']['sha256'] == sha(helper), 'Managed execution identity mismatch')
+    workload = record.get('workload') or {}
+    protocol.require(all(workload.get(key) == value for key, value in process_identity(os.getpid()).items()),
+                     'Managed workload does not own this process')
     command = record['manifest']['command']['spec']
     protocol.require(command['argv'][2:] == [str(Path(__file__).resolve()), 'run', '--attempt', str(root),
                                             '--execution', str(directory)], 'Managed command binding mismatch')

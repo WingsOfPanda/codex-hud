@@ -257,11 +257,17 @@ class NativeTests(unittest.TestCase):
         directory.mkdir()
         state = {'id': directory.name, 'state': 'running', 'package': profile['executor_package_root'],
                  'runtime': {'sha256': native.sha(helper)},
+                 'workload': native.process_identity(os.getpid()),
                  'manifest': {'command': {'spec': {'argv': [sys.executable, '-B', native.__file__,
                      'run', '--attempt', str(root), '--execution', str(directory)]}}}}
         path = directory / 'state.json'
         path.write_text(json.dumps(state))
         self.assertEqual(native.execution_identity(directory, root, profile)[0], directory.name)
+        state['workload']['start_ticks'] += 1
+        path.write_text(json.dumps(state))
+        with self.assertRaisesRegex(ValueError, 'does not own this process'):
+            native.execution_identity(directory, root, profile)
+        state['workload'] = native.process_identity(os.getpid())
         state['package'] = '/another/package'
         path.write_text(json.dumps(state))
         with self.assertRaisesRegex(ValueError, 'identity mismatch'):
