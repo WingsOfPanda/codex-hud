@@ -191,6 +191,24 @@ class Ownership(unittest.TestCase):
         self.assertFalse(report['passed'])
         self.assertEqual(report['live_owned_processes'][0]['pid'], int(proc.name))
 
+    def test_snapshot_exit_race_rechecks_terminal_state(self):
+        proc = self.process(888882)
+        original = Path.read_bytes
+        for terminal in (False, True):
+            (proc/'stat').write_text((proc/'stat').read_text().replace(') Z ',') S '))
+            def exiting(path):
+                if path == proc/'environ':
+                    if terminal:
+                        (proc/'stat').write_text((proc/'stat').read_text().replace(') S ',') Z '))
+                    raise FileNotFoundError('process environment disappeared during exit')
+                return original(path)
+            with self.subTest(terminal=terminal), patch.object(Path,'read_bytes',exiting):
+                report = self.audit()
+                self.assertEqual(report['passed'],terminal)
+                if not terminal:
+                    self.assertEqual(report['unknown_unreadable_same_user_processes'][0]['reason'],
+                                     'incomplete_process_snapshot')
+
     def test_control_ancestor_exclusion_only_affects_argv(self):
         self.process(os.getpid(), ppid=888883)
         parent = self.process(888883, command=os.fsencode(self.scope/'controller.py')+b'\0')

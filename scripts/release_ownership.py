@@ -136,8 +136,15 @@ def inspect_processes(roots, baseline, *, scope, proc_root=Path('/proc'), curren
                 else:
                     unknown.append(row)
         except (FileNotFoundError, ProcessLookupError):
-            # A missing cwd alone is handled above; confirm the process ended.
-            if proc.exists():
+            # /proc may retain the directory after an exit removes its environment/cwd.
+            try:
+                terminal = (proc/'stat').read_text().rsplit(')', 1)[1].split()[0] == 'Z'
+            except (FileNotFoundError, ProcessLookupError):
+                continue
+            except PermissionError:
+                unknown.append(dict(pid=int(proc.name), identity_unreadable=True))
+                continue
+            if not terminal:
                 unknown.append(dict(pid=int(proc.name), reason='incomplete_process_snapshot'))
         except PermissionError:
             unknown.append(dict(pid=int(proc.name), identity_unreadable=True))
