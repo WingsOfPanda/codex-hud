@@ -1,4 +1,4 @@
-"""Fresh frontend and focused harness for the qualified upstream recipe."""
+"""Native frontend and focused harness for the qualified upstream recipe."""
 import json
 from pathlib import Path
 import shutil
@@ -8,6 +8,22 @@ import shutil
 FILTERS = ('morandi', 'theme_picker', 'render::highlight', 'custom_terminal::',
     'insert_history::', 'style::contrast', 'bottom_pane::status_line_style::tests',
     'exec_cell::compact')
+
+
+def compiler_artifacts(output):
+    artifacts = []
+    for line in output.splitlines():
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(row, dict) and row.get('reason') == 'compiler-artifact':
+            if type(row.get('fresh')) is not bool:
+                raise ValueError('Cargo compiler-artifact freshness is missing or invalid')
+            artifacts.append(row)
+    if not artifacts:
+        raise ValueError('Missing Cargo compiler-artifact records')
+    return artifacts
 
 
 def frontend(c):
@@ -20,8 +36,9 @@ def frontend(c):
     c.run('patch-apply', ['/usr/bin/git', '-C', c.UPSTREAM, 'apply', '--index', patch])
     c.ENV['INSTA_WORKSPACE_ROOT'] = str(c.UPSTREAM / 'codex-rs')
     build = [c.CARGO, 'build', '--locked', '--offline', '--release', '--target', c.TARGET,
-        '--jobs', str(c.JOBS), '--timings']
-    c.run('bwrap-build', build + ['-p', 'codex-bwrap', '--bin', 'bwrap'], cwd=c.UPSTREAM / 'codex-rs', timeout=1800)
+        '--jobs', str(c.JOBS), '--timings', '--message-format=json']
+    bwrap_artifacts = compiler_artifacts(c.run('bwrap-build', build + ['-p', 'codex-bwrap', '--bin', 'bwrap'],
+        cwd=c.UPSTREAM / 'codex-rs', timeout=1800))
     c.install_native('bwrap')
     c.ENV['CODEX_BWRAP_SHA256'] = c.digest(c.NATIVE / 'bwrap')
     code = ('import json;from pathlib import Path;from codex_package.targets import TARGET_SPECS;'
@@ -41,28 +58,23 @@ def frontend(c):
     assert all(Path(path).resolve().is_relative_to(c.V8_CACHE.resolve()) for path in v8.values())
     c.ENV.update(v8)
     c.REPORT['v8'] = {name: dict(path=path, sha256=c.digest(path)) for name, path in v8.items()}
-    c.run('frontend-build', build + ['-p', 'codex-cli', '-p', 'codex-code-mode-host', '--bin', 'codex',
-        '--bin', 'codex-code-mode-host'], cwd=c.UPSTREAM / 'codex-rs', timeout=5400)
+    frontend_artifacts = compiler_artifacts(c.run('frontend-build', build + ['-p', 'codex-cli', '-p', 'codex-code-mode-host', '--bin', 'codex',
+        '--bin', 'codex-code-mode-host'], cwd=c.UPSTREAM / 'codex-rs', timeout=5400))
     c.cargo_timing('cargo-frontend-build')
     for name in ('codex', 'codex-code-mode-host'):
         c.install_native(name)
-    c.REPORT['fresh_frontend'] = {name: c.digest(c.NATIVE / name) for name in ('codex', 'codex-code-mode-host', 'bwrap')}
-    c.REPORT['frontend_rebuilt'] = True
+    c.REPORT['native_binary_sha256'] = {name: c.digest(c.NATIVE / name) for name in ('codex', 'codex-code-mode-host', 'bwrap')}
+    c.REPORT['cargo_artifact_counts'] = {name: {'fresh': sum(row['fresh'] for row in artifacts),
+        'compiled': sum(not row['fresh'] for row in artifacts)}
+        for name, artifacts in (('bwrap-build', bwrap_artifacts), ('frontend-build', frontend_artifacts))}
 
 
 def harness(c):
     output = c.run('tui-harness-build', [c.CARGO, 'test', '--locked', '--offline',
         '--profile', 'dev-small', '--target', c.TARGET, '--jobs', str(c.JOBS), '--timings', '-p', 'codex-tui',
         '--lib', '--no-run', '--message-format=json'], cwd=c.UPSTREAM / 'codex-rs', timeout=5400)
-    artifacts = []
-    for line in output.splitlines():
-        try:
-            row = json.loads(line)
-        except ValueError:
-            continue
-        if row.get('reason') == 'compiler-artifact' and row.get('profile', {}).get('test') and row.get('executable'):
-            if row['target']['name'] == 'codex_tui':
-                artifacts.append(row)
+    artifacts = [row for row in compiler_artifacts(output) if row.get('profile', {}).get('test') and
+                 row.get('executable') and row['target']['name'] == 'codex_tui']
     assert len(artifacts) == 1, artifacts
     artifact = artifacts[0]
     path = Path(artifact['executable'])

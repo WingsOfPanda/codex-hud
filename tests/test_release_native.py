@@ -270,7 +270,8 @@ class NativeTests(unittest.TestCase):
                         native.run(root, self.base / 'execution')
                     self.assertEqual(before, failed.read_bytes())
 
-    def test_success_resume_preserves_passed_outputs_and_tamper_refuses(self):
+    def test_unsealed_runner_skips_passed_receipts_and_rejects_tamper(self):
+        # The mocked cleanup never seals the socket; this does not qualify post-seal managed resume.
         root = self.attempt()
         context = self.setup_runner(root)
         with patch.object(native, 'verify', return_value=context), \
@@ -451,32 +452,83 @@ class NativeTests(unittest.TestCase):
         self.assertEqual(old.CARGO, new.CARGO)
         self.assertEqual(len(recipe.FILTERS), 8)
 
+    def test_cargo_artifact_parser_preserves_records_and_ignores_non_artifact_output(self):
+        recipe = native.module(native.RECIPE / 'build.py')
+        artifacts = [{'reason': 'compiler-artifact', 'fresh': True, 'target': {'name': 'dependency'}},
+                     {'reason': 'compiler-artifact', 'fresh': False, 'target': {'name': 'codex'}}]
+        output = '\n'.join(['   Compiling codex', '{incomplete diagnostic', 'null', '[]',
+                            json.dumps({'reason': 'compiler-message', 'message': {'rendered': 'warning'}}),
+                            *(json.dumps(row) for row in artifacts),
+                            json.dumps({'reason': 'build-finished', 'success': True})])
+        self.assertEqual(recipe.compiler_artifacts(output), artifacts)
+
+    def test_cargo_artifact_parser_refuses_unknown_freshness(self):
+        recipe = native.module(native.RECIPE / 'build.py')
+        for flag in (None, 0, 1, 'true'):
+            with self.subTest(flag=flag), self.assertRaisesRegex(ValueError, 'freshness'):
+                recipe.compiler_artifacts(json.dumps({'reason': 'compiler-artifact', 'fresh': flag}))
+        with self.assertRaisesRegex(ValueError, 'freshness'):
+            recipe.compiler_artifacts(json.dumps({'reason': 'compiler-artifact'}))
+
+    def test_cargo_artifact_parser_refuses_missing_evidence(self):
+        recipe = native.module(native.RECIPE / 'build.py')
+        for output in ('', 'Finished release profile', json.dumps({'reason': 'build-finished', 'success': True})):
+            with self.subTest(output=output), self.assertRaisesRegex(ValueError, 'Missing Cargo'):
+                recipe.compiler_artifacts(output)
+
     def test_frontend_composition_uses_profile_paths_and_real_bwrap_dependency(self):
-        root = self.attempt()
-        (root / 'native').mkdir()
-        c = native.Context(root, 'frontend')
-        calls = []
-        def execute(name, argv, **kwargs):
-            calls.append((name, list(map(str, argv)), dict(c.ENV)))
-            if name == 'v8-resolve':
-                return json.dumps({'RUSTY_V8_ARCHIVE': str(c.V8_CACHE / 'archive'),
-                                   'RUSTY_V8_SRC_BINDING_PATH': str(c.V8_CACHE / 'binding')})
-            return ''
-        def install(name):
-            (c.NATIVE / name).write_text('native artifact ' + name)
-        c.run = execute
-        c.install_native = install
-        c.cargo_timing = lambda name: None
-        c.digest = lambda path: 'a' * 64
-        native.module(native.RECIPE / 'build.py').frontend(c)
-        names = [name for name, _, _ in calls]
-        self.assertLess(names.index('bwrap-build'), names.index('frontend-build'))
-        self.assertEqual(calls[0][1][-1], str(root / 'upstream'))
-        frontend = next(row for row in calls if row[0] == 'frontend-build')
-        self.assertIn(str(c.CARGO), frontend[1])
-        self.assertEqual(frontend[1][frontend[1].index('--jobs') + 1], '3')
-        self.assertEqual(frontend[2]['CODEX_BWRAP_SHA256'], 'a' * 64)
-        self.assertTrue(frontend[2]['RUSTY_V8_ARCHIVE'].startswith(str(c.V8_CACHE)))
+        cases = [([True, True], [True, True, True], {'bwrap-build': {'fresh': 2, 'compiled': 0},
+                                                  'frontend-build': {'fresh': 3, 'compiled': 0}}),
+                 ([False, False], [False, False, False], {'bwrap-build': {'fresh': 0, 'compiled': 2},
+                                                         'frontend-build': {'fresh': 0, 'compiled': 3}}),
+                 ([True, False], [False, True, True], {'bwrap-build': {'fresh': 1, 'compiled': 1},
+                                                      'frontend-build': {'fresh': 2, 'compiled': 1}})]
+        for bwrap_flags, frontend_flags, expected in cases:
+            with self.subTest(expected=expected):
+                root = self.attempt()
+                (root / 'native').mkdir()
+                (root / 'logs').mkdir()
+                c = native.Context(root, 'frontend')
+                calls, installed = [], []
+                def execute(name, argv, **kwargs):
+                    calls.append((name, list(map(str, argv)), dict(c.ENV)))
+                    if name == 'v8-resolve':
+                        return json.dumps({'RUSTY_V8_ARCHIVE': str(c.V8_CACHE / 'archive'),
+                                           'RUSTY_V8_SRC_BINDING_PATH': str(c.V8_CACHE / 'binding')})
+                    if name in ('bwrap-build', 'frontend-build'):
+                        flags = bwrap_flags if name == 'bwrap-build' else frontend_flags
+                        path = root / 'logs' / (name + '.log')
+                        path.write_text('Compiling\n' + '\n'.join(json.dumps({'reason': 'compiler-artifact',
+                            'fresh': flag}) for flag in flags) + '\n')
+                        return path.read_text()
+                    return ''
+                def install(name):
+                    installed.append(name)
+                    (c.NATIVE / name).write_text('native artifact ' + name)
+                c.run = execute
+                c.install_native = install
+                c.cargo_timing = lambda name: None
+                c.digest = lambda path: 'a' * 64
+                native.module(native.RECIPE / 'build.py').frontend(c)
+                names = [name for name, _, _ in calls]
+                self.assertLess(names.index('bwrap-build'), names.index('frontend-build'))
+                self.assertEqual(calls[0][1][-1], str(root / 'upstream'))
+                for name in ('bwrap-build', 'frontend-build'):
+                    argv = next(row[1] for row in calls if row[0] == name)
+                    self.assertIn('--message-format=json', argv)
+                    self.assertEqual(argv[argv.index('--jobs') + 1], '3')
+                    self.assertEqual(argv[argv.index('--target') + 1], c.TARGET)
+                    self.assertTrue({'--locked', '--offline', '--release', '--timings'} <= set(argv))
+                frontend = next(row for row in calls if row[0] == 'frontend-build')
+                self.assertIn(str(c.CARGO), frontend[1])
+                self.assertEqual(frontend[2]['CODEX_BWRAP_SHA256'], 'a' * 64)
+                self.assertTrue(frontend[2]['RUSTY_V8_ARCHIVE'].startswith(str(c.V8_CACHE)))
+                self.assertEqual(installed, ['bwrap', 'codex', 'codex-code-mode-host'])
+                self.assertEqual(c.REPORT['cargo_artifact_counts'], expected)
+                self.assertEqual(c.REPORT['native_binary_sha256'],
+                                 {name: 'a' * 64 for name in installed})
+                self.assertNotIn('fresh_frontend', c.REPORT)
+                self.assertNotIn('frontend_rebuilt', c.REPORT)
 
 
 if __name__ == '__main__':
