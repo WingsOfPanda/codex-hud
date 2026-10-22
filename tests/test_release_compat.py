@@ -8,7 +8,7 @@ import sys
 import tempfile
 import unittest
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 SCRIPTS = Path(__file__).resolve().parents[1] / 'scripts'
 spec = importlib.util.spec_from_file_location('release_compat', SCRIPTS / 'release_compat.py')
@@ -207,6 +207,76 @@ assert NEW_VERSION == __import__('sys').argv[2]
         completed = subprocess.run([sys.executable, '-c', code], env=env, capture_output=True, text=True)
         self.assertEqual(completed.returncode, 0, completed.stderr)
         self.assertEqual((alternate.read_bytes(), alternate.stat().st_mtime_ns), before)
+
+    def guard_module(self, scope):
+        context = SimpleNamespace(CONFIG={}, DATA=scope, RECIPE=compat.RECIPE)
+        spec = importlib.util.spec_from_file_location('journal_guard', compat.RECIPE / 'owned_run.py')
+        module = importlib.util.module_from_spec(spec)
+        with patch.dict(sys.modules, recipe_context=context):
+            spec.loader.exec_module(module)
+        compat.write(scope / 'helper-binding.json', {'helper': str(self.helper), 'sha256': compat.digest(self.helper)})
+        return module
+
+    def test_guard_journal_pairs_only_observed_terminal_outcomes(self):
+        for outcome in (0, 1, -9, subprocess.TimeoutExpired(['command'], 1)):
+            with self.subTest(outcome=outcome):
+                scope = self.root / ('guard-' + str(len(list(self.root.glob('guard-*')))))
+                scope.mkdir()
+                module = self.guard_module(scope)
+                identity = dict(start_ticks='1234', cmdline_sha256='a' * 64)
+                cleanup = SimpleNamespace(process_identity=lambda proc: identity)
+                reader, writer = Mock(), Mock()
+                writer.recv.return_value = b'\x01'
+                guard = Mock(pid=999999)
+                journal = scope / 'owned-process-identities.jsonl'
+                def wait(**kwargs):
+                    rows = [json.loads(row) for row in journal.read_text().splitlines()]
+                    self.assertEqual(rows[0]['event'], 'started')
+                    self.assertEqual(rows[0]['argv'], ['command', '--fixture'])
+                    if isinstance(outcome, BaseException):
+                        raise outcome
+                    return outcome
+                guard.wait.side_effect = wait
+                with patch.dict(sys.modules, permission_cleanup=cleanup), patch.object(module.socket, 'socketpair', return_value=(reader, writer)), patch.object(module.subprocess, 'Popen', return_value=guard):
+                    if isinstance(outcome, BaseException):
+                        with self.assertRaises(subprocess.TimeoutExpired):
+                            module.run(['command', '--fixture'], cwd=scope, env={}, stdout=None, timeout=1)
+                    else:
+                        self.assertEqual(module.run(['command', '--fixture'], cwd=scope, env={}, stdout=None, timeout=1).returncode, outcome)
+                rows = [json.loads(row) for row in journal.read_text().splitlines()]
+                if isinstance(outcome, int) and outcome >= 0:
+                    self.assertEqual(len(rows), 2)
+                    self.assertEqual(rows[1], dict(rows[0], event='finished', exit_code=outcome))
+                else:
+                    self.assertEqual(len(rows), 1)
+
+    def test_scope_requires_completed_event_journal_and_keeps_positive_ownership_blocking(self):
+        scope = self.root / 'scope'
+        scope.mkdir(mode=0o700)
+        short = self.short / 'ab'
+        short.mkdir(mode=0o700)
+        compat.write(scope / 'unreadable-baseline.json', {'processes': {}})
+        info = short.stat()
+        compat.write(scope / 'short-binding.json', dict(path=str(short), device=info.st_dev, inode=info.st_ino,
+            baseline_sha256=compat.digest(scope / 'unreadable-baseline.json')))
+        context = SimpleNamespace(CONFIG={'short_root': str(self.short)}, DATA=scope, RECIPE=compat.RECIPE)
+        spec = importlib.util.spec_from_file_location('journal_scope', compat.RECIPE / 'fixture_scope.py')
+        module = importlib.util.module_from_spec(spec)
+        with patch.dict(sys.modules, recipe_context=context):
+            spec.loader.exec_module(module)
+        for records, completed, owned, expected in (([{'event': 'started'}], False, False, False),
+                ([{'event': 'started'}, {'event': 'finished'}], True, False, True),
+                ([{'event': 'started'}, {'event': 'finished'}], True, True, False),
+                ([{'pid': 123}], False, False, True)):
+            journal = scope / 'owned-process-identities.jsonl'
+            journal.write_text(''.join(json.dumps(row) + '\n' for row in records))
+            audit = Mock(return_value={'passed': not owned, 'live_owned_processes': [123] if owned else []})
+            cleanup = SimpleNamespace(inspect_processes=audit, verify_guard_journal=Mock(return_value=completed))
+            with patch.dict(sys.modules, permission_cleanup=cleanup):
+                result = module.inspect_scope()
+            self.assertEqual(result['passed'], expected)
+            self.assertEqual(audit.call_args.kwargs['completed_guards'], completed)
+            self.assertEqual(audit.call_args.kwargs['recorded'], records)
 
 
 if __name__ == '__main__':

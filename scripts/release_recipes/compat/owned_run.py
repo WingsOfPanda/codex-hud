@@ -35,14 +35,17 @@ def run(args, *, cwd, env, stdout, timeout):
         if writer.recv(1) != b'\x01':
             raise RuntimeError('Owned supervisor did not acknowledge readiness')
         from permission_cleanup import process_identity
-        record = dict(pid=guard.pid,boot_id=Path('/proc/sys/kernel/random/boot_id').read_text().strip(),
+        record = dict(pid=guard.pid,boot_id=Path('/proc/sys/kernel/random/boot_id').read_text().strip(), argv=args,
             **process_identity(Path('/proc')/str(guard.pid)))
         with (DATA/'owned-process-identities.jsonl').open('a') as stream:
-            stream.write(json.dumps(record)+'\n')
+            stream.write(json.dumps(dict(record, event='started'))+'\n')
         try:
             code = guard.wait(timeout=timeout)
         except subprocess.TimeoutExpired:
             raise subprocess.TimeoutExpired(args, timeout) from None
+        if code >= 0:
+            with (DATA/'owned-process-identities.jsonl').open('a') as stream:
+                stream.write(json.dumps(dict(record, event='finished', exit_code=code))+'\n')
     except BaseException as error:
         writer.close()
         if guard is not None:
