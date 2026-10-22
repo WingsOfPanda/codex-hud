@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+# The existing notice generator uses rustup's +version syntax with a direct cargo pin.
+if [ "${1:-}" = "+${CODEX_PLUS_RELEASE_RUST_VERSION:?}" ]; then shift; fi
+exec "${CODEX_PLUS_RELEASE_CARGO:?}" "$@"
