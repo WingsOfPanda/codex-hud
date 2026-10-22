@@ -4,6 +4,10 @@ Release packaging is separate from the developer-only CLI build. It uses the
 pinned upstream package builder and includes every core runtime executable;
 copying `.build/codex` alone is not a complete release.
 
+The [repeatable native workflow](release-protocol.md) separates product source,
+checked-in tooling, native ownership and evidence acceptance. It remains under
+composed qualification; its unit tests do not replace the native gates below.
+
 ## Release identity
 
 `UPSTREAM_VERSION` and `PLUS_VERSION` in `scripts/package-release.py` are
