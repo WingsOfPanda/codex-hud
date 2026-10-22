@@ -4,9 +4,12 @@ import importlib.util
 import json
 from pathlib import Path
 import shutil
+import subprocess
+import sys
 import tarfile
 import tempfile
 import unittest
+from unittest.mock import patch
 
 import test_packaging as packaging
 
@@ -66,6 +69,18 @@ class ReleaseProtocolTests(unittest.TestCase):
         path.write_text(value if isinstance(value, str) else json.dumps(value))
         return name
 
+    def finalize_socket(self, root):
+        metadata, _, _ = protocol.read_attempt(root)
+        Path(metadata['socket_root']).rmdir()
+        report = self.put(root, 'outputs/final-cleanup.json', {'outcome': 'clean',
+            'owned_remaining': [], 'unknown': [], 'socket_identity': metadata['socket_identity'],
+            'socket_removed': True})
+        protocol.seal_socket_cleanup(root, report)
+
+    def export(self, root, destination):
+        self.finalize_socket(root)
+        return protocol.export_attempt(root, destination)
+
     def receipt(self, root, stage, report, extra=(), *, outcome='passed', exit_code=0, cleanup=None,
                 replay_profile=None, raw_cleanup=None):
         raw = self.put(root, f'outputs/{stage}/raw.log', 'recorded native output\n')
@@ -91,7 +106,8 @@ class ReleaseProtocolTests(unittest.TestCase):
             outputs=[raw, evidence, cleanup['report'], *extra], evidence=evidence,
             execution=execution, cleanup=cleanup, replay_profile=replay_profile)
 
-    def qualified(self, *, rehearsal=False, skip_ap=False, native_result='ok one\n', corrupt_archive=False):
+    def qualified(self, *, rehearsal=False, skip_ap=False, native_result='ok one\n', corrupt_archive=False,
+                  filtered=0):
         root = self.attempt(rehearsal=rehearsal)
         fixture = packaging.PackageIntegrityTests('test_valid_package_and_declared_hash_recipe')
         fixture.setUp()
@@ -113,7 +129,7 @@ class ReleaseProtocolTests(unittest.TestCase):
                      [archive.relative_to(root).as_posix(), *package_files])
         listed = self.put(root, 'outputs/native-tests/list', 'one: test\n')
         stdout = self.put(root, 'outputs/native-tests/stdout',
-                          'test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0s\n')
+                          f'test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; {filtered} filtered out; finished in 0s\n')
         logfile = self.put(root, 'outputs/native-tests/logfile', native_result)
         self.receipt(root, 'native-tests', {'suites': {'hud': {'listed': listed, 'stdout': stdout,
                      'logfile': logfile, 'exit_code': 0}}}, [listed, stdout, logfile])
@@ -174,9 +190,29 @@ class ReleaseProtocolTests(unittest.TestCase):
         socket_root = Path(protocol.load(first / 'attempt.json')['socket_root'])
         self.assertEqual(len(socket_root.name), 2)
         self.assertEqual(socket_root.stat().st_mode & 0o777, 0o700)
+        identity = protocol.load(first / 'attempt.json')['socket_identity']
+        info = socket_root.stat()
+        self.assertEqual((identity['dev'], identity['ino'], identity['uid']), (info.st_dev, info.st_ino, info.st_uid))
+        self.assertEqual(identity['boot_id'], Path('/proc/sys/kernel/random/boot_id').read_text().strip())
+        self.assertEqual(protocol.load(first / 'socket-creation-results/00.json'), identity)
+        self.assertEqual(protocol.load(first / 'socket-creation-intents/00.json')['path'], str(socket_root))
         with self.assertRaises(FileExistsError):
             protocol.write_once(first / 'attempt.json', {})
         self.assertEqual(protocol.status(first)['missing'], list(protocol.GATES))
+
+    def test_socket_creation_failure_preserves_intent_and_completed_identity_survives_cleanup(self):
+        with patch.object(protocol.secrets, 'choice', return_value='A'):
+            root = self.attempt()
+            with self.assertRaisesRegex(ValueError, 'namespace is full'):
+                self.attempt()
+        attempts = list(root.parent.iterdir())
+        failed = next(path for path in attempts if path != root)
+        failure = protocol.load(failed / 'initialization-failure.json')
+        self.assertEqual(failure['last_intent'], 'socket-creation-intents/63.json')
+        self.assertTrue((failed / failure['last_intent']).is_file())
+        self.assertFalse((failed / 'attempt.json').exists())
+        Path(protocol.load(root / 'attempt.json')['socket_root']).rmdir()
+        protocol.read_attempt(root)
 
     def test_accept_replays_existing_package_and_native_validators(self):
         root = self.qualified()
@@ -229,7 +265,7 @@ class ReleaseProtocolTests(unittest.TestCase):
                     evidence=row['evidence'], execution=row['input']['execution'], cleanup=row['cleanup'])
             self.assertEqual((root / 'receipts/package.json').read_bytes(), before)
             bundle = self.base / (root.name + '.tgz')
-            record = protocol.export_attempt(root, bundle)
+            record = self.export(root, bundle)
             imported = protocol.import_attempt(bundle, self.base / ('import-' + root.name), expected_sha256=record['sha256'])
             self.assertEqual(protocol.status(imported)['refused'], ['package'])
 
@@ -253,12 +289,126 @@ class ReleaseProtocolTests(unittest.TestCase):
     def test_export_import_requires_exact_transport_digest_and_preserves_receipts(self):
         root = self.qualified()
         bundle = self.base / 'export.tgz'
-        record = protocol.export_attempt(root, bundle)
+        record = self.export(root, bundle)
         with self.assertRaisesRegex(ValueError, 'Transport'):
             protocol.import_attempt(bundle, self.base / 'bad', expected_sha256='0' * 64)
         imported = protocol.import_attempt(bundle, self.base / 'imported', expected_sha256=record['sha256'])
-        self.assertEqual(protocol.status(root), protocol.status(imported))
-        self.assertEqual(protocol.accept_attempt(root, source_root=ROOT), protocol.accept_attempt(imported, source_root=ROOT))
+        self.assertEqual(protocol.status(root)['receipts'], protocol.status(imported)['receipts'])
+        self.assertTrue(protocol.status(imported)['evidence_only'])
+        self.assertEqual((imported / 'outputs/native-tests/logfile').stat().st_mode & 0o222, 0)
+        self.assertEqual(imported.stat().st_mode & 0o222, 0)
+        with self.assertRaisesRegex(ValueError, 'separate actual archive'):
+            protocol.accept_attempt(imported, source_root=ROOT)
+        self.assertEqual(protocol.accept_attempt(root, source_root=ROOT),
+                         protocol.accept_attempt(imported, source_root=ROOT, archive=root / 'outputs/candidate.tar.gz'))
+
+    def test_export_excludes_archive_native_package_and_unreferenced_heavy_trees(self):
+        root = self.qualified()
+        self.put(root, 'upstream/unreferenced-source.rs', 'do not transfer source\n')
+        self.put(root, 'cache/unreferenced-cache', 'do not transfer cache\n')
+        self.put(root, 'outputs/unreferenced-binary', 'not referenced\n')
+        bundle = self.base / 'lean.tgz'
+        record = self.export(root, bundle)
+        with tarfile.open(bundle) as tar:
+            names = tar.getnames()
+            manifest = json.load(tar.extractfile('evidence-export.json'))
+        self.assertNotIn('outputs/candidate.tar.gz', names)
+        self.assertFalse(any('codex-plus-fixture/' in name or name.startswith(('upstream/', 'cache/')) for name in names))
+        self.assertNotIn('outputs/unreferenced-binary', names)
+        self.assertEqual(manifest['external_artifacts']['outputs/candidate.tar.gz']['kind'], 'archive')
+        imported = protocol.import_attempt(bundle, self.base / 'lean-import', expected_sha256=record['sha256'])
+        with self.assertRaisesRegex(ValueError, 'cannot run or resume'):
+            protocol.require_native_attempt(imported)
+        bad_archive = self.base / 'wrong.tar.gz'
+        bad_archive.write_bytes(b'not the accepted archive')
+        with self.assertRaisesRegex(ValueError, 'archive hash/size'):
+            protocol.accept_attempt(imported, source_root=ROOT, archive=bad_archive)
+        with self.assertRaises((ValueError, OSError)):
+            protocol.accept_attempt(imported, source_root=ROOT, archive=self.base / 'missing.tar.gz')
+
+    def test_exported_raw_evidence_cannot_be_tampered_missing_or_made_external(self):
+        for mutation in ('tampered', 'missing', 'externalized'):
+            root = self.qualified()
+            bundle = self.base / (root.name + '.tgz')
+            record = self.export(root, bundle)
+            imported = protocol.import_attempt(bundle, self.base / ('import-' + root.name), expected_sha256=record['sha256'])
+            path = imported / 'outputs/native-tests/logfile'
+            if mutation == 'tampered':
+                path.chmod(0o600)
+                path.write_text('ok forged\n')
+            else:
+                path.parent.chmod(0o700)
+                path.unlink()
+            if mutation == 'externalized':
+                manifest = protocol.load(imported / 'evidence-export.json')
+                manifest['external_artifacts']['outputs/native-tests/logfile'] = {
+                    'kind': 'native-output', 'record': manifest['included'].pop('outputs/native-tests/logfile')}
+                marker = imported / 'evidence-export.json'
+                marker.chmod(0o600)
+                marker.write_text(json.dumps(manifest))
+            with self.subTest(mutation=mutation), self.assertRaises(ValueError):
+                protocol.accept_attempt(imported, source_root=ROOT, archive=root / 'outputs/candidate.tar.gz')
+
+    def test_focused_native_suite_may_have_filtered_tests(self):
+        self.assertTrue(protocol.accept_attempt(self.qualified(filtered=23), source_root=ROOT)['accepted'])
+
+    def test_export_requires_final_socket_removal_and_hash_bound_clean_report(self):
+        root = self.attempt()
+        bundle = self.base / 'unsealed.tgz'
+        with self.assertRaisesRegex(ValueError, 'Socket directory remains'):
+            protocol.export_attempt(root, bundle)
+        self.assertFalse(bundle.exists())
+        self.finalize_socket(root)
+        raw = root / 'outputs/final-cleanup.json'
+        raw.write_text('{}')
+        with self.assertRaisesRegex(ValueError, 'cleanup report changed'):
+            protocol.export_attempt(root, bundle)
+        self.assertFalse(bundle.exists())
+
+    def test_cli_evidence_roundtrip_refusals_and_handoff(self):
+        def cli(*args, success=True):
+            result = subprocess.run([sys.executable, '-B', str(ROOT / 'scripts/release_protocol.py'),
+                                     *map(str, args)], text=True, capture_output=True)
+            self.assertEqual(result.returncode, 0 if success else 1, result.stdout + result.stderr)
+            return json.loads(result.stdout)
+        root = self.qualified()
+        plan_path = self.base / 'plan.json'
+        plan_path.write_text(json.dumps(self.plan))
+        self.assertTrue(cli('plan-check', '--plan', plan_path, '--source-root', ROOT)['valid'])
+        self.assertEqual(cli('status', '--attempt', root)['attempt'], root.name)
+        bundle = self.base / 'cli.tgz'
+        cli('export', '--attempt', root, '--output', bundle, success=False)
+        self.finalize_socket(root)
+        exported = cli('export', '--attempt', root, '--output', bundle)
+        imported = self.base / 'cli-import'
+        cli('import', '--bundle', bundle, '--sha256', '0' * 64, '--output', imported, success=False)
+        self.assertTrue(cli('import', '--bundle', bundle, '--sha256', exported['sha256'],
+                            '--output', imported)['evidence_only'])
+        accepted_path = self.base / 'accepted-x86.json'
+        cli('accept', '--attempt', imported, '--source-root', ROOT, '--output', accepted_path, success=False)
+        accepted = cli('accept', '--attempt', imported, '--source-root', ROOT,
+                       '--archive', root / 'outputs/candidate.tar.gz', '--output', accepted_path)
+        before = accepted_path.read_bytes()
+        cli('accept', '--attempt', imported, '--source-root', ROOT,
+            '--archive', root / 'outputs/candidate.tar.gz', '--output', accepted_path, success=False)
+        self.assertEqual(accepted_path.read_bytes(), before)
+        output = self.base / 'handoff.json'
+        cli('handoff', '--plan', plan_path, '--source-root', ROOT, '--accept', f'x86_64={accepted_path}',
+            '--output', output, success=False)
+        other = copy.deepcopy(accepted)
+        other.update(architecture='aarch64')
+        other['target']['triple'] = protocol.TARGETS['aarch64']
+        other_path = self.base / 'accepted-arm-fixture.json'
+        other_path.write_text(json.dumps(other))
+        handoff = cli('handoff', '--plan', plan_path, '--source-root', ROOT,
+                      '--accept', f'x86_64={accepted_path}', '--accept', f'aarch64={other_path}', '--output', output)
+        self.assertEqual(set(handoff['targets']), set(protocol.TARGETS))
+
+    def test_validator_loading_does_not_create_bytecode_in_sealed_source(self):
+        path = self.base / 'validator.py'
+        path.write_text('VALUE = 1\n')
+        self.assertEqual(protocol._module(path).VALUE, 1)
+        self.assertFalse((self.base / '__pycache__').exists())
 
     def test_wrong_archive_mode_and_dedicated_native_failure_are_replayed(self):
         with self.assertRaisesRegex(ValueError, 'Archive differs'):

@@ -3,9 +3,11 @@
 Receipts establish consistency of supplied native evidence, not host attestation.
 Transport must supply the export digest through the owning session separately.
 """
+import argparse
 import ast
 import hashlib
 import importlib.util
+import io
 import json
 import os
 from pathlib import Path
@@ -14,6 +16,7 @@ import secrets
 import shutil
 import stat
 import string
+import sys
 import tarfile
 import tempfile
 import tomllib
@@ -82,6 +85,11 @@ def write_once(path, value):
             os.fsync(stream.fileno())
             temporary.chmod(0o400)
             os.link(temporary, path)
+            directory = os.open(path.parent, os.O_RDONLY | os.O_DIRECTORY)
+            try:
+                os.fsync(directory)
+            finally:
+                os.close(directory)
         finally:
             temporary.unlink()
 
@@ -248,25 +256,39 @@ def init_attempt(plan, profile, source_root, *, observed, rehearsal=False):
     root.mkdir(parents=True, mode=0o700)
     for name in ('outputs', 'receipts'):
         (root / name).mkdir(mode=0o700)
-    short_root = Path(profile['short_root'])
-    short_root.mkdir(parents=True, exist_ok=True, mode=0o700)
-    socket_root = None
-    for _ in range(64):
-        candidate = short_root / ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(2))
-        try:
-            candidate.mkdir(mode=0o700)
-            socket_root = candidate
-            break
-        except FileExistsError:
-            continue
-    require(socket_root is not None, 'Private socket namespace is full')
     metadata = {'schema_version': 1, 'attempt': attempt_id, 'architecture': arch,
                 'plan_sha256': digest(plan), 'profile_sha256': digest(profile),
                 'created_at': datetime.now(timezone.utc).isoformat(), 'rehearsal': rehearsal,
-                'native': observed, 'socket_root': str(socket_root)}
+                'native': observed}
     write_once(root / 'plan.json', plan)
     write_once(root / 'profile.json', profile)
-    write_once(root / 'attempt.json', metadata)
+    boot_id = Path('/proc/sys/kernel/random/boot_id').read_text().strip()
+    last_intent = None
+    try:
+        short_root = Path(profile['short_root'])
+        short_root.mkdir(parents=True, exist_ok=True, mode=0o700)
+        identity = None
+        for sequence in range(64):
+            candidate = short_root / ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(2))
+            last_intent = f'socket-creation-intents/{sequence:02d}.json'
+            write_once(root / last_intent, {'attempt': attempt_id, 'path': str(candidate),
+                                          'boot_id': boot_id, 'uid': os.getuid()})
+            try:
+                candidate.mkdir(mode=0o700)
+            except FileExistsError:
+                continue
+            info = candidate.lstat()
+            identity = {'path': str(candidate), 'boot_id': boot_id, 'dev': info.st_dev,
+                        'ino': info.st_ino, 'uid': info.st_uid}
+            write_once(root / f'socket-creation-results/{sequence:02d}.json', identity)
+            break
+        require(identity is not None, 'Private socket namespace is full')
+        metadata.update(socket_root=identity['path'], socket_identity=identity)
+        write_once(root / 'attempt.json', metadata)
+    except Exception as error:
+        write_once(root / 'initialization-failure.json', dict(metadata, error=repr(error),
+                    last_intent=last_intent, boot_id=boot_id, uid=os.getuid()))
+        raise
     return root
 
 
@@ -274,16 +296,30 @@ def read_attempt(root):
     root = Path(root)
     metadata, plan, profile = (load(root / name) for name in ('attempt.json', 'plan.json', 'profile.json'))
     keys(metadata, ('schema_version', 'attempt', 'architecture', 'plan_sha256', 'profile_sha256',
-                    'created_at', 'rehearsal', 'native', 'socket_root'))
+                    'created_at', 'rehearsal', 'native', 'socket_root', 'socket_identity'))
     require(metadata['schema_version'] == 1 and type(metadata['rehearsal']) is bool, 'Invalid attempt metadata')
     require(metadata['plan_sha256'] == digest(plan) and metadata['profile_sha256'] == digest(profile),
             'Attempt input tampering')
     require(metadata['architecture'] == profile['architecture'], 'Attempt architecture mismatch')
+    identity = metadata['socket_identity']
+    keys(identity, ('path', 'boot_id', 'dev', 'ino', 'uid'))
+    require(identity['path'] == metadata['socket_root'] and
+            Path(identity['path']).parent == Path(profile['short_root']) and
+            re.fullmatch(r'[A-Za-z0-9]{2}', Path(identity['path']).name) and
+            isinstance(identity['boot_id'], str) and
+            re.fullmatch(r'[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}', identity['boot_id']) and
+            all(type(identity[name]) is int and identity[name] >= 0 for name in ('dev', 'ino', 'uid')),
+            'Invalid socket directory identity')
     validate_profile(profile, metadata['architecture'], metadata['native'])
     require(digest(profile) == plan['targets'][metadata['architecture']]['profile_sha256'], 'Profile binding mismatch')
     for name in ('tooling_commit', 'plus_source_commit'):
         require(metadata['native'][name] == plan[name], 'Attempt source identity mismatch')
     return metadata, plan, profile
+
+
+def require_native_attempt(root):
+    require(not (Path(root) / 'evidence-export.json').exists(), 'Imported evidence cannot run or resume')
+    return read_attempt(root)
 
 
 def _inventory(root, names):
@@ -365,7 +401,7 @@ def _receipts(root):
 
 def write_receipt(root, stage, *, inputs, executed, outputs, evidence, execution, cleanup,
                   replay_profile=None, compiler_artifacts=None):
-    metadata, plan, profile = read_attempt(root)
+    metadata, plan, profile = require_native_attempt(root)
     require(stage in STAGES, 'Unknown release stage')
     keys(execution, ('job_id', 'executor_package_root', 'executor_sha256', 'architecture',
                      'plus_source_commit', 'tooling_commit', 'outcome', 'exit_code', 'argv', 'cwd', 'env'),
@@ -421,9 +457,52 @@ def write_receipt(root, stage, *, inputs, executed, outputs, evidence, execution
     return row
 
 
+def _transport_manifest(root):
+    path = Path(root) / 'evidence-export.json'
+    if not path.exists():
+        return None
+    manifest = load(path)
+    keys(manifest, ('schema_version', 'kind', 'included', 'external_artifacts'))
+    require(manifest['schema_version'] == 1 and manifest['kind'] == 'evidence-only', 'Invalid evidence export')
+    require(not set(manifest['included']) & set(manifest['external_artifacts']), 'Ambiguous exported artifact')
+    actual = {path.relative_to(root).as_posix() for path in Path(root).rglob('*') if path.is_file()}
+    require(actual == set(manifest['included']) | {'evidence-export.json'}, 'Unexpected/missing exported evidence')
+    for name, record in manifest['included'].items():
+        expected = dict(record, mode=f'{int(record["mode"], 8) & 0o555:04o}')
+        require(file_record(relative_file(root, name)) == expected, 'Exported raw evidence changed')
+    required, _, _, _ = _evidence_inputs(root)
+    require(required <= manifest['included'].keys(), 'Required raw evidence was made external or omitted')
+    require('socket-cleaned.json' in manifest['included'], 'Missing final native cleanup proof')
+    _socket_cleanup_proof(root, check_path=False)
+    for name, descriptor in manifest['external_artifacts'].items():
+        relative_file(root, name)
+        keys(descriptor, ('kind', 'record'))
+        require(descriptor['kind'] in ('archive', 'package-tree', 'native-output'), 'Invalid external artifact kind')
+        keys(descriptor['record'], ('sha256', 'size', 'mode'))
+        hex_digest(descriptor['record']['sha256'])
+        require(type(descriptor['record']['size']) is int and descriptor['record']['size'] >= 0 and
+                isinstance(descriptor['record']['mode'], str) and
+                re.fullmatch(r'[0-7]{4}', descriptor['record']['mode']), 'Invalid external artifact record')
+    return manifest
+
+
+def _verify_records(root, records, external, transport=None):
+    for name, record in records.items():
+        if name in external:
+            require(external[name]['record'] == record, 'External artifact differs from native receipt')
+        else:
+            expected = record
+            if transport is not None:
+                require(transport['included'].get(name) == record, 'Included evidence differs from native receipt')
+                expected = dict(record, mode=f'{int(record["mode"], 8) & 0o555:04o}')
+            require(file_record(relative_file(root, name)) == expected, 'Evidence output changed')
+
+
 def status(root):
     metadata, plan, profile = read_attempt(root)
     rows = _receipts(root)
+    transport = _transport_manifest(root)
+    external = transport['external_artifacts'] if transport else {}
     previous = {}
     for stage in STAGES:
         if stage not in rows:
@@ -435,16 +514,16 @@ def status(root):
         require(row['attempt'] == metadata['attempt'] and closure['attempt'] == metadata and
                 closure['stage'] == stage and row['input_key'] == digest(closure) and
                 closure['previous'] == previous, 'Receipt identity or input key mismatch')
-        for collection in ('outputs',):
-            require(row[collection] == _inventory(root, list(row[collection])), 'Evidence output changed')
-        require(closure['inputs'] == _inventory(root, list(closure['inputs'])), 'Evidence input changed')
+        _verify_records(root, row['outputs'], external, transport)
+        _verify_records(root, closure['inputs'], {}, transport)
         require(row['evidence'] in row['outputs'] and row['cleanup']['report'] in row['outputs'],
                 'Unbound receipt report')
         cleanup_report = load(relative_file(root, row['cleanup']['report']))
         normalized = {name: len(cleanup_report[name]) if isinstance(cleanup_report.get(name), list)
                       else cleanup_report.get(name) for name in ('owned_remaining', 'unknown')}
         require(cleanup_report.get('outcome') == row['cleanup']['outcome'] and
-                all(normalized[name] == row['cleanup'][name] for name in normalized),
+                all(type(normalized[name]) is int and normalized[name] == row['cleanup'][name]
+                    for name in normalized),
                 'Cleanup summary differs from raw report')
         execution = closure['execution']
         execution_profile = profile
@@ -465,13 +544,14 @@ def status(root):
     missing = [stage for stage in GATES if stage not in rows]
     return {'attempt': metadata['attempt'], 'rehearsal': metadata['rehearsal'],
             'receipts': previous, 'missing': missing, 'refused': refused,
+            'evidence_only': transport is not None, 'unverified_external': sorted(external),
             'next_action': 'review-failure' if refused else ('record-' + missing[0] if missing else 'accept')}
 
 
 def _module(path):
     spec = importlib.util.spec_from_file_location(Path(path).stem.replace('-', '_'), path)
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    exec(compile(Path(path).read_bytes(), str(path), 'exec'), module.__dict__)
     return module
 
 
@@ -486,7 +566,47 @@ def _check_report(report, required, outputs):
             require(name in outputs and outputs[name]['sha256'] == sha256, 'Check evidence is not hash-bound')
 
 
-def accept_attempt(root, *, source_root):
+def _accept_archive(root, row, report, plan, arch, verifier, archive):
+    name = report['archive']
+    require(name in row['outputs'], 'Archive not hash-bound')
+    expected = row['outputs'][name]
+    actual = file_record(archive)
+    require(all(actual[key] == expected[key] for key in ('sha256', 'size')), 'External archive hash/size mismatch')
+    package_name = Path(report['package_dir']).name
+    with tempfile.TemporaryDirectory(prefix='cp-accepted-package-') as temporary:
+        scratch = Path(temporary)
+        seen = set()
+        with tarfile.open(archive, 'r:*') as tar:
+            for member in tar:
+                require(member.isdir() or member.isfile(), 'Unsupported archive entry')
+                path = relative_file(scratch, member.name)
+                require(Path(member.name).parts[0] == package_name, 'Unexpected archive root')
+                canonical = Path(member.name).as_posix()
+                require(canonical not in seen, 'Duplicate archive member')
+                seen.add(canonical)
+                if member.isdir():
+                    path.mkdir(parents=True, exist_ok=True, mode=0o700)
+                else:
+                    require(member.mode & ~0o777 == 0, 'Unsafe package file mode')
+                    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+                    with path.open('xb') as output, tar.extractfile(member) as source:
+                        shutil.copyfileobj(source, output)
+                    path.chmod(member.mode)
+        directory = scratch / package_name
+        prefix = report['package_dir'].rstrip('/') + '/'
+        original = {name[len(prefix):]: record for name, record in row['outputs'].items() if name.startswith(prefix)}
+        actual_tree = {path.relative_to(directory).as_posix(): file_record(path)
+                       for path in directory.rglob('*') if path.is_file()}
+        require(actual_tree == original, 'Archive differs from verified package inventory')
+        manifest = verifier.verify_package(directory)
+        require(manifest['plus_commit'] == plan['plus_source_commit'] and manifest['release'] == plan['release'] and
+                manifest['target'] == plan['targets'][arch]['triple'] and manifest['upstream'] == plan['upstream'] and
+                manifest['frontend_patch_sha256'] == plan['patch']['sha256'] and
+                manifest['build']['glibc'] == plan['targets'][arch]['build_glibc'], 'Package identity mismatch')
+        return manifest, file_record(directory / 'codex-plus.json')['sha256']
+
+
+def accept_attempt(root, *, source_root, archive=None):
     state = status(root)
     require(not state['missing'] and not state['refused'], 'Missing/failed/unknown gate or cleanup')
     metadata, plan, profile = read_attempt(root)
@@ -498,7 +618,9 @@ def accept_attempt(root, *, source_root):
     package = _module(Path(source_root) / 'scripts/package-release.py')
     native = _module(Path(source_root) / 'scripts/native-results.py')
     manifest = None
-    archive = None
+    archive_path = Path(archive) if archive is not None else None
+    archive_name = None
+    manifest_sha256 = None
     for gate in GATES:
         row = rows[gate]
         report = load(relative_file(root, row['evidence']))
@@ -516,51 +638,23 @@ def accept_attempt(root, *, source_root):
                     relative_file(root, suite['stdout']).read_text(),
                     relative_file(root, suite['logfile']).read_text(), exit_code=suite['exit_code'],
                     allowed_ignored=expected['allowed_ignored'])
-                require(result['passed'] == expected['passed'] and result['filtered'] == 0,
-                        'Native result requirements differ')
+                require(result['passed'] == expected['passed'], 'Native result requirements differ')
         else:
             _check_report(report, spec['checks'], row['outputs'])
         if gate == 'package':
-            archive = report['archive']
-            require(archive in row['outputs'], 'Archive not hash-bound')
-            directory = relative_file(root, report['package_dir'])
-            manifest = package.verify_package(directory)
-            for path in directory.rglob('*'):
-                if path.is_file():
-                    require(path.relative_to(Path(root)).as_posix() in row['outputs'], 'Package file not hash-bound')
-            require(manifest['plus_commit'] == plan['plus_source_commit'] and manifest['release'] == plan['release'] and
-                    manifest['target'] == plan['targets'][arch]['triple'] and manifest['upstream'] == plan['upstream'] and
-                    manifest['frontend_patch_sha256'] == plan['patch']['sha256'] and
-                    manifest['build']['glibc'] == plan['targets'][arch]['build_glibc'], 'Package identity mismatch')
-            # Archive bytes must contain exactly the verified extracted package, including modes.
-            with tarfile.open(relative_file(root, archive), 'r:*') as tar:
-                members = {}
-                for member in tar:
-                    require(member.isdir() or member.isfile(), 'Unsupported archive entry')
-                    if not member.isfile():
-                        continue
-                    parts = Path(member.name).parts
-                    require(parts and '..' not in parts and not Path(member.name).is_absolute(), 'Unsafe archive member')
-                    require(parts[0] == directory.name, 'Unexpected archive root')
-                    relative = Path(*parts[1:]).as_posix()
-                    require(relative not in members, 'Duplicate archive member')
-                    stream = tar.extractfile(member)
-                    h = hashlib.sha256()
-                    for chunk in iter(lambda: stream.read(1024 * 1024), b''):
-                        h.update(chunk)
-                    members[relative] = {'sha256': h.hexdigest(), 'size': member.size, 'mode': f'{member.mode:04o}'}
-                expected_files = {path.relative_to(directory).as_posix(): file_record(path)
-                                  for path in directory.rglob('*') if path.is_file()}
-                require(members == expected_files, 'Archive differs from verified package')
+            archive_name = report['archive']
+            require(not state['evidence_only'] or archive_path is not None, 'Imported evidence requires separate actual archive')
+            selected = archive_path if archive_path is not None else relative_file(root, archive_name)
+            manifest, manifest_sha256 = _accept_archive(root, row, report, plan, arch, package, selected)
         if gate == 'ap':
             require(report.get('ap_version') == plan['compat']['ap_version'], 'AP replay version mismatch')
             capture_row = rows['captures']
             captures = load(relative_file(root, capture_row['evidence']))
             require(report.get('capture_manifest_sha256') == captures.get('capture_manifest_sha256') and
-                    report.get('package_sha256') == rows['package']['outputs'][archive]['sha256'],
+                    report.get('package_sha256') == rows['package']['outputs'][archive_name]['sha256'],
                     'AP replay capture/package binding mismatch')
         if gate == 'captures':
-            require(report.get('package_sha256') == rows['package']['outputs'][archive]['sha256'],
+            require(report.get('package_sha256') == rows['package']['outputs'][archive_name]['sha256'],
                     'Captures are not from the accepted package')
             name = report.get('capture_manifest')
             require(name in row['outputs'] and row['outputs'][name]['sha256'] == report.get('capture_manifest_sha256'),
@@ -570,14 +664,13 @@ def accept_attempt(root, *, source_root):
                     isinstance(captures.get('files'), dict) and bool(captures['files']), 'Invalid capture manifest')
             for name, record in captures['files'].items():
                 require(name in row['outputs'] and row['outputs'][name] == record, 'Capture file not hash-bound')
-    manifest_path = relative_file(root, load(relative_file(root, rows['package']['evidence']))['package_dir']) / 'codex-plus.json'
     return {'accepted': True, 'attempt': metadata['attempt'], 'plan_sha256': digest(plan),
             'architecture': arch, 'rehearsal': False, 'receipts': state['receipts'],
             'coordinator_protocol': manifest['coordinator_protocol'],
             'execution_record_format': manifest['execution_record_format'],
-            'target': {'triple': manifest['target'], 'asset': Path(archive).name,
-                       'sha256': rows['package']['outputs'][archive]['sha256'],
-                       'manifest_sha256': file_record(manifest_path)['sha256'],
+            'target': {'triple': manifest['target'], 'asset': Path(archive_name).name,
+                       'sha256': rows['package']['outputs'][archive_name]['sha256'],
+                       'manifest_sha256': manifest_sha256,
                        'tree_sha256': manifest['tree_sha256']}}
 
 
@@ -603,16 +696,83 @@ def make_handoff(plan, accepted_by_arch):
             'rollout': plan['rollout']}
 
 
+def _evidence_inputs(root):
+    required = {'attempt.json', 'plan.json', 'profile.json'}
+    outputs = {}
+    archives, packages = set(), set()
+    for stage, row in _receipts(root).items():
+        required.update((f'receipts/{stage}.json', row['evidence'], row['cleanup']['report']))
+        required.update(row['input']['inputs'])
+        outputs.update(row['outputs'])
+        report = load(relative_file(root, row['evidence']))
+        if stage in GATES:
+            for check in report.get('checks', {}).values():
+                required.update(check.get('evidence', {}))
+        if stage == 'native-tests':
+            for suite in report.get('suites', {}).values():
+                required.update(suite[field] for field in ('listed', 'stdout', 'logfile'))
+        if 'capture_manifest' in report:
+            required.add(report['capture_manifest'])
+            required.update(load(relative_file(root, report['capture_manifest']))['files'])
+        if stage == 'package' and 'archive' in report:
+            archives.add(report['archive'])
+            if 'package_dir' in report:
+                packages.add(report['package_dir'].rstrip('/') + '/')
+    for directory in ('socket-creation-intents', 'socket-creation-results'):
+        required.update(path.relative_to(root).as_posix() for path in (Path(root) / directory).glob('*.json'))
+    if (Path(root) / 'socket-removal.json').exists():
+        required.add('socket-removal.json')
+    if (Path(root) / 'socket-cleaned.json').exists():
+        required.add('socket-cleaned.json')
+        required.add(load(Path(root) / 'socket-cleaned.json')['report'])
+    return required, outputs, archives, packages
+
+
+def _evidence_closure(root):
+    """Transport raw evidence, while retaining native artifact records as metadata."""
+    required, outputs, archives, packages = _evidence_inputs(root)
+    external = {}
+    included = set(required)
+    for name in required:
+        require(not any(part in ('source', 'upstream', 'cache', 'cargo-target', 'license-cache')
+                        for part in Path(name).parts), f'Raw evidence cannot require a source/cache tree: {name}')
+    for name, record in outputs.items():
+        parts = Path(name).parts
+        kind = ('archive' if name in archives else
+                'package-tree' if any(name.startswith(prefix) for prefix in packages) else
+                'native-output' if any(part in ('source', 'upstream', 'native', 'extracted', 'packages',
+                    'test-binaries', 'cache', 'cargo-target', 'license-cache') for part in parts) else None)
+        with relative_file(root, name).open('rb') as stream:
+            elf = stream.read(4) == b'\x7fELF'
+        if elf:
+            kind = 'native-output'
+        if name in required and name not in archives and not elf:
+            kind = None
+        if kind:
+            require(name not in required, f'Required raw evidence cannot be external: {name}')
+            external[name] = {'kind': kind, 'record': record}
+        else:
+            included.add(name)
+    return {'schema_version': 1, 'kind': 'evidence-only',
+            'included': _inventory(root, sorted(included)), 'external_artifacts': external}
+
+
 def export_attempt(root, destination):
+    require_native_attempt(root)
     status(root)
+    _socket_cleanup_proof(root)
     root, destination = Path(root), Path(destination)
     require(not destination.exists(), 'Export already exists')
     require(not destination.resolve().is_relative_to(root.resolve()), 'Export must be outside the attempt')
+    manifest = _evidence_closure(root)
     with destination.open('xb') as stream:
         with tarfile.open(fileobj=stream, mode='w:gz') as tar:
-            for path in sorted(root.rglob('*')):
-                require(not path.is_symlink() and (path.is_file() or path.is_dir()), 'Unsupported evidence entry')
-                tar.add(path, arcname=path.relative_to(root), recursive=False)
+            for name in sorted(manifest['included']):
+                tar.add(relative_file(root, name), arcname=name, recursive=False)
+            payload = encoded(manifest)
+            member = tarfile.TarInfo('evidence-export.json')
+            member.size, member.mode = len(payload), 0o400
+            tar.addfile(member, io.BytesIO(payload))
     return file_record(destination)
 
 
@@ -638,7 +798,98 @@ def import_attempt(bundle, destination, *, expected_sha256):
                     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
                     with path.open('xb') as output, tar.extractfile(member) as source:
                         shutil.copyfileobj(source, output)
-                    path.chmod(member.mode & 0o777)
+                    path.chmod(member.mode & 0o555)
+        require((scratch / 'evidence-export.json').is_file(), 'Missing evidence-only export manifest')
         status(scratch)
+        for path in sorted(scratch.rglob('*'), key=lambda path: len(path.parts), reverse=True):
+            if path.is_dir():
+                path.chmod(0o500)
         scratch.rename(destination)
+        destination.chmod(0o500)
     return destination
+
+
+def _socket_cleanup_proof(root, *, check_path=True):
+    metadata, _, _ = read_attempt(root)
+    identity = metadata['socket_identity']
+    if check_path:
+        require(not os.path.lexists(identity['path']), 'Socket directory remains; final native cleanup is required')
+    proof = load(Path(root) / 'socket-cleaned.json')
+    keys(proof, ('outcome', 'socket_identity', 'report', 'report_sha256'))
+    require(proof['outcome'] == 'clean' and proof['socket_identity'] == identity, 'Unresolved socket cleanup proof')
+    report_path = relative_file(root, proof['report'])
+    require(file_record(report_path)['sha256'] == proof['report_sha256'], 'Final cleanup report changed')
+    report = load(report_path)
+    require(report.get('outcome') == 'clean' and report.get('socket_identity') == identity and
+            report.get('socket_removed') is True and all((type(report.get(name)) is int and report[name] == 0) or report.get(name) == []
+            for name in ('owned_remaining', 'unknown')), 'Final native cleanup did not resolve ownership')
+    return proof
+
+
+def seal_socket_cleanup(root, report):
+    metadata, _, _ = require_native_attempt(root)
+    proof = {'outcome': 'clean', 'socket_identity': metadata['socket_identity'], 'report': report,
+             'report_sha256': file_record(relative_file(root, report))['sha256']}
+    # The owning native cleanup hook removes the directory; this records its proof.
+    require(not os.path.lexists(metadata['socket_root']), 'Socket directory remains')
+    raw = load(relative_file(root, report))
+    require(raw.get('outcome') == 'clean' and raw.get('socket_identity') == metadata['socket_identity'] and
+            raw.get('socket_removed') is True and all((type(raw.get(name)) is int and raw[name] == 0) or raw.get(name) == []
+            for name in ('owned_remaining', 'unknown')), 'Final native cleanup did not resolve ownership')
+    write_once(Path(root) / 'socket-cleaned.json', proof)
+    return proof
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    commands = parser.add_subparsers(dest='command', required=True)
+    for name in ('plan-check', 'status', 'export', 'import', 'accept', 'handoff'):
+        command = commands.add_parser(name)
+        if name in ('plan-check', 'handoff'):
+            command.add_argument('--plan', type=Path, required=True)
+        if name in ('plan-check', 'accept', 'handoff'):
+            command.add_argument('--source-root', type=Path, required=True)
+        if name in ('status', 'export', 'accept'):
+            command.add_argument('--attempt', type=Path, required=True)
+        if name in ('export', 'import', 'accept', 'handoff'):
+            command.add_argument('--output', type=Path, required=True)
+        if name == 'import':
+            command.add_argument('--bundle', type=Path, required=True)
+            command.add_argument('--sha256', required=True, help='Separately received evidence-bundle digest')
+        if name == 'accept':
+            command.add_argument('--archive', type=Path)
+        if name == 'handoff':
+            command.add_argument('--accept', action='append', required=True, metavar='ARCH=PATH')
+    args = parser.parse_args(argv)
+    try:
+        if args.command == 'plan-check':
+            plan = validate_plan(load(args.plan), args.source_root)
+            result = {'valid': True, 'plan_sha256': digest(plan)}
+        elif args.command == 'status':
+            result = status(args.attempt)
+        elif args.command == 'export':
+            result = export_attempt(args.attempt, args.output)
+        elif args.command == 'import':
+            imported = import_attempt(args.bundle, args.output, expected_sha256=args.sha256)
+            result = status(imported)
+        elif args.command == 'accept':
+            result = accept_attempt(args.attempt, source_root=args.source_root, archive=args.archive)
+            write_once(args.output, result)
+        else:
+            plan = validate_plan(load(args.plan), args.source_root)
+            accepted = {}
+            for binding in args.accept:
+                arch, separator, path = binding.partition('=')
+                require(separator and arch not in accepted, 'Expected unique ARCH=PATH acceptance bindings')
+                accepted[arch] = load(path)
+            result = make_handoff(plan, accepted)
+            write_once(args.output, result)
+        print(json.dumps(result, sort_keys=True))
+        return 0
+    except (OSError, ValueError, KeyError, TypeError) as error:
+        print(json.dumps({'accepted': False, 'error': str(error)}, sort_keys=True))
+        return 1
+
+
+if __name__ == '__main__':
+    sys.exit(main())
