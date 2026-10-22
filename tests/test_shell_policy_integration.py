@@ -55,7 +55,8 @@ stream_max_retries=0
 
 def rollout(home):
     return [json.loads(line) for path in (home / 'sessions').glob('**/*.jsonl')
-            for line in path.read_text().splitlines() if line]
+            # A live writer may have appended only part of the final JSON/UTF-8 record.
+            for line in path.read_bytes().split(b'\n')[:-1] if line]
 
 
 def turns(home):

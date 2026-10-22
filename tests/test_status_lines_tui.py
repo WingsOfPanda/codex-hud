@@ -21,6 +21,7 @@ parser.add_argument('--colors', choices=['on', 'off', 'observe'])
 parser.add_argument('--no-color', action='store_true', help='Exercise NO_COLOR without FORCE_COLOR')
 parser.add_argument('--case', choices=['all', 'mixed', 'stats-only', 'identity-only', 'branch', 'empty'], default='all')
 parser.add_argument('--compact', action='store_true', help='Check optional compact indicator after branch')
+parser.add_argument('--theme', choices=['morandi'], help='Exercise the selected app palette')
 args = parser.parse_args()
 if args.compact and args.case != 'branch':
     parser.error('--compact requires --case branch')
@@ -76,6 +77,8 @@ class StatusServer(AppServer):
         if method == 'config/read':
             result['result']['config'].update(model='gpt-6-astra', model_reasoning_effort='high',
                 tui={'status_line': self.selection, 'status_line_use_colors': args.colors != 'off'})
+            if args.theme:
+                result['result']['config']['tui']['theme'] = args.theme
         if method in ('thread/start', 'thread/resume'):
             result['result'].update(model='gpt-6-astra', reasoningEffort='high')
         if method == 'thread/list' and params.get('ancestorThreadId') == ROOT:
@@ -153,6 +156,7 @@ def run_case(binary, directory, evidence, name):
         'suppress_unstable_features_warning=true\nanalytics.enabled=false\n'
         'features.daemon_auto_start=false\nfeatures.plugins=false\n'
         f'[tui]\nstatus_line={json.dumps(selection)}\n'
+        + (f'theme={json.dumps(args.theme)}\n' if args.theme else '')
         + ('fullscreen_transcript=true\nalternate_screen="always"\n' if args.compact else '')
         + (f'status_line_use_colors={str(args.colors != "off").lower()}\n' if args.colors else ''))
     (home / 'config.toml').write_text(config)
@@ -160,7 +164,7 @@ def run_case(binary, directory, evidence, name):
     server = StatusServer(home, work, selection, workers)
     terminal = None
     report = dict(case=name, selection=selection, colors_mode=args.colors, color_level=args.color_level,
-                  no_color=args.no_color, passed=False, stages=[])
+                  no_color=args.no_color, theme=args.theme, passed=False, stages=[])
     try:
         terminal = Terminal(binary, home, work)
         wait([terminal], lambda: composer_ready(terminal.text)
@@ -266,6 +270,8 @@ def run_case(binary, directory, evidence, name):
         assert not [request for request in server.requests if request.get('method') in forbidden]
         saved = tomllib.loads((home / 'config.toml').read_text())
         assert saved['tui']['status_line'] == selection, 'display rewrote status-line selection'
+        if args.theme:
+            assert saved['tui']['theme'] == args.theme, 'display rewrote selected theme'
         report.update(display_model_requests=0, config_preserved=True)
         if name in ('mixed', 'branch') and args.colors == 'on' and args.color_level != '0' and not args.no_color:
             assert report['colors']['pairwise_distinct'], report['colors']
@@ -284,6 +290,14 @@ def run_case(binary, directory, evidence, name):
                 else:
                     red, green, blue = (int(foreground[i:i+2], 16) for i in (0, 2, 4))
                     assert green > red and blue > red, report['colors']
+            if args.theme == 'morandi' and args.color_level in ('2', '3'):
+                foreground = report['colors']['items']['Context 75% left']['foreground']
+                red, green, blue = (int(foreground[i:i+2], 16) for i in (0, 2, 4))
+                assert green > red and green > blue, 'Context must remain visibly green'
+                if args.color_level == '3':
+                    assert foreground == 'a8c9ad', report['colors']
+                    if args.compact:
+                        assert report['colors']['items']['compact']['foreground'] == 'a2c6be', report['colors']
         if name in ('mixed', 'branch') and (args.colors == 'off' or args.color_level == '0' or args.no_color):
             foregrounds = {value['foreground'] for value in report['colors']['items'].values()}
             assert len(foregrounds) == 1, report['colors']

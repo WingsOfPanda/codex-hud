@@ -236,6 +236,21 @@ def run_case(binary, launcher, root, evidence, case, theme=None):
 
 
 class ContractSelfTest(unittest.TestCase):
+    def test_rollout_reads_only_complete_records_without_hiding_corruption(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary)
+            (home / 'sessions').mkdir()
+            path = home / 'sessions/fixture.jsonl'
+            record = b'{"type":"event_msg"}\n'
+            for tail in (b'{"type":"unfinished', b'{"text":"\xe2\x82'):
+                path.write_bytes(record + tail)
+                self.assertEqual(rollout(home), [{'type': 'event_msg'}])
+            path.write_bytes(record + b'{"type":"finished"}\n')
+            self.assertEqual(len(rollout(home)), 2)
+            path.write_bytes(record + b'{invalid}\n')
+            with self.assertRaises(json.JSONDecodeError):
+                rollout(home)
+
     def test_success_rejects_output_and_multiline_body(self):
         valid = '• Ran python finite.py …\n  + Show details'
         compact_contract(valid)

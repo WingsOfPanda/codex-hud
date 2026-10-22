@@ -93,6 +93,17 @@ not change command execution, retained results, disclosure or model requests.
 The palette is described in [theme behavior](themes.md). Native x86 development
 verification does not establish ARM package qualification or fleet activation.
 
+For the brighter palette, run `tests/test_morandi_command_colors_tui.py --binary
+CANDIDATE --launcher MATCHING_HELPER --evidence NEW_DIRECTORY --color-level 2`
+and repeat with level `3`. It executes the existing private success/failure
+fixtures and checks actual command-dot colors against the Context item while
+retaining the folding and raw-output checks. The previous palette must fail the
+shared-green assertion. The candidate must have its matching `codex-plus-runtime`
+adjacent to the client: `--launcher` selects the shell runner but does not change
+the client's goal/advisor helper lookup. Add `--theme morandi` to the status-line PTY checks to
+exercise the actual selected theme, including ANSI256/TrueColor, ANSI16 and
+disabled-color cases; unthemed runs do not establish Morandi acceptance.
+
 ### Compact command display (development)
 
 [Development evidence](evidence/compact-command-display.json) records the exact
