@@ -13,7 +13,18 @@ updates; increment its patch component for Plus fixes and its minor component
 for Plus features. Every new combination still needs qualified target packages.
 Existing published `plus.N` releases retain their original identities.
 
-The current revision is `0.163.0-plus.0.4.6`: compact command display, the Morandi
+The current revision is `0.163.0-plus.0.4.7`: a brighter existing Morandi palette,
+matching command-success/Context green, and Morandi-only ANSI256 hue preservation.
+The upstream base stays 0.163.0. Build fresh release frontends on both architectures;
+retain only exact applicable development test evidence. The helper changes version
+only, so verify the unchanged advisor worker identity and successful old/new mixes.
+Qualify quiet rollback to 0.4.6, both-direction holds, 0.4.6 TUI/new wrapper operation,
+and package-backed palette/command/AP capture checks on both targets. Use protocol 5,
+execution format 1, no daemon restart, quiet checkpoint, drained executions, session
+restart required and `agents_md: null`. No new configuration keys or settings changes
+are needed. Propose retention floor 0.4.6 only after native qualification passes.
+
+The preceding revision is `0.163.0-plus.0.4.6`: compact command display, the Morandi
 theme, and advisor model diagnostics. Build the changed frontend and helper
 natively on both architectures. Reuse verified caches and unchanged-stage
 receipts only with exact source identity; do not reuse the previous frontend
