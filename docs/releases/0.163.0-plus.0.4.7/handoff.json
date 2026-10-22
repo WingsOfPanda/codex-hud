@@ -1,0 +1,39 @@
+{
+  "release": "0.163.0-plus.0.4.7",
+  "plus_commit": "d25cc2470202edd3ed917fac93ad22f52e4e5a2d",
+  "coordinator_protocol": 5,
+  "execution_record_format": 1,
+  "upstream": {
+    "version": "0.163.0",
+    "tag": "rust-v0.163.0",
+    "commit": "83086188ae0614bd882818ff1aa23f3194962012"
+  },
+  "note": "docs/releases/0.163.0-plus.0.4.7.md",
+  "targets": {
+    "x86_64": {
+      "triple": "x86_64-unknown-linux-gnu",
+      "asset": "codex-plus-0.163.0-plus.0.4.7-x86_64-unknown-linux-gnu.tar.gz",
+      "sha256": "ffa58ae4aeeb2e80a8c14ce367fc76d43946f89c5a7a695f19ddca107867c62f",
+      "tree_sha256": "815f7844c8da7a6b5d0c4321c072ca4a124ba5ceb4f55eadfdd7707110ef4403",
+      "manifest_sha256": "2991d34f2c3f84360f844a464a540677b4fca97ae110b476419fbcbfda67317a"
+    },
+    "aarch64": {
+      "triple": "aarch64-unknown-linux-gnu",
+      "asset": "codex-plus-0.163.0-plus.0.4.7-aarch64-unknown-linux-gnu.tar.gz",
+      "sha256": "5afca7601c38899434df0c7c031bffaa35b8b74126c9c497bd4190d1e91cb57b",
+      "tree_sha256": "6c6c736dea7a0c02a6aa33103883b8c7ffe4ac461b8379bedea3b54efb8c9372",
+      "manifest_sha256": "1fa660d903be81b306e4b29346855eef09e004d752e1afbb3348412fd3e2ef9c"
+    }
+  },
+  "rollout": {
+    "daemon_restart": false,
+    "quiet_checkpoint": true,
+    "executions": "wait",
+    "session_restart": "required",
+    "agents_md": null,
+    "retain": [
+      "0.163.0-plus.0.4.6"
+    ],
+    "notes": "Qualified release. Restart TUIs for brighter Morandi. Drain consultations, turns, jobs, callbacks and unresolved executions at the quiet checkpoint. Advisor worker identity is unchanged; fresh native 046/047 package mixes passed in both directions. Retain 0.4.6 and every process/job-referenced package. 0.4.5 becomes prunable once unused. No daemon restart, agents policy update, new config keys or automatic settings rewrite. Existing tui.theme=\"morandi\" remains opt-in; fleet-config owns installation and pins."
+  }
+}

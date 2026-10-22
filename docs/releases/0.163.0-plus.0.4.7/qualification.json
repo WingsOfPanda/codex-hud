@@ -1,0 +1,374 @@
+{
+  "qualified": true,
+  "release": "0.163.0-plus.0.4.7",
+  "shipping_source": "d25cc2470202edd3ed917fac93ad22f52e4e5a2d",
+  "fixture_companion": "d25cc2470202edd3ed917fac93ad22f52e4e5a2d",
+  "gates": {
+    "x86_64-package": {
+      "accepted": true,
+      "result": {
+        "schema": 1,
+        "accepted": true,
+        "cleanup_passed": true,
+        "native": true,
+        "source": "d25cc2470202edd3ed917fac93ad22f52e4e5a2d",
+        "architecture": "x86_64",
+        "archive": "/home/liupan/Aerius/codex-plus/.build/release047/x86-prep/work/packages/codex-plus-0.163.0-plus.0.4.7-x86_64-unknown-linux-gnu.tar.gz",
+        "package": "/home/liupan/Aerius/codex-plus/.build/release047/x86-prep/work/extracted/codex-plus-0.163.0-plus.0.4.7-x86_64-unknown-linux-gnu",
+        "archive_sha256": "ffa58ae4aeeb2e80a8c14ce367fc76d43946f89c5a7a695f19ddca107867c62f",
+        "manifest_sha256": "2991d34f2c3f84360f844a464a540677b4fca97ae110b476419fbcbfda67317a",
+        "tree_sha256": "815f7844c8da7a6b5d0c4321c072ca4a124ba5ceb4f55eadfdd7707110ef4403",
+        "helper_sha256": "587afe1aa00fdead2a426ffe8cb49a96032a50d7b50421f134f132cb1b00a7be",
+        "runtime_units": 197,
+        "unique_focused_native_tests": 137,
+        "execution": "b0155042-9318-4d0c-acf4-be4c1948662f",
+        "final_execution_result": "/home/liupan/.codex/codex-plus/executions/v1/01a14f7f-caf5-73b3-aada-5db7355097bf/b0155042-9318-4d0c-acf4-be4c1948662f/result.json",
+        "final_execution_result_sha256": "b79faf0dad52df16537ea94f1b50588fd3a4886ffc614803df2c0cae21ead273",
+        "root_acceptance": "/home/liupan/Aerius/codex-plus/.build/release047/root-review/x86-publication-proof.json",
+        "root_acceptance_sha256": "27bba8c733f557522c09b14ac184a553df2f72c664e56f1cf0ace55a10171fb0",
+        "qualification_report": "/home/liupan/Aerius/codex-plus/.build/release047/x86-prep/work/report.json",
+        "qualification_report_sha256": "3e444f75e39ab5b6668a6ded78533a874e0fe0bc3214e773b389b393be0f9821",
+        "host_limitation": "Raw bwrap uid-map denied identically for official and Plus; both CLI read-only sandboxes passed.",
+        "compatibility_and_ap": "pending separate gates"
+      }
+    },
+    "x86_64-compat": {
+      "accepted": true,
+      "result": {
+        "execution": "94624c96-f240-4baa-8937-e863f0e0999c",
+        "rollback_floor": "0.4.6",
+        "advisor_tests": 9,
+        "mixed_tui": "0.4.6 TUI/new 0.4.7 wrapper root result passed",
+        "native": true
+      }
+    },
+    "x86_64-ap": {
+      "accepted": true,
+      "result": {
+        "ap_version": "0.7.35",
+        "verdicts": 20,
+        "busy_pairs": [
+          {
+            "size": "100x40",
+            "before_state": "high-100x40-busy-midturn-t0",
+            "after_state": "high-100x40-busy-midturn-t5",
+            "before_sha256": "309f461af426915a84b4e898f84a769b572ab8bfb8e61c8ca7e94fce81540a1a",
+            "after_sha256": "af287f6fdbd346fddf276fefc648afe4a9fff2e52f02def4cde7497f56ab5539",
+            "changed": true,
+            "passed": true,
+            "producer": "actual AP screenToCursor export"
+          },
+          {
+            "size": "80-split",
+            "before_state": "high-80-split-busy-midturn-t0",
+            "after_state": "high-80-split-busy-midturn-t5",
+            "before_sha256": "85fe7c389259e88d1322d5e33b0b2f2ebfa317f4001223559766a4d462496638",
+            "after_sha256": "7058260aeccbdd9e49d8df2ab240ee1b6d8bb4edcd8b424127992e38be19cde8",
+            "changed": true,
+            "passed": true,
+            "producer": "actual AP screenToCursor export"
+          }
+        ],
+        "capture_manifest_sha256": "914914db3135ed1d319dedd75b07d267c38a61aac2392ef30a50080726c8bf7a",
+        "footer_bounds": "normal 8; explicit help/search 9"
+      }
+    },
+    "aarch64-package": {
+      "accepted": true,
+      "result": {
+        "schema": 1,
+        "accepted": true,
+        "cleanup_passed": true,
+        "native": true,
+        "source": "d25cc2470202edd3ed917fac93ad22f52e4e5a2d",
+        "architecture": "aarch64",
+        "root": "01a14f7f-caf5-73b3-aada-5db7355097bf",
+        "execution": "e36bd519-5fe8-429c-afa4-7b71ae410512",
+        "archive_sha256": "5afca7601c38899434df0c7c031bffaa35b8b74126c9c497bd4190d1e91cb57b",
+        "manifest_sha256": "1fa660d903be81b306e4b29346855eef09e004d752e1afbb3348412fd3e2ef9c",
+        "tree_sha256": "6c6c736dea7a0c02a6aa33103883b8c7ffe4ac461b8379bedea3b54efb8c9372",
+        "final_execution_result": "/home/liupan/.codex/codex-plus/executions/v1/01a14f7f-caf5-73b3-aada-5db7355097bf/e36bd519-5fe8-429c-afa4-7b71ae410512/result.json",
+        "final_execution_result_sha256": "65f81b5f463681cfb37f234843460f2fcd4e64f28c977b3a99c0aa969fdc280a",
+        "root_acceptance": "/home/liupan/Aerius/codex-plus/.build/release047/root-review/arm-final-package-proof.json",
+        "root_acceptance_sha256": "6520bf288b8967684315fde99379f157380587b753c27d834ce9f60a7f84d119",
+        "cleanup_sha256": "1c1ab8880eb620b04af387f76ca490d03c0588d81bf289f9214d97129e346c52",
+        "cleanup_resolution": {
+          "kind": "verified_cleanup_resolution",
+          "resolution_path": "/home/liupan/.codex/codex-plus/executions/v1/01a14f7f-caf5-73b3-aada-5db7355097bf/e36bd519-5fe8-429c-afa4-7b71ae410512/resolution.json",
+          "resolution_sha256": "13c50dc0c359073baac42bdf8294569bf5e75f6ec6d0ebb18e2bc347b71c682c",
+          "resolved_state_snapshot": "/home/liupan/Aerius/codex-plus/.build/release047/native-session-recovery/resolved-state-snapshot.json",
+          "resolved_state_snapshot_sha256": "719f08f83bd1cc74cfc6a072d91960bcdd9c4b8442f0936753e367d158737e9e",
+          "cleanup_report": {
+            "path": "/home/liupan/Aerius/codex-plus/.build/release047/native-session-recovery/root-live-verification.json",
+            "sha256": "1c1ab8880eb620b04af387f76ca490d03c0588d81bf289f9214d97129e346c52"
+          },
+          "native_summary": {
+            "path": "/home/liupan/Aerius/codex-plus/.build/release047/arm-prep-v4/download/summary.json",
+            "sha256": "07b50d6399b48a367a38517c5ac275f29885ba19204f83d44e56a304c6e1092b"
+          },
+          "native_results": {
+            "path": "/home/liupan/Aerius/codex-plus/.build/release047/root-review/arm-native-results.json",
+            "sha256": "1a704d0c73025af0971d8bedf3954ba7d8a2861694e65ac0ccd994258e41af44"
+          },
+          "original_evidence_seal": {
+            "path": "/home/liupan/Aerius/codex-plus/.build/release047/native-session-recovery/evidence/native-01/original-evidence-seal.json",
+            "sha256": "207a76f3e1485642eabf47a9347de663ffa5d57ed616331ff50850cea7745150"
+          },
+          "restoration_report": {
+            "path": "/home/liupan/Aerius/codex-plus/.build/release047/native-session-recovery/evidence/native-01/lease-restored.json",
+            "sha256": "b239d5b467b9ce22a74f8cf252c90b7422c43f36ac4f4faa4b2769a22bf6b701"
+          }
+        },
+        "root_validator_test_log": "53c0af3d-8032-4ebd-b841-60edc1203ad2"
+      }
+    },
+    "aarch64-compat": {
+      "accepted": true,
+      "result": {
+        "execution": "802aab4a-2837-4676-96a2-4d9835948dca",
+        "rollback_floor": "0.4.6",
+        "advisor_tests": 9,
+        "mixed_tui": "0.4.6 TUI/new 0.4.7 wrapper root result passed",
+        "native": true
+      }
+    },
+    "aarch64-ap": {
+      "accepted": true,
+      "result": {
+        "ap_version": "0.7.35",
+        "verdicts": 20,
+        "busy_pairs": [
+          {
+            "size": "100x40",
+            "before_state": "high-100x40-busy-midturn-t0",
+            "after_state": "high-100x40-busy-midturn-t5",
+            "before_sha256": "de4087eaa62cc76563b5106777429783f0a40024bf1731a1503a24c24a4160be",
+            "after_sha256": "adc39d5f15d6d51077765c4b170a65aef03a65cc11596de13941e45954b288f4",
+            "changed": true,
+            "passed": true,
+            "producer": "actual AP screenToCursor export"
+          },
+          {
+            "size": "80-split",
+            "before_state": "high-80-split-busy-midturn-t0",
+            "after_state": "high-80-split-busy-midturn-t5",
+            "before_sha256": "963ca549a603c9f9293ad5d48ddd55dcd94922000c2799b618096cbbc4636366",
+            "after_sha256": "e8bcf8e3217dbc7b0aa50269afe2609d1c13cdaf595ec25c38230ae9ff86ad4a",
+            "changed": true,
+            "passed": true,
+            "producer": "actual AP screenToCursor export"
+          }
+        ],
+        "capture_manifest_sha256": "05ddb49e369e17172f46f3b20a15cd9036624f0714ddf397c3719f6d83dfdde0",
+        "footer_bounds": "normal 8; explicit help/search 9"
+      }
+    },
+    "crosshost": {
+      "accepted": true,
+      "result": {
+        "retained_from": "0.163.0-plus.0.4.6",
+        "original": {
+          "cases": [
+            "success",
+            "caller-death",
+            "model-mismatch-metadata"
+          ],
+          "real_ssh": true,
+          "execution": "43b9418b-a7db-4729-8136-f8160a2bd36b",
+          "cleanup_recovered": true,
+          "original_verdict": {
+            "state": "failed",
+            "exit_code": 0,
+            "cleanup_status": "failed",
+            "cleanup_exit_code": 1
+          },
+          "external_model_calls": 0,
+          "started_at": 1792601872.6823735,
+          "finished_at": 1792601889.2780426
+        },
+        "runtime_identity": {
+          "old": "91aa073e5d8ff337d704b76da4345104e8faefc26fb317aed1beabc8fdced10e",
+          "new": "91aa073e5d8ff337d704b76da4345104e8faefc26fb317aed1beabc8fdced10e"
+        },
+        "fresh_047_native_mixes": "separately required by both compat gates"
+      }
+    }
+  },
+  "targets": {
+    "x86_64": {
+      "triple": "x86_64-unknown-linux-gnu",
+      "asset": "codex-plus-0.163.0-plus.0.4.7-x86_64-unknown-linux-gnu.tar.gz",
+      "sha256": "ffa58ae4aeeb2e80a8c14ce367fc76d43946f89c5a7a695f19ddca107867c62f",
+      "tree_sha256": "815f7844c8da7a6b5d0c4321c072ca4a124ba5ceb4f55eadfdd7707110ef4403",
+      "manifest_sha256": "2991d34f2c3f84360f844a464a540677b4fca97ae110b476419fbcbfda67317a"
+    },
+    "aarch64": {
+      "triple": "aarch64-unknown-linux-gnu",
+      "asset": "codex-plus-0.163.0-plus.0.4.7-aarch64-unknown-linux-gnu.tar.gz",
+      "sha256": "5afca7601c38899434df0c7c031bffaa35b8b74126c9c497bd4190d1e91cb57b",
+      "tree_sha256": "6c6c736dea7a0c02a6aa33103883b8c7ffe4ac461b8379bedea3b54efb8c9372",
+      "manifest_sha256": "1fa660d903be81b306e4b29346855eef09e004d752e1afbb3348412fd3e2ef9c"
+    }
+  },
+  "timing": {
+    "stages": {
+      "x86_native_and_package_seconds": 1085.936407,
+      "x86_native_build_seconds": 436.217453,
+      "arm_native_and_package_seconds": 2726.949489,
+      "arm_frontend_build_seconds": 1178.888951,
+      "arm_tui_test_harness_build_seconds": 1055.888969,
+      "arm_archive_transfer_seconds": 319.23849964141846,
+      "arm_archive_bytes": 129214056,
+      "interpretation": "Stage observations only; preparation/review/recovery gaps excluded; overlapping intervals must not be summed into end-to-end time",
+      "failed_attempts_preserved": true
+    }
+  },
+  "evidence": {
+    "/home/liupan/Aerius/codex-plus/.build/release047/x86-prep/work/packages/codex-plus-0.163.0-plus.0.4.7-x86_64-unknown-linux-gnu.tar.gz": "ffa58ae4aeeb2e80a8c14ce367fc76d43946f89c5a7a695f19ddca107867c62f",
+    "/home/liupan/Aerius/codex-plus/.build/release047/x86-prep/work/extracted/codex-plus-0.163.0-plus.0.4.7-x86_64-unknown-linux-gnu/codex-plus.json": "2991d34f2c3f84360f844a464a540677b4fca97ae110b476419fbcbfda67317a",
+    "/home/liupan/Aerius/codex-plus/.build/release047/arm-accepted-download/codex-plus-0.163.0-plus.0.4.7-aarch64-unknown-linux-gnu.tar.gz": "5afca7601c38899434df0c7c031bffaa35b8b74126c9c497bd4190d1e91cb57b",
+    "/home/liupan/Aerius/codex-plus/.build/release047/arm-accepted-download/codex-plus.json": "1fa660d903be81b306e4b29346855eef09e004d752e1afbb3348412fd3e2ef9c",
+    "/home/liupan/Aerius/codex-plus/.build/release047/root-review/x86-publication-package-receipt.json": "1b49539e2e4fe6cb139a4af3b6d3bed5c61dcb355e0f0cd962140578bdaa17ed",
+    "/home/liupan/.codex/codex-plus/executions/v1/01a14f7f-caf5-73b3-aada-5db7355097bf/b0155042-9318-4d0c-acf4-be4c1948662f/result.json": "b79faf0dad52df16537ea94f1b50588fd3a4886ffc614803df2c0cae21ead273",
+    "/home/liupan/Aerius/codex-plus/.build/release047/root-review/x86-publication-proof.json": "27bba8c733f557522c09b14ac184a553df2f72c664e56f1cf0ace55a10171fb0",
+    "/home/liupan/Aerius/codex-plus/.build/release047/root-review/x86-compat-acceptance.json": "22b09bcf52b85301f19e749a81bb696ce26da88202f832fa4a8c9083c5e8742d",
+    "/tmp/cmp047-2720ba5a57/evidence/report.json": "92430fd53628827556ba5cba73c71313c823f71aa4709a5ac24df197109fa0b3",
+    "/tmp/cmp047-2720ba5a57/cleanup-result.json": "70777b38c74e75b2726686808ec92a3905ab714769a33076de4441c3302bc080",
+    "/home/liupan/Aerius/codex-plus/.build/release047/compat-execution-snapshots/94624c96-f240-4baa-8937-e863f0e0999c/result.json": "22790452bc6cf5d605852f48fdd48b822ccebbd2e8b71d8ee90dac51859c6654",
+    "/tmp/cmp047-2720ba5a57/native-owned-result.json": "2846b1d164a937ce2b97e541f0bc7d42a326087dec49459a91da868d60f390c3",
+    "/tmp/cmp047-2720ba5a57/evidence/rollback/gate.json": "d300bf788cc8bfd3459587b6587a16c2aedfb0348587269257af71698fd70dc0",
+    "/tmp/cmp047-2720ba5a57/evidence/advisor-nine-checks.json": "9324699d47ab449a58c41712062e9c57f7a16a6310b0414303b3d477b590aef8",
+    "/tmp/cmp047-2720ba5a57/evidence/old-tui-root-result/report.json": "a591766877b1d0c72656b3badc17172ce5826b36d4ed7518bcd675c281c3e12b",
+    "/home/liupan/Aerius/codex-plus/.build/release047/root-review/x86-ap-acceptance.json": "26980c6397cdf53ee92278e6b5504d4fee9b93723fef683c944731f418a8fa9a",
+    "/home/liupan/Aerius/codex-plus/.build/release047/compat-x86/root-review-candidate/ap-controller/replay-001/replay-report.json": "226483ce3edc9c88d4e78ea515e74097df007f745344bcc99b5aa153b36a8e6f",
+    "/home/liupan/Aerius/codex-plus/.build/release047/compat-x86/root-review-candidate/ap-controller/replay-001/root-cleanup.json": "6f6d3ac1ac2c20d02a543d7fb489afd931e41c2761f89a0dd1521fef772f87f0",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/package-binding.json": "b58a8be47bbe1375c1d3fa8e93428ddded5ff89c08946034bfa7b72c75d23d0d",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/manifest.json": "914914db3135ed1d319dedd75b07d267c38a61aac2392ef30a50080726c8bf7a",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/integrity.json": "d8f0d2e5f2e333ce12b680d1e3ae535f91b8929bbd8ff3b90717d41751785fca",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/high-100x40-idle-empty/screen.txt": "99c703092aeaa6b591c97b1d14be4450829dfcb202b0716543e00406d11cf185",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/high-100x40-idle-empty/look.txt": "1eb8bc56b645a0b798570ed2a6c226f08f43f4c312ec13aaddd2997d72677d99",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/high-100x40-idle-help/screen.txt": "16d6696f97b3ba5002ad55c46c0fd6a00f23d403bc637c8e84a4611230a1b015",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/high-100x40-idle-help/look.txt": "4df936b445fb9a9bc15b4ca787eed7a96d3d8fe966393e738aee9a235a3e16b3",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/high-100x40-busy-midturn-t0/screen.txt": "13130d62321da7464ebda4e9e536cb0ed918ee86b436a2c0838084bad555b5e0",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/high-100x40-busy-midturn-t0/look.txt": "1eb8bc56b645a0b798570ed2a6c226f08f43f4c312ec13aaddd2997d72677d99",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/high-100x40-busy-midturn-t5/screen.txt": "28c539abc0e23574e818165f4a0254169676a1dd923be58edf393b9a0e07c9b2",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/high-100x40-busy-midturn-t5/look.txt": "1eb8bc56b645a0b798570ed2a6c226f08f43f4c312ec13aaddd2997d72677d99",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/high-100x40-busy-typed/screen.txt": "d25876865749f2b3c978e039651f2ba73561f608d329dc1c297a1f50e9e3cdde",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/high-100x40-busy-typed/look.txt": "1631dcf4ff3835a3f7084b3ecb05e3cd68fa6566149875062e5c8ff709a270de",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/high-100x40-idle-two-row-draft/screen.txt": "7c7da8a53deab71cf0d085d6d8e83c91de58bcff716e56cf2c1e3fa4f659700c",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/high-100x40-idle-two-row-draft/look.txt": "6f04d3bc3cc430d776065a8d50a05af2ecc9c79d9b54ab4726bcc67e6a7cf5ac",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/high-80-split-idle-empty/screen.txt": "599b5b655144daf653c8b5a78a7cd67d2e34438910236294755e597b60d6a269",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/high-80-split-idle-empty/look.txt": "59bbe94f5f7cac18b8c63a99139a4fb2729672dfcbc41d514bc0eb1d212bd238",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/high-80-split-idle-help/screen.txt": "3ef1874faa27dbc51642b37ebe6e7ce7032d359409b857b7679e614e8057090a",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/high-80-split-idle-help/look.txt": "cd79485f2e79a279f4d2d3310ea2c246fe6f41b8a83512ada2d716d88b43aef1",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/high-80-split-busy-midturn-t0/screen.txt": "db5a6689289059e901fe2b87456ba9977f608f3496da31b5ceb447c7a9fbb3f4",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/high-80-split-busy-midturn-t0/look.txt": "59bbe94f5f7cac18b8c63a99139a4fb2729672dfcbc41d514bc0eb1d212bd238",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/high-80-split-busy-midturn-t5/screen.txt": "8e36223078c48fd27ede8ea3bc94df34d90af890e0e708e82327b3c16a61df83",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/high-80-split-busy-midturn-t5/look.txt": "59bbe94f5f7cac18b8c63a99139a4fb2729672dfcbc41d514bc0eb1d212bd238",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/high-80-split-busy-typed/screen.txt": "28a17f94a328d3fa92ef2bd5c8bc9eddcfb148796662b642ebfde086187acdb5",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/high-80-split-busy-typed/look.txt": "23629823f73a8848d732720ffaff87f205cfb0207e164061ce85223de3ba9e5f",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/high-80-split-idle-two-row-draft/screen.txt": "e6cb9d1c7cad7ede131a61516b9a466ea43d0c845c1224e965362ebbd3fbb657",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/high-80-split-idle-two-row-draft/look.txt": "426cbf2236f8213c09ac4ba209049146047a6cbc33f6661f31f93cd32ebf4c14",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/high-80-split-approval-dialog/screen.txt": "b1b29c00d45be70a19714d28127b20280309d77d1adc038356c0a4867a370696",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/high-80-split-approval-dialog/look.txt": "910438d0de797c917b3fae63b26e8d309627b145c3b02651f3808897be3cdacb",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/high-100x40-approval-dialog/screen.txt": "b1b29c00d45be70a19714d28127b20280309d77d1adc038356c0a4867a370696",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/high-100x40-approval-dialog/look.txt": "696d44aef3e0c580896febcbedea00f82167d9e900bad0c1c14c926e7e47ef8e",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/ultra-100x40-idle-empty/screen.txt": "d7c3e1f8bcd5493676fec936d371667a0bcfcac920cebac30e1c19199ec4cc29",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/ultra-100x40-idle-empty/look.txt": "1eb8bc56b645a0b798570ed2a6c226f08f43f4c312ec13aaddd2997d72677d99",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/ultra-80-split-idle-empty/screen.txt": "b82b1574702f7d54da38ed0b88fc693d5fc8501421336966647486c66971fbca",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/ultra-80-split-idle-empty/look.txt": "59bbe94f5f7cac18b8c63a99139a4fb2729672dfcbc41d514bc0eb1d212bd238",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/form-100x40-request-user-input-notes/screen.txt": "67c49f342c23c28681080637f50da92c8337ebc2507d107ff6bcfa62ea3e233c",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/form-100x40-request-user-input-notes/look.txt": "941a8fdd7e1443dce84a05228f5e941b8b6546d5b6f69c765bc8b36a8ed80ebb",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/form-80-split-request-user-input-notes/screen.txt": "67c49f342c23c28681080637f50da92c8337ebc2507d107ff6bcfa62ea3e233c",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/form-80-split-request-user-input-notes/look.txt": "da9db63c4d105795225815af1c5ff36351d6b10531795d801747bbda78d58c3f",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/form-100x40-mcp-text-elicitation/screen.txt": "70f88dec264ae382d44a239a6fc8244ed10858ded343ce6f81129f02a91db8ac",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/form-100x40-mcp-text-elicitation/look.txt": "941a8fdd7e1443dce84a05228f5e941b8b6546d5b6f69c765bc8b36a8ed80ebb",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/form-80-split-mcp-text-elicitation/screen.txt": "70f88dec264ae382d44a239a6fc8244ed10858ded343ce6f81129f02a91db8ac",
+    "/tmp/cmp047-2720ba5a57/evidence/cursor-v2/form-80-split-mcp-text-elicitation/look.txt": "da9db63c4d105795225815af1c5ff36351d6b10531795d801747bbda78d58c3f",
+    "/home/liupan/Aerius/codex-plus/.build/release047/compat-x86/root-review-candidate/ap-controller/replay-001/observed-classifier.json": "2c284d3b589339f54a73d6c8a2467778720d23034a172570368b4f106f941ace",
+    "/home/liupan/Aerius/codex-plus/.build/release047/root-review/arm-publication-package-receipt.json": "c40380b0b8cf3d4821d7f003a9f8ff17d8d16932c2b024bb70ddccf824df5e5b",
+    "/home/liupan/.codex/codex-plus/executions/v1/01a14f7f-caf5-73b3-aada-5db7355097bf/e36bd519-5fe8-429c-afa4-7b71ae410512/result.json": "65f81b5f463681cfb37f234843460f2fcd4e64f28c977b3a99c0aa969fdc280a",
+    "/home/liupan/.codex/codex-plus/executions/v1/01a14f7f-caf5-73b3-aada-5db7355097bf/e36bd519-5fe8-429c-afa4-7b71ae410512/resolution.json": "13c50dc0c359073baac42bdf8294569bf5e75f6ec6d0ebb18e2bc347b71c682c",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-session-recovery/resolved-state-snapshot.json": "719f08f83bd1cc74cfc6a072d91960bcdd9c4b8442f0936753e367d158737e9e",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-session-recovery/root-live-verification.json": "1c1ab8880eb620b04af387f76ca490d03c0588d81bf289f9214d97129e346c52",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-session-recovery/evidence/native-01/receipt.json": "fc5a7bd32140dc07f79895018254781c904706f9dab156747a3db7b5d27c11ee",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-session-recovery/evidence/native-01/reviewed-process-proof.json": "2387bfdda46da6ff3fe7ac0fd8ae905ce66c276d99774747ae418b7b76502c39",
+    "/home/liupan/Aerius/codex-plus/.build/release047/arm-prep-v4/download/summary.json": "07b50d6399b48a367a38517c5ac275f29885ba19204f83d44e56a304c6e1092b",
+    "/home/liupan/Aerius/codex-plus/.build/release047/root-review/arm-native-results.json": "1a704d0c73025af0971d8bedf3954ba7d8a2861694e65ac0ccd994258e41af44",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-session-recovery/evidence/native-01/original-evidence-seal.json": "207a76f3e1485642eabf47a9347de663ffa5d57ed616331ff50850cea7745150",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-session-recovery/evidence/native-01/lease-restored.json": "b239d5b467b9ce22a74f8cf252c90b7422c43f36ac4f4faa4b2769a22bf6b701",
+    "/home/liupan/Aerius/codex-plus/.build/release047/root-review/arm-final-package-proof.json": "6520bf288b8967684315fde99379f157380587b753c27d834ce9f60a7f84d119",
+    "/home/liupan/Aerius/codex-plus/.build/release047/root-review/arm-compat-acceptance.json": "6409520fb9c038bbc00e7439372b8c1a84aae87fefc8924981b9cc4c65d58456",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/report.json": "bfc2e697c68b631b2413fe3a20e5c59920a6c60bb7cfef7b2c1487f42cc1af5d",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/cleanup-result.json": "f6aca601f499fd784495bed175f5a4c8c2076fb3b700d741f3f6607e80243eff",
+    "/home/liupan/Aerius/codex-plus/.build/release047/compat-execution-snapshots/802aab4a-2837-4676-96a2-4d9835948dca/result.json": "d6c892f343a76cb82113032c67cc9ac1e70526791fbe86a2bc7ca57babd736c2",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/native-owned-result.json": "3cd28cf99ab01770342ec0302b62897837017c70228b16a02d5d2f124aec61a7",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/rollback/gate.json": "05d6fb890bce59b5577af446f2a161cf1755f5c0930e9979e726a4160a3c9d5c",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/advisor-nine-checks.json": "3bd3e6f1b0910b08956464b96f8dfdfd96d7cb5760afe7f77f5dc5374dff5881",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/old-tui-root-result/report.json": "e81b42ee777c2a5b14309a0e79367ae37e7e2f123a2f7832d7d4ac42b8650020",
+    "/home/liupan/Aerius/codex-plus/.build/release047/root-review/arm-ap-acceptance.json": "897bb40bfa72969380d612aaaf5bdd8a8270fa71bace38c3fc8484bf97f2911a",
+    "/home/liupan/Aerius/codex-plus/.build/release047/arm-ap-replay/ap-controller/replay-001/replay-report.json": "67e0f868f551a82ccd00c6c65566f85bba43e8f011f8750cdcf1956185ba961b",
+    "/home/liupan/Aerius/codex-plus/.build/release047/arm-ap-replay/ap-controller/replay-001/root-cleanup.json": "6e77c068b3d26acde7e22ad9702075b6c8a319cc5e6e21a61b90a370133b3a06",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/package-binding.json": "cd433029d3c0f485f0f45c15a5ffbe54787e79ab675443ead0754c7d9c709af2",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/manifest.json": "05ddb49e369e17172f46f3b20a15cd9036624f0714ddf397c3719f6d83dfdde0",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/integrity.json": "d8f0d2e5f2e333ce12b680d1e3ae535f91b8929bbd8ff3b90717d41751785fca",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/high-100x40-idle-empty/screen.txt": "0390646ace4ce9c3afff67bdc1d174effa43a26ca30faac9ccb52604cc672e96",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/high-100x40-idle-empty/look.txt": "1eb8bc56b645a0b798570ed2a6c226f08f43f4c312ec13aaddd2997d72677d99",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/high-100x40-idle-help/screen.txt": "1386fb8b500832dc23ab5994861bd487b6d3e4fa77046e449c1c195b5218ed7b",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/high-100x40-idle-help/look.txt": "4df936b445fb9a9bc15b4ca787eed7a96d3d8fe966393e738aee9a235a3e16b3",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/high-100x40-busy-midturn-t0/screen.txt": "61ef572fb2ad19f0445b991e0e4d8876280cd07240236ecd816d2d55d7389ef5",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/high-100x40-busy-midturn-t0/look.txt": "1eb8bc56b645a0b798570ed2a6c226f08f43f4c312ec13aaddd2997d72677d99",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/high-100x40-busy-midturn-t5/screen.txt": "7d326fa52abadc281af70276fb6af935e714716ce71c779c93d1cad5e92fc084",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/high-100x40-busy-midturn-t5/look.txt": "1eb8bc56b645a0b798570ed2a6c226f08f43f4c312ec13aaddd2997d72677d99",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/high-100x40-busy-typed/screen.txt": "faf7d91723e6c713e398a78deb0866c6f4513cb79c07871ece8297173b6e7108",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/high-100x40-busy-typed/look.txt": "1631dcf4ff3835a3f7084b3ecb05e3cd68fa6566149875062e5c8ff709a270de",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/high-100x40-idle-two-row-draft/screen.txt": "519b534d68d685130a6c0222082b9d0fdb301d0a33376e3118e256e4996148a9",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/high-100x40-idle-two-row-draft/look.txt": "6f04d3bc3cc430d776065a8d50a05af2ecc9c79d9b54ab4726bcc67e6a7cf5ac",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/high-80-split-idle-empty/screen.txt": "c603d4149440528878fc8e0e3eddff2234cf0b57db3c54d258a183f8fffd1bec",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/high-80-split-idle-empty/look.txt": "59bbe94f5f7cac18b8c63a99139a4fb2729672dfcbc41d514bc0eb1d212bd238",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/high-80-split-idle-help/screen.txt": "ac611dff25447909b429a9ef72241b8161f5dbf6632547aa60c0ca301d95155b",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/high-80-split-idle-help/look.txt": "cd79485f2e79a279f4d2d3310ea2c246fe6f41b8a83512ada2d716d88b43aef1",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/high-80-split-busy-midturn-t0/screen.txt": "e265af7490a06c2775670012d3d6d885a4fb1e7657b40d64bf56aa5d4481ab51",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/high-80-split-busy-midturn-t0/look.txt": "59bbe94f5f7cac18b8c63a99139a4fb2729672dfcbc41d514bc0eb1d212bd238",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/high-80-split-busy-midturn-t5/screen.txt": "c367077a398a254985880f1381d90620f9551c29c2c444903b13731d5db80e59",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/high-80-split-busy-midturn-t5/look.txt": "59bbe94f5f7cac18b8c63a99139a4fb2729672dfcbc41d514bc0eb1d212bd238",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/high-80-split-busy-typed/screen.txt": "cd7325ca4898bee907239c85785f0fa30fe9d49be985b782333e0b5c8ee6ba62",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/high-80-split-busy-typed/look.txt": "23629823f73a8848d732720ffaff87f205cfb0207e164061ce85223de3ba9e5f",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/high-80-split-idle-two-row-draft/screen.txt": "6b88b65247df9953634bb404319485bc2ed76bb932b335153f74a9b898bd4e0e",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/high-80-split-idle-two-row-draft/look.txt": "426cbf2236f8213c09ac4ba209049146047a6cbc33f6661f31f93cd32ebf4c14",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/high-80-split-approval-dialog/screen.txt": "cc6234df9de21ebd3dbf48217c54f974cd202d6d6b81ee83d8dc27cf480474f6",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/high-80-split-approval-dialog/look.txt": "910438d0de797c917b3fae63b26e8d309627b145c3b02651f3808897be3cdacb",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/high-100x40-approval-dialog/screen.txt": "cc6234df9de21ebd3dbf48217c54f974cd202d6d6b81ee83d8dc27cf480474f6",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/high-100x40-approval-dialog/look.txt": "696d44aef3e0c580896febcbedea00f82167d9e900bad0c1c14c926e7e47ef8e",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/ultra-100x40-idle-empty/screen.txt": "189274bc4082187f0c88a6f74344fea2830529d12fe2246e2483e68713a222b0",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/ultra-100x40-idle-empty/look.txt": "1eb8bc56b645a0b798570ed2a6c226f08f43f4c312ec13aaddd2997d72677d99",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/ultra-80-split-idle-empty/screen.txt": "59afc5ad0cba031b510fc3fe7f0c456df4333078bac21f3c1ddd8c4e3ed1698b",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/ultra-80-split-idle-empty/look.txt": "59bbe94f5f7cac18b8c63a99139a4fb2729672dfcbc41d514bc0eb1d212bd238",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/form-100x40-request-user-input-notes/screen.txt": "149fe8373fdf7f671847541b4569159f47a9810f88c2dc84f7235c6e1546600f",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/form-100x40-request-user-input-notes/look.txt": "941a8fdd7e1443dce84a05228f5e941b8b6546d5b6f69c765bc8b36a8ed80ebb",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/form-80-split-request-user-input-notes/screen.txt": "149fe8373fdf7f671847541b4569159f47a9810f88c2dc84f7235c6e1546600f",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/form-80-split-request-user-input-notes/look.txt": "da9db63c4d105795225815af1c5ff36351d6b10531795d801747bbda78d58c3f",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/form-100x40-mcp-text-elicitation/screen.txt": "f1a1ac8f427bcc96feaabb81472c040330fe97a4b5e426b784d598f88952a4c2",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/form-100x40-mcp-text-elicitation/look.txt": "941a8fdd7e1443dce84a05228f5e941b8b6546d5b6f69c765bc8b36a8ed80ebb",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/form-80-split-mcp-text-elicitation/screen.txt": "f1a1ac8f427bcc96feaabb81472c040330fe97a4b5e426b784d598f88952a4c2",
+    "/home/liupan/Aerius/codex-plus/.build/release047/native-arm-qualification/arm-native-qualification/scope/evidence/cursor-v2/form-80-split-mcp-text-elicitation/look.txt": "da9db63c4d105795225815af1c5ff36351d6b10531795d801747bbda78d58c3f",
+    "/home/liupan/Aerius/codex-plus/.build/release047/arm-ap-replay/ap-controller/replay-001/observed-classifier.json": "673eb6adda759344f208040c32b9b014f1f8eaf060760d1f775b9e8e839f2a6a",
+    "/home/liupan/Aerius/codex-plus/.build/release047/publication-prep/retention-receipt.json": "d071695bcf0c16456b925c83c5f6f32ac962dcc4a211fbcdceead2833194ae61",
+    "/home/liupan/Aerius/codex-plus/.build/release047/publication-prep/retained-046-transport.py": "932ed0e7aa98dfa28a057df15fd5d99055fa0def47e54f3c8cc7296070d1dce1",
+    "/home/liupan/Aerius/codex-plus/.build/release046/publication-prep/inputs.json": "59c993e4a31e15731638bbf920f16b2eecb81c6eadea707306f14ac78da4bca6",
+    "/home/liupan/Aerius/codex-plus/.build/release046/x86-prep/work/packages/codex-plus-0.163.0-plus.0.4.6-x86_64-unknown-linux-gnu.tar.gz": "e23d5b5f3fdd00f40323abbd1d2599a800fc83e24e7fce388322a5609ae31c5d",
+    "/home/liupan/Aerius/codex-plus/.build/release046/x86-prep/work/extracted/codex-plus-0.163.0-plus.0.4.6-x86_64-unknown-linux-gnu/codex-plus.json": "3c5d9fa621b9f199194f751d65cf373fa1e6a3a0e0f24e050db87b053e92c99a",
+    "/home/liupan/Aerius/codex-plus/.build/release046/arm-tail/download/codex-plus-0.163.0-plus.0.4.6-aarch64-unknown-linux-gnu.tar.gz": "a226efb054e02c99f28aa60701513301433fc2ed5d2992bebb7b09d8f5f3b95f",
+    "/home/liupan/Aerius/codex-plus/.build/release046/arm-tail/retained-manifest.json": "f987edca7a5ab212c8c855217ca93079a13e2e8b9e0b23759e3bda2ddf86cbc4",
+    "/home/liupan/Aerius/codex-plus/.build/release046/root-review/crosshost-acceptance.json": "63d49f79a459c720ee606dad2ab983a5ff7c365a71cd7079a3a9c7455e5171a9",
+    "/home/liupan/.codex/codex-plus/executions/v1/01a14f7f-caf5-73b3-aada-5db7355097bf/43b9418b-a7db-4729-8136-f8160a2bd36b/result.json": "86a1e17f84a04a07a5c056530cef93012a2691a99c424617d0a12d6de56a3134",
+    "/home/liupan/Aerius/codex-plus/.build/release046/compat-arm/crosshost/runs/crosshost046-13045aa3/ledger.json": "8512d7126e914bb198589ae49854c42d13fe82367a88ee45962a0a06cc4bd42b",
+    "/home/liupan/.codex/codex-plus/executions/v1/01a14f7f-caf5-73b3-aada-5db7355097bf/43b9418b-a7db-4729-8136-f8160a2bd36b/resolution.json": "82ddaccd6ae41aa824e6c889d3edef7c7edb533325c45209b58d5251d23f02c3",
+    "/home/liupan/Aerius/codex-plus/.build/release046/recovery/resolved-state-snapshot.json": "119d766c02af94eba8db1c06f7c82d000d279a16afc8b050831f265f3da8d980",
+    "/home/liupan/Aerius/codex-plus/.build/release046/recovery/root-cleanup-reconciled-v2.json": "73e4bd97fa3698cd387367feeb5758daae546ab9afeb76acf29132ca91b153f4",
+    "/home/liupan/Aerius/codex-plus/.build/release046/compat-arm/crosshost/runs/crosshost046-13045aa3/arm-report.json": "db8f86132b2caced91050270fec5e27d360f738118de691bbafa710bf26ac2f6",
+    "/home/liupan/Aerius/codex-plus/.build/release047/compat-prep/dependency-proof.json": "2d15a4b1f4e5b4feea28525b43b5a0bf505c0795a14faf302479c8b1230045f0",
+    "/home/liupan/Aerius/codex-plus/.build/release047/publication-prep/inputs.json": "938a2f9308098150e6f161e3d82d2f01c4dde7ed43fab81be34de45d975e522d",
+    "/home/liupan/Aerius/codex-plus/.build/release047/root-review/release-stage-timings.json": "7b3c3b210ebf90ed1f5898351f46b50f22e76a7122619aca91ee5708d9f7b2a2"
+  }
+}
