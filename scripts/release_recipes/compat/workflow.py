@@ -4,7 +4,6 @@ import os
 from pathlib import Path
 import platform
 import shutil
-import stat
 import subprocess
 import sys
 import time
@@ -41,6 +40,14 @@ def closure(profile):
     if profile['python'].get('fixture_imports'):
         files.update(native.fixture_closure(profile))
     return files
+
+
+def executed_origins(profile, paths):
+    # Package submodules stay frozen in preparation; core admits exact import origins.
+    origins = {Path(row['origin']).resolve() for row in profile['python'].get('fixture_imports', {}).values()}
+    packages = [path.parent for path in origins if path.name == '__init__.py']
+    return sorted(path for path in paths if Path(path).resolve() in origins or
+                  not any(Path(path).resolve().is_relative_to(package) for package in packages))
 
 
 def proposal(root, profile, command, inputs, *, topic):
@@ -136,11 +143,14 @@ def audit_scope(scope, *, remove_short=False):
     roots = [scope]
     binding_path = scope / 'short-state.json'
     binding = protocol.load(binding_path) if binding_path.exists() else None
+    expected = None
     if binding is not None:
         short = Path(binding['path'])
         protocol.require(short.parent.resolve() == Path(config['short_root']).resolve() and
                          len(short.name) == 2 and short.name.isalnum(), 'Short directory escapes declared namespace')
         roots.append(short)
+        expected = dict(path=str(short), dev=binding['device'], ino=binding['inode'],
+                        uid=binding['uid'], boot_id=binding['boot_id'])
         paired = scope / 'short-binding.json'
         if paired.exists():
             proof = protocol.load(paired)
@@ -150,20 +160,10 @@ def audit_scope(scope, *, remove_short=False):
                                           completed_guards=ownership.verify_guard_journal(records, boot))
     result.update(outcome='clean' if result['passed'] else 'blocked',
                   owned_remaining=result['live_owned_processes'], unknown=result['unknown_unreadable_same_user_processes'],
-                  signals_sent=0, short_removed=False)
+                  signals_sent=0, short_removed=False, short_identity=expected)
     if remove_short and binding is not None and result['passed']:
-        receipt = scope / 'short-removal.json'
-        if not os.path.lexists(short):
-            protocol.require(receipt.is_file() and protocol.load(receipt)['identity'] == binding,
-                             'Missing short directory without exact cleanup proof')
-        else:
-            info = short.lstat()
-            protocol.require(stat.S_ISDIR(info.st_mode) and (info.st_dev, info.st_ino) == (binding['device'], binding['inode']),
-                             'Short directory identity changed')
-            protocol.require(stat.S_IMODE(info.st_mode) == 0o700, 'Short directory permissions changed')
-            protocol.require(shutil.rmtree.avoids_symlink_attacks, 'Identity-safe cleanup unavailable')
-            shutil.rmtree(short)
-            protocol.write_once(receipt, {'identity': binding, 'removed': True})
+        protocol.require(binding['boot_id'] == boot and binding['uid'] == os.getuid(), 'Short directory owner/boot changed')
+        ownership._remove_socket(scope, short, expected, protocol)
         result['short_removed'] = True
     return result
 
@@ -254,7 +254,7 @@ def run_attempt(root, execution):
     for stage in (('compat', 'captures') if code == 0 else ('compat',)):
         protocol.write_receipt(root, stage, inputs=['attempt.json', 'plan.json', 'profile.json',
             'compat-preparation.json', 'outputs/compat-package-approval.json', 'outputs/compat-previous-package.json'],
-            executed=sorted(executed), outputs=outputs, evidence='compat/' + stage + '-report.json',
+            executed=executed_origins(profile, executed), outputs=outputs, evidence='compat/' + stage + '-report.json',
             execution=execution_record, cleanup=cleanup, previous_package='outputs/compat-previous-package.json')
     protocol.require(code == 0 and cleanup['outcome'] == 'clean' and error is None, 'Compatibility failed or cleanup blocked; preserve original attempt')
     return protocol.status(root)
@@ -333,8 +333,7 @@ def prepare_ap(native_root, coordinator, profile):
     inventory = protocol.load(protocol.relative_file(native_root, capture_report['capture_manifest']))
     protocol.require(native.sha(protocol.relative_file(native_root, capture_report['capture_manifest'])) == capture_report['capture_manifest_sha256'],
                      'Native capture inventory changed')
-    for name, record in inventory['files'].items():
-        protocol.require(protocol.file_record(protocol.relative_file(native_root, name)) == record, 'Native capture bytes changed')
+    protocol._verify_records(native_root, inventory['files'], {}, protocol._transport_manifest(native_root))
     capture = native_root / 'compat/evidence/cursor-v2'
     manifest = protocol.load(capture / 'manifest.json')
     integrity = protocol.load(capture / 'integrity.json')
@@ -492,7 +491,8 @@ def run_ap(root, execution):
     inputs = ['ap-preparation.json', 'ap-profile.json', 'native-plan.json', 'native-captures.json', 'native-capture-inventory.json', 'ownership-baseline.json']
     outputs = [path.relative_to(root).as_posix() for path in root.rglob('*') if path.is_file() and not path.is_symlink()]
     protocol.write_ap_receipt(context['native_root'], root, inputs=inputs,
-        executed=sorted(path for path in context['closure'] if Path(path) != Path(profile['ap_replay']['installed_registry']).resolve()),
+        executed=executed_origins(profile, [path for path in context['closure']
+            if Path(path) != Path(profile['ap_replay']['installed_registry']).resolve()]),
         outputs=outputs, evidence='ap-report.json', execution=execution_record, cleanup=audit,
         replay_profile=profile)
     protocol.require(code == 0 and audit['outcome'] == 'clean' and error is None, 'AP replay failed or cleanup blocked; preserve coordinator evidence')

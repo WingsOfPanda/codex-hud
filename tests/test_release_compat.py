@@ -268,6 +268,14 @@ assert 'changed frontend requires fresh package build' not in driver
         previous = fixture.plan['previous_release']['targets']['x86_64']
         previous.update(manifest_sha256=compat.digest(old.package / 'codex-plus.json'), tree_sha256=old.manifest['tree_sha256'])
         fixture.profile['python']['path'] = sys.executable
+        site = fixture.base / 'fixture-site'
+        for name in ('pyte/__init__.py', 'pyte/escape.py', 'wcwidth.py'):
+            path = site / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text('FIXTURE_MODULE = True\n')
+        fixture.profile['python'].update(fixture_sites=[str(site)], fixture_imports={
+            name: {'origin': str(site / path), 'sha256': compat.digest(site / path)}
+            for name, path in (('pyte', 'pyte/__init__.py'), ('wcwidth', 'wcwidth.py'))})
         executor = fixture.base / 'executor'
         (executor / 'bin').mkdir(parents=True)
         (executor / 'bin/codex-plus-runtime').write_bytes(b'pinned executor')
@@ -343,7 +351,14 @@ assert 'changed frontend requires fresh package build' not in driver
         self.assertEqual(rows['compat']['input']['execution']['job_id'], 'managed-compatible')
         self.assertEqual(rows['compat']['input']['previous_package'], 'outputs/compat-previous-package.json')
         self.assertIn(str(old.package / 'bin/codex'), rows['compat']['input']['executed'])
+        self.assertIn(str(site / 'pyte/__init__.py'), rows['compat']['input']['executed'])
+        self.assertNotIn(str(site / 'pyte/escape.py'), rows['compat']['input']['executed'])
+        self.assertIn(str(site / 'pyte/escape.py'), fixtures.protocol.load(root / 'compat-preparation.json')['closure'])
         self.assertEqual(rows['captures']['cleanup']['outcome'], 'clean')
+        (site / 'pyte/escape.py').write_text('CHANGED_SUBMODULE = True\n')
+        with patch.object(workflow.native, 'verify', return_value={}):
+            with self.assertRaisesRegex(ValueError, 'input closure changed'):
+                workflow.verify_attempt(root)
 
     def test_cleanup_failure_records_unknown_without_replacing_original_audit(self):
         workflow = self.workflow()
@@ -371,7 +386,7 @@ assert 'changed frontend requires fresh package build' not in driver
             workflow.prepare_ap(self.root, self.root / 'ap-output', {})
         self.assertFalse((self.root / 'ap-output').exists())
 
-    def test_compat_short_cleanup_preserves_replacement_directory(self):
+    def short_scope(self):
         workflow = self.workflow()
         plan, profile, config = self.inputs()
         prepared = self.prepare(plan, profile, config)
@@ -379,22 +394,48 @@ assert 'changed frontend requires fresh package build' not in driver
         short = self.short / 'ab'
         short.mkdir(mode=0o700)
         info = short.stat()
-        state = dict(path=str(short), device=info.st_dev, inode=info.st_ino, state='allocated')
+        state = dict(path=str(short), device=info.st_dev, inode=info.st_ino, state='allocated', uid=info.st_uid,
+                     boot_id=Path('/proc/sys/kernel/random/boot_id').read_text().strip())
         compat.write(scope / 'short-state.json', state)
         baseline = scope / 'unreadable-baseline.json'
         compat.write(baseline, {'boot_id': Path('/proc/sys/kernel/random/boot_id').read_text().strip(), 'processes': {}})
         compat.write(scope / 'short-binding.json', dict(path=str(short), device=info.st_dev, inode=info.st_ino,
                                                        baseline_sha256=compat.digest(baseline)))
-        short.rename(self.short / 'original')
-        short.mkdir(mode=0o700)
-        unrelated = short / 'unrelated.txt'
-        unrelated.write_text('preserve other work')
+        return workflow, scope, short, state
+
+    def test_compat_short_cleanup_preserves_swap_at_atomic_move(self):
+        workflow, scope, short, _ = self.short_scope()
+        (short / 'original.txt').write_text('owned original')
+        rename = workflow.ownership.os.rename
+        def replace(source, destination, **kwargs):
+            rename(short, self.short / 'original')
+            short.mkdir(mode=0o700)
+            (short / 'unrelated.txt').write_text('preserve other work')
+            return rename(source, destination, **kwargs)
+        audit = dict(passed=True, live_owned_processes=[], unknown_unreadable_same_user_processes=[])
+        with patch.object(workflow.ownership, 'inspect_processes', return_value=audit), \
+             patch.object(workflow.ownership.os, 'rename', side_effect=replace):
+            with self.assertRaisesRegex(ValueError, 'preserved in quarantine'):
+                workflow.audit_scope(scope, remove_short=True)
+        intent = workflow.protocol.load(scope / 'socket-removal-intent.json')
+        self.assertEqual((Path(intent['quarantine']) / 'owned/unrelated.txt').read_text(), 'preserve other work')
+        self.assertEqual((self.short / 'original/original.txt').read_text(), 'owned original')
+        self.assertFalse((scope / 'socket-removal.json').exists())
+
+    def test_compat_short_cleanup_reuses_shared_proof_and_is_idempotent(self):
+        workflow, scope, short, state = self.short_scope()
+        (short / 'owned.txt').write_text('owned fixture')
         audit = dict(passed=True, live_owned_processes=[], unknown_unreadable_same_user_processes=[])
         with patch.object(workflow.ownership, 'inspect_processes', return_value=audit):
-            with self.assertRaisesRegex(ValueError, 'identity changed'):
-                workflow.audit_scope(scope, remove_short=True)
-        self.assertEqual(unrelated.read_text(), 'preserve other work')
-        self.assertFalse((scope / 'short-removal.json').exists())
+            result = workflow.audit_scope(scope, remove_short=True)
+            again = workflow.audit_scope(scope, remove_short=True)
+        self.assertTrue(result['short_removed'] and again['short_removed'])
+        self.assertFalse(short.exists())
+        expected = dict(path=str(short), dev=state['device'], ino=state['inode'], uid=state['uid'], boot_id=state['boot_id'])
+        self.assertEqual(result['short_identity'], expected)
+        self.assertEqual(workflow.protocol.load(scope / 'socket-removal.json'), {'identity': expected, 'removed': True})
+        for name in ('socket-removal-intent.json', 'socket-quarantine.json', 'socket-moved.json', 'socket-deleted.json'):
+            self.assertTrue((scope / name).is_file())
 
     def test_ap_composition_writes_external_receipt_with_distinct_executor_architecture(self):
         import test_release_protocol as fixtures
@@ -446,6 +487,74 @@ assert 'changed frontend requires fresh package build' not in driver
         self.assertTrue(accepted['accepted'])
         after = {path.relative_to(native_root).as_posix(): fixtures.protocol.file_record(path) for path in native_root.rglob('*') if path.is_file()}
         self.assertEqual(before, after)
+
+    def test_ap_preparation_accepts_real_readonly_exported_capture_projection(self):
+        import test_release_protocol as fixtures
+        workflow = self.workflow()
+        fixture = fixtures.ReleaseProtocolTests()
+        fixture.setUp()
+        self.addCleanup(fixture.doCleanups)
+        root = fixture.qualified(package_only=True)
+        fixture.receipt(root, 'compat', {})
+        captures = root / 'compat/evidence/cursor-v2'
+        captures.mkdir(parents=True)
+        rows = []
+        for index in range(20):
+            directory = captures / ('state-' + str(index))
+            directory.mkdir()
+            screen, look = directory / 'screen.txt', directory / 'look.txt'
+            screen.write_text('native captured screen\n')
+            look.write_text('0 0 40 100 1\n')
+            screen.chmod(0o600)
+            look.chmod(0o600)
+            rows.append({'name': directory.name, 'expected': 'idle',
+                'screen_sha256': compat.digest(screen), 'look_sha256': compat.digest(look)})
+        fixture.put(root, 'compat/evidence/cursor-v2/manifest.json', {'candidate_acceptance': True,
+            'capture_complete': True, 'captures': rows})
+        fixture.put(root, 'compat/evidence/cursor-v2/integrity.json', {'passed': True})
+        package = fixtures.protocol.load(root / 'outputs/package/report.json')
+        package_sha = compat.digest(root / package['archive'])
+        fixture.put(root, 'compat/evidence/cursor-v2/package-binding.json', {'accepted': True, 'native': True,
+            'source': fixture.plan['plus_source_commit'], 'archive_sha256': package_sha,
+            'capture_manifest_sha256': compat.digest(captures / 'manifest.json'),
+            'integrity_sha256': compat.digest(captures / 'integrity.json')})
+        raw = [path for path in captures.rglob('*') if path.is_file()]
+        for path in raw:
+            path.chmod(0o600)
+        inventory = 'compat/capture-manifest.json'
+        fixture.put(root, inventory, {'architecture': 'x86_64', 'package_sha256': package_sha,
+            'files': {path.relative_to(root).as_posix(): fixtures.protocol.file_record(path) for path in raw}})
+        fixture.receipt(root, 'captures', {'package_sha256': package_sha, 'capture_manifest': inventory,
+            'capture_manifest_sha256': compat.digest(root / inventory)},
+            [inventory, *(path.relative_to(root).as_posix() for path in raw)])
+        bundle = fixture.base / 'native-captures.tar.gz'
+        exported = fixture.export(root, bundle)
+        imported = fixtures.protocol.import_attempt(bundle, fixture.base / 'readonly-native', expected_sha256=exported['sha256'])
+        imported_screen = imported / 'compat/evidence/cursor-v2/state-0/screen.txt'
+        self.assertEqual(imported_screen.stat().st_mode & 0o777, 0o400)
+        before = {path.relative_to(imported).as_posix(): fixtures.protocol.file_record(path) for path in imported.rglob('*') if path.is_file()}
+        profile = copy.deepcopy(fixture.profile)
+        profile['python']['path'] = sys.executable
+        source = fixture.base / 'AP-source'
+        (source / 'node_modules').mkdir(parents=True)
+        executor = fixture.base / 'AP-executor'
+        (executor / 'bin').mkdir(parents=True)
+        (executor / 'bin/codex-plus-runtime').write_bytes(b'pinned executor')
+        profile.update(source_root=str(source), executor_package_root=str(executor),
+            ap_replay={'node': str(self.stock), 'node_modules': str(source / 'node_modules'),
+                'installed_bundle': str(self.stock), 'installed_registry': str(self.helper)})
+        coordinator = fixture.base / 'AP-evidence'
+        with patch.object(workflow, 'ap_profile', return_value={'source': {'files': {}}}):
+            proposal = workflow.prepare_ap(imported, coordinator, profile)
+            self.assertEqual(proposal['argv'][3], 'run-ap')
+            self.assertEqual(compat.digest(coordinator / 'captures/state-0/screen.txt'), compat.digest(imported_screen))
+            after = {path.relative_to(imported).as_posix(): fixtures.protocol.file_record(path) for path in imported.rglob('*') if path.is_file()}
+            self.assertEqual(before, after)
+            imported_screen.chmod(0o600)
+            imported_screen.write_text('tampered raw capture')
+            with self.assertRaisesRegex(ValueError, 'evidence changed'):
+                workflow.prepare_ap(imported, fixture.base / 'AP-rejected', profile)
+            self.assertFalse((fixture.base / 'AP-rejected').exists())
 
     def test_ap_leaf_uses_checked_in_replay_files_and_reconciles_expected_counts(self):
         workflow = self.workflow()

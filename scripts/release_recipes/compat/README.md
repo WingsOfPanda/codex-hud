@@ -67,3 +67,9 @@ These commands prepare real production recipes. Unit composition checks use
 synthetic subprocess results; they do not establish that native gates or AP
 replay passed. A failed/unknown command retains its first start marker, receipt,
 logs and cleanup outcome; it cannot be replayed in place.
+
+Compatibility short-directory deletion uses the common quarantine protocol,
+with boot, owner and inode identity recorded at allocation. Its immutable proof
+files live under compat/socket-*.json. Interrupted compatibility recovery is
+unsupported in this increment; unresolved allocations block export and final
+acceptance. Preserve the allocation and original failure for explicit review.

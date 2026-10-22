@@ -187,7 +187,8 @@ def run(scope, *, setup_only=False):
     else:
         raise FileExistsError('No free short fixture directory')
     info = short.stat()
-    write(scope / 'short-state.json', {'path': str(short), 'device': info.st_dev, 'inode': info.st_ino, 'state': 'allocated'})
+    write(scope / 'short-state.json', {'path': str(short), 'device': info.st_dev, 'inode': info.st_ino,
+        'uid': info.st_uid, 'boot_id': Path('/proc/sys/kernel/random/boot_id').read_text().strip(), 'state': 'allocated'})
     baseline = capture_baseline([scope, short], scope)
     write(scope / 'unreadable-baseline.json', baseline)
     write(scope / 'short-binding.json', {'path': str(short), 'device': info.st_dev, 'inode': info.st_ino,
