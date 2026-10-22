@@ -1,0 +1,33 @@
+{
+  "capture_bundle_version": 2,
+  "states_per_native_target": 20,
+  "pane_sizes": [
+    "100x40",
+    "80-column split"
+  ],
+  "required_states": [
+    "idle-empty",
+    "idle-help",
+    "busy t0 and t5",
+    "busy-typed",
+    "two-row draft",
+    "approval",
+    "Ultra idle",
+    "requestUserInput notes",
+    "MCP text form"
+  ],
+  "plain_capture": "tmux capture-pane -p without -e or -J",
+  "cursor_fields": "cursor_y cursor_x pane_height pane_width cursor_flag",
+  "footer_max_rows": 8,
+  "explicit_help_max_rows": 9,
+  "activity_rows_with_overflow": 6,
+  "fixture_theme": "morandi",
+  "fixture_status_line": [
+    "model-with-reasoning",
+    "current-dir",
+    "compact-display",
+    "context-remaining",
+    "weekly-limit"
+  ],
+  "acceptance": "fresh final packaged binary on native host; zero model calls or submitted turns; all expected AP verdicts and cursor-bounded busy hash changes"
+}
