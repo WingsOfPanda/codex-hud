@@ -69,7 +69,6 @@ def run(args):
                                         config['new_manifest_sha256'])
     assert archive['archive_sha256'] == config['new_archive_sha256']
     assert archive['helper_sha256'] == new['helper_sha256'] and archive['tree_sha256'] == new['tree_sha256']
-    assert old['manifest']['files']['bin/codex']['sha256'] != new['manifest']['files']['bin/codex']['sha256'], 'changed frontend requires fresh package build'
     assert gate.digest(source / CONFIG['patch_path']) == PATCH
     evidence = args.evidence.resolve()
     evidence.mkdir(parents=True, exist_ok=False, mode=0o700)

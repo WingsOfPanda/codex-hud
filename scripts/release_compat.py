@@ -210,11 +210,53 @@ def run(scope, *, setup_only=False):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=('run',))
-    parser.add_argument('--scope', type=Path, required=True)
+    parser.add_argument('command', choices=('run', 'prepare-attempt', 'verify-attempt', 'run-attempt', 'cleanup-attempt',
+        'prepare-ap', 'verify-ap', 'replay-ap', 'run-ap', 'cleanup-ap'))
+    parser.add_argument('--scope', type=Path)
+    parser.add_argument('--attempt', type=Path)
+    parser.add_argument('--old-package', type=Path)
+    parser.add_argument('--execution', type=Path)
+    parser.add_argument('--output', type=Path)
+    parser.add_argument('--profile', type=Path)
+    parser.add_argument('--coordinator', type=Path)
     parser.add_argument('--setup-only', action='store_true')
     args = parser.parse_args()
-    print(json.dumps(run(args.scope, setup_only=args.setup_only)))
+    if args.command == 'run':
+        require(args.scope is not None, '--scope is required')
+        result = run(args.scope, setup_only=args.setup_only)
+    else:
+        require(args.attempt is not None, '--attempt is required')
+        sys.path.insert(0, str(RECIPE))
+        import workflow
+        if args.command == 'prepare-attempt':
+            require(args.old_package is not None, '--old-package is required')
+            result = workflow.prepare_attempt(args.attempt, args.old_package)
+        elif args.command == 'verify-attempt':
+            context = workflow.verify_attempt(args.attempt)
+            result = {'verified': True, 'attempt': context['attempt']}
+        elif args.command == 'cleanup-attempt':
+            require(args.output is not None, '--output is required')
+            result = workflow.cleanup_attempt(args.attempt, args.output)
+        elif args.command == 'prepare-ap':
+            require(args.profile is not None and args.coordinator is not None, '--profile and --coordinator are required')
+            result = workflow.prepare_ap(args.attempt, args.coordinator, json.loads(args.profile.read_text()))
+        elif args.command == 'verify-ap':
+            context = workflow.verify_ap(args.attempt)[0]
+            result = {'verified': True, 'native_attempt': context['native_attempt']}
+        elif args.command == 'replay-ap':
+            result = workflow.replay_ap(args.attempt)
+        elif args.command == 'cleanup-ap':
+            require(args.output is not None, '--output is required')
+            result = workflow.cleanup_ap(args.attempt, args.output)
+        elif args.command == 'run-ap':
+            require(args.execution is not None, '--execution is required')
+            result = workflow.run_ap(args.attempt, args.execution)
+        else:
+            require(args.execution is not None, '--execution is required')
+            result = workflow.run_attempt(args.attempt, args.execution)
+    print(json.dumps(result))
+    if args.command in ('cleanup-attempt', 'cleanup-ap') and result['outcome'] != 'clean':
+        raise SystemExit(1)
 
 
 if __name__ == '__main__':

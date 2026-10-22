@@ -1,7 +1,9 @@
 """Cheap recipe binding checks; native compatibility remains a separate gate."""
 import importlib.util
+import copy
 import json
 import os
+import platform
 from pathlib import Path
 import subprocess
 import sys
@@ -216,6 +218,314 @@ assert NEW_VERSION == __import__('sys').argv[2]
             spec.loader.exec_module(module)
         compat.write(scope / 'helper-binding.json', {'helper': str(self.helper), 'sha256': compat.digest(self.helper)})
         return module
+
+    def test_helper_only_release_accepts_identical_frontend_bytes(self):
+        import test_packaging as packaging
+        old = packaging.PackageIntegrityTests('test_valid_package_and_declared_hash_recipe')
+        old.setUp()
+        self.addCleanup(old.doCleanups)
+        new = packaging.PackageIntegrityTests('test_valid_package_and_declared_hash_recipe')
+        new.setUp()
+        self.addCleanup(new.doCleanups)
+        old.manifest.update(release='0.163.0-plus.0.4.6', plus_commit='2' * 40)
+        (old.package / 'bin/codex-plus-runtime').write_bytes((old.package / 'bin/codex-plus-runtime').read_bytes() + b'old helper')
+        old.seal()
+        plan, profile, config = self.inputs()
+        prepared = self.prepare(plan, profile, config)
+        code = """import importlib.util,pathlib,sys
+from recipe_context import CONFIG,OLD_VERSION,NEW_VERSION
+spec=importlib.util.spec_from_file_location('gate',pathlib.Path(sys.argv[1])/'verify-mixes.py')
+gate=importlib.util.module_from_spec(spec);spec.loader.exec_module(gate)
+old=gate.package_identity(pathlib.Path(sys.argv[2]),OLD_VERSION,'2'*40,gate.digest(pathlib.Path(sys.argv[2])/'codex-plus.json'))
+new=gate.package_identity(pathlib.Path(sys.argv[3]),NEW_VERSION,'a'*40,gate.digest(pathlib.Path(sys.argv[3])/'codex-plus.json'))
+assert old['manifest']['files']['bin/codex']['sha256']==new['manifest']['files']['bin/codex']['sha256']
+gate.distinct_packages(dict(old=old,new=new))
+driver=(pathlib.Path(sys.argv[1])/'run-native-compat-v5.py').read_text()
+assert 'changed frontend requires fresh package build' not in driver
+"""
+        env = dict(os.environ, CODEX_PLUS_COMPAT_SCOPE=prepared['scope'], PYTHONPATH=str(compat.RECIPE), PYTHONDONTWRITEBYTECODE='1')
+        completed = subprocess.run([sys.executable, '-c', code, str(compat.RECIPE), str(old.package), str(new.package)], env=env, capture_output=True, text=True)
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+
+    def workflow(self):
+        spec = importlib.util.spec_from_file_location('compat_workflow', compat.RECIPE / 'workflow.py')
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_production_composition_writes_real_core_compat_and_capture_receipts(self):
+        import test_release_protocol as fixtures
+        import test_packaging as packaging
+        workflow = self.workflow()
+        fixture = fixtures.ReleaseProtocolTests()
+        fixture.setUp()
+        self.addCleanup(fixture.doCleanups)
+        old = packaging.PackageIntegrityTests('test_valid_package_and_declared_hash_recipe')
+        old.setUp()
+        self.addCleanup(old.doCleanups)
+        old.manifest.update(release=fixture.plan['previous_release']['tag'], plus_commit=fixture.plan['compat']['previous_source_commit'])
+        old.seal()
+        previous = fixture.plan['previous_release']['targets']['x86_64']
+        previous.update(manifest_sha256=compat.digest(old.package / 'codex-plus.json'), tree_sha256=old.manifest['tree_sha256'])
+        fixture.profile['python']['path'] = sys.executable
+        executor = fixture.base / 'executor'
+        (executor / 'bin').mkdir(parents=True)
+        (executor / 'bin/codex-plus-runtime').write_bytes(b'pinned executor')
+        fixture.profile['executor_package_root'] = str(executor)
+        official = fixture.base / 'official'
+        official.write_bytes(b'pinned stock')
+        fixture.profile['native_build'] = {name: str(fixture.base / name) for name in
+            ('upstream_repository', 'cargo_home', 'cargo_target_dir', 'v8_cache', 'license_cache')}
+        fixture.profile['native_build'].update(official_binary=str(official), official_sha256=compat.digest(official), cargo_jobs=1, test_threads=1)
+        source = fixture.base / 'product-source'
+        for name in ('scripts/package-release.py', 'scripts/native-results.py', 'rust-runtime/Cargo.toml',
+                     'rust-runtime/Cargo.lock', 'bin/codex-plus', fixture.plan['patch']['path']):
+            path = source / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes((SCRIPTS.parent / name).read_bytes())
+            path.chmod((SCRIPTS.parent / name).stat().st_mode & 0o777)
+        subprocess.run(['git', 'init', '-q', str(source)], check=True)
+        subprocess.run(['git', '-C', str(source), 'add', '.'], check=True)
+        subprocess.run(['git', '-C', str(source), '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', 'source'], check=True)
+        fixture.plan['plus_source_commit'] = subprocess.check_output(['git', '-C', str(source), 'rev-parse', 'HEAD'], text=True).strip()
+        fixture.observed['plus_source_commit'] = fixture.plan['plus_source_commit']
+        fixture.profile['source_root'] = str(source)
+        fixture.plan['compat']['stock_binary_sha256']['x86_64'] = compat.digest(official)
+        for name in ('python', 'executor_package_root'):
+            fixture.observed[name] = copy.deepcopy(fixture.profile[name])
+        for arch in fixture.plan['targets']:
+            fixture.plan['targets'][arch]['profile_sha256'] = fixtures.protocol.digest(fixture.profile)
+            fixture.plan['gates'][arch]['compat']['checks'] = list(compat.GATES)
+            fixture.plan['gates'][arch]['captures']['checks'] = ['native-cursor-states']
+        original_setup = packaging.PackageIntegrityTests.setUp
+        def package_setup(value):
+            original_setup(value)
+            (value.package / 'bin/codex-plus').write_bytes((SCRIPTS.parent / 'bin/codex-plus').read_bytes())
+            value.manifest['plus_commit'] = fixture.plan['plus_source_commit']
+            value.seal()
+        with patch.object(packaging.PackageIntegrityTests, 'setUp', package_setup):
+            root = fixture.qualified(package_only=True)
+        report = fixtures.protocol.load(root / 'outputs/package/report.json')
+        package = root / report['package_dir']
+        fixtures.protocol.write_once(root / 'native-preparation.json', {'sealed': 'fixture'})
+        fixtures.protocol.write_once(root / 'ownership-baseline.json', {'processes': {}})
+        with patch.object(workflow.native, 'verify', return_value={}):
+            proposal = workflow.prepare_attempt(root, old.package)
+            workflow.verify_attempt(root)
+        self.assertEqual(proposal['argv'][3], 'run-attempt')
+        scope = root / 'compat'
+        self.assertFalse(any(path.suffix == '.py' for path in scope.iterdir()))
+        def execute(*args, **kwargs):
+            raw = fixture.put(root, 'compat/raw.log', 'actual simulated child completion')
+            evidence = {raw: fixtures.protocol.file_record(root / raw)['sha256']}
+            common = dict(architecture='x86_64', plus_source_commit=fixture.plan['plus_source_commit'])
+            fixture.put(root, 'compat/compat-report.json', dict(common, checks={name: {'outcome': 'passed', 'evidence': evidence} for name in compat.GATES}))
+            screen = fixture.put(root, 'compat/screen.txt', 'native geometry bytes')
+            inventory = fixture.put(root, 'compat/capture-manifest.json', dict(architecture='x86_64', package_sha256=compat.digest(root / report['archive']),
+                files={screen: fixtures.protocol.file_record(root / screen)}))
+            fixture.put(root, 'compat/captures-report.json', dict(common, package_sha256=compat.digest(root / report['archive']),
+                capture_manifest=inventory, capture_manifest_sha256=compat.digest(root / inventory),
+                checks={'native-cursor-states': {'outcome': 'passed', 'evidence': evidence}}))
+            return 0
+        def clean(target, output):
+            result = {'outcome': 'clean', 'owned_remaining': [], 'unknown': []}
+            fixtures.protocol.write_once(output, result)
+            return result
+        with patch.object(workflow.native, 'verify', return_value={}), \
+             patch.object(workflow, 'bound_execution', return_value=('managed-compatible', 'c' * 64)), \
+             patch.object(workflow.native, 'owned_run', side_effect=execute), \
+             patch.object(workflow, 'cleanup_attempt', side_effect=clean), \
+             patch.object(workflow.native, 'cleanup', side_effect=clean):
+            state = workflow.run_attempt(root, fixture.base)
+        self.assertEqual(state['missing'], ['ap'])
+        self.assertFalse(state['refused'])
+        rows = fixtures.protocol._receipts(root)
+        self.assertEqual(rows['compat']['input']['execution']['job_id'], 'managed-compatible')
+        self.assertEqual(rows['compat']['input']['previous_package'], 'outputs/compat-previous-package.json')
+        self.assertIn(str(old.package / 'bin/codex'), rows['compat']['input']['executed'])
+        self.assertEqual(rows['captures']['cleanup']['outcome'], 'clean')
+
+    def test_cleanup_failure_records_unknown_without_replacing_original_audit(self):
+        workflow = self.workflow()
+        report = self.root / 'cleanup.json'
+        compat.write(report, {'outcome': 'blocked', 'owned_remaining': [123], 'unknown': []})
+        before = report.read_bytes()
+        def fail():
+            raise RuntimeError('Audit unresolved')
+        result = workflow.cleanup_record(self.root, report, fail)
+        self.assertEqual(result['outcome'], 'unknown')
+        self.assertEqual(result['unknown'], 1)
+        self.assertEqual(report.read_bytes(), before)
+        self.assertTrue((self.root / result['report']).is_file())
+
+    def test_ap_dependency_origin_escape_is_rejected(self):
+        workflow = self.workflow()
+        modules = self.root / 'node_modules'
+        modules.mkdir()
+        (modules / 'dependency.js').write_text('export default 1')
+        self.assertIn(str(modules / 'dependency.js'), workflow.dependency_files(modules))
+        (modules / 'escape.js').symlink_to(self.stock)
+        with self.assertRaisesRegex(ValueError, 'origin escapes'):
+            workflow.dependency_files(modules)
+        with self.assertRaisesRegex(ValueError, 'outside the native import'):
+            workflow.prepare_ap(self.root, self.root / 'ap-output', {})
+        self.assertFalse((self.root / 'ap-output').exists())
+
+    def test_compat_short_cleanup_preserves_replacement_directory(self):
+        workflow = self.workflow()
+        plan, profile, config = self.inputs()
+        prepared = self.prepare(plan, profile, config)
+        scope = Path(prepared['scope'])
+        short = self.short / 'ab'
+        short.mkdir(mode=0o700)
+        info = short.stat()
+        state = dict(path=str(short), device=info.st_dev, inode=info.st_ino, state='allocated')
+        compat.write(scope / 'short-state.json', state)
+        baseline = scope / 'unreadable-baseline.json'
+        compat.write(baseline, {'boot_id': Path('/proc/sys/kernel/random/boot_id').read_text().strip(), 'processes': {}})
+        compat.write(scope / 'short-binding.json', dict(path=str(short), device=info.st_dev, inode=info.st_ino,
+                                                       baseline_sha256=compat.digest(baseline)))
+        short.rename(self.short / 'original')
+        short.mkdir(mode=0o700)
+        unrelated = short / 'unrelated.txt'
+        unrelated.write_text('preserve other work')
+        audit = dict(passed=True, live_owned_processes=[], unknown_unreadable_same_user_processes=[])
+        with patch.object(workflow.ownership, 'inspect_processes', return_value=audit):
+            with self.assertRaisesRegex(ValueError, 'identity changed'):
+                workflow.audit_scope(scope, remove_short=True)
+        self.assertEqual(unrelated.read_text(), 'preserve other work')
+        self.assertFalse((scope / 'short-removal.json').exists())
+
+    def test_ap_composition_writes_external_receipt_with_distinct_executor_architecture(self):
+        import test_release_protocol as fixtures
+        workflow = self.workflow()
+        fixture = fixtures.ReleaseProtocolTests()
+        fixture.setUp()
+        self.addCleanup(fixture.doCleanups)
+        node = fixture.base / 'node'
+        node.write_bytes(b'pinned replay Node')
+        bundle = fixture.base / 'ap.cjs'
+        bundle.write_bytes(b'released AP bundle')
+        fixture.plan['compat']['ap_replay'] = {'source_commit': 'd' * 40,
+            'installed_plugin_commit': 'e' * 40, 'bundle_sha256': compat.digest(bundle)}
+        native_root = fixture.qualified(skip_ap=True)
+        coordinator = fixture.base / 'coordinator'
+        coordinator.mkdir()
+        profile = copy.deepcopy(fixture.profile)
+        profile.update(architecture='aarch64', triple=fixtures.protocol.TARGETS['aarch64'],
+            source_root=str(fixture.base / 'ap-source'), system_tools={str(node): compat.digest(node)},
+            ap_replay={'node': str(node), 'node_modules': str(fixture.base / 'ap-source/node_modules'),
+                'installed_bundle': str(bundle), 'installed_registry': str(fixture.base / 'registry.json')})
+        captures = fixtures.protocol.load(native_root / 'outputs/captures/report.json')
+        context = dict(native_root=str(native_root), package_sha256=captures['package_sha256'],
+            capture_manifest_sha256=captures['capture_manifest_sha256'], closure={str(node): fixtures.protocol.file_record(node)})
+        for name, value in (('ap-preparation.json', context), ('ap-profile.json', profile), ('native-plan.json', fixture.plan),
+                            ('native-captures.json', captures), ('native-capture-inventory.json', {}), ('ownership-baseline.json', {})):
+            fixtures.protocol.write_once(coordinator / name, value)
+        before = {path.relative_to(native_root).as_posix(): fixtures.protocol.file_record(path) for path in native_root.rglob('*') if path.is_file()}
+        def execute(*args, **kwargs):
+            for name, value in (('replay-report.json', {'passed': True, 'tests': 23}),
+                                ('release-vitest.json', {'numPassedTests': 22}), ('observer-vitest.json', {'numPassedTests': 1}),
+                                ('observed-classifier.json', {'passed': True, 'captures': list(range(20)), 'busy_pairs': [1, 2]})):
+                fixtures.protocol.write_once(coordinator / name, value)
+            return 0
+        def cleanup(target, output):
+            result = {'outcome': 'clean', 'owned_remaining': [], 'unknown': []}
+            fixtures.protocol.write_once(output, result)
+            return result
+        with patch.object(workflow, 'verify_ap', return_value=(context, fixture.plan, profile)), \
+             patch.object(workflow, 'bound_execution', return_value=('managed-ap-replay', 'c' * 64)), \
+             patch.object(workflow.native, 'owned_run', side_effect=execute), \
+             patch.object(workflow, 'cleanup_ap', side_effect=cleanup):
+            report = workflow.run_ap(coordinator, fixture.base)
+        self.assertEqual(report['architecture'], 'x86_64')
+        sidecar = fixtures.protocol.load(coordinator / 'ap-receipt.json')
+        self.assertEqual(sidecar['input']['execution']['architecture'], 'aarch64')
+        self.assertEqual(sidecar['input']['native']['architecture'], 'x86_64')
+        accepted = fixtures.protocol.accept_attempt(native_root, source_root=SCRIPTS.parent, ap_receipt=coordinator / 'ap-receipt.json')
+        self.assertTrue(accepted['accepted'])
+        after = {path.relative_to(native_root).as_posix(): fixtures.protocol.file_record(path) for path in native_root.rglob('*') if path.is_file()}
+        self.assertEqual(before, after)
+
+    def test_ap_leaf_uses_checked_in_replay_files_and_reconciles_expected_counts(self):
+        workflow = self.workflow()
+        coordinator = self.root / 'ap-coordinator'
+        coordinator.mkdir()
+        source = self.root / 'ap-source'
+        for name in ('src/commands/nudge.ts', 'src/core/tmux.ts'):
+            path = source / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text('AP pure export')
+        modules = source / 'node_modules'
+        modules.mkdir()
+        profile = {'python': {'libpython': None}, 'source_root': str(source),
+                   'ap_replay': {'node': str(self.stock), 'node_modules': str(modules)}}
+        plan = {'compat': {'ap_version': '0.7.35', 'ap_replay': {'source_commit': 'd' * 40,
+            'installed_plugin_commit': 'e' * 40, 'bundle_sha256': 'f' * 64}}}
+        calls = []
+        def execute(argv, **kwargs):
+            calls.append(argv)
+            output = Path(argv[-1])
+            count = 22 if output.name == 'release-vitest.json' else 1
+            compat.write(output, dict(success=True, numPassedTests=count, numFailedTests=0, numPendingTests=0, numTodoTests=0))
+            if count == 1:
+                compat.write(coordinator / 'observed-classifier.json', dict(passed=True, captures=list(range(20)), busy_pairs=[1, 2]))
+            return SimpleNamespace(returncode=0)
+        with patch.object(workflow, 'verify_ap', return_value=({}, plan, profile)), \
+             patch.object(workflow.subprocess, 'run', side_effect=execute):
+            result = workflow.replay_ap(coordinator)
+        self.assertEqual(result, {'passed': True, 'tests': 23, 'captures': 20, 'busy_pairs': 2})
+        self.assertEqual(Path(calls[0][3]), source / 'tests/codex-plus-footer.test.ts')
+        self.assertEqual(Path(calls[1][3]), compat.RECIPE / 'ap-release-replay-observer.test.ts')
+        self.assertFalse(any(path.suffix in ('.py', '.js', '.ts') for path in coordinator.rglob('*')))
+
+    def test_ap_profile_checks_real_bundle_registry_and_module_prerequisites(self):
+        import test_release_protocol as fixtures
+        workflow = self.workflow()
+        fixture = fixtures.ReleaseProtocolTests()
+        fixture.setUp()
+        self.addCleanup(fixture.doCleanups)
+        source = self.root / 'ap-source'
+        (source / 'dist').mkdir(parents=True)
+        (source / 'dist/ap.cjs').write_bytes(b'released bundle')
+        (source / 'package.json').write_text('{"version":"0.7.35"}')
+        (source / '.gitignore').write_text('node_modules/\n')
+        subprocess.run(['git', 'init', '-q', str(source)], check=True)
+        subprocess.run(['git', '-C', str(source), 'add', '.'], check=True)
+        subprocess.run(['git', '-C', str(source), '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', 'AP source'], check=True)
+        source_commit = subprocess.check_output(['git', '-C', str(source), 'rev-parse', 'HEAD'], text=True).strip()
+        modules = source / 'node_modules'
+        (modules / 'vitest/dist').mkdir(parents=True)
+        (modules / 'vitest/vitest.mjs').write_text('pinned Vitest entry')
+        (modules / 'vitest/dist/index.js').write_text('pinned Vitest exports')
+        installed = self.root / 'installed-ap/dist/ap.cjs'
+        installed.parent.mkdir(parents=True)
+        installed.write_bytes((source / 'dist/ap.cjs').read_bytes())
+        registry = self.root / 'registry.json'
+        compat.write(registry, {'plugins': {'ap@fixture': [{'installPath': str(installed.parent.parent),
+            'version': '0.7.35', 'gitCommitSha': 'e' * 40}]}})
+        plan = fixture.plan
+        plan['compat']['ap_replay'] = {'source_commit': source_commit, 'installed_plugin_commit': 'e' * 40,
+                                      'bundle_sha256': compat.digest(installed)}
+        profile = fixture.profile
+        libraries = {str(Path(line.split()[-1]).resolve()) for line in Path('/proc/self/maps').read_text().splitlines()
+                     if 'libpython' in line and line.split()[-1].startswith('/')}
+        profile.update(hostname=platform.node(), architecture=platform.machine(), triple=fixtures.protocol.TARGETS[platform.machine()],
+            source_root=str(source), system_tools={str(self.stock): compat.digest(self.stock)},
+            ap_replay={'node': str(self.stock), 'node_modules': str(modules), 'installed_bundle': str(installed), 'installed_registry': str(registry)})
+        profile['python'].update(path=sys.executable, version=sys.version.split()[0], libpython=next(iter(libraries), None))
+        checkout = workflow.native.checkout_identity
+        def identity(path):
+            return {'head': plan['tooling_commit']} if Path(path).resolve() == SCRIPTS.parent else checkout(path)
+        with patch.object(workflow.native, 'checkout_identity', side_effect=identity):
+            self.assertEqual(workflow.ap_profile(profile, plan)['source']['head'], source_commit)
+            installed.write_bytes(b'wrong released bundle')
+            with self.assertRaisesRegex(ValueError, 'bundle differs'):
+                workflow.ap_profile(profile, plan)
+            installed.write_bytes((source / 'dist/ap.cjs').read_bytes())
+            (modules / 'vitest/vitest.mjs').unlink()
+            with self.assertRaisesRegex(ValueError, 'dependencies are unavailable'):
+                workflow.ap_profile(profile, plan)
 
     def test_guard_journal_pairs_only_observed_terminal_outcomes(self):
         for outcome in (0, 1, -9, subprocess.TimeoutExpired(['command'], 1)):
