@@ -29,6 +29,15 @@ class NativeTests(unittest.TestCase):
         self.base, self.profile, self.plan = fixture.base, fixture.profile, fixture.plan
         self.profile['python']['path'] = str(Path(sys.executable).resolve())
         self.profile['python']['version'] = sys.version.split()[0]
+        sites = self.base / 'fixture-sites'
+        imports = {}
+        for name, body in (('pyte', 'class Screen: pass\nclass Stream: pass\n'),
+                           ('wcwidth', 'def wcwidth(value): return 1\n')):
+            origin = sites / name / '__init__.py'
+            origin.parent.mkdir(parents=True)
+            origin.write_text(body)
+            imports[name] = {'origin': str(origin), 'sha256': native.sha(origin)}
+        self.profile['python'].update(fixture_sites=[str(sites)], fixture_imports=imports)
         self.profile['native_build'] = {'upstream_repository': str(self.base / 'upstream'),
             'cargo_home': str(self.base / 'cargo'), 'cargo_target_dir': str(self.base / 'target'),
             'v8_cache': str(self.base / 'v8'), 'license_cache': str(self.base / 'licenses'),
@@ -79,6 +88,53 @@ class NativeTests(unittest.TestCase):
         self.assertEqual(native.python_env(self.profile)['LD_LIBRARY_PATH'], '/private/python/lib')
         self.profile['python']['libpython'] = None
         self.assertNotIn('LD_LIBRARY_PATH', native.python_env(self.profile))
+
+    def test_fixture_sites_reach_the_actual_child_environment(self):
+        root = self.attempt()
+        c = native.Context(root, 'preflight')
+        self.assertEqual(c.ENV['PYTHONPATH'], native.python_env(self.profile)['PYTHONPATH'])
+        self.assertEqual(c.ENV['PYTHONPATH'].split(os.pathsep)[-1], self.profile['python']['fixture_sites'][0])
+        observed = native.fixture_import_probe(self.profile)
+        self.assertEqual({row['module']: row['origin'] for row in observed['modules']},
+                         {name: pin['origin'] for name, pin in self.profile['python']['fixture_imports'].items()})
+
+    def test_fixture_origin_shadow_and_dependency_tamper_are_rejected(self):
+        shadow = self.base / 'shadow'
+        shadow.mkdir()
+        (shadow / 'pyte.py').write_text('class Screen: pass\nclass Stream: pass\n')
+        self.profile['python']['fixture_sites'].insert(0, str(shadow))
+        with self.assertRaises(subprocess.CalledProcessError):
+            native.fixture_import_probe(self.profile)
+        self.profile['python']['fixture_sites'].pop(0)
+        path = Path(self.profile['python']['fixture_imports']['wcwidth']['origin'])
+        path.write_text('def wcwidth(value): return 2\n')
+        with self.assertRaisesRegex(ValueError, 'hash mismatch'):
+            native.fixture_closure(self.profile)
+
+    def test_fixture_closure_covers_imported_package_children(self):
+        top = Path(self.profile['python']['fixture_imports']['pyte']['origin'])
+        child = top.with_name('streams.py')
+        child.write_text('fixture = 1\n')
+        first = native.fixture_closure(self.profile)
+        self.assertIn(str(child), first)
+        child.write_text('fixture = 2\n')
+        self.assertNotEqual(first, native.fixture_closure(self.profile))
+
+    def test_rehearsal_preflight_exercises_imports_and_real_fixture_setup(self):
+        root = self.attempt()
+        calls = []
+        def run(c, name, argv, **kwargs):
+            calls.append((name, c.ENV['PYTHONPATH']))
+            return ''
+        with patch.object(native, 'verify', return_value={'rehearsal_failure': None}), \
+             patch.object(native.Context, 'run', run):
+            report = native.stage(root, 'preflight')
+        self.assertTrue(report['rehearsal'])
+        self.assertEqual([name for name, _ in calls],
+                         ['import-preflight', 'actual-fixture-setup', 'command-fixture-selftest'])
+        self.assertTrue(all(self.profile['python']['fixture_sites'][0] in value for _, value in calls))
+        spec = protocol.load(root / 'outputs/import-preflight-input.json')
+        self.assertTrue({'pyte', 'wcwidth'} <= {row['module'] for row in spec['imports']})
 
     def test_checked_in_cargo_adapter_handles_notice_generator_version(self):
         env = {'PATH': '/usr/bin:/bin', 'CODEX_PLUS_RELEASE_CARGO': '/usr/bin/printf',

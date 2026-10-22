@@ -42,10 +42,43 @@ def sha(path):
 
 def python_env(profile):
     env = {'PATH': '/usr/bin:/bin', 'LANG': 'C.UTF-8', 'PYTHONDONTWRITEBYTECODE': '1'}
+    source = Path(profile['source_root'])
+    env['PYTHONPATH'] = os.pathsep.join([str(source), str(source / 'tests'),
+                                       *profile['python'].get('fixture_sites', [])])
     library = profile['python']['libpython']
     if library is not None:
         env['LD_LIBRARY_PATH'] = str(Path(library).parent)
     return env
+
+
+def fixture_closure(profile):
+    pins = profile['python'].get('fixture_imports', {})
+    protocol.require(set(pins) == {'pyte', 'wcwidth'}, 'Pin pyte and wcwidth fixture imports')
+    sites = [Path(path).resolve() for path in profile['python'].get('fixture_sites', [])]
+    protocol.require(sites and all(path.is_dir() for path in sites), 'Missing fixture site directory')
+    result = {}
+    for name, pin in pins.items():
+        origin = Path(pin['origin']).resolve()
+        protocol.require(any(origin.is_relative_to(site) for site in sites), 'Fixture origin is outside fixture sites')
+        protocol.require(sha(origin) == pin['sha256'], f'Fixture import hash mismatch: {name}')
+        paths = origin.parent.rglob('*.py') if origin.name == '__init__.py' else [origin]
+        for path in paths:
+            result[str(path.resolve())] = protocol.file_record(path)
+    return result
+
+
+def fixture_import_probe(profile):
+    """Check imports using the exact child interpreter and the existing validator."""
+    fixture_closure(profile)
+    imports = [{'module': name, 'origin': pin['origin'],
+                'symbols': ['Screen', 'Stream'] if name == 'pyte' else ['wcwidth']}
+               for name, pin in profile['python']['fixture_imports'].items()]
+    validator = str(Path(profile['source_root']) / 'scripts/release-preflight.py')
+    code = ('import importlib.util,json,sys;spec=importlib.util.spec_from_file_location("preflight",sys.argv[1]);'
+            'module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);'
+            'print(json.dumps(module.check_imports(json.loads(sys.argv[2]))))')
+    return json.loads(checked([profile['python']['path'], '-B', '-c', code, validator,
+                               json.dumps({'imports': imports})], env=python_env(profile)))
 
 
 def checked(argv, *, cwd=None, env=None):
@@ -110,6 +143,7 @@ def observe(profile):
     python['binary_sha256'] = sha(Path(profile['python']['path']).resolve())
     python['json_extension_sha256'] = sha(Path(python['json_extension']).resolve())
     python['libpython_sha256'] = sha(Path(expected).resolve()) if expected else None
+    python['fixture_imports'] = fixture_import_probe(profile)
     rust = checked([profile['toolchain']['rustc'], '--version'], env=env).strip()
     cargo = checked([profile['toolchain']['cargo'], '--version'], env=env).strip()
     version = profile['toolchain']['version']
@@ -150,6 +184,7 @@ def input_closure(profile):
     paths += sorted((source / 'codex_plus').rglob('*.py'))
     paths += sorted((source / 'scripts').glob('*.py'))
     paths.append(Path(profile['native_build']['official_binary']))
+    paths += [Path(pin['origin']) for pin in profile['python'].get('fixture_imports', {}).values()]
     paths += [Path(path) for path in profile.get('system_tools', {})]
     return {str(path.resolve()): protocol.file_record(path.resolve()) for path in paths}
 
@@ -188,6 +223,7 @@ def prepare(root, cleanup, *, rehearsal_failure=None):
     baseline = ownership.capture_baseline([root, Path(metadata['socket_root'])], scope=root)
     protocol.write_once(root / 'ownership-baseline.json', baseline)
     closure = input_closure(profile)
+    fixture_files = fixture_closure(profile)
     for name in cleanup['argv']:
         if Path(name).is_absolute() and Path(name).is_file():
             closure[str(Path(name).resolve())] = protocol.file_record(Path(name).resolve())
@@ -196,6 +232,7 @@ def prepare(root, cleanup, *, rehearsal_failure=None):
     context = {'schema_version': 1, 'attempt': metadata['attempt'], 'plan_sha256': protocol.digest(plan),
                'profile_sha256': protocol.digest(profile), 'closure': closure,
                'seals': sealed, 'python_probe': python, 'cleanup': cleanup, 'final_cleanup': final_cleanup,
+               'fixture_closure': fixture_files,
                'ownership_baseline_sha256': sha(root / 'ownership-baseline.json'),
                'rehearsal_failure': rehearsal_failure}
     protocol.write_once(root / 'native-preparation.json', context)
@@ -209,7 +246,9 @@ def prepare(root, cleanup, *, rehearsal_failure=None):
                            ('attempt.json', 'plan.json', 'profile.json', 'native-preparation.json', 'ownership-baseline.json')],
                 'exclusive_keys': ['release-' + metadata['architecture'] + '-' + profile['host_id'],
                                    'cargo-' + protocol.digest(build['cargo_target_dir'])[:24]],
-                'expected_duration_seconds': 7200, 'deadline_seconds': 18000, 'cancel_grace_seconds': 90,
+                'expected_duration_seconds': 120 if metadata['rehearsal'] else 7200,
+                'deadline_seconds': 600 if metadata['rehearsal'] else 18000,
+                'cancel_grace_seconds': 30 if metadata['rehearsal'] else 90,
                 'external_dependencies': [{'identity': 'Pinned local source, tooling, compiler, Python, installed executor and caches',
                     'precondition': {'argv': [profile['python']['path'], '-B', script, 'verify', '--attempt', str(root)],
                                      'cwd': profile['tooling_root'], 'env': env, 'deadline_seconds': 180}}],
@@ -219,6 +258,8 @@ def prepare(root, cleanup, *, rehearsal_failure=None):
     proposal['inputs'] += [{'source': name, 'path': 'closure/' + str(number)}
                            for number, name in enumerate(context['closure'])
                            if Path(name).suffix == '.py' or Path(name).parent == RECIPE]
+    proposal['inputs'] += [{'source': name, 'path': 'fixture/' + str(number)}
+                           for number, name in enumerate(fixture_files) if name not in context['closure']]
     protocol.write_once(root / 'job-proposal.json', proposal)
     return proposal
 
@@ -233,6 +274,7 @@ def verify(root):
                      'Native input closure changed')
     protocol.require(sha(Path(root) / 'ownership-baseline.json') == context['ownership_baseline_sha256'],
                      'Ownership baseline changed')
+    protocol.require(fixture_closure(profile) == context['fixture_closure'], 'Fixture dependency closure changed')
     for name, seal in context['seals'].items():
         protocol.require(seal == checkout_identity(profile[name]), f'Source seal changed: {name}')
     observed, probe = observe(profile)
@@ -460,7 +502,6 @@ class Context:
             'NO_PROXY': '127.0.0.1,localhost', 'no_proxy': '127.0.0.1,localhost',
             'CODEX_PLUS_TEST_RUNTIME': str(self.NATIVE / 'codex-plus-runtime'),
             'CODEX_PLUS_RELEASE_QA_SCOPE': str(self.BASE), 'CODEX_PLUS_RELEASE_ATTEMPT': metadata['attempt'],
-            'PYTHONPATH': str(self.SOURCE) + ':' + str(self.SOURCE / 'tests'),
             'GIT_OPTIONAL_LOCKS': '0', 'INSTA_UPDATE': 'no'}
         if (self.PACKAGE / 'bin/codex-plus-runtime').exists():
             self.ENV['CODEX_PLUS_TEST_RUNTIME'] = str(self.PACKAGE / 'bin/codex-plus-runtime')
@@ -534,8 +575,8 @@ def stage(root, name):
     report = {'architecture': metadata['architecture'], 'plus_source_commit': plan['plus_source_commit']}
     if metadata['rehearsal']:
         protocol.require(context['rehearsal_failure'] != name, 'Requested rehearsal failure')
-        report.update(rehearsal=True, checks={'rehearsal': {'outcome': 'passed'}})
-    elif name == 'preflight':
+        report['rehearsal'] = True
+    if name == 'preflight':
         selected = [('test_claude_advisor', ['ClaudeAdvisor']),
                     ('test_claude_advisor_stdio', ['WorkerPipes']),
                     ('test_executor_reconcile_startup', ['case', 'main']),
@@ -547,9 +588,12 @@ def stage(root, name):
                     ('test_morandi_command_colors_tui', ['run']), ('test_shell_policy_integration', ['run']),
                     ('test_shell_topics_tui', ['run']), ('test_detached_execution_hud_tui', ['run'])]
         spec = c.BASE / 'outputs/import-preflight-input.json'
-        protocol.write_once(spec, {'schema_version': 1, 'python_path': [str(c.SOURCE / 'tests')],
+        dependency_imports = [{'module': name, 'origin': pin['origin'],
+                               'symbols': ['Screen', 'Stream'] if name == 'pyte' else ['wcwidth']}
+                              for name, pin in profile['python']['fixture_imports'].items()]
+        protocol.write_once(spec, {'schema_version': 1,
             'imports': [{'module': module_name, 'origin': str(c.SOURCE / 'tests' / (module_name.replace('.', '/') + '.py')),
-                         'symbols': symbols} for module_name, symbols in selected]})
+                         'symbols': symbols} for module_name, symbols in selected] + dependency_imports})
         c.run('import-preflight', [c.PYTHON, c.SOURCE / 'scripts/release-preflight.py', spec,
             '--scratch-parent', c.SHORT.name, '--output', c.BASE / 'evidence/import-preflight.json'], cwd=c.SOURCE)
         c.run('actual-fixture-setup', [c.PYTHON, RECIPE / 'fixture-preflight.py', '--source', c.SOURCE,
@@ -557,6 +601,8 @@ def stage(root, name):
             '--stock', c.OFFICIAL, '--evidence', c.BASE / 'evidence/preflight-fixtures'], timeout=90)
         c.run('command-fixture-selftest', c.fixture('test_command_display_tui.py', '--self-test'), cwd=c.SOURCE)
         report['checks'] = {'actual-fixture-setup': {'outcome': 'passed'}, 'command-fixture-selftest': {'outcome': 'passed'}}
+    elif metadata['rehearsal']:
+        report['checks'] = {'rehearsal': {'outcome': 'passed'}}
     elif name == 'frontend':
         module(RECIPE / 'build.py').frontend(c)
         report['checks'] = {'frontend': {'outcome': 'passed'}, 'bwrap': {'outcome': 'passed'}}
