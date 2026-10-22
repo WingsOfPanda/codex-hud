@@ -242,13 +242,23 @@ def validate_profile(profile, arch, observed=None):
     if 'native_build' in profile:
         native = profile['native_build']
         paths = ('upstream_repository', 'cargo_home', 'cargo_target_dir', 'v8_cache', 'license_cache', 'official_binary')
-        keys(native, (*paths, 'cargo_jobs', 'test_threads', 'official_sha256'))
+        keys(native, (*paths, 'cargo_jobs', 'test_threads', 'official_sha256'), ('pkg_config',))
         for name in paths:
             require(isinstance(native[name], str) and Path(native[name]).is_absolute() and
                     '..' not in Path(native[name]).parts, f'Invalid native build path: {name}')
         for name in ('cargo_jobs', 'test_threads'):
             require(type(native[name]) is int and native[name] > 0, f'Invalid native limit: {name}')
         hex_digest(native['official_sha256'])
+        if 'pkg_config' in native:
+            dependency = native['pkg_config']
+            keys(dependency, ('path', 'files'))
+            require(isinstance(dependency['path'], str) and Path(dependency['path']).is_absolute() and
+                    '..' not in Path(dependency['path']).parts, 'Invalid pkg-config directory')
+            require(isinstance(dependency['files'], dict) and bool(dependency['files']), 'Pinned pkg-config inputs required')
+            for name, sha in dependency['files'].items():
+                require(isinstance(name, str) and Path(name).is_absolute() and '..' not in Path(name).parts,
+                        'Invalid pkg-config input path')
+                hex_digest(sha)
     if 'system_tools' in profile:
         require(isinstance(profile['system_tools'], dict), 'Invalid system tool pins')
         for name, sha in profile['system_tools'].items():
@@ -562,6 +572,9 @@ def _transport_manifest(root):
     require(required <= manifest['included'].keys(), 'Required raw evidence was made external or omitted')
     require('socket-cleaned.json' in manifest['included'], 'Missing final native cleanup proof')
     _socket_cleanup_proof(root, check_path=False)
+    require(not {'compat/short-state.json', 'compat/short-binding.json'} & manifest['external_artifacts'].keys(),
+            'Compatibility allocation cannot be external metadata')
+    _compat_cleanup_proof(root, check_path=False)
     for name, descriptor in manifest['external_artifacts'].items():
         relative_file(root, name)
         keys(descriptor, ('kind', 'record'))
@@ -684,6 +697,7 @@ def _ap_binding(root):
     require(state['missing'] == ['ap'] and not state['refused'], 'AP requires passed native gates through captures')
     metadata, plan, _ = read_attempt(root)
     _socket_cleanup_proof(root, check_path=not state['evidence_only'])
+    _compat_cleanup_proof(root, check_path=not state['evidence_only'])
     rows = _receipts(root)
     captures = load(relative_file(root, rows['captures']['evidence']))
     return {'attempt': metadata['attempt'], 'plan_sha256': digest(plan), 'architecture': metadata['architecture'],
@@ -800,6 +814,7 @@ def _accept_gates(root, *, source_root, archive=None, gates=GATES, ap_receipt=No
         rows[stage]['cleanup']['owned_remaining'] != 0 or rows[stage]['cleanup']['unknown'] != 0)]
     require(all(gate in rows for gate in gates) and not refused, 'Missing/failed/unknown gate or cleanup')
     _socket_cleanup_proof(root, check_path=not state['evidence_only'])
+    _compat_cleanup_proof(root, check_path=not state['evidence_only'])
     validate_plan(plan, source_root)
     require(not metadata['rehearsal'], 'Rehearsal cannot qualify final evidence')
     arch = metadata['architecture']
@@ -941,6 +956,15 @@ def _evidence_inputs(root):
     if (Path(root) / 'recovery/receipt.json').exists():
         required.add('recovery/receipt.json')
         required.update(load(Path(root) / 'recovery/receipt.json')['files'])
+    if any((Path(root) / name).exists() for name in ('compat/short-state.json', 'compat/short-binding.json')):
+        names = ('short-state.json', 'short-binding.json', 'unreadable-baseline.json',
+                 'owned-process-identities.jsonl', 'socket-removal.json', 'socket-removal-intent.json',
+                 'socket-quarantine.json', 'socket-moved.json', 'socket-deleted.json')
+        required.update('compat/' + name for name in names if (Path(root) / 'compat' / name).exists())
+        required.update(path.relative_to(root).as_posix()
+                        for path in (Path(root) / 'compat/socket-cleanup-retries').glob('*.json'))
+        required.update(name for name in ('outputs/compat-cleanup.json', 'outputs/compat-root-cleanup.json',
+                        'outputs/compat-combined-cleanup.json') if (Path(root) / name).exists())
     return required, outputs, archives, packages
 
 
@@ -977,6 +1001,7 @@ def export_attempt(root, destination):
     require_native_attempt(root)
     status(root)
     _socket_cleanup_proof(root)
+    _compat_cleanup_proof(root)
     root, destination = Path(root), Path(destination)
     require(not destination.exists(), 'Export already exists')
     require(not destination.resolve().is_relative_to(root.resolve()), 'Export must be outside the attempt')
@@ -1045,6 +1070,64 @@ def _socket_cleanup_proof(root, *, check_path=True):
                 report.get('recovery_receipt_sha256') == file_record(recovery)['sha256'],
                 'Final cleanup recovery receipt changed')
     return proof
+
+
+def _compat_cleanup_proof(root, *, check_path=True):
+    scope = Path(root) / 'compat'
+    if not any((scope / name).exists() for name in ('short-state.json', 'short-binding.json')):
+        return
+    metadata, _, profile = read_attempt(root)
+    state = load(scope / 'short-state.json')
+    keys(state, ('path', 'device', 'inode', 'uid', 'boot_id', 'state'))
+    short = Path(state['path'])
+    require(state['state'] == 'allocated' and short.is_absolute() and short.parent == Path(profile['short_root']) and
+            re.fullmatch(r'[A-Za-z0-9]{2}', short.name) and
+            all(type(state[name]) is int and state[name] >= 0 for name in ('device', 'inode', 'uid')) and
+            isinstance(state['boot_id'], str) and
+            re.fullmatch(r'[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}', state['boot_id']),
+            'Invalid compatibility allocation identity')
+    paired = load(scope / 'short-binding.json')
+    require(all(paired.get(name) == state[name] for name in ('path', 'device', 'inode')) and
+            paired.get('baseline_sha256') == file_record(scope / 'unreadable-baseline.json')['sha256'],
+            'Compatibility allocation baseline changed')
+    identity = {name: state[name] for name in ('path', 'uid', 'boot_id')}
+    identity.update(dev=state['device'], ino=state['inode'])
+    if check_path:
+        require(not os.path.lexists(short), 'Compatibility short directory remains; interrupted recovery is unsupported')
+    require(load(scope / 'socket-removal.json') == {'identity': identity, 'removed': True},
+            'Compatibility short removal identity changed')
+    retries = sorted((scope / 'socket-cleanup-retries').glob('*-intent.json'))
+    intent_path = retries[-1] if retries else scope / 'socket-removal-intent.json'
+    quarantine_path = (intent_path.with_name(intent_path.name.replace('-intent', '-quarantine'))
+                       if retries else scope / 'socket-quarantine.json')
+    intent, quarantine = load(intent_path), load(quarantine_path)
+    destination = Path(intent['quarantine'])
+    require(intent['identity'] == identity and destination.parent == short.parent and
+            destination.name.startswith('.release-cleanup-') and quarantine.get('path') == str(destination) and
+            all(type(quarantine.get(name)) is int and quarantine[name] >= 0 for name in ('dev', 'ino', 'uid')) and
+            quarantine['uid'] == identity['uid'], 'Compatibility quarantine proof changed')
+    for name in ('socket-moved.json', 'socket-deleted.json'):
+        require(load(scope / name) == identity, 'Compatibility shared removal proof changed')
+    audit_names = ('outputs/compat-cleanup.json', 'outputs/compat-root-cleanup.json')
+    audits = []
+    for name in audit_names:
+        raw = load(relative_file(root, name))
+        require(raw.get('passed') is True and raw.get('outcome') == 'clean' and
+                all(raw.get(field) == [] or (type(raw.get(field)) is int and raw[field] == 0)
+                    for field in ('owned_remaining', 'unknown')), 'Compatibility independent cleanup is unresolved')
+        if name == audit_names[0]:
+            require(raw.get('short_removed') is True and raw.get('short_identity') == identity,
+                    'Compatibility independent cleanup identity changed')
+        else:
+            require(raw.get('socket_removed') is True and raw.get('socket_identity') == metadata['socket_identity'],
+                    'Compatibility root cleanup identity changed')
+        audits.append({'outcome': 'clean', 'owned_remaining': 0, 'unknown': 0, 'report': name})
+    combined = load(relative_file(root, 'outputs/compat-combined-cleanup.json'))
+    require(combined.get('audits') == audits, 'Compatibility cleanup audit references changed')
+    summary = {name: combined[name] for name in ('outcome', 'owned_remaining', 'unknown', 'report')}
+    require(summary == {'outcome': 'clean', 'owned_remaining': 0, 'unknown': 0,
+                        'report': 'outputs/compat-combined-cleanup.json'}, 'Compatibility cleanup remains unresolved')
+    _cleanup_identity(root, summary, {'outputs/compat-combined-cleanup.json': None})
 
 
 def seal_socket_cleanup(root, report):

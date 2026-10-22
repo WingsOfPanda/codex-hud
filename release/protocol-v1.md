@@ -61,6 +61,12 @@ paths to SHA-256 pins. Optional `native_build` contains exactly
 `cargo_jobs` and `test_threads` (positive integers). Native preparation requires
 this build profile. Roots/tool paths are absolute; `libpython` is an
 absolute path or null. The version strings are exact observed values, not ranges.
+Optional `native_build.pkg_config` is `{path, files}`: an absolute pkg-config
+directory and a nonempty map of absolute lexical input paths to SHA-256 pins.
+Native preparation probes the selected libcap pc/header/library, checks every
+declared input and resolved symlink target, freezes that inventory, and scopes
+`PKG_CONFIG_PATH` to stage children. The pkg-config executable has a normal exact
+`system_tools` pin. This does not introduce a generic environment override map.
 Optional `python.fixture_sites` lists absolute import directories, and
 `python.fixture_imports` maps module names to exact `{origin, sha256}` pins.
 Native preparation verifies actual imported origins and freezes the complete
@@ -202,6 +208,20 @@ managed snapshots, journal, ownership baseline, preparation and native-start
 records. Core verifies those records, the attempt/plan/socket binding and the
 final cleanup report's recovery receipt hash. Recovery never changes an original
 failed or unknown qualification outcome.
+
+Compatibility allocates a separate short directory after the native build seal.
+When `compat/short-state.json` or `compat/short-binding.json` exists, acceptance,
+package approval, AP binding and export require both allocation records and the
+hash-bound baseline, the exact shared ownership helper's removal/quarantine/move/
+delete records, and clean independent short and root audits. The short audit must
+name the exact `short_identity` and confirm removal; the combined report must
+reference those two zero-count audits. Native checks also require the original
+compatibility short path absent. The bundle retains the allocation, journal,
+shared cleanup/retry metadata and all three raw audit reports; import verifies
+them without consulting the foreign filesystem. A prior native socket seal or a
+clean combined summary alone does not qualify this later allocation. Interrupted
+compatibility recovery is unsupported: missing, blocked or inconsistent proof
+refuses acceptance/export and preserves the attempt.
 
 `import_attempt(bundle, destination, expected_sha256=...)` verifies the digest,
 rejects links/path escapes/duplicate members and unexpected/missing raw evidence,

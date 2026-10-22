@@ -1,6 +1,7 @@
 """Reject incomplete or changed native evidence without launching release work."""
 import copy
 import importlib.util
+import io
 import json
 from pathlib import Path
 import shutil
@@ -86,6 +87,37 @@ class ReleaseProtocolTests(unittest.TestCase):
     def export(self, root, destination):
         self.finalize_socket(root)
         return protocol.export_attempt(root, destination)
+
+    def allocate_compat_short(self, root):
+        metadata, _, _ = protocol.read_attempt(root)
+        scope = root / 'compat'
+        scope.mkdir()
+        short = Path(self.profile['short_root']) / ('Q2' if Path(metadata['socket_root']).name == 'Q1' else 'Q1')
+        short.mkdir(mode=0o700)
+        info = short.stat()
+        identity = {'path': str(short), 'dev': info.st_dev, 'ino': info.st_ino,
+                    'uid': info.st_uid, 'boot_id': Path('/proc/sys/kernel/random/boot_id').read_text().strip()}
+        self.put(scope, 'short-state.json', {'path': str(short), 'device': info.st_dev,
+            'inode': info.st_ino, 'uid': info.st_uid, 'boot_id': identity['boot_id'], 'state': 'allocated'})
+        self.put(scope, 'unreadable-baseline.json', {'boot_id': identity['boot_id'], 'processes': {}})
+        self.put(scope, 'short-binding.json', {'path': str(short), 'device': info.st_dev, 'inode': info.st_ino,
+            'baseline_sha256': protocol.file_record(scope / 'unreadable-baseline.json')['sha256']})
+        self.put(scope, 'owned-process-identities.jsonl', '')
+        return identity
+
+    def finish_compat_short(self, root, identity):
+        ownership = protocol._module(ROOT / 'scripts/release_ownership.py')
+        ownership._remove_socket(root / 'compat', Path(identity['path']), identity, protocol)
+        self.put(root, 'outputs/compat-cleanup.json', {'passed': True, 'outcome': 'clean',
+            'owned_remaining': [], 'unknown': [], 'short_removed': True, 'short_identity': identity})
+        metadata, _, _ = protocol.read_attempt(root)
+        self.put(root, 'outputs/compat-root-cleanup.json', {'passed': True, 'outcome': 'clean',
+            'owned_remaining': [], 'unknown': [], 'socket_removed': True,
+            'socket_identity': metadata['socket_identity']})
+        self.put(root, 'outputs/compat-combined-cleanup.json', {'outcome': 'clean',
+            'owned_remaining': 0, 'unknown': 0, 'report': 'outputs/compat-combined-cleanup.json',
+            'audits': [{'outcome': 'clean', 'owned_remaining': 0, 'unknown': 0, 'report': name}
+                      for name in ('outputs/compat-cleanup.json', 'outputs/compat-root-cleanup.json')]})
 
     def receipt(self, root, stage, report, extra=(), *, outcome='passed', exit_code=0, cleanup=None,
                 replay_profile=None, raw_cleanup=None):
@@ -578,6 +610,113 @@ class ReleaseProtocolTests(unittest.TestCase):
         (root / 'process-journal.jsonl').write_text('changed journal')
         with self.assertRaisesRegex(ValueError, 'Evidence output changed'):
             protocol.status(root)
+
+    def test_pkg_config_profile_is_optional_and_requires_exact_scoped_input_pins(self):
+        profile = copy.deepcopy(self.profile)
+        paths = ('upstream_repository', 'cargo_home', 'cargo_target_dir', 'v8_cache', 'license_cache', 'official_binary')
+        profile['native_build'] = {name: str(self.base / name) for name in paths}
+        profile['native_build'].update(cargo_jobs=2, test_threads=2, official_sha256='f' * 64)
+        protocol.validate_profile(profile, 'x86_64')
+        scoped = {'path': str(self.base / 'pkgconfig'),
+                  'files': {str(self.base / 'pkgconfig/libcap.pc'): 'a' * 64,
+                            str(self.base / 'include/sys/capability.h'): 'b' * 64,
+                            str(self.base / 'lib/libcap.so'): 'c' * 64}}
+        profile['native_build']['pkg_config'] = scoped
+        protocol.validate_profile(profile, 'x86_64')
+        for value in ({'path': 'relative', 'files': scoped['files']},
+                      {'path': scoped['path'], 'files': {}},
+                      {'path': scoped['path'], 'files': {'relative.pc': 'a' * 64}},
+                      {'path': scoped['path'], 'files': {str(self.base / 'bad.pc'): 'invalid'}},
+                      dict(scoped, env={'PKG_CONFIG_PATH': 'unreviewed'})):
+            invalid = copy.deepcopy(profile)
+            invalid['native_build']['pkg_config'] = value
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                protocol.validate_profile(invalid, 'x86_64')
+
+    def test_new_compat_allocation_blocks_acceptance_and_export_after_native_seal(self):
+        root = self.qualified()
+        identity = self.allocate_compat_short(root)
+        before = (root / 'compat/short-state.json').read_bytes()
+        with self.assertRaisesRegex(ValueError, 'Compatibility short directory remains'):
+            protocol.accept_attempt(root, source_root=ROOT)
+        with self.assertRaisesRegex(ValueError, 'Compatibility short directory remains'):
+            protocol.approve_package(root, source_root=ROOT)
+        bundle = self.base / 'blocked-compat.tgz'
+        with self.assertRaisesRegex(ValueError, 'Compatibility short directory remains'):
+            protocol.export_attempt(root, bundle)
+        self.assertFalse(bundle.exists())
+        self.assertTrue(Path(identity['path']).is_dir())
+        self.assertEqual((root / 'compat/short-state.json').read_bytes(), before)
+
+    def test_shared_compat_removal_and_independent_audits_survive_readonly_export(self):
+        root = self.qualified()
+        identity = self.allocate_compat_short(root)
+        self.finish_compat_short(root, identity)
+        self.assertTrue(protocol.accept_attempt(root, source_root=ROOT)['accepted'])
+        bundle = self.base / 'compat-clean.tgz'
+        exported = protocol.export_attempt(root, bundle)
+        with tarfile.open(bundle) as tar:
+            names = tar.getnames()
+        for name in ('compat/short-state.json', 'compat/short-binding.json',
+                     'compat/unreadable-baseline.json', 'compat/owned-process-identities.jsonl',
+                     'compat/socket-removal-intent.json', 'compat/socket-quarantine.json',
+                     'compat/socket-moved.json', 'compat/socket-deleted.json', 'compat/socket-removal.json',
+                     'outputs/compat-cleanup.json', 'outputs/compat-root-cleanup.json',
+                     'outputs/compat-combined-cleanup.json'):
+            self.assertIn(name, names)
+        # A coordinator verifies foreign cleanup records, not a coincidental local path.
+        Path(identity['path']).mkdir()
+        imported = protocol.import_attempt(bundle, self.base / 'compat-import', expected_sha256=exported['sha256'])
+        self.assertTrue(protocol.accept_attempt(imported, source_root=ROOT,
+            archive=root / 'outputs/candidate.tar.gz')['accepted'])
+        with self.assertRaisesRegex(ValueError, 'Compatibility short directory remains'):
+            protocol.accept_attempt(root, source_root=ROOT)
+
+    def test_compat_removal_identity_or_unknown_raw_audit_cannot_use_clean_summary(self):
+        for mutation in ('identity', 'short-audit', 'root-audit'):
+            root = self.qualified()
+            identity = self.allocate_compat_short(root)
+            self.finish_compat_short(root, identity)
+            if mutation == 'identity':
+                path = root / 'compat/socket-removal.json'
+                raw = protocol.load(path)
+                raw['identity']['ino'] += 1
+                path.chmod(0o600)
+            else:
+                path = root / ('outputs/compat-cleanup.json' if mutation == 'short-audit'
+                               else 'outputs/compat-root-cleanup.json')
+                raw = protocol.load(path)
+                raw.update(outcome='unknown', passed=False, unknown=[{'pid': 999, 'reason': 'unresolved'}])
+            path.write_text(json.dumps(raw))
+            before = path.read_bytes()
+            with self.subTest(mutation=mutation), self.assertRaises(ValueError):
+                protocol.accept_attempt(root, source_root=ROOT)
+            with self.assertRaises(ValueError):
+                protocol.export_attempt(root, self.base / (root.name + '.tgz'))
+            self.assertEqual(path.read_bytes(), before)
+
+    def test_import_requires_independent_compat_audit_even_with_valid_transport_digest(self):
+        root = self.qualified()
+        self.finish_compat_short(root, self.allocate_compat_short(root))
+        bundle = self.base / 'complete-compat.tgz'
+        protocol.export_attempt(root, bundle)
+        omitted = 'outputs/compat-cleanup.json'
+        invalid = self.base / 'missing-compat-audit.tgz'
+        with tarfile.open(bundle) as source, tarfile.open(invalid, 'w:gz') as output:
+            for member in source:
+                if member.name == omitted:
+                    continue
+                payload = source.extractfile(member).read()
+                if member.name == 'evidence-export.json':
+                    manifest = json.loads(payload)
+                    manifest['included'].pop(omitted)
+                    payload = protocol.encoded(manifest)
+                    member.size = len(payload)
+                output.addfile(member, io.BytesIO(payload))
+        destination = self.base / 'invalid-compat-import'
+        with self.assertRaises((OSError, ValueError)):
+            protocol.import_attempt(invalid, destination, expected_sha256=protocol.file_record(invalid)['sha256'])
+        self.assertFalse(destination.exists())
 
     def test_wrong_archive_mode_and_dedicated_native_failure_are_replayed(self):
         with self.assertRaisesRegex(ValueError, 'Archive differs'):
