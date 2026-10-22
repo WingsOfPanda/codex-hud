@@ -46,6 +46,8 @@ must enumerate its actual required checks and suites. Changing the release data
 does not create proof. There is no gate-count success inferred from exit zero.
 `validate_plan(plan, product_source_root)` checks the existing packager constants,
 patch and both Cargo manifest/lock versions; it does not replace those sources.
+Coordinator AP replay additionally pins `compat.ap_replay` with `source_commit`,
+`installed_plugin_commit`, and `bundle_sha256`.
 
 ## Native profile and initialization
 
@@ -59,6 +61,14 @@ paths to SHA-256 pins. Optional `native_build` contains exactly
 `cargo_jobs` and `test_threads` (positive integers). Native preparation requires
 this build profile. Roots/tool paths are absolute; `libpython` is an
 absolute path or null. The version strings are exact observed values, not ranges.
+Optional `python.fixture_sites` lists absolute import directories, and
+`python.fixture_imports` maps module names to exact `{origin, sha256}` pins.
+Native preparation verifies actual imported origins and freezes the complete
+dependency inventory separately; a site is not a generic executable trust root.
+A full AP replay profile uses a clean AP checkout as `source_root` and adds
+`ap_replay: {node, node_modules, installed_bundle, installed_registry}`. Node has
+an exact `system_tools` pin. The AP owner verifies repository and dependency
+closure before/after replay; the product-source validator is supplied separately.
 
 `init_attempt(plan, profile, product_source_root, observed=..., rehearsal=False)`
 requires the actual recipe's observed `hostname`, `architecture`, `toolchain`,
@@ -95,8 +105,10 @@ or executor roots, or the exact pinned interpreter/compiler/official/system tool
 `.build` scripts are refused. Attempt-local executables must be native ELF files
 matching an exact prior-output file record. This also permits package copies of
 accepted native files. The sole script exception is packaged `bin/codex-plus`:
-it must match both the pinned product-source launcher and that package manifest's
-file record/release/source/target. File records contain `sha256`, `size`, and four-digit octal `mode`.
+its bytes/size must match the pinned product-source launcher, its shipping mode
+must be `0755`, and the full record must match that package manifest's
+file record/release/source/target. Source checkout permission normalization does
+not invalidate identical launcher bytes. File records contain `sha256`, `size`, and four-digit octal `mode`.
 
 Same-stage Cargo outputs can instead use `compiler_artifacts=<relative input>`:
 an input JSON containing `architecture`, `plus_source_commit`, `tooling_commit`,
@@ -105,6 +117,11 @@ an input JSON containing `architecture`, `plus_source_commit`, `tooling_commit`,
 plus_source_commit})` from the plan; the compiler hash must match the pinned
 compiler, and each file record must match the executed ELF. Native source seals
 and actual compiler-artifact capture remain the recipe's responsibility.
+Compatibility can supply `previous_package=<relative input proof>` containing
+`{path, manifest_sha256}`. The canonical old package path is allowed only after
+its manifest hash/release/source/target/tree matches the plan's previous release;
+each executed old file must match that qualified inventory. Symlinks and arbitrary
+old package roots are refused.
 
 `execution` contains exactly `job_id`, `executor_package_root`, `executor_sha256`,
 `architecture`, `plus_source_commit`, `tooling_commit`, `outcome`, `exit_code`,
@@ -151,6 +168,14 @@ AP alone may pass a full `replay_profile` to `write_receipt`; execution then pin
 its digest in `replay_profile_sha256` and uses its executor architecture/package.
 The report/manifest architecture remains the captured package's architecture.
 Thus replay on x86 of native ARM captures does not claim ARM AP execution.
+Imported evidence stays immutable, so coordinator AP results use
+`write_ap_receipt(native_attempt, coordinator_root, inputs=..., executed=...,
+outputs=..., evidence=..., execution=..., cleanup=..., replay_profile=...)`.
+It creates `coordinator_root/ap-receipt.json` once outside the native attempt,
+binding native plan/receipt hashes, package/capture hashes, final cleanup proof,
+AP source/plugin pins, the full replay profile, and coordinator raw evidence.
+`accept_attempt(..., ap_receipt=...)` verifies it without modifying the import.
+A native and an external receipt cannot both supply the AP gate.
 
 ## Transfer and acceptance
 
@@ -163,7 +188,7 @@ outputs. Source/cache trees and unreferenced files are not transported. Required
 raw evidence cannot be omitted or classified as an external artifact. The
 qualified archive is a separate attachment, fetched once.
 
-Before export, the native owner performs final ownership cleanup and removes its
+Before export or any acceptance, the native owner performs final cleanup and removes its
 recorded socket directory. `seal_socket_cleanup(attempt, relative_report)` records
 `socket-cleaned.json` only after that work. Its raw report must contain clean
 `outcome`, empty/zero `owned_remaining` and `unknown`, the exact `socket_identity`,
@@ -171,6 +196,12 @@ and `socket_removed: true`. Export refuses a remaining socket path, missing proo
 or changed raw cleanup bytes. An optional separate `socket-removal.json` survives
 an interruption between exact removal and the final report. Failed-stage forensic
 exports remain permitted after verified final cleanup; failure receipts stay failed.
+Quarantine/removal intents and results, including `socket-cleanup-retries/*.json`,
+are exported as forensic metadata. A recovery receipt also carries hash-bound
+managed snapshots, journal, ownership baseline, preparation and native-start
+records. Core verifies those records, the attempt/plan/socket binding and the
+final cleanup report's recovery receipt hash. Recovery never changes an original
+failed or unknown qualification outcome.
 
 `import_attempt(bundle, destination, expected_sha256=...)` verifies the digest,
 rejects links/path escapes/duplicate members and unexpected/missing raw evidence,
@@ -190,6 +221,16 @@ executed on the coordinator. `make_handoff(plan, accepted_by_arch)` requires
 both target records from acceptance, matching plan/protocol identities and no
 rehearsal label, and emits the existing fleet handoff format. Publication and
 fleet installation are separate authorized actions.
+
+`approve_package(attempt, source_root=..., archive=...)` checks package and
+native-test receipts plus final build cleanup before compatibility/captures/AP.
+Its historical approval fields are `accepted`, `cleanup_passed`, `native`,
+`source`, `architecture`, `archive_sha256`, and `manifest_sha256`, with
+`approval_scope: "package-native-tests"` and attempt/plan/receipt provenance.
+This permits the checked-in compatibility recipe to consume the qualified package;
+it cannot produce a release handoff. Full acceptance requires all five gates and
+final cleanup proof, checking actual socket-path absence on the native host and
+the imported cleanup evidence on the coordinator.
 
 Failed receipts are permanent. Interruption before a later stage can preserve
 and rehash earlier complete passed receipts; native execution skips those stages
@@ -213,6 +254,7 @@ python3 -B scripts/release_protocol.py plan-check --plan PLAN --source-root PROD
 python3 -B scripts/release_protocol.py status --attempt ATTEMPT
 python3 -B scripts/release_protocol.py export --attempt ATTEMPT --output EVIDENCE.tgz
 python3 -B scripts/release_protocol.py import --bundle EVIDENCE.tgz --sha256 RECEIVED_DIGEST --output IMPORT
+python3 -B scripts/release_protocol.py approve-package --attempt ATTEMPT --source-root PRODUCT_SOURCE --output PACKAGE_APPROVAL.json
 python3 -B scripts/release_protocol.py accept --attempt IMPORT --source-root PRODUCT_SOURCE --archive ARCHIVE --output ACCEPTED.json
 python3 -B scripts/release_protocol.py handoff --plan PLAN --source-root PRODUCT_SOURCE --accept x86_64=X86_ACCEPTED.json --accept aarch64=ARM_ACCEPTED.json --output handoff.json
 ```
@@ -221,3 +263,5 @@ python3 -B scripts/release_protocol.py handoff --plan PLAN --source-root PRODUCT
 present. Every output path is exclusive; the CLI refuses to replace prior bytes.
 The import's required `--sha256` comes through the owning session separately from
 the bundle. Private validator loading avoids creating bytecode in sealed source.
+For coordinator AP replay, add `--ap-receipt COORDINATOR/ap-receipt.json` to
+`accept`; the native import is never updated with that receipt.

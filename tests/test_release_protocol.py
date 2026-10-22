@@ -70,11 +70,17 @@ class ReleaseProtocolTests(unittest.TestCase):
         return name
 
     def finalize_socket(self, root):
+        if (root / 'socket-cleaned.json').exists():
+            return
         metadata, _, _ = protocol.read_attempt(root)
         Path(metadata['socket_root']).rmdir()
-        report = self.put(root, 'outputs/final-cleanup.json', {'outcome': 'clean',
+        raw = {'outcome': 'clean',
             'owned_remaining': [], 'unknown': [], 'socket_identity': metadata['socket_identity'],
-            'socket_removed': True})
+            'socket_removed': True}
+        if (root / 'recovery/receipt.json').exists():
+            raw.update(recovery_receipt='recovery/receipt.json',
+                       recovery_receipt_sha256=protocol.file_record(root / 'recovery/receipt.json')['sha256'])
+        report = self.put(root, 'outputs/final-cleanup.json', raw)
         protocol.seal_socket_cleanup(root, report)
 
     def export(self, root, destination):
@@ -107,7 +113,7 @@ class ReleaseProtocolTests(unittest.TestCase):
             execution=execution, cleanup=cleanup, replay_profile=replay_profile)
 
     def qualified(self, *, rehearsal=False, skip_ap=False, native_result='ok one\n', corrupt_archive=False,
-                  filtered=0):
+                  filtered=0, package_only=False, finalize=True):
         root = self.attempt(rehearsal=rehearsal)
         fixture = packaging.PackageIntegrityTests('test_valid_package_and_declared_hash_recipe')
         fixture.setUp()
@@ -133,6 +139,10 @@ class ReleaseProtocolTests(unittest.TestCase):
         logfile = self.put(root, 'outputs/native-tests/logfile', native_result)
         self.receipt(root, 'native-tests', {'suites': {'hud': {'listed': listed, 'stdout': stdout,
                      'logfile': logfile, 'exit_code': 0}}}, [listed, stdout, logfile])
+        if package_only:
+            if finalize:
+                self.finalize_socket(root)
+            return root
         self.receipt(root, 'compat', {})
         package_sha = protocol.file_record(archive)['sha256']
         capture = self.put(root, 'outputs/captures/screen.txt', 'packaged TUI capture\n')
@@ -144,6 +154,8 @@ class ReleaseProtocolTests(unittest.TestCase):
         if not skip_ap:
             self.receipt(root, 'ap', {'ap_version': '0.7.35', 'package_sha256': package_sha,
                                     'capture_manifest_sha256': manifest_sha})
+        if finalize:
+            self.finalize_socket(root)
         return root
 
     def test_plan_checks_source_cargo_patch_and_unknown_fields(self):
@@ -371,7 +383,7 @@ class ReleaseProtocolTests(unittest.TestCase):
                                      *map(str, args)], text=True, capture_output=True)
             self.assertEqual(result.returncode, 0 if success else 1, result.stdout + result.stderr)
             return json.loads(result.stdout)
-        root = self.qualified()
+        root = self.qualified(finalize=False)
         plan_path = self.base / 'plan.json'
         plan_path.write_text(json.dumps(self.plan))
         self.assertTrue(cli('plan-check', '--plan', plan_path, '--source-root', ROOT)['valid'])
@@ -409,6 +421,163 @@ class ReleaseProtocolTests(unittest.TestCase):
         path.write_text('VALUE = 1\n')
         self.assertEqual(protocol._module(path).VALUE, 1)
         self.assertFalse((self.base / '__pycache__').exists())
+
+    def test_acceptance_requires_final_native_cleanup_before_and_after_sealing(self):
+        root = self.qualified(finalize=False)
+        with self.assertRaisesRegex(ValueError, 'Socket directory remains'):
+            protocol.accept_attempt(root, source_root=ROOT)
+        self.finalize_socket(root)
+        self.assertTrue(protocol.accept_attempt(root, source_root=ROOT)['accepted'])
+        Path(protocol.load(root / 'attempt.json')['socket_root']).mkdir()
+        with self.assertRaisesRegex(ValueError, 'Socket directory remains'):
+            protocol.accept_attempt(root, source_root=ROOT)
+
+    def test_package_approval_qualifies_native_package_before_compat_without_qualifying_handoff(self):
+        root = self.qualified(package_only=True, finalize=False)
+        with self.assertRaisesRegex(ValueError, 'Socket directory remains'):
+            protocol.approve_package(root, source_root=ROOT)
+        self.finalize_socket(root)
+        approval = protocol.approve_package(root, source_root=ROOT)
+        self.assertTrue(all(approval[name] is True for name in ('accepted', 'cleanup_passed', 'native')))
+        self.assertEqual(approval['source'], self.plan['plus_source_commit'])
+        self.assertEqual(approval['archive_sha256'], protocol.file_record(root / 'outputs/candidate.tar.gz')['sha256'])
+        self.assertEqual(set(approval['receipts']), {'package', 'native-tests'})
+        with self.assertRaisesRegex(ValueError, 'Missing'):
+            protocol.accept_attempt(root, source_root=ROOT)
+        with self.assertRaises(ValueError):
+            protocol.make_handoff(self.plan, {'x86_64': approval, 'aarch64': approval})
+        output = self.base / 'package-approval.json'
+        result = subprocess.run([sys.executable, '-B', str(ROOT / 'scripts/release_protocol.py'),
+            'approve-package', '--attempt', str(root), '--source-root', str(ROOT), '--output', str(output)],
+            text=True, capture_output=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(protocol.load(output), approval)
+        with self.assertRaisesRegex(ValueError, 'Failed native test'):
+            protocol.approve_package(self.qualified(package_only=True, native_result='failed one\n'), source_root=ROOT)
+
+    def test_coordinator_ap_receipt_qualifies_readonly_import_without_modifying_it(self):
+        source = self.base / 'ap-source'
+        source.mkdir()
+        node = self.base / 'node'
+        node.write_text('pinned Node fixture\n')
+        bundle = self.base / 'observer-bundle.js'
+        bundle.write_text('pinned installed observer\n')
+        self.plan['compat']['ap_replay'] = {'source_commit': 'd' * 40,
+            'installed_plugin_commit': 'e' * 40, 'bundle_sha256': protocol.file_record(bundle)['sha256']}
+        root = self.qualified(skip_ap=True)
+        evidence = self.base / 'native-evidence.tgz'
+        exported = self.export(root, evidence)
+        imported = protocol.import_attempt(evidence, self.base / 'native-import', expected_sha256=exported['sha256'])
+        before = {path.relative_to(imported).as_posix(): protocol.file_record(path)
+                  for path in imported.rglob('*') if path.is_file()}
+        profile = copy.deepcopy(self.profile)
+        profile.update(source_root=str(source), architecture='aarch64', triple=protocol.TARGETS['aarch64'],
+                       hostname='coordinator', system_tools={str(node): protocol.file_record(node)['sha256']},
+                       ap_replay={'node': str(node), 'node_modules': str(source / 'node_modules'),
+                                  'installed_bundle': str(bundle), 'installed_registry': str(self.base / 'registry.json')})
+        coordinator = self.base / 'ap-evidence'
+        coordinator.mkdir()
+        self.put(coordinator, 'preparation.json', {'ap_replay': self.plan['compat']['ap_replay']})
+        self.put(coordinator, 'raw.json', {'tests': 23, 'matching_verdicts': 20, 'changed_pairs': 2})
+        self.put(coordinator, 'cleanup.json', {'outcome': 'clean', 'owned_remaining': [], 'unknown': []})
+        captures = protocol.load(imported / 'outputs/captures/report.json')
+        self.put(coordinator, 'report.json', {'architecture': 'x86_64',
+            'plus_source_commit': self.plan['plus_source_commit'], 'ap_version': self.plan['compat']['ap_version'],
+            'ap_replay': self.plan['compat']['ap_replay'], 'package_sha256': captures['package_sha256'],
+            'capture_manifest_sha256': captures['capture_manifest_sha256'],
+            'checks': {'ap-check': {'outcome': 'passed',
+                                   'evidence': {'raw.json': protocol.file_record(coordinator / 'raw.json')['sha256']}}}})
+        execution = {'job_id': 'coordinator-ap-job', 'executor_package_root': profile['executor_package_root'],
+            'executor_sha256': 'c' * 64, 'architecture': 'aarch64', 'plus_source_commit': self.plan['plus_source_commit'],
+            'tooling_commit': self.plan['tooling_commit'], 'outcome': 'passed', 'exit_code': 0,
+            'argv': [str(node), 'pinned-replay'], 'cwd': str(source), 'env': {},
+            'replay_profile_sha256': protocol.digest(profile)}
+        kwargs = dict(inputs=['preparation.json'], executed=[str(node)],
+            outputs=['report.json', 'raw.json', 'cleanup.json'], evidence='report.json', execution=execution,
+            cleanup={'outcome': 'clean', 'owned_remaining': 0, 'unknown': 0, 'report': 'cleanup.json'},
+            replay_profile=profile)
+        protocol.write_ap_receipt(imported, coordinator, **kwargs)
+        sidecar = coordinator / 'ap-receipt.json'
+        accepted = protocol.accept_attempt(imported, source_root=ROOT, archive=root / 'outputs/candidate.tar.gz',
+                                           ap_receipt=sidecar)
+        self.assertEqual(set(accepted['receipts']), set(protocol.GATES))
+        self.assertEqual(accepted['architecture'], 'x86_64')
+        with self.assertRaises(FileExistsError):
+            protocol.write_ap_receipt(imported, coordinator, **kwargs)
+        after = {path.relative_to(imported).as_posix(): protocol.file_record(path)
+                 for path in imported.rglob('*') if path.is_file()}
+        self.assertEqual(before, after)
+        (coordinator / 'raw.json').write_text('{}')
+        with self.assertRaisesRegex(ValueError, 'Evidence output changed'):
+            protocol.accept_attempt(imported, source_root=ROOT, archive=root / 'outputs/candidate.tar.gz', ap_receipt=sidecar)
+
+    def test_fixture_import_and_previous_package_pins_are_exact(self):
+        module = self.base / 'pyte/__init__.py'
+        module.parent.mkdir()
+        module.write_text('fixture import\n')
+        profile = copy.deepcopy(self.profile)
+        profile['python'].update(fixture_sites=[str(self.base)],
+            fixture_imports={'pyte': {'origin': str(module), 'sha256': protocol.file_record(module)['sha256']}})
+        protocol.validate_profile(profile, 'x86_64')
+        protocol._executed(profile, [str(module)])
+        module.write_text('changed fixture import\n')
+        with self.assertRaisesRegex(ValueError, 'Fixture module pin'):
+            protocol._executed(profile, [str(module)])
+        previous = self.base / 'previous-package'
+        binary = previous / 'bin/codex'
+        binary.parent.mkdir(parents=True)
+        binary.write_bytes(packaging.elf(62))
+        manifest = {'release': self.plan['previous_release']['tag'], 'target': profile['triple'],
+            'plus_commit': self.plan['compat']['previous_source_commit'],
+            'tree_sha256': self.plan['previous_release']['targets']['x86_64']['tree_sha256'],
+            'files': {'bin/codex': protocol.file_record(binary)}}
+        self.put(previous, 'codex-plus.json', manifest)
+        manifest_sha = protocol.file_record(previous / 'codex-plus.json')['sha256']
+        self.plan['previous_release']['targets']['x86_64']['manifest_sha256'] = manifest_sha
+        proof = {'path': str(previous), 'manifest_sha256': manifest_sha}
+        protocol._executed(profile, [str(binary)], plan=self.plan, previous_package=proof)
+        binary.write_bytes(packaging.elf(183))
+        with self.assertRaisesRegex(ValueError, 'qualified inventory'):
+            protocol._executed(profile, [str(binary)], plan=self.plan, previous_package=proof)
+
+    def test_forensic_recovery_export_preserves_raw_records_and_original_failure(self):
+        root = self.attempt()
+        self.receipt(root, 'package', {}, outcome='failed', exit_code=9)
+        metadata, _, _ = protocol.read_attempt(root)
+        self.put(root, 'process-journal.jsonl', '{"event":"started"}\n')
+        self.put(root, 'ownership-baseline.json', {'processes': {}})
+        self.put(root, 'native-preparation.json', {'sealed': 'fixture'})
+        self.put(root, 'native-starts/preflight.json', {'started': True})
+        binding = {'attempt': metadata['attempt'], 'attempt_root': str(root),
+            'plan_sha256': protocol.digest(self.plan), 'socket_identity': metadata['socket_identity'],
+            'journal_sha256': protocol.file_record(root / 'process-journal.jsonl')['sha256'],
+            'ownership_baseline_sha256': protocol.file_record(root / 'ownership-baseline.json')['sha256']}
+        resolution = {'cleanup_verified': True, 'release_recovery': dict(binding, subtree_cleanup_evidence='explicit root proof')}
+        result = {'exit_code': 9}
+        records = {'recovery/managed-state.json': {'result': result, 'resolution': resolution},
+                   'recovery/managed-result.json': result, 'recovery/managed-resolution.json': resolution}
+        for name, value in records.items():
+            self.put(root, name, value)
+        names = [*records, 'process-journal.jsonl', 'ownership-baseline.json',
+                 'native-preparation.json', 'native-starts/preflight.json']
+        self.put(root, 'recovery/receipt.json', {'binding': binding,
+            'files': {name: protocol.file_record(root / name) for name in names},
+            'absent': [], 'audit': {'passed': True}, 'seals_verified': True,
+            'qualification_unchanged': True, 'result_absent': False})
+        for name in ('socket-removal-intent.json', 'socket-quarantine.json', 'socket-moved.json',
+                     'socket-deleted.json', 'socket-cleanup-retries/01-intent.json'):
+            self.put(root, name, {'identity': metadata['socket_identity']})
+        bundle = self.base / 'recovered-failure.tgz'
+        exported = self.export(root, bundle)
+        imported = protocol.import_attempt(bundle, self.base / 'recovered-import', expected_sha256=exported['sha256'])
+        self.assertEqual(protocol.status(imported)['refused'], ['package'])
+        for name in names + ['socket-cleanup-retries/01-intent.json', 'socket-deleted.json']:
+            self.assertEqual((imported / name).read_bytes(), (root / name).read_bytes())
+        with self.assertRaisesRegex(ValueError, 'Missing/failed'):
+            protocol.approve_package(imported, source_root=ROOT, archive=self.base / 'not-present.tar.gz')
+        (root / 'process-journal.jsonl').write_text('changed journal')
+        with self.assertRaisesRegex(ValueError, 'Evidence output changed'):
+            protocol.status(root)
 
     def test_wrong_archive_mode_and_dedicated_native_failure_are_replayed(self):
         with self.assertRaisesRegex(ValueError, 'Archive differs'):
@@ -485,15 +654,22 @@ class ReleaseProtocolTests(unittest.TestCase):
         launcher = root / 'outputs/package/bin/codex-plus'
         launcher.parent.mkdir(parents=True)
         shutil.copy2(ROOT / 'bin/codex-plus', launcher)
+        launcher.chmod(0o755)
+        source_launcher = self.base / 'source-launcher/bin/codex-plus'
+        source_launcher.parent.mkdir(parents=True)
+        shutil.copy2(ROOT / 'bin/codex-plus', source_launcher)
+        source_launcher.chmod(0o775)
+        profile = copy.deepcopy(self.profile)
+        profile['source_root'] = str(source_launcher.parents[1])
         manifest = {'release': self.plan['release'], 'plus_commit': self.plan['plus_source_commit'],
                     'target': self.profile['triple'], 'files': {'bin/codex-plus': protocol.file_record(launcher)}}
         self.put(root, 'outputs/package/codex-plus.json', manifest)
-        protocol._executed(self.profile, [str(launcher)], root=root, plan=self.plan)
+        protocol._executed(profile, [str(launcher)], root=root, plan=self.plan)
         launcher.write_text('#!/bin/sh\n# attempt-specific replacement\n')
         manifest['files']['bin/codex-plus'] = protocol.file_record(launcher)
         self.put(root, 'outputs/package/codex-plus.json', manifest)
         with self.assertRaisesRegex(ValueError, 'pinned source/manifest'):
-            protocol._executed(self.profile, [str(launcher)], root=root, plan=self.plan)
+            protocol._executed(profile, [str(launcher)], root=root, plan=self.plan)
 
     def test_import_rejects_path_escape_and_symlinks_with_valid_transport_hash(self):
         for name, kind in [('../escape', tarfile.REGTYPE), ('link', tarfile.SYMTYPE)]:

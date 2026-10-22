@@ -169,7 +169,7 @@ def validate_plan(plan, source_root):
                         all(isinstance(x, str) and x for x in spec['checks']) and
                         len(spec['checks']) == len(set(spec['checks'])), 'Explicit unique checks required')
     keys(plan['compat'], ('ap_version', 'fixture_ssh_destinations', 'recipe_revision',
-                          'previous_source_commit', 'stock_binary_sha256', 'fixture_files'))
+                          'previous_source_commit', 'stock_binary_sha256', 'fixture_files'), ('ap_replay',))
     require(isinstance(plan['compat']['ap_version'], str) and plan['compat']['ap_version'] and
             isinstance(plan['compat']['fixture_ssh_destinations'], list) and
             all(isinstance(host, str) and host for host in plan['compat']['fixture_ssh_destinations']),
@@ -186,6 +186,12 @@ def validate_plan(plan, source_root):
         require(isinstance(name, str) and not Path(name).is_absolute() and '..' not in Path(name).parts,
                 'Invalid compatibility fixture path')
         hex_digest(sha)
+    if 'ap_replay' in plan['compat']:
+        replay = plan['compat']['ap_replay']
+        keys(replay, ('source_commit', 'installed_plugin_commit', 'bundle_sha256'))
+        for name in ('source_commit', 'installed_plugin_commit'):
+            hex_digest(replay[name], 40)
+        hex_digest(replay['bundle_sha256'])
     keys(plan['rollout'], ('daemon_restart', 'quiet_checkpoint', 'executions', 'session_restart',
                            'agents_md', 'retain', 'notes'))
     rollout = plan['rollout']
@@ -204,7 +210,7 @@ def validate_plan(plan, source_root):
 def validate_profile(profile, arch, observed=None):
     keys(profile, ('schema_version', 'host_id', 'hostname', 'architecture', 'triple', 'build_root',
                    'short_root', 'tooling_root', 'source_root', 'toolchain', 'python', 'executor_package_root'),
-         ('native_build', 'system_tools'))
+         ('native_build', 'system_tools', 'ap_replay'))
     require(profile['schema_version'] == 1 and profile['architecture'] == arch and
             profile['triple'] == TARGETS.get(arch), 'Wrong native profile architecture')
     require(all(isinstance(profile[name], str) and profile[name] for name in ('host_id', 'hostname')),
@@ -213,11 +219,26 @@ def validate_profile(profile, arch, observed=None):
         require(isinstance(profile[name], str) and Path(profile[name]).is_absolute() and
                 '..' not in Path(profile[name]).parts, f'Invalid host path: {name}')
     keys(profile['toolchain'], ('rustc', 'cargo', 'version'))
-    keys(profile['python'], ('path', 'version', 'libpython'))
+    keys(profile['python'], ('path', 'version', 'libpython'), ('fixture_sites', 'fixture_imports'))
     for path in (profile['toolchain']['rustc'], profile['toolchain']['cargo'], profile['python']['path']):
         require(isinstance(path, str) and Path(path).is_absolute(), 'Tool must have an absolute pin')
     require(profile['python']['libpython'] is None or Path(profile['python']['libpython']).is_absolute(),
             'Invalid libpython pin')
+    if 'fixture_sites' in profile['python']:
+        sites = profile['python']['fixture_sites']
+        require(isinstance(sites, list) and len(sites) == len(set(sites)) and
+                all(isinstance(path, str) and Path(path).is_absolute() and '..' not in Path(path).parts
+                    for path in sites), 'Invalid fixture site paths')
+    if 'fixture_imports' in profile['python']:
+        imports = profile['python']['fixture_imports']
+        require(isinstance(imports, dict), 'Invalid fixture import pins')
+        for name, pin in imports.items():
+            require(isinstance(name, str) and re.fullmatch(r'[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*', name),
+                    'Invalid fixture module name')
+            keys(pin, ('origin', 'sha256'))
+            require(isinstance(pin['origin'], str) and Path(pin['origin']).is_absolute() and
+                    '..' not in Path(pin['origin']).parts, 'Invalid fixture module origin')
+            hex_digest(pin['sha256'])
     if 'native_build' in profile:
         native = profile['native_build']
         paths = ('upstream_repository', 'cargo_home', 'cargo_target_dir', 'v8_cache', 'license_cache', 'official_binary')
@@ -234,6 +255,13 @@ def validate_profile(profile, arch, observed=None):
             require(isinstance(name, str) and Path(name).is_absolute() and '..' not in Path(name).parts,
                     'Invalid system tool path')
             hex_digest(sha)
+    if 'ap_replay' in profile:
+        replay = profile['ap_replay']
+        keys(replay, ('node', 'node_modules', 'installed_bundle', 'installed_registry'))
+        for path in replay.values():
+            require(isinstance(path, str) and Path(path).is_absolute() and '..' not in Path(path).parts,
+                    'Invalid AP replay host path')
+        require(replay['node'] in profile.get('system_tools', {}), 'AP Node executable needs an exact system tool pin')
     if observed is not None:
         keys(observed, ('hostname', 'architecture', 'toolchain', 'python', 'executor_package_root',
                         'tooling_commit', 'plus_source_commit'))
@@ -327,24 +355,52 @@ def _inventory(root, names):
     return {name: file_record(relative_file(root, name)) for name in sorted(names)}
 
 
-def _executed(profile, paths, *, root=None, prior=None, compiler_artifacts=None, plan=None):
+def _executed(profile, paths, *, root=None, prior=None, compiler_artifacts=None, plan=None, previous_package=None):
     roots = [Path(profile[name]).resolve() for name in ('tooling_root', 'source_root', 'executor_package_root')]
     tools = {Path(profile['toolchain'][name]).resolve() for name in ('rustc', 'cargo')}
     tools.add(Path(profile['python']['path']).resolve())
     tools.update(Path(name).resolve() for name in profile.get('system_tools', {}))
+    fixture_pins = {Path(pin['origin']).resolve(): pin['sha256']
+                    for pin in profile['python'].get('fixture_imports', {}).values()}
+    tools.update(fixture_pins)
+    if 'ap_replay' in profile:
+        roots.append(Path(profile['ap_replay']['node_modules']).resolve())
+        tools.add(Path(profile['ap_replay']['installed_bundle']).resolve())
     if 'native_build' in profile:
         tools.add(Path(profile['native_build']['official_binary']).resolve())
     require(bool(paths), 'Executed file closure required')
     result = {}
+    previous_root, previous_files = None, {}
+    if previous_package is not None:
+        keys(previous_package, ('path', 'manifest_sha256'))
+        previous_root = Path(previous_package['path'])
+        require(previous_root.is_absolute() and previous_root == previous_root.resolve(), 'Previous package needs a canonical path')
+        expected = plan['previous_release']['targets'][profile['architecture']]
+        manifest_path = previous_root / 'codex-plus.json'
+        require(previous_package['manifest_sha256'] == expected['manifest_sha256'] == file_record(manifest_path)['sha256'],
+                'Previous package manifest mismatch')
+        previous = load(manifest_path)
+        require(previous['release'] == plan['previous_release']['tag'] and previous['target'] == profile['triple'] and
+                previous['plus_commit'] == plan['compat']['previous_source_commit'] and
+                previous['tree_sha256'] == expected['tree_sha256'], 'Previous package identity mismatch')
+        previous_files = previous['files']
     for name in paths:
         path = Path(name)
         record = file_record(path)
+        if previous_root is not None and path.is_relative_to(previous_root):
+            relative = path.relative_to(previous_root).as_posix()
+            relative_file(previous_root, relative)
+            require(previous_files.get(relative) == record, 'Previous executable differs from qualified inventory')
+            result[name] = record
+            continue
         if root is not None and path.resolve().is_relative_to(Path(root).resolve()):
             relative = path.resolve().relative_to(Path(root).resolve()).as_posix()
             relative_file(root, relative)
             if path.name == 'codex-plus' and path.parent.name == 'bin':
                 manifest = load(path.parent.parent / 'codex-plus.json')
-                require(record == file_record(Path(profile['source_root']) / 'bin/codex-plus') and
+                source_record = file_record(Path(profile['source_root']) / 'bin/codex-plus')
+                require(all(record[key] == source_record[key] for key in ('sha256', 'size')) and
+                        record['mode'] == '0755' and
                         manifest.get('release') == plan['release'] and
                         manifest.get('plus_commit') == plan['plus_source_commit'] and
                         manifest.get('target') == profile['triple'] and
@@ -383,6 +439,11 @@ def _executed(profile, paths, *, root=None, prior=None, compiler_artifacts=None,
         pins = {Path(tool).resolve(): sha for tool, sha in profile.get('system_tools', {}).items()}
         if path.resolve() in pins:
             require(result[name]['sha256'] == pins[path.resolve()], 'System executable pin mismatch')
+        if path.resolve() in fixture_pins:
+            require(record['sha256'] == fixture_pins[path.resolve()], 'Fixture module pin mismatch')
+        if 'ap_replay' in profile and path.resolve() == Path(profile['ap_replay']['installed_bundle']).resolve():
+            require(plan is not None and record['sha256'] == plan['compat']['ap_replay']['bundle_sha256'],
+                    'AP installed bundle pin mismatch')
         if 'native_build' in profile and path.resolve() == Path(profile['native_build']['official_binary']).resolve():
             require(record['sha256'] == profile['native_build']['official_sha256'], 'Official binary pin mismatch')
     return result
@@ -399,8 +460,40 @@ def _receipts(root):
     return rows
 
 
+def _execution_identity(execution, profile, plan):
+    keys(execution, ('job_id', 'executor_package_root', 'executor_sha256', 'architecture',
+                    'plus_source_commit', 'tooling_commit', 'outcome', 'exit_code', 'argv', 'cwd', 'env'),
+         ('replay_profile_sha256',))
+    require(isinstance(execution['job_id'], str) and bool(execution['job_id']), 'Managed job identity required')
+    hex_digest(execution['executor_sha256'])
+    require(execution['architecture'] == profile['architecture'] and
+            execution['executor_package_root'] == profile['executor_package_root'], 'Wrong execution host/executor')
+    for name in ('tooling_commit', 'plus_source_commit'):
+        require(execution[name] == plan[name], 'Wrong execution source')
+    require(execution['outcome'] in ('passed', 'failed', 'unknown') and
+            (execution['exit_code'] is None or type(execution['exit_code']) is int), 'Invalid execution outcome')
+    require(execution['outcome'] != 'passed' or execution['exit_code'] == 0, 'Success requires known zero exit')
+    require(isinstance(execution['argv'], list) and bool(execution['argv']) and
+            all(isinstance(arg, str) for arg in execution['argv']) and
+            Path(execution['cwd']).is_absolute() and isinstance(execution['env'], dict), 'Invalid command identity')
+
+
+def _cleanup_identity(root, cleanup, outputs):
+    keys(cleanup, ('outcome', 'owned_remaining', 'unknown', 'report'))
+    require(cleanup['outcome'] in ('clean', 'blocked', 'failed', 'unknown') and
+            all(type(cleanup[name]) is int and cleanup[name] >= 0 for name in ('owned_remaining', 'unknown')),
+            'Invalid cleanup evidence')
+    require(cleanup['report'] in outputs, 'Cleanup report must be a hash-bound output')
+    raw = load(relative_file(root, cleanup['report']))
+    normalized = {name: len(raw[name]) if isinstance(raw.get(name), list) else raw.get(name)
+                  for name in ('owned_remaining', 'unknown')}
+    require(raw.get('outcome') == cleanup['outcome'] and
+            all(type(normalized[name]) is int and normalized[name] == cleanup[name] for name in normalized),
+            'Cleanup summary differs from raw report')
+
+
 def write_receipt(root, stage, *, inputs, executed, outputs, evidence, execution, cleanup,
-                  replay_profile=None, compiler_artifacts=None):
+                  replay_profile=None, compiler_artifacts=None, previous_package=None):
     metadata, plan, profile = require_native_attempt(root)
     require(stage in STAGES, 'Unknown release stage')
     keys(execution, ('job_id', 'executor_package_root', 'executor_sha256', 'architecture',
@@ -414,18 +507,7 @@ def write_receipt(root, stage, *, inputs, executed, outputs, evidence, execution
         execution_profile = replay_profile
     else:
         require('replay_profile_sha256' not in execution, 'Replay profile is missing')
-    require(isinstance(execution['job_id'], str) and bool(execution['job_id']), 'Managed job identity required')
-    hex_digest(execution['executor_sha256'])
-    require(execution['architecture'] == execution_profile['architecture'] and
-            execution['executor_package_root'] == execution_profile['executor_package_root'], 'Wrong execution host/executor')
-    for name in ('tooling_commit', 'plus_source_commit'):
-        require(execution[name] == plan[name], 'Wrong execution source')
-    require(execution['outcome'] in ('passed', 'failed', 'unknown') and
-            (execution['exit_code'] is None or type(execution['exit_code']) is int), 'Invalid execution outcome')
-    require(execution['outcome'] != 'passed' or execution['exit_code'] == 0, 'Success requires known zero exit')
-    require(isinstance(execution['argv'], list) and bool(execution['argv']) and
-            all(isinstance(arg, str) for arg in execution['argv']) and
-            Path(execution['cwd']).is_absolute() and isinstance(execution['env'], dict), 'Invalid command identity')
+    _execution_identity(execution, execution_profile, plan)
     keys(cleanup, ('outcome', 'owned_remaining', 'unknown', 'report'))
     require(cleanup['outcome'] in ('clean', 'blocked', 'failed', 'unknown') and
             type(cleanup['owned_remaining']) is int and cleanup['owned_remaining'] >= 0 and
@@ -442,14 +524,20 @@ def write_receipt(root, stage, *, inputs, executed, outputs, evidence, execution
     if compiler_artifacts is not None:
         require(compiler_artifacts in input_files, 'Compiler artifact receipt must be an input')
         proof = load(relative_file(root, compiler_artifacts))
+    previous_proof = None
+    if previous_package is not None:
+        require(previous_package in input_files, 'Previous package proof must be an input')
+        previous_proof = load(relative_file(root, previous_package))
     closure = {'attempt': metadata, 'stage': stage, 'inputs': input_files,
                'executed': _executed(execution_profile, executed, root=root, prior=prior,
-                                     compiler_artifacts=proof, plan=plan), 'execution': execution,
+                                     compiler_artifacts=proof, plan=plan, previous_package=previous_proof), 'execution': execution,
                'previous': {name: digest(row) for name, row in prior.items()}}
     if replay_profile is not None:
         closure['replay_profile'] = replay_profile
     if compiler_artifacts is not None:
         closure['compiler_artifacts'] = compiler_artifacts
+    if previous_package is not None:
+        closure['previous_package'] = previous_package
     row = {'schema_version': 1, 'attempt': metadata['attempt'], 'stage': stage,
            'input_key': digest(closure), 'input': closure, 'outputs': output_files,
            'evidence': evidence, 'cleanup': cleanup}
@@ -503,6 +591,7 @@ def status(root):
     rows = _receipts(root)
     transport = _transport_manifest(root)
     external = transport['external_artifacts'] if transport else {}
+    _verify_recovery(root, transport)
     previous = {}
     for stage in STAGES:
         if stage not in rows:
@@ -510,7 +599,7 @@ def status(root):
         row = rows[stage]
         closure = row['input']
         keys(closure, ('attempt', 'stage', 'inputs', 'executed', 'execution', 'previous'),
-             ('replay_profile', 'compiler_artifacts'))
+             ('replay_profile', 'compiler_artifacts', 'previous_package'))
         require(row['attempt'] == metadata['attempt'] and closure['attempt'] == metadata and
                 closure['stage'] == stage and row['input_key'] == digest(closure) and
                 closure['previous'] == previous, 'Receipt identity or input key mismatch')
@@ -518,13 +607,7 @@ def status(root):
         _verify_records(root, closure['inputs'], {}, transport)
         require(row['evidence'] in row['outputs'] and row['cleanup']['report'] in row['outputs'],
                 'Unbound receipt report')
-        cleanup_report = load(relative_file(root, row['cleanup']['report']))
-        normalized = {name: len(cleanup_report[name]) if isinstance(cleanup_report.get(name), list)
-                      else cleanup_report.get(name) for name in ('owned_remaining', 'unknown')}
-        require(cleanup_report.get('outcome') == row['cleanup']['outcome'] and
-                all(type(normalized[name]) is int and normalized[name] == row['cleanup'][name]
-                    for name in normalized),
-                'Cleanup summary differs from raw report')
+        _cleanup_identity(root, row['cleanup'], row['outputs'])
         execution = closure['execution']
         execution_profile = profile
         if 'replay_profile' in closure:
@@ -548,6 +631,36 @@ def status(root):
             'next_action': 'review-failure' if refused else ('record-' + missing[0] if missing else 'accept')}
 
 
+def _verify_recovery(root, transport):
+    path = Path(root) / 'recovery/receipt.json'
+    if not path.exists():
+        return
+    metadata, plan, profile = read_attempt(root)
+    receipt = load(path)
+    keys(receipt, ('binding', 'files', 'absent', 'audit', 'seals_verified', 'qualification_unchanged'),
+         ('result_absent',))
+    require(receipt['seals_verified'] is True and receipt['qualification_unchanged'] is True and
+            receipt['audit'].get('passed') is True, 'Recovery does not establish unchanged seals and cleanup')
+    require({'process-journal.jsonl', 'ownership-baseline.json', 'recovery/managed-state.json',
+             'recovery/managed-result.json', 'recovery/managed-resolution.json'} <= receipt['files'].keys(),
+            'Recovery snapshots are not hash-bound')
+    _verify_records(root, receipt['files'], {}, transport)
+    expected = {'attempt': metadata['attempt'],
+                'attempt_root': str(Path(profile['build_root']) / 'attempts' / metadata['attempt']),
+                'plan_sha256': digest(plan), 'socket_identity': metadata['socket_identity'],
+                'journal_sha256': file_record(relative_file(root, 'process-journal.jsonl'))['sha256'],
+                'ownership_baseline_sha256': file_record(relative_file(root, 'ownership-baseline.json'))['sha256']}
+    require(receipt['binding'] == expected, 'Recovery receipt binding changed')
+    state, result, resolution = (load(relative_file(root, 'recovery/managed-' + name + '.json'))
+                                 for name in ('state', 'result', 'resolution'))
+    require(state.get('result') == result and state.get('resolution') == resolution and
+            resolution.get('cleanup_verified') is True and
+            type(receipt.get('result_absent', False)) is bool and
+            receipt.get('result_absent', False) == (result is None) and
+            all(resolution.get('release_recovery', {}).get(name) == value for name, value in expected.items()),
+            'Recovery managed snapshots disagree')
+
+
 def _module(path):
     spec = importlib.util.spec_from_file_location(Path(path).stem.replace('-', '_'), path)
     module = importlib.util.module_from_spec(spec)
@@ -564,6 +677,69 @@ def _check_report(report, required, outputs):
                 'Qualification check lacks passing raw evidence')
         for name, sha256 in value['evidence'].items():
             require(name in outputs and outputs[name]['sha256'] == sha256, 'Check evidence is not hash-bound')
+
+
+def _ap_binding(root):
+    state = status(root)
+    require(state['missing'] == ['ap'] and not state['refused'], 'AP requires passed native gates through captures')
+    metadata, plan, _ = read_attempt(root)
+    _socket_cleanup_proof(root, check_path=not state['evidence_only'])
+    rows = _receipts(root)
+    captures = load(relative_file(root, rows['captures']['evidence']))
+    return {'attempt': metadata['attempt'], 'plan_sha256': digest(plan), 'architecture': metadata['architecture'],
+            'rehearsal': metadata['rehearsal'], 'receipts': state['receipts'],
+            'package_sha256': captures['package_sha256'],
+            'capture_manifest_sha256': captures['capture_manifest_sha256'],
+            'socket_cleanup_sha256': file_record(Path(root) / 'socket-cleaned.json')['sha256'],
+            'ap_replay': plan['compat']['ap_replay']}
+
+
+def write_ap_receipt(native_root, coordinator_root, *, inputs, executed, outputs, evidence,
+                     execution, cleanup, replay_profile):
+    """Record coordinator AP evidence separately; never modify the native import."""
+    coordinator_root = Path(coordinator_root)
+    require(coordinator_root.is_dir() and not coordinator_root.resolve().is_relative_to(Path(native_root).resolve()),
+            'Coordinator AP evidence must be outside the native attempt')
+    binding = _ap_binding(native_root)
+    _, plan, _ = read_attempt(native_root)
+    validate_profile(replay_profile, execution['architecture'])
+    require('ap_replay' in replay_profile, 'AP replay host paths are required')
+    _execution_identity(execution, replay_profile, plan)
+    require(execution.get('replay_profile_sha256') == digest(replay_profile), 'Replay profile digest mismatch')
+    output_files = _inventory(coordinator_root, outputs)
+    require(evidence in output_files, 'AP report must be a hash-bound output')
+    _cleanup_identity(coordinator_root, cleanup, output_files)
+    closure = {'native': binding, 'replay_profile': replay_profile, 'execution': execution,
+               'inputs': _inventory(coordinator_root, inputs),
+               'executed': _executed(replay_profile, executed, root=coordinator_root, plan=plan)}
+    row = {'schema_version': 1, 'attempt': binding['attempt'], 'stage': 'ap',
+           'input_key': digest(closure), 'input': closure, 'outputs': output_files,
+           'evidence': evidence, 'cleanup': cleanup}
+    write_once(coordinator_root / 'ap-receipt.json', row)
+    return row
+
+
+def _read_ap_receipt(native_root, path):
+    path = Path(path)
+    row = load(path)
+    keys(row, ('schema_version', 'attempt', 'stage', 'input_key', 'input', 'outputs', 'evidence', 'cleanup'))
+    closure = row['input']
+    keys(closure, ('native', 'replay_profile', 'execution', 'inputs', 'executed'))
+    require(row['schema_version'] == 1 and row['stage'] == 'ap' and row['input_key'] == digest(closure) and
+            closure['native'] == _ap_binding(native_root) and row['attempt'] == closure['native']['attempt'],
+            'External AP receipt native binding changed')
+    _, plan, _ = read_attempt(native_root)
+    profile, execution = closure['replay_profile'], closure['execution']
+    validate_profile(profile, execution['architecture'])
+    _execution_identity(execution, profile, plan)
+    require('ap_replay' in profile and execution.get('replay_profile_sha256') == digest(profile),
+            'Replay profile digest mismatch')
+    require(bool(closure['executed']), 'AP executed closure is missing')
+    _verify_records(path.parent, closure['inputs'], {})
+    _verify_records(path.parent, row['outputs'], {})
+    require(row['evidence'] in row['outputs'], 'AP report is not hash-bound')
+    _cleanup_identity(path.parent, row['cleanup'], row['outputs'])
+    return row
 
 
 def _accept_archive(root, row, report, plan, arch, verifier, archive):
@@ -606,14 +782,27 @@ def _accept_archive(root, row, report, plan, arch, verifier, archive):
         return manifest, file_record(directory / 'codex-plus.json')['sha256']
 
 
-def accept_attempt(root, *, source_root, archive=None):
+def _accept_gates(root, *, source_root, archive=None, gates=GATES, ap_receipt=None):
     state = status(root)
-    require(not state['missing'] and not state['refused'], 'Missing/failed/unknown gate or cleanup')
     metadata, plan, profile = read_attempt(root)
+    rows = _receipts(root)
+    receipts = dict(state['receipts'])
+    ap_root = None
+    if ap_receipt is not None:
+        require('ap' not in rows and 'ap' in gates, 'Ambiguous or unexpected external AP receipt')
+        rows['ap'] = _read_ap_receipt(root, ap_receipt)
+        receipts['ap'] = digest(rows['ap'])
+        ap_root = Path(ap_receipt).parent
+    refused = [stage for stage in (*STAGES[:3], *gates) if stage in rows and (
+        rows[stage]['input']['execution']['outcome'] != 'passed' or
+        rows[stage]['input']['execution']['exit_code'] != 0 or
+        rows[stage]['cleanup']['outcome'] != 'clean' or
+        rows[stage]['cleanup']['owned_remaining'] != 0 or rows[stage]['cleanup']['unknown'] != 0)]
+    require(all(gate in rows for gate in gates) and not refused, 'Missing/failed/unknown gate or cleanup')
+    _socket_cleanup_proof(root, check_path=not state['evidence_only'])
     validate_plan(plan, source_root)
     require(not metadata['rehearsal'], 'Rehearsal cannot qualify final evidence')
     arch = metadata['architecture']
-    rows = _receipts(root)
     # The product-source verifier knows that release's package constants.
     package = _module(Path(source_root) / 'scripts/package-release.py')
     native = _module(Path(source_root) / 'scripts/native-results.py')
@@ -621,9 +810,10 @@ def accept_attempt(root, *, source_root, archive=None):
     archive_path = Path(archive) if archive is not None else None
     archive_name = None
     manifest_sha256 = None
-    for gate in GATES:
+    for gate in gates:
         row = rows[gate]
-        report = load(relative_file(root, row['evidence']))
+        report_root = ap_root if gate == 'ap' and ap_root is not None else root
+        report = load(relative_file(report_root, row['evidence']))
         require(report.get('architecture') == arch and report.get('plus_source_commit') == plan['plus_source_commit'],
                 'Gate report source/architecture mismatch')
         spec = plan['gates'][arch][gate]
@@ -648,6 +838,8 @@ def accept_attempt(root, *, source_root, archive=None):
             manifest, manifest_sha256 = _accept_archive(root, row, report, plan, arch, package, selected)
         if gate == 'ap':
             require(report.get('ap_version') == plan['compat']['ap_version'], 'AP replay version mismatch')
+            if 'ap_replay' in plan['compat']:
+                require(report.get('ap_replay') == plan['compat']['ap_replay'], 'AP source/plugin pins mismatch')
             capture_row = rows['captures']
             captures = load(relative_file(root, capture_row['evidence']))
             require(report.get('capture_manifest_sha256') == captures.get('capture_manifest_sha256') and
@@ -665,13 +857,28 @@ def accept_attempt(root, *, source_root, archive=None):
             for name, record in captures['files'].items():
                 require(name in row['outputs'] and row['outputs'][name] == record, 'Capture file not hash-bound')
     return {'accepted': True, 'attempt': metadata['attempt'], 'plan_sha256': digest(plan),
-            'architecture': arch, 'rehearsal': False, 'receipts': state['receipts'],
+            'architecture': arch, 'rehearsal': False, 'receipts': receipts,
             'coordinator_protocol': manifest['coordinator_protocol'],
             'execution_record_format': manifest['execution_record_format'],
             'target': {'triple': manifest['target'], 'asset': Path(archive_name).name,
                        'sha256': rows['package']['outputs'][archive_name]['sha256'],
                        'manifest_sha256': manifest_sha256,
                        'tree_sha256': manifest['tree_sha256']}}
+
+
+def accept_attempt(root, *, source_root, archive=None, ap_receipt=None):
+    return _accept_gates(root, source_root=source_root, archive=archive, ap_receipt=ap_receipt)
+
+
+def approve_package(root, *, source_root, archive=None):
+    accepted = _accept_gates(root, source_root=source_root, archive=archive, gates=GATES[:2])
+    _, plan, _ = read_attempt(root)
+    return {'accepted': True, 'cleanup_passed': True, 'native': True,
+            'source': plan['plus_source_commit'], 'architecture': accepted['architecture'],
+            'archive_sha256': accepted['target']['sha256'],
+            'manifest_sha256': accepted['target']['manifest_sha256'],
+            'approval_scope': 'package-native-tests', 'attempt': accepted['attempt'],
+            'plan_sha256': accepted['plan_sha256'], 'receipts': accepted['receipts']}
 
 
 def make_handoff(plan, accepted_by_arch):
@@ -698,6 +905,10 @@ def make_handoff(plan, accepted_by_arch):
 
 def _evidence_inputs(root):
     required = {'attempt.json', 'plan.json', 'profile.json'}
+    for name in ('process-journal.jsonl', 'ownership-baseline.json', 'native-preparation.json'):
+        if (Path(root) / name).exists():
+            required.add(name)
+    required.update(path.relative_to(root).as_posix() for path in (Path(root) / 'native-starts').glob('*.json'))
     outputs = {}
     archives, packages = set(), set()
     for stage, row in _receipts(root).items():
@@ -718,13 +929,18 @@ def _evidence_inputs(root):
             archives.add(report['archive'])
             if 'package_dir' in report:
                 packages.add(report['package_dir'].rstrip('/') + '/')
-    for directory in ('socket-creation-intents', 'socket-creation-results'):
+    for directory in ('socket-creation-intents', 'socket-creation-results', 'socket-cleanup-retries'):
         required.update(path.relative_to(root).as_posix() for path in (Path(root) / directory).glob('*.json'))
-    if (Path(root) / 'socket-removal.json').exists():
-        required.add('socket-removal.json')
+    for name in ('socket-removal.json', 'socket-removal-intent.json', 'socket-quarantine.json',
+                 'socket-moved.json', 'socket-deleted.json'):
+        if (Path(root) / name).exists():
+            required.add(name)
     if (Path(root) / 'socket-cleaned.json').exists():
         required.add('socket-cleaned.json')
         required.add(load(Path(root) / 'socket-cleaned.json')['report'])
+    if (Path(root) / 'recovery/receipt.json').exists():
+        required.add('recovery/receipt.json')
+        required.update(load(Path(root) / 'recovery/receipt.json')['files'])
     return required, outputs, archives, packages
 
 
@@ -823,6 +1039,11 @@ def _socket_cleanup_proof(root, *, check_path=True):
     require(report.get('outcome') == 'clean' and report.get('socket_identity') == identity and
             report.get('socket_removed') is True and all((type(report.get(name)) is int and report[name] == 0) or report.get(name) == []
             for name in ('owned_remaining', 'unknown')), 'Final native cleanup did not resolve ownership')
+    recovery = Path(root) / 'recovery/receipt.json'
+    if recovery.exists() or 'recovery_receipt' in report:
+        require(report.get('recovery_receipt') == 'recovery/receipt.json' and
+                report.get('recovery_receipt_sha256') == file_record(recovery)['sha256'],
+                'Final cleanup recovery receipt changed')
     return proof
 
 
@@ -843,21 +1064,23 @@ def seal_socket_cleanup(root, report):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest='command', required=True)
-    for name in ('plan-check', 'status', 'export', 'import', 'accept', 'handoff'):
+    for name in ('plan-check', 'status', 'export', 'import', 'approve-package', 'accept', 'handoff'):
         command = commands.add_parser(name)
         if name in ('plan-check', 'handoff'):
             command.add_argument('--plan', type=Path, required=True)
-        if name in ('plan-check', 'accept', 'handoff'):
+        if name in ('plan-check', 'approve-package', 'accept', 'handoff'):
             command.add_argument('--source-root', type=Path, required=True)
-        if name in ('status', 'export', 'accept'):
+        if name in ('status', 'export', 'approve-package', 'accept'):
             command.add_argument('--attempt', type=Path, required=True)
-        if name in ('export', 'import', 'accept', 'handoff'):
+        if name in ('export', 'import', 'approve-package', 'accept', 'handoff'):
             command.add_argument('--output', type=Path, required=True)
         if name == 'import':
             command.add_argument('--bundle', type=Path, required=True)
             command.add_argument('--sha256', required=True, help='Separately received evidence-bundle digest')
-        if name == 'accept':
+        if name in ('accept', 'approve-package'):
             command.add_argument('--archive', type=Path)
+        if name == 'accept':
+            command.add_argument('--ap-receipt', type=Path)
         if name == 'handoff':
             command.add_argument('--accept', action='append', required=True, metavar='ARCH=PATH')
     args = parser.parse_args(argv)
@@ -872,8 +1095,11 @@ def main(argv=None):
         elif args.command == 'import':
             imported = import_attempt(args.bundle, args.output, expected_sha256=args.sha256)
             result = status(imported)
-        elif args.command == 'accept':
-            result = accept_attempt(args.attempt, source_root=args.source_root, archive=args.archive)
+        elif args.command in ('approve-package', 'accept'):
+            result = (approve_package(args.attempt, source_root=args.source_root, archive=args.archive)
+                      if args.command == 'approve-package' else
+                      accept_attempt(args.attempt, source_root=args.source_root, archive=args.archive,
+                                     ap_receipt=args.ap_receipt))
             write_once(args.output, result)
         else:
             plan = validate_plan(load(args.plan), args.source_root)
