@@ -66,11 +66,13 @@ def main():
     # Exercise the selected PTY constructor at each actual home shape before compilation.
     from test_morandi_tui import ThemeServer
     from test_morandi_command_colors_tui import run as command_colors
-    assert callable(command_colors)
+    from test_worker_roles_tui import run as worker_roles
+    assert callable(command_colors) and callable(worker_roles)
     for category, home_name in [('morandi', 'h'), ('command', 'h'), ('status', 'branch/home'),
                                 ('command-color-success', 'unmarked_success/h'),
                                 ('command-color-failure', 'unmarked_failure/h'),
                                 ('footer-detached-topics', 'home'),
+                                ('worker-roles', 'home'),
                                 ('native-smoke-health', 'health-home'),
                                 ('native-smoke-history', 'history-home'),
                                 ('shell-policy-stock', 'stock-home')]:

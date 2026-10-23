@@ -230,7 +230,7 @@ assert NEW_VERSION == __import__('sys').argv[2]
         old.manifest.update(release='0.163.0-plus.0.4.6', plus_commit='2' * 40)
         (old.package / 'bin/codex-plus-runtime').write_bytes((old.package / 'bin/codex-plus-runtime').read_bytes() + b'old helper')
         old.seal()
-        plan, profile, config = self.inputs()
+        plan, profile, config = self.inputs(packaging.package_release.PLUS_VERSION)
         prepared = self.prepare(plan, profile, config)
         code = """import importlib.util,pathlib,sys
 from recipe_context import CONFIG,OLD_VERSION,NEW_VERSION

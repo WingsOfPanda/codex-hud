@@ -286,7 +286,7 @@ their own native qualification before release; these source checks are not that.
 
 ### Worker time and token scopes
 
-Standalone rows pair the latest turn's elapsed time with that exact turn's
+Standalone and grouped rows pair the latest turn's elapsed time with that exact turn's
 reported usage. Regression fixtures reuse a worker with 342,740,535 lifetime
 tokens and 679,013 current-turn tokens: the row must show `679K`, then reset
 when its turn ID changes. Reloading the TUI must recover the same reported turn
@@ -296,10 +296,20 @@ Cached input remains included in input rather than being added again.
 Local reads are bounded, read-only, and match both thread and turn identity.
 Check incomplete/malformed records, oversized tails, zero/negative values,
 forks, and unavailable files. Remote fixtures include local rollout and SQLite
-decoys and must still show unknown usage. Explicit groups keep their batch
-elapsed time and all-member lifetime totals, including finished members.
-The terminal smoke also checks editable input, the three-row budget and zero
-model calls while these metrics refresh.
+decoys and must still show unknown usage. Explicit groups show active/waiting
+member counts, the longest current assignment and summed current-assignment
+usage. Finished members contribute nothing; reusing a worker for a new turn
+resets its metrics. Run `test_worker_roles_tui.py` against the candidate for old
+thread/new turn, inherited-record rejection and completed-member regressions.
+The terminal smoke also checks editable input, the six-activity-row budget and
+zero model calls while these metrics refresh.
+
+For detached work, run `test_detached_execution_hud_tui.py` and native
+`execution_hud` checks: unknown outcomes keep `needs review` even after heartbeat
+expiry. A valid optional `finished_at` freezes duration; missing/null end time
+shows `?`. Live jobs retain ordinary running/stale handling. Runtime projection
+checks require verified resolved-Unknown activity removal while retaining the
+durable outcome, resource-conflict behavior and report-only barriers.
 
 ### Audit regression checks
 
@@ -320,7 +330,7 @@ bounded multilingual results, and Cargo's actual artifact locations. Coordinator
 and upgrade suites include batching/cancellation on real Rust connections,
 legacy stranded callbacks, bounded-history uncertainty, transport failure, and
 relative homes across packaged startup and upgrade. The terminal smoke checks
-zero inactive-worker turn reads while retaining completed group metrics.
+zero inactive-worker turn reads while excluding completed group metrics.
 See [the audit fix record](audit-fixes.md) for executed checks and remaining
 release checks. [Notice resolution](notice-resolution.md) records the subsequent
 40 packaging tests, complete x86/ARM production graphs, source bindings and

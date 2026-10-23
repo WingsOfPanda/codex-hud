@@ -7,7 +7,7 @@ import shutil
 
 FILTERS = ('morandi', 'theme_picker', 'render::highlight', 'custom_terminal::',
     'insert_history::', 'style::contrast', 'bottom_pane::status_line_style::tests',
-    'exec_cell::compact')
+    'exec_cell::compact', 'worker_hud', 'execution_hud')
 
 
 def compiler_artifacts(output):
@@ -120,6 +120,7 @@ def terminals(c):
         ('shell-policy', 'test_shell_policy_integration.py', [c.PACKAGE / 'bin/codex', '--stock-daemon', c.OFFICIAL, '--stock-launcher', c.PACKAGE / 'bin/codex-plus']),
         ('shell-topics', 'test_shell_topics_tui.py', ['--binary', c.PACKAGE / 'bin/codex']),
         ('detached-hud', 'test_detached_execution_hud_tui.py', ['--binary', c.PACKAGE / 'bin/codex']),
+        ('worker-roles', 'test_worker_roles_tui.py', [c.PACKAGE / 'bin/codex']),
         ('footer-rows', 'test_footer_rows_tui.py', ['--source', c.SOURCE, '--binary', c.PACKAGE / 'bin/codex'])]
     for label, program, args in tests:
         if label in ('command-display', 'command-display-morandi'):
@@ -128,7 +129,7 @@ def terminals(c):
                 '--short-root', c.SHORT.name, '--evidence', c.BASE / 'evidence' / label]
             if label.endswith('-morandi'):
                 command += ['--theme', 'morandi']
-        elif label in ('native-smoke', 'shell-policy', 'shell-topics', 'detached-hud'):
+        elif label in ('native-smoke', 'shell-policy', 'shell-topics', 'detached-hud', 'worker-roles'):
             code = ('import sys,tempfile;from pathlib import Path;sys.path.insert(0,' + repr(str(c.SOURCE / 'tests')) + ');'
                 'import native_smoke;import test_background_integration as background;'
                 'native_smoke.REPO=background.REPO=Path(' + repr(str(c.PACKAGE)) + ');'

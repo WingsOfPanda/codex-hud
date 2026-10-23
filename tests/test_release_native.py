@@ -587,13 +587,15 @@ else:
         root = self.attempt()
         old = native.Context(root, 'frontend')
         next_plan = copy.deepcopy(self.plan)
-        next_plan['release'] = '0.163.0-plus.0.4.8'
+        prefix, patch_version = self.plan['release'].rsplit('.', 1)
+        next_plan['release'] = f'{prefix}.{int(patch_version) + 1}'
         next_plan['plus_source_commit'] = 'e' * 40
         with patch.object(native.protocol, 'read_attempt', return_value=(protocol.load(root / 'attempt.json'), next_plan, self.profile)):
             new = native.Context(root, 'frontend')
         self.assertNotEqual(old.PACKAGE, new.PACKAGE)
         self.assertEqual(old.CARGO, new.CARGO)
-        self.assertEqual(len(recipe.FILTERS), 8)
+        self.assertIn('worker_hud', recipe.FILTERS)
+        self.assertIn('execution_hud', recipe.FILTERS)
 
     def test_cargo_artifact_parser_preserves_records_and_ignores_non_artifact_output(self):
         recipe = native.module(native.RECIPE / 'build.py')

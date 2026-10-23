@@ -208,7 +208,8 @@ class ReleaseProtocolTests(unittest.TestCase):
             target = source / name
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text((ROOT / name).read_text())
-        next_version = '0.4.8'
+        prefix, patch_version = self.plan['plus_version'].rsplit('.', 1)
+        next_version = f'{prefix}.{int(patch_version) + 1}'
         for name in ('scripts/package-release.py', 'rust-runtime/Cargo.toml', 'rust-runtime/Cargo.lock'):
             path = source / name
             path.write_text(path.read_text().replace(self.plan['plus_version'], next_version))

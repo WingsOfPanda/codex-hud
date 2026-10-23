@@ -48,6 +48,8 @@ Freeze product, upstream, patch, tooling and host-profile identities. Record the
 commit supplying the packager/license generator using the
 [provenance rule](release-protocol.md#ownership-and-inputs). Inspect and preserve
 unrelated dirty work. Use a scratch Git index when real index metadata is sealed.
+Before an expensive build, run version-transition checks against the actual bumped
+source: synthetic “next version” fixtures must derive a different version from it.
 With fleet-config, establish actual in-use versions, rollback target, retention,
 config defaults and restart requirements before choosing the qualification matrix.
 

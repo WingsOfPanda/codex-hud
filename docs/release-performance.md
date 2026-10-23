@@ -79,7 +79,8 @@ the final release encountered an idle shared SSH ControlPersist connection.
 Its transport ancestry and absence of test descendants were verified separately.
 
 Use libtest's dedicated `--logfile` and an independently captured `--list` as
-the result inventory. Terminal rendering can concatenate ordinary text with
+the result inventory. Pass an absolute logfile path: Cargo may run the test binary
+from the crate directory rather than the caller's directory. Terminal rendering can concatenate ordinary text with
 test rows; stripping ANSI escapes does not repair that ambiguity. The command
 exit status, final counts and exact allowed ignored reasons must also agree.
 Baseline failures require their existing separate review; they must not be
