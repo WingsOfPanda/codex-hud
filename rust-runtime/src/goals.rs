@@ -697,29 +697,34 @@ mod tests {
 
     #[test]
     fn lost_wait_results_block_autonomous_scheduling_without_rerunning_work() {
-        let (_home, mut s, root) = fixture();
-        start(&mut s, &root);
-        admit(&mut s, &root, "turn");
-        job(&mut s, &root, "turn", "job");
-        stage(
-            &mut s,
-            &root,
-            "turn",
-            json!({"disposition":"wait","jobs":["job"]}),
-        );
-        s.goal_finalize(&root, "turn", true, 3.0).unwrap();
-        s.execute("UPDATE jobs SET status='lost' WHERE id='job'", &[])
+        for kind in ["command", "execution"] {
+            let (_home, mut s, root) = fixture();
+            start(&mut s, &root);
+            admit(&mut s, &root, "turn");
+            job(&mut s, &root, "turn", "job");
+            stage(
+                &mut s,
+                &root,
+                "turn",
+                json!({"disposition":"wait","jobs":["job"]}),
+            );
+            s.goal_finalize(&root, "turn", true, 3.0).unwrap();
+            s.execute(
+                "UPDATE jobs SET status='lost',kind=? WHERE id='job'",
+                &[json!(kind)],
+            )
             .unwrap();
-        assert!(!s.goal_wait_ready(&root, 4.0).unwrap());
-        assert_eq!(
-            s.goal_snapshot(&root).unwrap()["goal"]["state"],
-            "needs_input"
-        );
-        assert!(
-            s.test_goal_intent(&root, "completion", "inspect", 5.0)
-                .unwrap()
-                .is_none()
-        );
+            assert!(!s.goal_wait_ready(&root, 4.0).unwrap());
+            assert_eq!(
+                s.goal_snapshot(&root).unwrap()["goal"]["state"],
+                "needs_input"
+            );
+            assert!(
+                s.test_goal_intent(&root, "completion", "inspect", 5.0)
+                    .unwrap()
+                    .is_none()
+            );
+        }
     }
 
     #[test]
@@ -1945,6 +1950,107 @@ mod tests {
         assert_eq!(saved["goal"]["state"], "needs_input");
         assert!(s.goal_dispatches(&root).unwrap().is_empty());
     }
+
+    #[test]
+    fn late_reported_execution_does_not_fence_an_edited_goal() {
+        let (_home, mut s, root) = fixture();
+        start(&mut s, &root);
+        admit(&mut s, &root, "origin");
+        job(&mut s, &root, "origin", "old-execution");
+        stage(
+            &mut s,
+            &root,
+            "origin",
+            json!({"disposition":"wait","jobs":["old-execution"]}),
+        );
+        s.goal_finalize(&root, "origin", true, 3.0).unwrap();
+        let old = s.goal_status(&root).unwrap();
+        s.goal_mutate(
+            &root,
+            old["goal"]["id"].as_str().unwrap(),
+            old["goal"]["revision"].as_i64().unwrap(),
+            "edit",
+            &json!({"objective":"new direction"}),
+            4.0,
+        )
+        .unwrap();
+        let expected = s.goal_status(&root).unwrap();
+        s.execute(
+            "UPDATE jobs SET status='lost',report=1 WHERE id='old-execution'",
+            &[],
+        )
+        .unwrap();
+        s.goal_reconcile_reports(&root, 5.0).unwrap();
+        let actual = s.goal_status(&root).unwrap();
+        assert_eq!(actual["report_barrier"], 0);
+        for field in ["id", "revision", "state", "objective", "error"] {
+            assert_eq!(actual["goal"][field], expected["goal"][field]);
+        }
+        assert_eq!(actual["input_epoch"], expected["input_epoch"]);
+    }
+
+    #[test]
+    fn recovery_observer_gaps_downgrade_only_unsubmitted_goal_results() {
+        for generation_gap in [false, true] {
+            for submitted in [false, true] {
+                let (_home, mut s, root) = fixture();
+                start(&mut s, &root);
+                admit(&mut s, &root, "origin");
+                job(&mut s, &root, "origin", "recovery");
+                s.claim_observation(&root, "original-observer", false)
+                    .unwrap();
+                stage(
+                    &mut s,
+                    &root,
+                    "origin",
+                    json!({"disposition":"wait","jobs":["recovery"]}),
+                );
+                s.goal_finalize(&root, "origin", true, 3.0).unwrap();
+                s.execute("UPDATE jobs SET status='lost',kind='execution',report=1,recovery_allowed=1 WHERE id='recovery'", &[]).unwrap();
+                assert!(s.goal_wait_ready(&root, 4.0).unwrap());
+                let frozen = if submitted {
+                    let dispatch = s
+                        .test_goal_intent(&root, "completion", "RECOVERY REQUIRED: frozen", 5.0)
+                        .unwrap()
+                        .unwrap();
+                    Some(
+                        s.goal_claim_dispatch(dispatch["id"].as_str().unwrap())
+                            .unwrap()
+                            .unwrap(),
+                    )
+                } else {
+                    None
+                };
+                if generation_gap {
+                    s.observe_generation(&root, Some("new-generation")).unwrap();
+                } else {
+                    s.claim_observation(&root, "replacement-observer", true)
+                        .unwrap();
+                }
+                let row = s
+                    .first("SELECT * FROM jobs WHERE id='recovery'", &[])
+                    .unwrap()
+                    .unwrap();
+                assert_eq!(row["report"], 1);
+                assert_eq!(row["recovery_allowed"], i32::from(submitted));
+                s.goal_reconcile_reports(&root, 6.0).unwrap();
+                assert_eq!(
+                    s.goal_status(&root).unwrap()["report_barrier"],
+                    i32::from(!submitted)
+                );
+                if let Some(frozen) = frozen {
+                    let current = s
+                        .goal_dispatches(&root)
+                        .unwrap()
+                        .into_iter()
+                        .find(|row| row["id"] == frozen["id"])
+                        .unwrap();
+                    assert_eq!(current["message"], frozen["message"]);
+                    assert_eq!(current["client"], frozen["client"]);
+                }
+            }
+        }
+    }
 }
 fn decode(mut row: Value) -> Result<Value> {
     if let Some(text) = row["checkpoint"].as_str() {
@@ -2196,13 +2302,24 @@ impl Store {
             json!([])
         };
         let args = [goal["id"].clone(), json!(jobs.to_string())];
-        let total=self.first("SELECT COUNT(*) AS count FROM goal_jobs g JOIN jobs j ON j.id=g.job WHERE g.goal=? AND g.notified=0 AND j.status IN ('completed','failed','interrupted') AND j.id IN (SELECT value FROM json_each(?))",&args)?.unwrap()["count"].clone();
-        let mut results=self.rows("SELECT j.id,j.kind,j.thread,j.turn,j.item,j.execution,j.status,j.exit_code FROM goal_jobs g JOIN jobs j ON j.id=g.job WHERE g.goal=? AND g.notified=0 AND j.status IN ('completed','failed','interrupted') AND j.id IN (SELECT value FROM json_each(?)) ORDER BY j.id LIMIT 20",&args)?;
+        let total=self.first("SELECT COUNT(*) AS count FROM goal_jobs g JOIN jobs j ON j.id=g.job WHERE g.goal=? AND g.notified=0 AND (j.report=0 OR (j.recovery_allowed=1 AND g.input_epoch=(SELECT r.input_epoch FROM goal_roots r JOIN goals q ON q.root=r.root WHERE q.id=g.goal))) AND (j.status IN ('completed','failed','interrupted') OR (j.status='lost' AND j.kind='execution' AND j.recovery_allowed=1)) AND j.id IN (SELECT value FROM json_each(?))",&args)?.unwrap()["count"].clone();
+        let mut results=self.rows("SELECT j.id,j.kind,j.thread,j.turn,j.item,j.execution,j.status,j.exit_code FROM goal_jobs g JOIN jobs j ON j.id=g.job WHERE g.goal=? AND g.notified=0 AND (j.report=0 OR (j.recovery_allowed=1 AND g.input_epoch=(SELECT r.input_epoch FROM goal_roots r JOIN goals q ON q.root=r.root WHERE q.id=g.goal))) AND (j.status IN ('completed','failed','interrupted') OR (j.status='lost' AND j.kind='execution' AND j.recovery_allowed=1)) AND j.id IN (SELECT value FROM json_each(?)) ORDER BY j.id LIMIT 20",&args)?;
         crate::ledger::add_execution_refs(
             &self.directory,
             goal["root"].as_str().unwrap(),
             &mut results,
         );
+        for result in &mut results {
+            if let Some(id) = result["execution"].as_str() {
+                let home = self
+                    .directory
+                    .parent()
+                    .ok_or_else(|| anyhow::anyhow!("state directory has no home"))?;
+                let record = crate::executions::read(home, goal["root"].as_str().unwrap(), id)?;
+                result["recovery_required"] =
+                    json!(crate::ledger::execution_recovery_required(&record));
+            }
+        }
         Ok(json!({"total":total,"results":results}))
     }
 
@@ -2417,7 +2534,7 @@ impl Store {
                     for job in jobs {
                         let job=job.as_str().ok_or_else(||anyhow::anyhow!("job ID must be text"))?;
                         ensure!(distinct.insert(job),"duplicate wait job");
-                        ensure!(s.exists("SELECT 1 FROM jobs JOIN parks ON parks.id=jobs.park JOIN goal_jobs ON goal_jobs.job=jobs.id JOIN callbacks ON callbacks.id=jobs.callback WHERE jobs.id=? AND parks.parent=? AND goal_jobs.goal=? AND callbacks.state IN ('goal_owned','goal_settled') AND parks.state IN ('armed','complete') AND jobs.status IN ('armed','completed','failed','interrupted')", &[json!(job),json!(root),json!(id)])?,"wait job must already belong to this root and goal, with a goal-owned callback marker");
+                        ensure!(s.exists("SELECT 1 FROM jobs JOIN parks ON parks.id=jobs.park JOIN goal_jobs ON goal_jobs.job=jobs.id JOIN callbacks ON callbacks.id=jobs.callback WHERE jobs.id=? AND parks.parent=? AND goal_jobs.goal=? AND callbacks.state IN ('goal_owned','goal_settled') AND parks.state IN ('armed','complete') AND (jobs.report=0 OR (jobs.recovery_allowed=1 AND goal_jobs.input_epoch=(SELECT input_epoch FROM goal_roots WHERE root=parks.parent))) AND (jobs.status IN ('armed','completed','failed','interrupted') OR (jobs.status='lost' AND jobs.kind='execution' AND jobs.recovery_allowed=1))", &[json!(job),json!(root),json!(id)])?,"wait job must already belong to this root and goal, with a goal-owned callback marker");
                         ensure!(!s.exists("SELECT 1 FROM goal_jobs WHERE job=? AND goal<>?", &[json!(job),json!(id)])?,"job belongs to another goal");
                     }
                 },_=>unreachable!(),
@@ -2554,14 +2671,25 @@ impl Store {
         let mut running = false;
         let mut pending = false;
         for job in checkpoint["jobs"].as_array().into_iter().flatten() {
-            let row=self.first("SELECT jobs.status,parks.state,goal_jobs.notified FROM goal_jobs JOIN jobs ON jobs.id=goal_jobs.job JOIN parks ON parks.id=jobs.park WHERE goal_jobs.goal=? AND jobs.id=?", &[id.clone(),job.clone()])?;
+            let row=self.first("SELECT jobs.status,jobs.kind,jobs.report,jobs.recovery_allowed,goal_jobs.input_epoch,(SELECT input_epoch FROM goal_roots WHERE root=parks.parent) AS current_epoch,parks.state,goal_jobs.notified FROM goal_jobs JOIN jobs ON jobs.id=goal_jobs.job JOIN parks ON parks.id=jobs.park WHERE goal_jobs.goal=? AND jobs.id=?", &[id.clone(),job.clone()])?;
             let Some(row) = row else { return Ok(None) };
             if !matches!(row["state"].as_str(), Some("armed" | "complete")) {
                 return Ok(None);
             }
             match row["status"].as_str() {
                 Some("armed") => running = true,
-                Some("completed" | "failed" | "interrupted") => {
+                Some("completed" | "failed" | "interrupted")
+                    if row["report"] == 0
+                        || (row["recovery_allowed"] == 1
+                            && row["input_epoch"] == row["current_epoch"]) =>
+                {
+                    pending |= row["notified"] == 0;
+                }
+                Some("lost")
+                    if row["kind"] == "execution"
+                        && row["recovery_allowed"] == 1
+                        && row["input_epoch"] == row["current_epoch"] =>
+                {
                     pending |= row["notified"] == 0;
                 }
                 _ => return Ok(None),
@@ -2627,7 +2755,7 @@ impl Store {
                 let mut distinct=HashSet::new();
                 for job in jobs {
                     let Some(id)=job.as_str() else {return Ok(None)};
-                    if !distinct.insert(id) || !s.exists("SELECT 1 FROM goal_jobs g JOIN jobs j ON j.id=g.job JOIN parks p ON p.id=j.park WHERE g.goal=? AND g.job=? AND g.notified=0 AND j.status IN ('completed','failed','interrupted') AND p.state IN ('armed','complete') AND j.id IN (SELECT value FROM json_each(?))",&[goal["id"].clone(),json!(id),json!(goal["checkpoint"]["jobs"].to_string())])? {return Ok(None);}
+                    if !distinct.insert(id) || !s.exists("SELECT 1 FROM goal_jobs g JOIN jobs j ON j.id=g.job JOIN parks p ON p.id=j.park WHERE g.goal=? AND g.job=? AND g.notified=0 AND (j.report=0 OR (j.recovery_allowed=1 AND g.input_epoch=(SELECT r.input_epoch FROM goal_roots r JOIN goals q ON q.root=r.root WHERE q.id=g.goal))) AND (j.status IN ('completed','failed','interrupted') OR (j.status='lost' AND j.kind='execution' AND j.recovery_allowed=1)) AND p.state IN ('armed','complete') AND j.id IN (SELECT value FROM json_each(?))",&[goal["id"].clone(),json!(id),json!(goal["checkpoint"]["jobs"].to_string())])? {return Ok(None);}
                     completion_jobs.push(json!(id));
                 }
             }
@@ -2835,7 +2963,7 @@ impl Store {
     }
 
     pub fn goal_report_jobs(&mut self, root: &str) -> Result<Vec<Value>> {
-        self.rows("SELECT goal_jobs.goal,jobs.* FROM goal_jobs JOIN jobs ON jobs.id=goal_jobs.job JOIN goals ON goals.id=goal_jobs.goal WHERE goals.root=? AND jobs.report=1 AND jobs.status IN ('completed','failed','interrupted','lost') AND NOT EXISTS(SELECT 1 FROM goal_job_reports WHERE goal_job_reports.job=jobs.id) ORDER BY jobs.id", &[json!(root)])
+        self.rows("SELECT goal_jobs.goal,goal_jobs.input_epoch,jobs.* FROM goal_jobs JOIN jobs ON jobs.id=goal_jobs.job JOIN goals ON goals.id=goal_jobs.goal WHERE goals.root=? AND jobs.report=1 AND jobs.recovery_allowed=0 AND jobs.status IN ('completed','failed','interrupted','lost') AND NOT EXISTS(SELECT 1 FROM goal_job_reports WHERE goal_job_reports.job=jobs.id) ORDER BY jobs.id", &[json!(root)])
     }
 
     pub fn goal_report_results(&mut self, root: &str, report_id: &str) -> Result<Value> {
@@ -2852,7 +2980,7 @@ impl Store {
             s.goal_root(root)?;
             let meta=s.first("SELECT * FROM goal_roots WHERE root=?",&[json!(root)])?.unwrap();
             let current=s.goal_current(root)?;
-            let eligible=current.is_some_and(|g| matches!(g["state"].as_str(),Some("active"|"waiting"|"needs_input")) && jobs.iter().any(|job|job["goal"]==g["id"]));
+            let eligible=current.is_some_and(|g| matches!(g["state"].as_str(),Some("active"|"waiting"|"needs_input")) && jobs.iter().any(|job|job["goal"]==g["id"] && job["input_epoch"]==meta["input_epoch"]));
             let report_id=if meta["report_barrier"]==1 {meta["report_id"].as_str().unwrap().to_owned()} else {Uuid::new_v4().to_string()};
             for job in jobs {s.execute("INSERT INTO goal_job_reports(job,report_id) VALUES (?,?)",&[job["id"].clone(),json!(report_id)])?;}
             if eligible && meta["report_barrier"]!=1 {

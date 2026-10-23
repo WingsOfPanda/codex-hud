@@ -413,6 +413,7 @@ fn register(
     let mut resolved = Vec::new();
     let mut pending = HashSet::new();
     let mut labels = HashMap::new();
+    let mut recovery = HashSet::new();
     let children = if workers.is_empty() {
         Vec::new()
     } else {
@@ -540,6 +541,9 @@ fn register(
         let record = crate::executions::read(&home, parent, &id)?;
         validate_execution_binding(store, parent, &origin, &record)?;
         let (status, code, _) = execution_outcome(&record)?;
+        if status != Some("lost") && crate::ledger::execution_cleanup_unresolved(&record) {
+            recovery.insert(id.clone());
+        }
         resolved.push(ResolvedJob {
             id: format!("{parent}:execution:{id}"),
             kind: "execution".into(),
@@ -561,6 +565,22 @@ fn register(
         Some(&client.generation),
         &pending,
     )?;
+    if let Some(finished) = result["already_finished"].as_array_mut() {
+        for job in finished {
+            if job["execution"]
+                .as_str()
+                .is_some_and(|id| recovery.contains(id))
+            {
+                job["recovery_required"] = json!(true);
+            }
+        }
+    }
+    if !recovery.is_empty() {
+        result["mode"] = json!("recovery_required");
+        result["next"] = json!(
+            "Review the known execution result and investigate unresolved cleanup within current authorization. Retain resource claims and do not replay successful work."
+        );
+    }
     if resolved
         .iter()
         .any(|job| job.kind == "execution" && job.status == "lost")
@@ -648,8 +668,11 @@ pub(crate) fn recover_execution_watch(
         None,
         &HashSet::new(),
     )?;
-    store.execute("UPDATE jobs SET report=1 WHERE id=?", &[json!(job.id)])?;
-    if job.status == "lost" {
+    store.execute(
+        "UPDATE jobs SET report=1,recovery_allowed=0 WHERE id=?",
+        &[json!(job.id)],
+    )?;
+    if job.status == "lost" || crate::ledger::execution_cleanup_unresolved(&record) {
         execution_unknown_barrier(store, parent, &record)?;
     }
     crate::executions::mark_observation(
@@ -673,8 +696,24 @@ pub(crate) fn recover_execution_watch(
 
 fn execution_unknown_barrier(store: &mut Store, root: &str, record: &Value) -> Result<()> {
     let snapshot = store.goal_status(root)?;
+    let job = format!("{root}:execution:{}", text(record, "id")?);
+    let current_wait = snapshot["goal"]["checkpoint"]["disposition"] == "wait"
+        && snapshot["goal"]["checkpoint"]["jobs"]
+            .as_array()
+            .is_some_and(|jobs| jobs.contains(&json!(job)))
+        && store.exists(
+            "SELECT 1 FROM goal_jobs WHERE job=? AND goal=? AND turn=? AND input_epoch=?",
+            &[
+                json!(job),
+                record["origin"]["goal"]["id"].clone(),
+                record["origin"]["turn"].clone(),
+                record["origin"]["input_epoch"].clone(),
+            ],
+        )?;
     if record["origin"]["goal"].is_object()
         && snapshot["goal"]["id"] == record["origin"]["goal"]["id"]
+        && snapshot["input_epoch"] == record["origin"]["input_epoch"]
+        && (snapshot["goal"]["revision"] == record["origin"]["goal"]["revision"] || current_wait)
         && matches!(
             snapshot["goal"]["state"].as_str(),
             Some("active" | "waiting" | "needs_input")
@@ -696,13 +735,6 @@ fn execution_unknown_barrier(store: &mut Store, root: &str, record: &Value) -> R
 }
 
 fn execution_outcome(record: &Value) -> Result<(Option<&str>, Option<i64>, bool)> {
-    if matches!(
-        record["state"].as_str(),
-        Some("completed" | "failed" | "cancelled")
-    ) && crate::ledger::execution_cleanup_unresolved(record)
-    {
-        return Ok((Some("lost"), record["result"]["exit_code"].as_i64(), false));
-    }
     Ok(match text(record, "state")? {
         "prepared" => {
             return Err(RegistrationError("execution has not been launched".into()).into());
@@ -1190,7 +1222,7 @@ impl<'a> Observer<'a> {
             .parent()
             .ok_or_else(|| anyhow!("state directory has no home"))?
             .to_path_buf();
-        for job in self
+        for mut job in self
             .store
             .jobs_to_observe(self.parent)?
             .into_iter()
@@ -1199,8 +1231,15 @@ impl<'a> Observer<'a> {
             let record =
                 crate::executions::reconcile(&home, self.parent, text(&job, "execution")?)?;
             let (status, code, running) = execution_outcome(&record)?;
+            job["execution_recovery"] = json!(crate::ledger::execution_recovery_required(&record));
+            job["live_recovery"] =
+                json!(job["execution_recovery"] == true && job["observer_run"] == self.run_id);
             self.store.observe_job(&job, status, code, None, running)?;
-            if status == Some("lost") {
+            if status == Some("lost")
+                && (job["report"] == 1
+                    || job["recovery_pending"] == 1
+                    || job["verify_running"] == 1)
+            {
                 execution_unknown_barrier(self.store, self.parent, &record)?;
             }
         }
@@ -1858,7 +1897,17 @@ impl<'a> Observer<'a> {
         } else {
             "continue"
         };
-        let message = if kind == "completion" {
+        let message = if kind == "completion"
+            && completion["results"]
+                .as_array()
+                .is_some_and(|jobs| jobs.iter().any(|job| job["recovery_required"] == true))
+        {
+            format!(
+                "RECOVERY REQUIRED: Investigate the exact execution outcome and cleanup within current authorization; preserve original results and resource claims. Do not blindly replay unknown work. Continue independent authorized work. Results: {}. {}",
+                completion,
+                crate::goal_command::instructions(&snapshot)
+            )
+        } else if kind == "completion" {
             format!(
                 "LIVE GOAL COMPLETION: Review these completed registered jobs while preserving observation of remaining jobs, then continue authorized useful work. Results: {}. {}",
                 completion,
@@ -2728,74 +2777,270 @@ mod tests {
     }
 
     #[test]
-    fn unresolved_cleanup_preserves_known_exit_but_blocks_live_followup_and_goal_continuation() {
+    fn live_recovery_preserves_outcomes_and_goal_authority_once() {
         for goal_bound in [false, true] {
-            let home = tempfile::tempdir().unwrap();
-            let root = Uuid::new_v4().to_string();
-            let mut store = Store::open(home.path()).unwrap();
-            let goal = if goal_bound {
-                let snapshot = store
-                    .goal_start(&root, "verify cleanup", None, false, now())
+            for (state, expected, code) in [
+                ("failed", "failed", Some(0)),
+                ("failed", "failed", Some(7)),
+                ("cancelled", "interrupted", None),
+                ("unknown", "lost", None),
+            ] {
+                let home = tempfile::tempdir().unwrap();
+                let root = Uuid::new_v4().to_string();
+                let mut store = Store::open(home.path()).unwrap();
+                let goal = if goal_bound {
+                    let snapshot = store
+                        .goal_start(&root, "verify cleanup", None, false, now())
+                        .unwrap();
+                    let id = snapshot["goal"]["id"].as_str().unwrap();
+                    store.goal_admit(&root, id, 1, "origin", 1, now()).unwrap();
+                    snapshot["goal"].clone()
+                } else {
+                    Value::Null
+                };
+                let prepared = crate::executions::prepare(home.path(),&root,&json!({"root":root,"turn":"origin","input_epoch":1,"goal":goal}),&json!({"schema":1,"topic":"cleanup uncertainty","argv":["/usr/bin/true"],"cwd":home.path()})).unwrap();
+                let id = prepared["id"].as_str().unwrap();
+                let mut record = crate::executions::cancel(home.path(), &root, id).unwrap();
+                record["started_at"] = json!(now());
+                record["state"] = json!(state);
+                record["result"]["state"] = json!(state);
+                record["result"]["exit_code"] = json!(code);
+                record["result"]["workload_attempted"] = json!(true);
+                record["result"]["cleanup"]["status"] = json!("unknown");
+                let directory = home
+                    .path()
+                    .join("codex-plus/executions/v1")
+                    .join(&root)
+                    .join(id);
+                crate::local::atomic_json(&directory.join("state.json"), &record).unwrap();
+                crate::local::atomic_json(&directory.join("result.json"), &record["result"])
                     .unwrap();
-                let id = snapshot["goal"]["id"].as_str().unwrap();
-                store.goal_admit(&root, id, 1, "origin", 1, now()).unwrap();
-                snapshot["goal"].clone()
-            } else {
-                Value::Null
-            };
-            let prepared = crate::executions::prepare(home.path(),&root,&json!({"root":root,"turn":"origin","input_epoch":1,"goal":goal}),&json!({"schema":1,"topic":"cleanup uncertainty","argv":["/usr/bin/true"],"cwd":home.path()})).unwrap();
-            let id = prepared["id"].as_str().unwrap();
-            let mut record = crate::executions::cancel(home.path(), &root, id).unwrap();
-            record["started_at"] = json!(now());
-            record["state"] = json!("failed");
-            record["result"]["state"] = json!("failed");
-            record["result"]["exit_code"] = json!(0);
-            record["result"]["workload_attempted"] = json!(true);
-            record["result"]["cleanup"]["status"] = json!("unknown");
-            let directory = home
-                .path()
-                .join("codex-plus/executions/v1")
-                .join(&root)
-                .join(id);
-            crate::local::atomic_json(&directory.join("state.json"), &record).unwrap();
-            crate::local::atomic_json(&directory.join("result.json"), &record["result"]).unwrap();
-            assert_eq!(
-                execution_outcome(&record).unwrap(),
-                (Some("lost"), Some(0), false)
-            );
-            let job = ResolvedJob {
-                id: format!("{root}:execution:{id}"),
-                kind: "execution".into(),
-                thread: root.clone(),
-                turn: None,
-                item: None,
-                process: None,
-                execution: Some(id.into()),
-                status: "armed".into(),
-                exit_code: None,
-            };
-            store
-                .register_resolved(
-                    &root,
-                    "origin",
-                    "report known receipt",
-                    &[job],
-                    &HashMap::new(),
-                    None,
-                    &HashSet::new(),
-                )
-                .unwrap();
-            let mut observer = Observer::new(&mut store, &root);
-            observer.poll_executions().unwrap();
-            let status = observer.store.status(&root).unwrap();
-            assert_eq!(status["jobs"][0]["status"], "lost");
-            assert_eq!(status["jobs"][0]["exit_code"], 0);
-            assert_eq!(status["jobs"][0]["report"], 1);
-            if goal_bound {
-                let goal = observer.store.goal_status(&root).unwrap();
-                assert_eq!(goal["report_barrier"], 1);
-                assert_eq!(goal["goal"]["state"], "needs_input");
-            } else {
+                assert_eq!(
+                    execution_outcome(&record).unwrap(),
+                    (Some(expected), code, false)
+                );
+                let job = ResolvedJob {
+                    id: format!("{root}:execution:{id}"),
+                    kind: "execution".into(),
+                    thread: root.clone(),
+                    turn: None,
+                    item: None,
+                    process: None,
+                    execution: Some(id.into()),
+                    status: "armed".into(),
+                    exit_code: None,
+                };
+                store
+                    .register_resolved(
+                        &root,
+                        "origin",
+                        "report known receipt",
+                        &[job.clone()],
+                        &HashMap::new(),
+                        None,
+                        &HashSet::new(),
+                    )
+                    .unwrap();
+                let mut observer = Observer::new(&mut store, &root);
+                observer
+                    .store
+                    .claim_observation(&root, &observer.run_id, false)
+                    .unwrap();
+                if goal_bound {
+                    let goal = observer.store.goal_status(&root).unwrap();
+                    observer
+                        .store
+                        .goal_checkpoint(
+                            &root,
+                            goal["goal"]["id"].as_str().unwrap(),
+                            1,
+                            "origin",
+                            1,
+                            &json!({"disposition":"wait","jobs":[job.id]}),
+                            now(),
+                        )
+                        .unwrap();
+                    observer
+                        .store
+                        .goal_finalize(&root, "origin", true, now())
+                        .unwrap();
+                }
+                observer.poll_executions().unwrap();
+                let status = observer.store.status(&root).unwrap();
+                assert_eq!(status["jobs"][0]["status"], expected);
+                assert_eq!(status["jobs"][0]["exit_code"], json!(code));
+                assert_eq!(status["jobs"][0]["report"], 1);
+                assert_eq!(status["jobs"][0]["recovery_allowed"], 1);
+                if goal_bound {
+                    observer.store.goal_reconcile_reports(&root, now()).unwrap();
+                    assert!(observer.store.goal_wait_ready(&root, now()).unwrap());
+                    let goal = observer.store.goal_status(&root).unwrap();
+                    assert_eq!(goal["report_barrier"], 0);
+                    assert_eq!(goal["goal"]["state"], "active");
+                    let completion = observer.store.goal_completion_results(&root).unwrap();
+                    assert_eq!(completion["total"], 1);
+                    assert_eq!(completion["results"][0]["recovery_required"], true);
+                    let dispatch = observer
+                        .store
+                        .goal_intent(&root, &goal, "completion", "RECOVERY REQUIRED", now())
+                        .unwrap()
+                        .unwrap();
+                    observer
+                        .store
+                        .goal_claim_dispatch(dispatch["id"].as_str().unwrap())
+                        .unwrap()
+                        .unwrap();
+                    observer
+                        .store
+                        .goal_accept_dispatch(
+                            dispatch["id"].as_str().unwrap(),
+                            Some("queue"),
+                            "recovery",
+                            now(),
+                        )
+                        .unwrap();
+                    assert_eq!(
+                        observer.store.goal_completion_results(&root).unwrap()["total"],
+                        0
+                    );
+                } else {
+                    observer.store.batch(&root).unwrap();
+                    let ready = observer
+                        .store
+                        .next_callback(&root, false, false)
+                        .unwrap()
+                        .0
+                        .unwrap();
+                    let claimed = observer
+                        .store
+                        .claim_callback(&ready, false, false)
+                        .unwrap()
+                        .unwrap();
+                    let message = claimed["message"].as_str().unwrap();
+                    assert!(message.starts_with("RECOVERY REQUIRED"), "{message}");
+                    if state == "unknown" {
+                        assert!(message.contains("outcome=UNKNOWN"));
+                    } else {
+                        assert!(message.contains("cleanup=UNRESOLVED command_receipt=KNOWN"));
+                        assert!(!message.contains("outcome=UNKNOWN"));
+                    }
+                    let frozen = claimed["message"].clone();
+                    observer.poll_executions().unwrap();
+                    observer.store.batch(&root).unwrap();
+                    assert_eq!(
+                        observer.store.status(&root).unwrap()["callbacks"]
+                            .as_array()
+                            .unwrap()
+                            .len(),
+                        1
+                    );
+                    assert_eq!(
+                        observer.store.status(&root).unwrap()["callbacks"][0]["message"],
+                        frozen
+                    );
+                }
+                assert_eq!(
+                    crate::executions::read(home.path(), &root, id).unwrap()["result"]["exit_code"],
+                    json!(code)
+                );
+                record["resolution"] = json!({"cleanup_verified":true});
+                assert_eq!(
+                    execution_outcome(&record).unwrap(),
+                    (Some(expected), code, false)
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn execution_recovery_keeps_legacy_restart_and_manual_watch_barriers() {
+        for state in ["failed", "unknown"] {
+            for barrier in ["legacy", "restart", "generation", "manual"] {
+                let home = tempfile::tempdir().unwrap();
+                let root = Uuid::new_v4().to_string();
+                let mut store = Store::open(home.path()).unwrap();
+                let prepared = crate::executions::prepare(home.path(), &root, &json!({"root":root,"turn":"origin","input_epoch":0,"goal":null}), &json!({"schema":1,"topic":"recovery barrier","argv":["/usr/bin/true"],"cwd":home.path()})).unwrap();
+                let id = prepared["id"].as_str().unwrap();
+                let mut record = crate::executions::cancel(home.path(), &root, id).unwrap();
+                record["started_at"] = json!(now());
+                record["state"] = json!(state);
+                record["result"]["state"] = json!(state);
+                record["result"]["exit_code"] = if state == "failed" {
+                    json!(0)
+                } else {
+                    Value::Null
+                };
+                record["result"]["cleanup"]["status"] = json!("unknown");
+                let directory = home
+                    .path()
+                    .join("codex-plus/executions/v1")
+                    .join(&root)
+                    .join(id);
+                crate::local::atomic_json(&directory.join("state.json"), &record).unwrap();
+                crate::local::atomic_json(&directory.join("result.json"), &record["result"])
+                    .unwrap();
+                let job = ResolvedJob {
+                    id: format!("{root}:execution:{id}"),
+                    kind: "execution".into(),
+                    thread: root.clone(),
+                    turn: None,
+                    item: None,
+                    process: None,
+                    execution: Some(id.into()),
+                    status: "armed".into(),
+                    exit_code: None,
+                };
+                store
+                    .register_resolved(
+                        &root,
+                        "origin",
+                        "preserve barrier",
+                        &[job.clone()],
+                        &HashMap::new(),
+                        Some("old"),
+                        &HashSet::new(),
+                    )
+                    .unwrap();
+                let mut observer = Observer::new(&mut store, &root);
+                observer
+                    .store
+                    .claim_observation(&root, &observer.run_id, false)
+                    .unwrap();
+                match barrier {
+                    "legacy" => observer
+                        .store
+                        .execute("UPDATE jobs SET report=1 WHERE id=?", &[json!(job.id)])
+                        .unwrap(),
+                    "restart" => {
+                        observer
+                            .store
+                            .claim_observation(&root, "replacement-observer", true)
+                            .unwrap();
+                        observer.run_id = "replacement-observer".into();
+                    }
+                    "generation" => {
+                        observer
+                            .store
+                            .observe_generation(&root, Some("new"))
+                            .unwrap();
+                    }
+                    "manual" => {
+                        recover_execution_watch(observer.store, &root, id, "manual recovery")
+                            .unwrap();
+                    }
+                    _ => unreachable!(),
+                }
+                observer.poll_executions().unwrap();
+                let status = observer.store.status(&root).unwrap();
+                assert_eq!(
+                    status["jobs"][0]["status"],
+                    if state == "unknown" { "lost" } else { "failed" }
+                );
+                assert_eq!(status["jobs"][0]["report"], 1);
+                assert_eq!(
+                    status["jobs"][0]["recovery_allowed"], 0,
+                    "{barrier}/{state}"
+                );
                 observer.store.batch(&root).unwrap();
                 let ready = observer
                     .store
@@ -2808,20 +3053,13 @@ mod tests {
                     .claim_callback(&ready, false, false)
                     .unwrap()
                     .unwrap();
-                let message = claimed["message"].as_str().unwrap();
-                assert!(message.starts_with("REPORT ONLY"));
-                assert!(message.contains("cleanup=UNRESOLVED command_receipt=KNOWN exit=0"));
-                assert!(!message.contains("outcome=UNKNOWN"));
+                assert!(
+                    claimed["message"]
+                        .as_str()
+                        .unwrap()
+                        .starts_with("REPORT ONLY")
+                );
             }
-            assert_eq!(
-                crate::executions::read(home.path(), &root, id).unwrap()["result"]["exit_code"],
-                0
-            );
-            record["resolution"] = json!({"cleanup_verified":true});
-            assert_eq!(
-                execution_outcome(&record).unwrap(),
-                (Some("failed"), Some(0), false)
-            );
         }
     }
 
@@ -2834,7 +3072,7 @@ mod tests {
             .goal_start(&root, "unknown attempt", None, false, now())
             .unwrap();
         let id = snapshot["goal"]["id"].as_str().unwrap();
-        let record = json!({"id":Uuid::new_v4().to_string(),"origin":{"goal":{"id":id}}});
+        let record = json!({"id":Uuid::new_v4().to_string(),"origin":{"turn":"origin","input_epoch":snapshot["input_epoch"],"goal":{"id":id,"revision":snapshot["goal"]["revision"]}}});
         execution_unknown_barrier(&mut store, &root, &record).unwrap();
         let snapshot = store.goal_status(&root).unwrap();
         assert_eq!(snapshot["report_barrier"], 1);
@@ -2852,6 +3090,48 @@ mod tests {
             .unwrap();
         execution_unknown_barrier(&mut store, &root, &record).unwrap();
         assert_eq!(store.goal_status(&root).unwrap()["report_barrier"], 0);
+    }
+
+    #[test]
+    fn late_execution_recovery_cannot_fence_superseding_goal_authority() {
+        for action in ["pause", "edit", "clear", "input", "replace"] {
+            let home = tempfile::tempdir().unwrap();
+            let root = Uuid::new_v4().to_string();
+            let mut store = Store::open(home.path()).unwrap();
+            let snapshot = store
+                .goal_start(&root, "original", None, false, now())
+                .unwrap();
+            let goal = snapshot["goal"]["id"].as_str().unwrap();
+            let record = json!({"id":Uuid::new_v4().to_string(),"origin":{"turn":"origin","input_epoch":snapshot["input_epoch"],"goal":{"id":goal,"revision":snapshot["goal"]["revision"]}}});
+            match action {
+                "input" => {
+                    store.goal_input(&root, false, now()).unwrap();
+                }
+                "replace" => {
+                    store
+                        .goal_replace(&root, goal, 1, "replacement", None, false, now())
+                        .unwrap();
+                }
+                action => {
+                    store
+                        .goal_mutate(
+                            &root,
+                            goal,
+                            1,
+                            action,
+                            &json!({"objective":"edited"}),
+                            now(),
+                        )
+                        .unwrap();
+                }
+            }
+            let expected = store.goal_status(&root).unwrap();
+            execution_unknown_barrier(&mut store, &root, &record).unwrap();
+            let actual = store.goal_status(&root).unwrap();
+            assert_eq!(actual["report_barrier"], 0, "{action}");
+            assert_eq!(actual["goal"], expected["goal"], "{action}");
+            assert_eq!(actual["input_epoch"], expected["input_epoch"], "{action}");
+        }
     }
 
     #[test]
