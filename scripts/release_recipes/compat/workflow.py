@@ -32,9 +32,10 @@ def bound_execution(directory, profile, expected):
 
 
 def closure(profile):
-    paths = [SCRIPTS / name for name in ('release_compat.py', 'release_native.py', 'package-release.py',
+    scripts = Path(profile['tooling_root']) / 'scripts'
+    paths = [scripts / name for name in ('release_compat.py', 'release_native.py', 'package-release.py',
                                        'release_protocol.py', 'release_ownership.py')]
-    paths += [path for path in compat.RECIPE.iterdir() if path.is_file()]
+    paths += [path for path in (scripts / 'release_recipes/compat').iterdir() if path.is_file()]
     paths += [Path(profile['python']['path']), Path(profile['executor_package_root']) / 'bin/codex-plus-runtime']
     files = {str(path.resolve()): protocol.file_record(path.resolve()) for path in paths}
     if profile['python'].get('fixture_imports'):
@@ -51,7 +52,7 @@ def executed_origins(profile, paths):
 
 
 def proposal(root, profile, command, inputs, *, topic):
-    script = str(SCRIPTS / 'release_compat.py')
+    script = str(Path(profile['tooling_root']) / 'scripts/release_compat.py')
     return {'schema': 1, 'topic': topic,
         'argv': [profile['python']['path'], '-B', script, command, '--attempt', str(root), '--execution', '{execution}'],
         'cwd': profile['tooling_root'], 'env': native.python_env(profile),
@@ -286,11 +287,11 @@ def dependency_files(root):
     return result
 
 
-def ap_profile(profile, plan):
+def ap_profile(profile, plan, *, preparation=False):
     protocol.validate_profile(profile, profile['architecture'])
     protocol.require('ap_replay' in plan['compat'] and 'ap_replay' in profile,
                      'AP replay requires explicit plan pins and replay profile paths')
-    protocol.require(Path(profile['tooling_root']).resolve() == SCRIPTS.parent,
+    protocol.require(preparation or Path(profile['tooling_root']).resolve() == SCRIPTS.parent,
                      'Run AP replay from the pinned tooling checkout')
     protocol.require(profile['architecture'] == platform.machine() and
                      profile['hostname'] == platform.node(), 'AP replay host profile mismatch')
@@ -335,7 +336,7 @@ def prepare_ap(native_root, coordinator, profile):
     state = protocol.status(native_root)
     protocol.require(not state['refused'] and all(name in state['receipts'] for name in ('package', 'native-tests', 'compat', 'captures')),
                      'AP replay requires passing immutable native package/compatibility/capture evidence')
-    seals = ap_profile(profile, plan)
+    seals = ap_profile(profile, plan, preparation=True)
     capture_report = protocol.load(protocol.relative_file(native_root, protocol._receipts(native_root)['captures']['evidence']))
     inventory = protocol.load(protocol.relative_file(native_root, capture_report['capture_manifest']))
     protocol.require(native.sha(protocol.relative_file(native_root, capture_report['capture_manifest'])) == capture_report['capture_manifest_sha256'],
@@ -385,22 +386,24 @@ def prepare_ap(native_root, coordinator, profile):
               'ap-preparation.json', 'ownership-baseline.json', *context['capture_data']]
     result = proposal(coordinator, profile, 'run-ap', inputs, topic='Replay pinned AP captures')
     result.update(expected_duration_seconds=240, deadline_seconds=600)
+    script = str(Path(profile['tooling_root']) / 'scripts/release_compat.py')
     result['external_dependencies'] = [{'identity': 'Released AP bundle, clean source and exact module origins',
-        'precondition': {'argv': [profile['python']['path'], '-B', str(SCRIPTS / 'release_compat.py'), 'verify-ap', '--attempt', str(coordinator)],
+        'precondition': {'argv': [profile['python']['path'], '-B', script, 'verify-ap', '--attempt', str(coordinator)],
                          'cwd': profile['tooling_root'], 'env': native.python_env(profile), 'deadline_seconds': 180}}]
-    result['cleanup'] = {'argv': [profile['python']['path'], '-B', str(SCRIPTS / 'release_compat.py'),
+    result['cleanup'] = {'argv': [profile['python']['path'], '-B', script,
         'cleanup-ap', '--attempt', str(coordinator), '--output', str(coordinator / 'job-cleanup.json')],
         'cwd': profile['tooling_root'], 'env': native.python_env(profile), 'deadline_seconds': 180}
     protocol.write_once(coordinator / 'ap-job-proposal.json', result)
     return result
 
 
-def verify_ap(root):
+def verify_ap(root, *, preparation=False):
     root = Path(root).resolve(strict=True)
     context, plan, profile = (protocol.load(root / name) for name in ('ap-preparation.json', 'native-plan.json', 'ap-profile.json'))
     protocol.require(context['plan_sha256'] == protocol.digest(plan) and context['profile_sha256'] == protocol.digest(profile), 'AP preparation binding changed')
     protocol.require(context['ownership_baseline_sha256'] == native.sha(root / 'ownership-baseline.json'), 'AP ownership baseline changed')
-    protocol.require(ap_profile(profile, plan) == context['seals'], 'AP source/tooling seal changed')
+    seals = ap_profile(profile, plan, preparation=True) if preparation else ap_profile(profile, plan)
+    protocol.require(seals == context['seals'], 'AP source/tooling seal changed')
     modules = Path(profile['ap_replay']['node_modules']).resolve(strict=True)
     expected = {path: record for path, record in context['closure'].items() if Path(path).is_relative_to(modules)}
     protocol.require(dependency_files(modules) == expected, 'AP dependency closure changed')

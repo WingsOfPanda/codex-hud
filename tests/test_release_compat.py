@@ -717,7 +717,10 @@ assert 'changed frontend requires fresh package build' not in driver
         fixture.setUp()
         self.addCleanup(fixture.doCleanups)
         root = fixture.qualified(package_only=True)
-        fixture.receipt(root, 'compat', {})
+        short_identity = fixture.allocate_compat_short(root)
+        fixture.finish_compat_short(root, short_identity)
+        fixture.receipt(root, 'compat', {}, ['outputs/compat-cleanup.json',
+            'outputs/compat-root-cleanup.json', 'outputs/compat-combined-cleanup.json'])
         captures = root / 'compat/evidence/cursor-v2'
         captures.mkdir(parents=True)
         rows = []
@@ -765,10 +768,22 @@ assert 'changed frontend requires fresh package build' not in driver
         profile.update(source_root=str(source), executor_package_root=str(executor),
             ap_replay={'node': str(self.stock), 'node_modules': str(source / 'node_modules'),
                 'installed_bundle': str(self.stock), 'installed_registry': str(self.helper)})
+        runtime = fixture.base / 'original-tooling'
+        shutil.copytree(SCRIPTS, runtime / 'scripts')
+        profile['tooling_root'] = str(runtime)
         coordinator = fixture.base / 'AP-evidence'
         with patch.object(workflow, 'ap_profile', return_value={'source': {'files': {}}}):
             proposal = workflow.prepare_ap(imported, coordinator, profile)
             self.assertEqual(proposal['argv'][3], 'run-ap')
+            self.assertEqual(proposal['argv'][2], str(runtime / 'scripts/release_compat.py'))
+            self.assertEqual(proposal['external_dependencies'][0]['precondition']['argv'][2], proposal['argv'][2])
+            self.assertEqual(proposal['cleanup']['argv'][2], proposal['argv'][2])
+            context = workflow.protocol.load(coordinator / 'ap-preparation.json')
+            self.assertIn(str(runtime / 'scripts/release_recipes/compat/workflow.py'), context['closure'])
+            self.assertNotIn(str(SCRIPTS / 'release_protocol.py'), context['closure'])
+            original_workflow = workflow.native.module(runtime / 'scripts/release_recipes/compat/workflow.py')
+            with patch.object(original_workflow, 'ap_profile', return_value={'source': {'files': {}}}):
+                self.assertEqual(original_workflow.verify_ap(coordinator)[0], context)
             self.assertEqual(compat.digest(coordinator / 'captures/state-0/screen.txt'), compat.digest(imported_screen))
             after = {path.relative_to(imported).as_posix(): fixtures.protocol.file_record(path) for path in imported.rglob('*') if path.is_file()}
             self.assertEqual(before, after)
