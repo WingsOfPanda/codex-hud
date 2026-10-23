@@ -184,7 +184,9 @@ fn projection(home: &Path, record: &Record) -> Result<()> {
         .child("execution-status", true)?
         .child(&record.root, true)?;
     let name = format!("{}.json", record.id);
-    if record.started_at.is_none() {
+    if record.started_at.is_none()
+        || (record.state == State::Unknown && record.resolution.is_some())
+    {
         return dir.remove(&name);
     }
     let jobdir = job(home, &record.root, &record.id)?;
@@ -253,7 +255,7 @@ fn projection(home: &Path, record: &Record) -> Result<()> {
         record.state
     };
     dir.atomic(&name,&json!({"schema":1,"id":record.id,"root":record.root,"topic":record.manifest.topic,
-        "state":projected_state,"started_at":record.started_at,"updated_at":local::now(),"stage":stage,"stage_error":stage_error,"observation_state":status.state,"error":error}))
+        "state":projected_state,"started_at":record.started_at,"finished_at":record.result.as_ref().map(|result|result.finished_at),"updated_at":local::now(),"stage":stage,"stage_error":stage_error,"observation_state":status.state,"error":error}))
 }
 fn reported_stage(dir: &Directory) -> (Option<String>, Option<String>) {
     #[derive(Deserialize)]
