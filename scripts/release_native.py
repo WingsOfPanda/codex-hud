@@ -596,6 +596,7 @@ class Context:
     def install_native(self, name):
         shutil.copy2(self.CARGO_TARGET / self.TARGET / 'release' / name, self.NATIVE / name)
         self.run('strip-' + name, ['/usr/bin/strip', '--strip-unneeded', self.NATIVE / name])
+        (self.NATIVE / name).chmod(0o755)
 
     def cargo_timing(self, name):
         shutil.copyfile(self.CARGO_TARGET / 'cargo-timings/cargo-timing.html', self.BASE / 'evidence' / (name + '.html'))
