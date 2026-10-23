@@ -1,8 +1,9 @@
 These recipes are extracted from the accepted native-session-compat-v1 closure.
-The four gates and private fixtures retain their existing logic: quiet rollback
+The five gates and private fixtures retain their existing logic: quiet rollback
 with new records and both holds, nine stub advisor checks, the actual previous
-TUI/new wrapper root result, and twenty native cursor states. The approved setup
-adapter uses cursor-controller.log outside the exclusive inner cursor.log.
+TUI/new wrapper root result, twenty native cursor states, and packaged recovery
+policy. The approved setup adapter uses cursor-controller.log outside the
+exclusive inner cursor.log.
 
 release_compat.prepare writes only bound JSON into an attempt. Executable files
 stay here and their complete hashes are recorded in native.config.json. Source,
@@ -13,7 +14,7 @@ path remains a fixed fixture API, independent of the candidate release.
 
 Run setup with the returned argv plus --setup-only under the existing managed
 executor. A full launch always repeats constructor/import/socket setup before
-the four gates; a failed setup starts no gate. Neither mode removes evidence or
+the five gates; a failed setup starts no gate. Neither mode removes evidence or
 the short directory. The enclosing native runner owns cleanup, source seals,
 stage receipts and evidence export. Short allocation identity is recorded before
 baseline capture, including when that capture fails.
@@ -22,6 +23,24 @@ Canonical reports bind the dedicated raw gate reports, native cursor manifest,
 integrity results and capture inventory. They do not perform AP replay. Captures
 preserve the geometry-only helper metadata projection label and native package,
 frontend patch, code-mode-host and source bindings. No external model is used.
+
+`packaged-recovery-policy` runs the nine detached-job scenarios and five goal
+scenarios listed in `release_compat.RECOVERY_CASES` against the actual packaged
+new helper and pinned official daemon. The two old-reader cases additionally
+execute the pinned previous package's helper. The plan must include the four
+`RECOVERY_FIXTURES` files in `compat.fixture_files`; preparation freezes these
+and every other declared fixture file in the managed input closure. All original
+scenario deadlines and assertions remain in force. The stage has a 180-second
+budget, with enclosing native/owned/workflow budgets of 900/930/1080 seconds;
+the managed job retains its 1500-second deadline and separate cleanup.
+
+The recovery checker reads and validates all fourteen hashed case reports at
+the native runner and canonical export seams. It verifies new/old helper and
+official daemon hashes, zero paid requests, private-home removal within the
+owned short allocation, and exact recovery-versus-report-only policy receipts.
+Each report hash is exported as dedicated evidence. Fixture homes inherit the
+existing owned scope and supervisor; the enclosing independent cleanup audit
+must pass before stage receipts can qualify the run.
 
 Production composition lives in workflow.py and is exposed by the checked-in
 release_compat.py CLI. After the native build job has completed and its final

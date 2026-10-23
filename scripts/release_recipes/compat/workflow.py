@@ -87,6 +87,9 @@ def prepare_attempt(root, old_package):
         old_manifest['target'] == profile['triple'], 'Previous package identity mismatch')
     protocol.write_once(root / 'outputs/compat-previous-package.json', {'path': str(old), 'manifest_sha256': pin})
     files = closure(profile)
+    for name in plan['compat']['fixture_files']:
+        path = Path(profile['source_root']) / name
+        files[str(path.resolve())] = protocol.file_record(path)
     for base in (old, package):
         for path in base.rglob('*'):
             if path.is_file():
@@ -211,7 +214,7 @@ def run_attempt(root, execution):
     try:
         with (root / 'logs/compat-managed.log').open('xb') as log:
             code = native.owned_run(argv, helper=Path(profile['executor_package_root']) / 'bin/codex-plus-runtime',
-                python=profile['python']['path'], cwd=root, env=env, stdout=log, timeout=900)
+                python=profile['python']['path'], cwd=root, env=env, stdout=log, timeout=1080)
     except Exception as exc:
         error = repr(exc)
     audit = cleanup_record(root, root / 'outputs/compat-cleanup.json',
