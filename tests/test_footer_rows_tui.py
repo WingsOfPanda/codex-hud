@@ -94,7 +94,7 @@ with tempfile.TemporaryDirectory(prefix='plus-rows-') as temporary:
         checks = {
             'subagent row visible': bool(workers),
             'aggregate background warning hidden': 'Background status unavailable' not in text,
-            'affected job remains visible': any(x.startswith('Background · detached-contract-0') and ('unknown' in x or 'stale' in x) for x in below),
+            'affected job remains visible': 'Background · detached-contract-0 · needs review · ?' in below,
             'native shell visible': any(x.startswith('Background · shell-contract') for x in below),
             'detached job visible': any(x.startswith('Background · detached-contract-') for x in below),
             'advisor own row': any(x.startswith('Advisor ·') for x in below),
