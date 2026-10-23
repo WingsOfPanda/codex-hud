@@ -48,6 +48,9 @@ Freeze product, upstream, patch, tooling and host-profile identities. Record the
 commit supplying the packager/license generator using the
 [provenance rule](release-protocol.md#ownership-and-inputs). Inspect and preserve
 unrelated dirty work. Use a scratch Git index when real index metadata is sealed.
+Even a status check can refresh the real index: compare its bytes and metadata
+through the scratch-index helper, and preserve any discrepancy instead of
+rewriting the seal or claiming unchanged qualification.
 Before an expensive build, run version-transition checks against the actual bumped
 source: synthetic “next version” fixtures must derive a different version from it.
 With fleet-config, establish actual in-use versions, rollback target, retention,
@@ -70,6 +73,12 @@ Check compiler discovery and offline license inputs in the packaging subprocess
 environment, not only the build shell. For the new runner, the
 [packaging prerequisite](release-protocol.md#packaging-preflight-prerequisite)
 defines the early check that must pass before each native build.
+
+Set native executable modes to their packaged modes before recording provenance;
+private parent directories remain `0700`. Exercise the package failure-receipt path
+as well as success: a mode mismatch must not obscure the original failed gate.
+When HUD wording changes, update the exact footer assertions alongside it and
+verify the changed contract on the native client before running the full matrix.
 
 Repair and regression-test a shared recipe before freezing a new tooling revision.
 Use the [change-impact rule](release-protocol.md#changes-and-evidence-validity) to
