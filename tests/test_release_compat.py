@@ -1,4 +1,5 @@
 """Cheap recipe binding checks; native compatibility remains a separate gate."""
+import ast
 import importlib.util
 import copy
 import json
@@ -17,6 +18,27 @@ SCRIPTS = Path(__file__).resolve().parents[1] / 'scripts'
 spec = importlib.util.spec_from_file_location('release_compat', SCRIPTS / 'release_compat.py')
 compat = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(compat)
+
+
+class CursorCaptureContract(unittest.TestCase):
+    def test_affected_unknown_job_requires_needs_review_row(self):
+        tree = ast.parse((compat.RECIPE / 'cursor-capture.py').read_text())
+        predicate = next(node.value for node in ast.walk(tree) if isinstance(node, ast.keyword)
+                         and node.arg == 'affected_unknown_job_visible')
+        code = compile(ast.Expression(predicate), 'cursor-capture.py', 'eval')
+        row = '  Background · cursor-detached-0 · needs review · ?'
+        cases = {
+            'needs-review': ([row], True),
+            'unknown': ([row.replace('needs review', 'unknown')], False),
+            'stale': ([row.replace('needs review', 'stale')], False),
+            'missing-row': ([], False),
+            'wrong-job': ([row.replace('cursor-detached-0', 'cursor-detached-1')], False),
+            'missing-label': ([row.replace(' · needs review', '')], False),
+            'missing-uncertainty': ([row.removesuffix(' · ?')], False),
+        }
+        for name, (below, expected) in cases.items():
+            with self.subTest(name=name):
+                self.assertEqual(eval(code, {'below': below}), expected)
 
 
 class Compatibility(unittest.TestCase):
