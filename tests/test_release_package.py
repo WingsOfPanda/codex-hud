@@ -164,7 +164,7 @@ def public_commands(package, root):
 
 def wrapper_check(package, root):
     copy = root / 'package'
-    shutil.copytree(package, copy, copy_function=os.link)
+    shutil.copytree(package, copy)
     native = copy / 'bin/codex'
     native.unlink()
     native.write_text('#!/usr/bin/env python3\nimport json,os,sys\n'
@@ -235,7 +235,7 @@ def exec_check(package, root, evidence):
 
 def stdio_check(package, root, evidence):
     copy = root / 'package'
-    shutil.copytree(package, copy, copy_function=os.link)
+    shutil.copytree(package, copy)
     host = copy / 'bin/codex-code-mode-host'
     real = host.with_name('codex-code-mode-host.real')
     host.rename(real)
