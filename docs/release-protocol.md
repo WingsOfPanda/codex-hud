@@ -19,9 +19,11 @@ this document; historical acceptance alone does not qualify a new recipe.
 - The coordinator verified cleanup and used supported `job resolve` plus
   `release_ownership.py recover`. The original workload/cleanup failure remains
   unchanged; this is not package acceptance or permission to reuse those receipts.
-- Packaging repair and its early check remain unimplemented. Another full proof
-  is blocked on the prerequisite below. Full native qualification, compatibility,
-  captures, AP replay and handoff acceptance remain pending for this workflow.
+- Packaging repair and its early check are implemented in tooling change
+  `0e241f70fb7ccb804a9e6e5d4c2bcd730c5f3511`. Root acceptance passed 33 focused
+  tests and a real x86 offline preflight using the preserved 0.4.7 product. This
+  does not qualify the 0.4.8 product or the full runner. Native qualification,
+  compatibility, captures, AP replay and handoff acceptance remain pending.
 
 Working evidence is under the coordinator's main-checkout
 `.build/release-protocol/`: success in `preparation/v3/`, private failures in
@@ -31,19 +33,28 @@ durable acceptance evidence with the workflow once its completion gate passes.
 
 ### Packaging preflight prerequisite
 
-Before the next full proof, implement a focused checked-in check using the actual
-packaging child environment from `release_native.Context`. It must resolve the
-pinned `rustc` and Cargo invocation forms used by the product's
-`scripts/runtime-notices.py`, verify their versions, obtain the sysroot, read
-`share/doc/rust/COPYRIGHT-library.html`, and resolve the required offline Cargo
-metadata/source and license-text inputs. Include both helper and upstream native
-license inputs; a host-shell `rustc --version` alone does not meet this check.
+The [checked-in packaging preflight](../scripts/release_recipes/native/packaging-preflight.py)
+runs after the private upstream checkout is patched and before bwrap/frontend
+compilation. It uses the real child environment to invoke the product notice
+generator for both helper and upstream, including compiler versions, sysroot
+`COPYRIGHT-library.html`, offline Cargo sources and cached license texts. Every
+native run must pass it; the previous x86 result does not waive an ARM or changed
+product check. `release-preflight.py` remains the separate import/socket/archive tool.
 
-Run that check before frontend compilation on both hosts. Keep regression cases
-for missing compiler discovery and missing offline license inputs. Record whether
-the fix scopes PATH to packaging or changes other build stages, then freeze the
-corrected tooling and plan. `release-preflight.py` currently covers imports,
-staging, sockets and archives; it does **not** provide this packaging check.
+The failure was command discovery: `RUSTC` held an absolute compiler pin, but the
+notice generator invokes plain `rustc +VERSION`. The recipe now supplies a small
+adapter beside its existing Cargo adapter; only the exact pinned `+VERSION` is
+stripped before executing the absolute compiler. The adapter shares the recipe
+PATH across stages. Compiler commands already using absolute pins are unchanged;
+the new tooling revision still invalidates a controlled old/new warm-cache timing
+comparison. Focused regressions cover compiler/version mismatch, standard-library
+notices, missing cached licenses and unavailable offline sources.
+
+Root evidence: `.build/release048/root-acceptance/packaging-acceptance.json` and
+managed logs `e9885058-4a38-4972-8836-19ea0fd82013` (33 checks) and
+`f09c7c61-452a-4869-bdc2-a00455ed0519` (real preflight). The preflight took about
+seven seconds and left product and patched-upstream file/index seals unchanged;
+it did not compile or qualify a release package.
 
 ## Ownership and inputs
 

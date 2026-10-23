@@ -67,7 +67,7 @@ resource exclusions and owned-process cleanup. Record host limitations explicitl
 Check compiler discovery and offline license inputs in the packaging subprocess
 environment, not only the build shell. For the new runner, the
 [packaging prerequisite](release-protocol.md#packaging-preflight-prerequisite)
-defines the missing check and blocks another full proof until it passes.
+defines the early check that must pass before each native build.
 
 Repair and regression-test a shared recipe before freezing a new tooling revision.
 Use the [change-impact rule](release-protocol.md#changes-and-evidence-validity) to
