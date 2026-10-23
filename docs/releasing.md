@@ -1,5 +1,9 @@
 # Building complete release packages
 
+Start with the [release book](release-book.md) for the sequence, ownership,
+preflight and recovery decisions, and copy its [checklist](release-checklist.md).
+This document defines the package and handoff details.
+
 Release packaging is separate from the developer-only CLI build. It uses the
 pinned upstream package builder and includes every core runtime executable;
 copying `.build/codex` alone is not a complete release.

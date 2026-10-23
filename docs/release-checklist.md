@@ -1,0 +1,78 @@
+# Release checklist template
+
+Copy into the release evidence directory. Follow the [release book](release-book.md).
+Use `pending`, `running`, `passed`, `failed`, `blocked`, or `not applicable` with a
+reason. Replace placeholders with actual evidence; an unchecked item is not a pass.
+
+## Identity and scope
+
+- Release / user-visible change:
+- Coordinator / native x86 owner / native ARM owner / fleet peer:
+- Product commit / upstream commit / patch SHA256:
+- Tooling commit / plan digest / host profile digests:
+- Previous and in-use versions / qualified rollback / proposed retain:
+- Config changes and defaults / exact policy block hash or unchanged:
+- Preparation / publication / merge / rollout authorization references:
+- New runner qualification status and supported recipe chosen:
+
+## Acceptance matrix
+
+Every result reference should identify its source/inputs, actual execution and
+artifact hashes. Record x86 and ARM separately, even when one check replays both
+architectures' evidence on the same host.
+
+| Gate | Owner | x86 status + evidence | ARM status + evidence |
+| --- | --- | --- | --- |
+| Source/tooling/profile freeze and clean isolated workspace | | | |
+| Actual interpreter/import/tool/compiler discovery | | | |
+| Fixture sockets, permissions and package-backed helper setup | | | |
+| Resource/exclusion check and cleanup preflight | | | |
+| Managed proposal review / execution UUID / observation | | | |
+| Frontend, code-mode host and helper | | | |
+| License generation and complete archive | | | |
+| Extracted manifest, modes, versions and native tests | | | |
+| Rollback over new records and both-direction holds | | | |
+| Actual old-TUI/new-helper mix and affected features | | | |
+| Candidate terminal captures / cursor / busy pairs | | | |
+| Released AP classifier and stall-hash replay | | | |
+| Independent cleanup and original result review | | | |
+| Coordinator acceptance / remaining limits | | | |
+
+## Failure and reuse record
+
+- Failed stage, exact error and original result/log:
+- Supported cause and smallest repair:
+- Cleanup state / report barrier / renewed direction if required:
+- Exact recovery evidence and supported resolution:
+- Preserved accepted artifacts and identity checks permitting reuse:
+- Invalidated gates and why / next attempt identity:
+- One preventive check added before the next expensive run:
+
+## Publication and rollout
+
+- [ ] Both archive/manifest/tree identities agree with qualification.
+- [ ] Note and handoff cover limits, schema, mix, rollback, retention and restarts.
+- [ ] Policy block is unchanged/null or byte-identical to the reviewed replacement.
+- [ ] Exact GitHub release ID and tag/companion commit recorded.
+- [ ] Five uploaded asset digests and downloaded handoff bytes verified.
+- [ ] Published release rechecked; URL and verification sent to fleet-config.
+- [ ] Main merge status recorded independently.
+- [ ] Fleet reports installation/quiet checks/holds released for each host.
+- [ ] Required TUI restart verified separately from installed package.
+
+## Timing and next action
+
+Record actual start/end and wall duration per phase. Separate compilation,
+test-harness construction, test execution, transfer, recovery and approval wait;
+mark concurrent phases. Record cold/warm/helper-only conditions and CPU/thread
+settings. Include Cargo compiled/fresh counts for reuse experiments.
+
+| Phase | Host / inputs | Start → end / duration | Overlap or wait reason | Evidence |
+| --- | --- | --- | --- | --- |
+| | | | | |
+
+- Current blocker / owner / concrete next action:
+- Exact registered jobs if waiting:
+- Passed work that must not be repeated:
+- Release completion evidence / open follow-up issues:
+- Next-release improvement and measured benefit, or not yet measured:

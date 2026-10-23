@@ -89,7 +89,9 @@ directory. Historical 0.162.1 measurements showed the executable shrinking from
 for `--version` and 29.2 to 12.1 ms for `--help` (21 samples each). These do not
 measure 0.163.0, UI, or model-response speed.
 
-For complete distributable packages, follow [release building](docs/releasing.md).
+For a release, start with the [release book](docs/release-book.md) and its
+[checklist](docs/release-checklist.md). Complete package details are in
+[release building](docs/releasing.md).
 The packager stages native x86_64 and ARM64 outputs with upstream runtime resources,
 the native Rust helper, workflow docs, license notices, and integrity manifests. This
 is separate from the developer binary above. Codex voice is intentionally omitted;
