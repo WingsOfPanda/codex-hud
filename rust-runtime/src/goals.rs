@@ -2021,6 +2021,19 @@ mod tests {
                 } else {
                     None
                 };
+                s.finish_cycle(&root).unwrap();
+                assert_eq!(
+                    s.first("SELECT state FROM parks WHERE parent=?", &[json!(root)])
+                        .unwrap()
+                        .unwrap()["state"],
+                    "complete"
+                );
+                assert_eq!(
+                    s.first("SELECT state FROM callbacks WHERE parent=?", &[json!(root)])
+                        .unwrap()
+                        .unwrap()["state"],
+                    "goal_settled"
+                );
                 if generation_gap {
                     s.observe_generation(&root, Some("new-generation")).unwrap();
                 } else {
@@ -2309,17 +2322,6 @@ impl Store {
             goal["root"].as_str().unwrap(),
             &mut results,
         );
-        for result in &mut results {
-            if let Some(id) = result["execution"].as_str() {
-                let home = self
-                    .directory
-                    .parent()
-                    .ok_or_else(|| anyhow::anyhow!("state directory has no home"))?;
-                let record = crate::executions::read(home, goal["root"].as_str().unwrap(), id)?;
-                result["recovery_required"] =
-                    json!(crate::ledger::execution_recovery_required(&record));
-            }
-        }
         Ok(json!({"total":total,"results":results}))
     }
 

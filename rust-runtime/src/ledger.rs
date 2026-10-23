@@ -14,7 +14,7 @@ use uuid::Uuid;
 pub const MAX_SECONDS: f64 = 24.0 * 60.0 * 60.0;
 pub const TERMINAL: &[&str] = &["completed", "failed", "interrupted", "lost"];
 pub const UPGRADE_WARNING: &str = "Coordinator upgrade unavailable; continuing installed observer.";
-const CLAIMABLE: &str = "park IN (SELECT id FROM parks WHERE parent=? AND state='armed') AND (status='armed' OR callback IS NULL OR callback IN (SELECT id FROM callbacks WHERE state='ready' AND message IS NULL) OR (recovery_allowed=1 AND callback IN (SELECT id FROM callbacks WHERE state='goal_owned') AND NOT EXISTS (SELECT 1 FROM goal_dispatch_jobs d JOIN goal_dispatches g ON g.id=d.dispatch WHERE d.job=jobs.id AND g.state NOT IN ('ready','invalidated'))))";
+const CLAIMABLE: &str = "park IN (SELECT id FROM parks WHERE parent=? AND state IN ('armed','complete')) AND (((status='armed' OR callback IS NULL OR callback IN (SELECT id FROM callbacks WHERE state='ready' AND message IS NULL)) AND park IN (SELECT id FROM parks WHERE state='armed')) OR (recovery_allowed=1 AND callback IN (SELECT id FROM callbacks WHERE state IN ('goal_owned','goal_settled')) AND NOT EXISTS (SELECT 1 FROM goal_dispatch_jobs d JOIN goal_dispatches g ON g.id=d.dispatch WHERE d.job=jobs.id AND g.state NOT IN ('ready','invalidated'))))";
 const JOB_TERMINAL: &str = "jobs.status IN ('completed','failed','interrupted','lost')";
 const CALLBACK_OPEN: &str = "state IN ('ready','pending','starting','in_flight','uncertain','cancel_requested','cancel_uncertain')";
 
@@ -121,6 +121,17 @@ pub(crate) fn add_execution_refs(directory: &Path, root: &str, results: &mut [Va
     for result in results {
         if let Some(id) = result["execution"].as_str() {
             let refs = execution_refs(directory, root, id);
+            match crate::executions::read(directory.parent().unwrap(), root, id) {
+                Ok(record) => {
+                    result["recovery_required"] =
+                        json!(result["status"] == "lost" || execution_recovery_required(&record));
+                }
+                Err(error) => {
+                    result["recovery_required"] = json!(true);
+                    result["evidence_status"] = json!("unavailable");
+                    result["evidence_error"] = json!(format!("{error:#}"));
+                }
+            }
             result["result_refs"] = refs;
         }
     }
@@ -637,7 +648,7 @@ impl Store {
         )?;
         let remaining = self.rows("SELECT COUNT(*) AS count FROM jobs JOIN parks ON parks.id=jobs.park WHERE parks.parent=? AND jobs.status='armed' AND parks.state='armed'", &[json!(parent)])?[0]["count"].clone();
         let mut details = Vec::new();
-        let recovery = rows.iter().any(|row| row["recovery_allowed"] == 1);
+        let mut recovery = rows.iter().any(|row| row["recovery_allowed"] == 1);
         for row in rows.iter().take(3) {
             let source = if truth(&row["label"]) {
                 &row["label"]
@@ -658,16 +669,29 @@ impl Store {
                         .directory
                         .parent()
                         .ok_or_else(|| anyhow!("state directory has no home"))?;
-                    let record = crate::executions::read(home, parent, execution)?;
-                    if record["result"].is_object()
-                        && matches!(
-                            record["state"].as_str(),
-                            Some("completed" | "failed" | "cancelled")
-                        )
-                    {
-                        Some(execution_cleanup_unresolved(&record))
-                    } else {
-                        None
+                    match crate::executions::read(home, parent, execution) {
+                        Ok(record) => {
+                            if record["result"].is_object()
+                                && matches!(
+                                    record["state"].as_str(),
+                                    Some("completed" | "failed" | "cancelled")
+                                )
+                            {
+                                Some(execution_cleanup_unresolved(&record))
+                            } else {
+                                None
+                            }
+                        }
+                        Err(error) => {
+                            // Missing evidence cannot erase terminal facts retained by the ledger.
+                            recovery = true;
+                            detail.push_str(" evidence=UNAVAILABLE");
+                            detail.push_str(&format!(
+                                " evidence_error={}",
+                                json!(format!("{error:#}"))
+                            ));
+                            (row["status"] != "lost").then_some(true)
+                        }
                     }
                 } else {
                     None

@@ -1228,8 +1228,36 @@ impl<'a> Observer<'a> {
             .into_iter()
             .filter(|job| job["kind"] == "execution")
         {
-            let record =
-                crate::executions::reconcile(&home, self.parent, text(&job, "execution")?)?;
+            let record = match crate::executions::reconcile(
+                &home,
+                self.parent,
+                text(&job, "execution")?,
+            ) {
+                Ok(record) => record,
+                Err(error) => {
+                    let snapshot = self.store.goal_status(self.parent)?;
+                    let current_wait = snapshot["goal"]["checkpoint"]["disposition"] == "wait"
+                        && snapshot["goal"]["checkpoint"]["jobs"].as_array().is_some_and(|jobs| jobs.contains(&job["id"]))
+                        && matches!(snapshot["goal"]["state"].as_str(),Some("active"|"waiting"))
+                        && snapshot["report_barrier"] == 0 && snapshot["pending_input"].is_null()
+                        && self.store.exists("SELECT 1 FROM goal_jobs g JOIN goal_turns t ON t.root=? AND t.goal=g.goal AND t.turn=g.turn AND t.input_epoch=g.input_epoch WHERE g.job=? AND g.goal=? AND g.input_epoch=?", &[json!(self.parent),job["id"].clone(),snapshot["goal"]["id"].clone(),snapshot["input_epoch"].clone()])?;
+                    job["execution_recovery"] = json!(true);
+                    job["live_recovery"] =
+                        json!(current_wait && job["observer_run"] == self.run_id);
+                    self.store
+                        .observe_job(&job, Some("lost"), None, None, false)?;
+                    eprintln!(
+                        "codex-plus: execution {} evidence unavailable: {error:#}; result_refs={}",
+                        job["execution"],
+                        crate::ledger::execution_refs(
+                            &self.store.directory,
+                            self.parent,
+                            text(&job, "execution")?
+                        )
+                    );
+                    continue;
+                }
+            };
             let (status, code, running) = execution_outcome(&record)?;
             job["execution_recovery"] = json!(crate::ledger::execution_recovery_required(&record));
             job["live_recovery"] =
@@ -4160,6 +4188,450 @@ mod tests {
             )
             .unwrap();
         assert!(!observer.ordinary_callback_ready(&[]).unwrap());
+    }
+
+    #[test]
+    fn unavailable_terminal_recovery_evidence_does_not_block_independent_delivery() {
+        use std::os::unix::net::UnixListener;
+        use tungstenite::Message;
+        for (goal_bound, evidence, collected) in [
+            (false, "missing", true),
+            (true, "missing", true),
+            (false, "malformed", true),
+            (true, "malformed", true),
+            (false, "missing", false),
+            (true, "missing", false),
+            (false, "malformed", false),
+            (true, "malformed", false),
+            (false, "foreign", false),
+        ] {
+            let home = tempfile::tempdir().unwrap();
+            let root = Uuid::new_v4().to_string();
+            let mut store = Store::open(home.path()).unwrap();
+            let goal = if goal_bound {
+                store
+                    .goal_start(&root, "recover A", None, false, now())
+                    .unwrap()["goal"]
+                    .clone()
+            } else {
+                Value::Null
+            };
+            let independent = ResolvedJob {
+                id: "B".into(),
+                kind: "process".into(),
+                thread: root.clone(),
+                turn: Some("origin".into()),
+                item: Some("B-item".into()),
+                process: Some("B-process".into()),
+                execution: None,
+                status: "armed".into(),
+                exit_code: None,
+            };
+            store
+                .register_resolved(
+                    &root,
+                    "origin",
+                    "independent B",
+                    &[independent],
+                    &HashMap::new(),
+                    Some("generation"),
+                    &HashSet::new(),
+                )
+                .unwrap();
+            let epoch = store.goal_status(&root).unwrap()["input_epoch"]
+                .as_i64()
+                .unwrap();
+            if goal_bound {
+                store
+                    .goal_admit(
+                        &root,
+                        goal["id"].as_str().unwrap(),
+                        1,
+                        "origin",
+                        epoch,
+                        now(),
+                    )
+                    .unwrap();
+            }
+            let prepared = crate::executions::prepare(home.path(),&root,&json!({"root":root,"turn":"origin","input_epoch":epoch,"goal":goal}),&json!({"schema":1,"topic":"unavailable A evidence","argv":["/usr/bin/true"],"cwd":home.path()})).unwrap();
+            let id = prepared["id"].as_str().unwrap();
+            let mut record = crate::executions::cancel(home.path(), &root, id).unwrap();
+            record["started_at"] = json!(100.0);
+            record["state"] = json!("failed");
+            record["result"]["state"] = json!("failed");
+            record["result"]["exit_code"] = json!(7);
+            record["result"]["cleanup"]["status"] = json!("unknown");
+            let directory = home
+                .path()
+                .join("codex-plus/executions/v1")
+                .join(&root)
+                .join(id);
+            crate::local::atomic_json(&directory.join("state.json"), &record).unwrap();
+            crate::local::atomic_json(&directory.join("result.json"), &record["result"]).unwrap();
+            let job = ResolvedJob {
+                id: "A".into(),
+                kind: "execution".into(),
+                thread: root.clone(),
+                turn: None,
+                item: None,
+                process: None,
+                execution: Some(id.into()),
+                status: "armed".into(),
+                exit_code: None,
+            };
+            store
+                .register_resolved(
+                    &root,
+                    "origin",
+                    "recover A",
+                    &[job],
+                    &HashMap::new(),
+                    Some("generation"),
+                    &HashSet::new(),
+                )
+                .unwrap();
+            if goal_bound {
+                store
+                    .goal_checkpoint(
+                        &root,
+                        goal["id"].as_str().unwrap(),
+                        1,
+                        "origin",
+                        epoch,
+                        &json!({"disposition":"wait","jobs":["A"]}),
+                        now(),
+                    )
+                    .unwrap();
+                store.goal_finalize(&root, "origin", true, now()).unwrap();
+            }
+            let mut observer = Observer::new(&mut store, &root);
+            observer
+                .store
+                .claim_observation(&root, &observer.run_id, false)
+                .unwrap();
+            if collected {
+                observer.poll_executions().unwrap();
+            }
+            observer.store.batch(&root).unwrap();
+            if goal_bound {
+                let snapshot = observer.store.goal_status(&root).unwrap();
+                observer
+                    .store
+                    .goal_mutate(
+                        &root,
+                        goal["id"].as_str().unwrap(),
+                        snapshot["goal"]["revision"].as_i64().unwrap(),
+                        "pause",
+                        &Value::Null,
+                        now(),
+                    )
+                    .unwrap();
+            }
+            observer
+                .store
+                .observe_job(&json!({"id":"B"}), Some("completed"), Some(0), None, false)
+                .unwrap();
+            observer.store.batch(&root).unwrap();
+            match evidence {
+                "malformed" => {
+                    std::fs::write(directory.join("state.json"), b"unreadable record").unwrap()
+                }
+                "foreign" => {
+                    record["root"] = json!(Uuid::new_v4().to_string());
+                    crate::local::atomic_json(&directory.join("state.json"), &record).unwrap();
+                }
+                _ => std::fs::remove_file(directory.join("state.json")).unwrap(),
+            }
+            let state_bytes = std::fs::read(directory.join("state.json")).ok();
+            let result_bytes = std::fs::read(directory.join("result.json")).unwrap();
+            let socket_directory = home.path().join("app-server-control");
+            std::fs::create_dir(&socket_directory).unwrap();
+            let listener =
+                UnixListener::bind(socket_directory.join("app-server-control.sock")).unwrap();
+            let server_root = root.clone();
+            let server = std::thread::spawn(move || {
+                let (socket, _) = listener.accept().unwrap();
+                socket
+                    .set_read_timeout(Some(Duration::from_secs(5)))
+                    .unwrap();
+                let mut socket = tungstenite::accept(socket).unwrap();
+                let mut messages = Vec::new();
+                while let Ok(Message::Text(request)) = socket.read() {
+                    let request: Value = serde_json::from_str(&request).unwrap();
+                    if request["id"].is_null() {
+                        continue;
+                    }
+                    let result = match request["method"].as_str().unwrap() {
+                        "initialize" => json!({"queueIdempotency":true}),
+                        "thread/read" => {
+                            json!({"thread":{"id":server_root,"status":{"type":"idle"}}})
+                        }
+                        "thread/turns/list" => {
+                            json!({"data":[{"id":"origin","status":"completed"}]})
+                        }
+                        "thread/queue/list" => json!({"data":[]}),
+                        "thread/queue/add" => {
+                            messages.push(
+                                request["params"]["input"][0]["text"]
+                                    .as_str()
+                                    .unwrap()
+                                    .to_owned(),
+                            );
+                            json!({"receiptState":"consumed","queuedSubmission":{"id":format!("queue-{}",messages.len()),"clientUserMessageId":request["params"]["clientUserMessageId"]}})
+                        }
+                        method => panic!("unexpected method {method}"),
+                    };
+                    socket
+                        .send(Message::text(
+                            json!({"id":request["id"],"result":result}).to_string(),
+                        ))
+                        .unwrap();
+                }
+                messages
+            });
+            observer.goal_step().unwrap();
+            if goal_bound && collected {
+                let completion = observer.store.goal_completion_results(&root).unwrap();
+                let result = &completion["results"][0];
+                assert_eq!(result["status"], "failed");
+                assert_eq!(result["exit_code"], 7);
+                assert_eq!(result["evidence_status"], "unavailable");
+                assert_eq!(result["recovery_required"], true);
+                assert!(
+                    result["result_refs"]["state"]
+                        .as_str()
+                        .unwrap()
+                        .ends_with("state.json")
+                );
+            }
+            observer.connect().unwrap();
+            observer
+                .store
+                .execute(
+                    "UPDATE parks SET generation=? WHERE parent=?",
+                    &[
+                        json!(observer.client.as_ref().unwrap().generation),
+                        json!(root),
+                    ],
+                )
+                .unwrap();
+            for _ in 0..4 {
+                observer.step().unwrap();
+            }
+            assert!(observer.store.goal_dispatches(&root).unwrap().is_empty());
+            let status = observer.store.goal_status(&root).unwrap();
+            if goal_bound {
+                assert_eq!(status["goal"]["state"], "paused");
+                assert!(status["goal"]["error"].is_null());
+            }
+            assert_eq!(
+                observer
+                    .store
+                    .first("SELECT status,exit_code FROM jobs WHERE id='A'", &[])
+                    .unwrap()
+                    .unwrap(),
+                if collected {
+                    json!({"status":"failed","exit_code":7})
+                } else {
+                    json!({"status":"lost","exit_code":null})
+                }
+            );
+            let status = observer.store.status(&root).unwrap();
+            let job = status["jobs"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|job| job["id"] == "A")
+                .unwrap();
+            assert_eq!(job["evidence_status"], "unavailable");
+            let cause = match evidence {
+                "missing" => "No such file",
+                "malformed" => "expected value",
+                _ => "identity/schema mismatch",
+            };
+            assert!(job["evidence_error"].as_str().unwrap().contains(cause));
+            if !collected {
+                assert_eq!(job["report"], 1);
+                assert_eq!(job["recovery_allowed"], 0);
+            }
+            assert_eq!(
+                std::fs::read(directory.join("state.json")).ok(),
+                state_bytes
+            );
+            assert_eq!(
+                std::fs::read(directory.join("result.json")).unwrap(),
+                result_bytes
+            );
+            drop(observer);
+            let messages = server.join().unwrap();
+            assert_eq!(
+                messages
+                    .iter()
+                    .filter(|message| message.contains("process B-process status=completed exit=0"))
+                    .count(),
+                1
+            );
+            if goal_bound {
+                assert_eq!(messages.len(), 1);
+            } else {
+                assert_eq!(messages.len(), 2);
+                let recovery = messages
+                    .iter()
+                    .find(|message| {
+                        message.starts_with(if collected {
+                            "RECOVERY REQUIRED"
+                        } else {
+                            "REPORT ONLY"
+                        })
+                    })
+                    .unwrap();
+                assert!(recovery.contains("evidence=UNAVAILABLE"));
+                if collected {
+                    assert!(recovery.contains("command_receipt=KNOWN exit=7"));
+                } else {
+                    assert!(recovery.contains("outcome=UNKNOWN"));
+                }
+                assert!(recovery.contains("state.json"));
+            }
+        }
+    }
+
+    #[test]
+    fn unavailable_armed_execution_uses_only_its_current_goal_wait_authority() {
+        for change in ["live", "gap", "pause", "replace", "input"] {
+            let home = tempfile::tempdir().unwrap();
+            let root = Uuid::new_v4().to_string();
+            let mut store = Store::open(home.path()).unwrap();
+            let snapshot = store
+                .goal_start(&root, "recover watched A", None, false, now())
+                .unwrap();
+            let goal = snapshot["goal"]["id"].as_str().unwrap();
+            store
+                .goal_admit(&root, goal, 1, "origin", 1, now())
+                .unwrap();
+            let record = crate::executions::prepare(home.path(),&root,&json!({"root":root,"turn":"origin","input_epoch":1,"goal":{"id":goal,"revision":1}}),&json!({"schema":1,"topic":"recover missing state","argv":["/usr/bin/true"],"cwd":home.path()})).unwrap();
+            let id = record["id"].as_str().unwrap();
+            let job = ResolvedJob {
+                id: "A".into(),
+                kind: "execution".into(),
+                thread: root.clone(),
+                turn: None,
+                item: None,
+                process: None,
+                execution: Some(id.into()),
+                status: "armed".into(),
+                exit_code: None,
+            };
+            store
+                .register_resolved(
+                    &root,
+                    "origin",
+                    "recover A",
+                    &[job],
+                    &HashMap::new(),
+                    Some("generation"),
+                    &HashSet::new(),
+                )
+                .unwrap();
+            store
+                .goal_checkpoint(
+                    &root,
+                    goal,
+                    1,
+                    "origin",
+                    1,
+                    &json!({"disposition":"wait","jobs":["A"]}),
+                    now(),
+                )
+                .unwrap();
+            store.goal_finalize(&root, "origin", true, now()).unwrap();
+            let mut observer = Observer::new(&mut store, &root);
+            observer
+                .store
+                .claim_observation(&root, &observer.run_id, false)
+                .unwrap();
+            match change {
+                "gap" => {
+                    observer
+                        .store
+                        .claim_observation(&root, "replacement-observer", true)
+                        .unwrap();
+                    observer.run_id = "replacement-observer".into();
+                }
+                "pause" => {
+                    observer
+                        .store
+                        .goal_mutate(&root, goal, 2, "pause", &Value::Null, now())
+                        .unwrap();
+                }
+                "replace" => {
+                    observer
+                        .store
+                        .goal_replace(&root, goal, 2, "replacement", None, true, now())
+                        .unwrap();
+                }
+                "input" => {
+                    observer.store.goal_input(&root, false, now()).unwrap();
+                }
+                _ => {}
+            }
+            let directory = home
+                .path()
+                .join("codex-plus/executions/v1")
+                .join(&root)
+                .join(id);
+            std::fs::remove_file(directory.join("state.json")).unwrap();
+            observer.poll_executions().unwrap();
+            let status = observer.store.status(&root).unwrap();
+            assert_eq!(status["jobs"][0]["status"], "lost");
+            assert!(status["jobs"][0]["exit_code"].is_null());
+            assert_eq!(status["jobs"][0]["report"], 1);
+            assert_eq!(
+                status["jobs"][0]["recovery_allowed"],
+                i32::from(change == "live"),
+                "{change}"
+            );
+            assert_eq!(status["jobs"][0]["evidence_status"], "unavailable");
+            if change == "live" {
+                observer.store.goal_reconcile_reports(&root, now()).unwrap();
+                assert!(observer.store.goal_wait_ready(&root, now()).unwrap());
+                let goal = observer.store.goal_status(&root).unwrap();
+                assert_eq!(goal["report_barrier"], 0);
+                let completion = observer.store.goal_completion_results(&root).unwrap();
+                assert_eq!(completion["results"][0]["evidence_status"], "unavailable");
+                let dispatch = observer
+                    .store
+                    .goal_intent(
+                        &root,
+                        &goal,
+                        "completion",
+                        "RECOVERY REQUIRED: inspect unavailable execution",
+                        now(),
+                    )
+                    .unwrap()
+                    .unwrap();
+                observer
+                    .store
+                    .goal_claim_dispatch(dispatch["id"].as_str().unwrap())
+                    .unwrap()
+                    .unwrap();
+                observer
+                    .store
+                    .goal_accept_dispatch(
+                        dispatch["id"].as_str().unwrap(),
+                        Some("queue"),
+                        "recovery",
+                        now(),
+                    )
+                    .unwrap();
+                assert_eq!(
+                    observer.store.goal_completion_results(&root).unwrap()["total"],
+                    0
+                );
+            }
+            assert!(!directory.join("state.json").exists());
+            assert!(!directory.join("result.json").exists());
+        }
     }
 
     #[test]
