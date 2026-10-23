@@ -7,7 +7,7 @@ import tempfile
 import time
 
 from fixtures.native_server import AppServer
-from native_smoke import Terminal, assert_compact_hud, composer_ready, wait, worker_rows
+from native_smoke import Terminal, advisor_rows, assert_compact_hud, composer_ready, token_usage_record, wait, worker_rows
 
 
 def run(binary, evidence):
@@ -38,7 +38,7 @@ def run(binary, evidence):
 
         def check(stage, labels):
             wait([terminal], lambda: rows_match(labels), f'worker role stage {stage} failed')
-            assert_compact_hud(terminal.text, rows=len(labels))
+            assert_compact_hud(terminal.text, rows=len(labels) + len(advisor_rows(terminal.text)))
             assert not server.errors, server.errors
             assert not [r for r in server.requests if r['method'] in ('turn/start', 'turn/steer')]
             (evidence / (stage + '.txt')).write_text(terminal.text + '\n')
@@ -63,28 +63,54 @@ def run(binary, evidence):
             for index, worker in enumerate(server.workers):
                 worker['source']['subAgent']['thread_spawn']['agent_path'] = f'/root/role_checks__b1__member{index}'
                 worker['agentRole'] = '\nworker\t' if index == 0 else 'worker'
-            check('group-normalized-same', [('worker', 'role checks (3 agents)')])
+            for index, worker in enumerate(server.workers):
+                worker['createdAt'] = 1
+                worker['forkedFromId'] = server.root
+                path = home / f'worker-{index}.jsonl'
+                worker['path'] = str(path)
+                path.write_text(json.dumps(token_usage_record(server.root, 'latest', 90_900_000, 90_900_000)) + '\n'
+                    + json.dumps(token_usage_record(worker['id'], 'previous', 1_000_000, 90_900_000)) + '\n'
+                    + json.dumps(token_usage_record(worker['id'], 'latest', (index + 1) * 1000, 90_900_000)) + '\n')
+                server.turns[worker['id']][0]['startedAt'] = int(time.time()) - (192 - index * 60)
+            check('group-normalized-same', [('worker', 'role checks · 3 running')])
+            wait([terminal], lambda: 'longest 3:' in worker_rows(terminal.text)[0]
+                 and worker_rows(terminal.text)[0].endswith('6K tok'),
+                 'group used thread age or inherited lifetime tokens')
+            # Same workers, next assignment: usage must reset until an exact record exists.
+            followup_start = int(time.time())
+            for worker in server.workers:
+                server.turns[worker['id']][0].update(id='followup', startedAt=followup_start)
+            wait([terminal], lambda: 'longest 0:' in worker_rows(terminal.text)[0]
+                 and worker_rows(terminal.text)[0].endswith('? tok'),
+                 'group follow-up inherited old assignment metrics')
+            for index, worker in enumerate(server.workers):
+                with Path(worker['path']).open('a') as stream:
+                    stream.write(json.dumps(token_usage_record(worker['id'], 'followup', (index + 1) * 1000, 90_900_000)) + '\n')
+            wait([terminal], lambda: worker_rows(terminal.text)[0].endswith('6K tok'), 'group follow-up usage missing')
+            stages.append('group-current-assignment-reset-and-fork-usage')
             server.workers[1]['agentRole'] = 'explorer'
-            check('group-mixed', [('mixed', 'role checks (3 agents)')])
+            check('group-mixed', [('mixed', 'role checks · 3 running')])
             server.workers[2]['agentRole'] = None
-            check('group-unknown', [('general', 'role checks (3 agents)')])
+            check('group-unknown', [('general', 'role checks · 3 running')])
             for worker in server.workers:
                 worker['agentRole'] = 'worker'
-            check('group-recovered', [('worker', 'role checks (3 agents)')])
+            check('group-recovered', [('worker', 'role checks · 3 running')])
             server.workers[2]['agentRole'] = '\n\t\x07'
-            check('group-controls-unknown', [('general', 'role checks (3 agents)')])
+            check('group-controls-unknown', [('general', 'role checks · 3 running')])
 
             server.workers[0]['agentRole'] = server.workers[1]['agentRole'] = 'worker'
             finished = server.workers[2]
             finished['agentRole'] = 'tester'
             finished['status'] = {'type': 'idle'}
             server.turns[finished['id']][0].update(status='completed', completedAt=int(time.time()))
-            check('group-finished-role-excluded', [('worker', 'role checks (2 agents)')])
+            check('group-finished-role-excluded', [('worker', 'role checks · 2 running')])
+            wait([terminal], lambda: worker_rows(terminal.text)[0].endswith('3K tok'),
+                 'finished member usage remained in current group total')
             server.workers[1]['status'] = {'type': 'active', 'activeFlags': ['waitingOnApproval']}
-            check('group-role-before-wait', [('worker', 'role checks (2 agents) · wait approval')])
+            check('group-role-before-wait', [('worker', 'role checks · 2 running · wait approval')])
             server.workers[1]['status'] = {'type': 'active', 'activeFlags': []}
             wait([terminal], lambda: 'wait approval' not in terminal.text, 'group wait state remained')
-            check('group-wait-cleared', [('worker', 'role checks (2 agents)')])
+            check('group-wait-cleared', [('worker', 'role checks · 2 running')])
 
             os.write(terminal.master, b'role-draft')
             wait([terminal], lambda: 'role-draft' in terminal.text, 'worker role blocked composer')
@@ -92,9 +118,9 @@ def run(binary, evidence):
             wait([terminal], lambda: terminal.resized_frame(replies) and 'role-draft' in terminal.text
                  and len(worker_rows(terminal.text)) == 1
                  and '[worker] · ' in worker_rows(terminal.text)[0]
-                 and '(2 agents) · ' in worker_rows(terminal.text)[0],
+                 and '· 2 running · ' in worker_rows(terminal.text)[0],
                  'narrow group lost role or draft')
-            assert_compact_hud(terminal.text, rows=1)
+            assert_compact_hud(terminal.text, rows=1 + len(advisor_rows(terminal.text)))
             (evidence / 'narrow-group-editable.txt').write_text(terminal.text + '\n')
             stages.append('narrow-group-editable')
             server.workers[0]['source']['subAgent']['thread_spawn']['agent_path'] = '/root/' + 'long_task_' * 12
@@ -103,7 +129,7 @@ def run(binary, evidence):
             wait([terminal], lambda: len(worker_rows(terminal.text)) == 1 and
                  ' [worker] · ' in worker_rows(terminal.text)[0] and '…' in worker_rows(terminal.text)[0],
                  'task clipping lost worker role')
-            assert_compact_hud(terminal.text, rows=1)
+            assert_compact_hud(terminal.text, rows=1 + len(advisor_rows(terminal.text)))
             assert 'role-draft' in terminal.text, terminal.text
             (evidence / 'narrow-long-task.txt').write_text(terminal.text + '\n')
             stages.append('narrow-long-task')
@@ -112,7 +138,7 @@ def run(binary, evidence):
                 server.turns[worker['id']][0].update(status='completed', completedAt=int(time.time()))
             wait([terminal], lambda: not worker_rows(terminal.text) and 'role-draft' in terminal.text,
                  'completed workers kept role rows or lost draft')
-            assert_compact_hud(terminal.text, rows=0)
+            assert_compact_hud(terminal.text, rows=len(advisor_rows(terminal.text)))
             assert not server.errors, server.errors
             assert not [r for r in server.requests if r['method'] in ('turn/start', 'turn/steer')]
             stages.append('completed')

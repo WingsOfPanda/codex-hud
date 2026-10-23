@@ -235,19 +235,20 @@ belong to the existing batch. Each member name remains unique.
 These names produce one row:
 
 ```text
-GPT-6.1-Sol (high) [worker] · hud styling (3 agents) · 1:20 · 250K tok
+GPT-6.1-Sol (high) [worker] · hud styling · 3 running · longest 1:20 · 250K tok
 ```
 
 The count includes only active/waiting members: 3 becomes 2, then 1, and the group
-disappears at zero. Group rows retain their batch scope: tokens include lifetime
-usage from all members of that explicit batch, including finished members, and
-elapsed time starts at the earliest member's creation. Their counters use the local
-backend's existing SQLite metadata through a read-only connection, respecting its
-configured SQLite directory; forked group members remain unknown because their
-lifetime totals can include inherited usage. Use a fresh batch for a new dispatch.
-Standalone rows pair latest-turn elapsed time with that same turn's usage. Missing metrics remain
-unknown. Model and effort come
-from the remaining active/waiting members; differing known settings show `mixed`.
+disappears at zero. The `running` count includes workers waiting for approval or
+input; those waits remain labeled. Group elapsed time is the longest current
+assignment among those members, and tokens sum only their current assignments.
+The latest stock-daemon turn defines an assignment: follow-ups reset elapsed
+time and usage instead of inheriting a long-lived thread's totals. Usage is read
+from exact thread/turn records in local rollout files; inherited parent records,
+missing records and remote metrics remain unknown. Finished members contribute
+neither elapsed time nor tokens. Standalone workers use the same assignment
+boundary. Model and effort come from the remaining active/waiting members;
+differing known settings show `mixed`.
 The role prefix also uses only active/waiting members: matching roles share their
 name, differing known roles show `[mixed]`, and any missing or empty role shows
 `[general]`. Finished members do not change the role prefix.
