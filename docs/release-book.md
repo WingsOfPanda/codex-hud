@@ -51,6 +51,10 @@ unrelated dirty work. Use a scratch Git index when real index metadata is sealed
 Even a status check can refresh the real index: compare its bytes and metadata
 through the scratch-index helper, and preserve any discrepancy instead of
 rewriting the seal or claiming unchanged qualification.
+Use `release_native.checkout_identity` for worker provenance checks too. A direct
+`git status` after preparation replaced three real indexes during 0.4.8, despite
+identical index bytes. Compare the full file inventory, index bytes and metadata;
+retain the discrepancy and retire an unlaunched preparation whose seals changed.
 Before an expensive build, run version-transition checks against the actual bumped
 source: synthetic “next version” fixtures must derive a different version from it.
 With fleet-config, establish actual in-use versions, rollback target, retention,
@@ -233,3 +237,21 @@ acceptance. A larger timestamp difference or any outcome/identity difference
 requires investigation, not normalization of the records.
 Exercise recovery status, export and import with the same preserved pair too;
 passing cleanup validation alone does not prove the forensic transport path.
+
+An audit and a removal receipt answer different questions. The compatibility root
+audit can report `socket_removed: false` because native final cleanup already
+removed that socket. Accept this only with the exact socket identity, hash-bound
+original removal receipt and cleanup seal, clean ownership audit, and current
+path absence on the owning host. Test this producer-shaped case through status,
+export, import and AP receipt acceptance; a synthetic `true` audit missed it in 0.4.8.
+
+For a read-only coordinator defect discovered after successful qualification,
+record the changed verifier commit separately from the product and executed
+tooling commits. Review the impact and run affected verifier/transport tests
+against the preserved real evidence. Rebuild only if the change invalidates a
+product or execution gate; keep the original plan, receipts and failed checks.
+If the old AP wrapper embeds the defective receipt writer, use the committed
+`release_ap_coordinator.py` adapter: it runs the original replay with original
+supervision, then validates actual managed results and independent cleanup before
+writing a separate receipt. Its completion criterion is full acceptance with the
+actual archive and AP sidecar; preparing an adapter is not AP qualification.
