@@ -53,7 +53,7 @@ class CompactHudAssertionTests(unittest.TestCase):
 
     def test_combined_alert_and_overflow_keep_composer_in_expanded_budget(self):
         text = self.screen(['Watcher unavailable · Workers stale · counts unavailable',
-                            'mixed (mixed) · topic (3 agents) · 2:00 · ? tok', '+3 more'])
+                            'mixed (mixed) · topic · 3 running · longest 2:00 · ? tok', '+3 more'])
         assert_compact_hud(text, rows=3)
 
     def test_advisor_shares_total_budget_with_warning_and_worker(self):
@@ -125,7 +125,7 @@ class CompactHudAssertionTests(unittest.TestCase):
                 'GPT-6.1-Sol (ultra) · ultra · 0:12 · ? tok',
                 'GPT-6.1-Sol (persistent) · persistent · 0:12 · ? tok',
                 'custom-model (future effort) · custom · 0:12 · ? tok',
-                'mixed (mixed) · topic (3 agents) · 2:00 · ? tok',
+                'mixed (mixed) · topic · 3 running · longest 2:00 · ? tok',
                 '? (?) · unknown · stale · ? · ? tok',
                 'vendor/model (low) · approval · wait approval · 1:02 · 234 tok']
         self.assertEqual(worker_rows('\n'.join('  ' + row for row in rows)), rows)

@@ -38,9 +38,11 @@ def run(binary, evidence):
         path = directory / f'{identity}.json'
         started = time.time() - 125
 
-        def publish(state='running', stage=None, age=0, error=None):
+        def publish(state='running', stage=None, age=0, error=None, finished=None):
             value = dict(schema=1, id=identity, root=root, topic='compile 模型', state=state,
                          started_at=started, updated_at=time.time() - age, stage=stage, error=error)
+            if finished is not None:
+                value["finished_at"] = finished
             temporary = path.with_suffix('.tmp')
             temporary.write_text(json.dumps(value))
             os.replace(temporary, path)
@@ -67,9 +69,16 @@ def run(binary, evidence):
             wait(terminals, lambda: 'Background · compile 模型 · 2:' in terminal.text and
                  ' · link · ' not in terminal.text, 'optional stage was inferred or retained')
             publish(state='unknown')
-            wait(terminals, lambda: 'compile 模型 · unknown' in terminal.text, 'unknown outcome hidden')
+            wait(terminals, lambda: 'compile 模型 · needs review · ?' in terminal.text, 'unknown duration presented as running')
             assert_compact_hud(terminal.text, rows=2)
             capture('unknown')
+            publish(state='unknown', age=20, finished=started + 65)
+            wait(terminals, lambda: 'compile 模型 · needs review · 1:05' in terminal.text,
+                 'ended unknown job grew elapsed or turned stale')
+            frozen = path.read_bytes()
+            capture('ended-needs-review')
+            assert path.read_bytes() == frozen, 'HUD rewrote unresolved outcome'
+
             publish(age=20)
             wait(terminals, lambda: 'compile 模型 · stale' in terminal.text, 'stale heartbeat hidden')
             replies = terminal.resize(12, 65)
@@ -133,7 +142,7 @@ def run(binary, evidence):
             for current in servers:
                 assert not current.errors, current.errors
                 assert not [request for request in current.requests if request['method'] in ('turn/start', 'turn/steer')]
-            report.update(passed=True, display_model_requests=0, stages=['active', 'unknown', 'stale-narrow',
+            report.update(passed=True, display_model_requests=0, stages=['active', 'unknown', 'ended-needs-review', 'stale-narrow',
                           'projection-error', 'mixed', 'invalid-record', 'record-removed', 'restart', 'root-and-remote-isolation'])
         finally:
             for index, terminal in enumerate(terminals):
