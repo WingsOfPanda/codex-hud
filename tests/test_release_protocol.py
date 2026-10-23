@@ -106,14 +106,14 @@ class ReleaseProtocolTests(unittest.TestCase):
         self.put(scope, 'owned-process-identities.jsonl', '')
         return identity
 
-    def finish_compat_short(self, root, identity):
+    def finish_compat_short(self, root, identity, *, socket_removed=False):
         ownership = protocol._module(ROOT / 'scripts/release_ownership.py')
         ownership._remove_socket(root / 'compat', Path(identity['path']), identity, protocol)
         self.put(root, 'outputs/compat-cleanup.json', {'passed': True, 'outcome': 'clean',
             'owned_remaining': [], 'unknown': [], 'short_removed': True, 'short_identity': identity})
         metadata, _, _ = protocol.read_attempt(root)
         self.put(root, 'outputs/compat-root-cleanup.json', {'passed': True, 'outcome': 'clean',
-            'owned_remaining': [], 'unknown': [], 'socket_removed': True,
+            'owned_remaining': [], 'unknown': [], 'socket_removed': socket_removed,
             'socket_identity': metadata['socket_identity']})
         self.put(root, 'outputs/compat-combined-cleanup.json', {'outcome': 'clean',
             'owned_remaining': 0, 'unknown': 0, 'report': 'outputs/compat-combined-cleanup.json',
@@ -499,6 +499,9 @@ class ReleaseProtocolTests(unittest.TestCase):
         self.plan['compat']['ap_replay'] = {'source_commit': 'd' * 40,
             'installed_plugin_commit': 'e' * 40, 'bundle_sha256': protocol.file_record(bundle)['sha256']}
         root = self.qualified(skip_ap=True)
+        self.finish_compat_short(root, self.allocate_compat_short(root))
+        self.assertEqual(protocol.status(root)['next_action'], 'record-ap')
+        self.assertEqual(protocol._ap_binding(root)['attempt'], root.name)
         evidence = self.base / 'native-evidence.tgz'
         exported = self.export(root, evidence)
         imported = protocol.import_attempt(evidence, self.base / 'native-import', expected_sha256=exported['sha256'])
@@ -698,6 +701,9 @@ class ReleaseProtocolTests(unittest.TestCase):
         root = self.qualified()
         identity = self.allocate_compat_short(root)
         self.finish_compat_short(root, identity)
+        before = {path.relative_to(root).as_posix(): path.read_bytes()
+                  for path in root.rglob('*') if path.is_file()}
+        self.assertEqual(protocol.status(root)['next_action'], 'accept')
         self.assertTrue(protocol.accept_attempt(root, source_root=ROOT)['accepted'])
         bundle = self.base / 'compat-clean.tgz'
         exported = protocol.export_attempt(root, bundle)
@@ -712,11 +718,84 @@ class ReleaseProtocolTests(unittest.TestCase):
             self.assertIn(name, names)
         # A coordinator verifies foreign cleanup records, not a coincidental local path.
         Path(identity['path']).mkdir()
+        native_short = Path(protocol.load(root / 'attempt.json')['socket_root'])
+        native_short.mkdir()
         imported = protocol.import_attempt(bundle, self.base / 'compat-import', expected_sha256=exported['sha256'])
+        self.assertEqual(protocol.status(imported)['next_action'], 'accept')
         self.assertTrue(protocol.accept_attempt(imported, source_root=ROOT,
             archive=root / 'outputs/candidate.tar.gz')['accepted'])
+        with self.assertRaisesRegex(ValueError, 'Socket directory remains'):
+            protocol.accept_attempt(root, source_root=ROOT)
+        native_short.rmdir()
         with self.assertRaisesRegex(ValueError, 'Compatibility short directory remains'):
             protocol.accept_attempt(root, source_root=ROOT)
+        self.assertEqual(before, {path.relative_to(root).as_posix(): path.read_bytes()
+                                 for path in root.rglob('*') if path.is_file()})
+
+    def test_compat_root_audit_still_accepts_explicit_removal(self):
+        root = self.qualified()
+        self.finish_compat_short(root, self.allocate_compat_short(root), socket_removed=True)
+        self.assertTrue(protocol.accept_attempt(root, source_root=ROOT)['accepted'])
+
+    def test_compat_root_audit_requires_boolean_and_exact_clean_identity(self):
+        for mutation in ('missing', None, 0, 1, 'false', [], {}, 'identity', 'owned', 'unknown'):
+            with self.subTest(mutation=mutation):
+                root = self.qualified()
+                self.finish_compat_short(root, self.allocate_compat_short(root))
+                raw = protocol.load(root / 'outputs/compat-root-cleanup.json')
+                if mutation == 'missing':
+                    raw.pop('socket_removed')
+                elif mutation == 'identity':
+                    raw['socket_identity']['ino'] += 1
+                elif mutation in ('owned', 'unknown'):
+                    raw['owned_remaining' if mutation == 'owned' else 'unknown'] = [{'pid': 999}]
+                else:
+                    raw['socket_removed'] = mutation
+                self.put(root, 'outputs/compat-root-cleanup.json', raw)
+                before = (root / 'outputs/compat-root-cleanup.json').read_bytes()
+                with self.assertRaises(ValueError):
+                    protocol.accept_attempt(root, source_root=ROOT)
+                with self.assertRaises(ValueError):
+                    protocol.export_attempt(root, self.base / (root.name + '.tgz'))
+                self.assertEqual(before, (root / 'outputs/compat-root-cleanup.json').read_bytes())
+
+    def test_compat_audit_without_new_removal_requires_sealed_native_removal(self):
+        for mutation in ('missing-seal', 'seal-identity', 'seal-outcome', 'hash', 'report-identity',
+                         'report-removed', 'report-unknown', 'live-path'):
+            with self.subTest(mutation=mutation):
+                root = self.qualified()
+                self.finish_compat_short(root, self.allocate_compat_short(root))
+                proof = protocol.load(root / 'socket-cleaned.json')
+                report = protocol.load(root / proof['report'])
+                if mutation == 'missing-seal':
+                    (root / 'socket-cleaned.json').unlink()
+                elif mutation == 'live-path':
+                    Path(proof['socket_identity']['path']).mkdir()
+                else:
+                    if mutation == 'seal-identity':
+                        proof['socket_identity']['ino'] += 1
+                    elif mutation == 'seal-outcome':
+                        proof['outcome'] = 'unknown'
+                    elif mutation == 'report-identity':
+                        report['socket_identity']['ino'] += 1
+                    elif mutation == 'report-removed':
+                        report['socket_removed'] = False
+                    elif mutation == 'report-unknown':
+                        report['unknown'] = [{'pid': 999}]
+                    self.put(root, proof['report'], report)
+                    proof['report_sha256'] = ('0' * 64 if mutation == 'hash' else
+                        protocol.file_record(root / proof['report'])['sha256'])
+                    (root / 'socket-cleaned.json').chmod(0o600)
+                    self.put(root, 'socket-cleaned.json', proof)
+                before = {path.relative_to(root).as_posix(): path.read_bytes()
+                          for path in root.rglob('*') if path.is_file()}
+                for verify in (protocol._compat_cleanup_proof,
+                               lambda path: protocol.accept_attempt(path, source_root=ROOT),
+                               lambda path: protocol.export_attempt(path, self.base / (root.name + '.tgz'))):
+                    with self.assertRaises((OSError, ValueError)):
+                        verify(root)
+                self.assertEqual(before, {path.relative_to(root).as_posix(): path.read_bytes()
+                                         for path in root.rglob('*') if path.is_file()})
 
     def test_compat_removal_identity_or_unknown_raw_audit_cannot_use_clean_summary(self):
         for mutation in ('identity', 'short-audit', 'root-audit'):
@@ -767,8 +846,10 @@ class ReleaseProtocolTests(unittest.TestCase):
     def test_wrong_archive_mode_and_dedicated_native_failure_are_replayed(self):
         with self.assertRaisesRegex(ValueError, 'Archive differs'):
             protocol.accept_attempt(self.qualified(corrupt_archive=True), source_root=ROOT)
+        failed = self.qualified(native_result='failed one\n')
+        self.finish_compat_short(failed, self.allocate_compat_short(failed))
         with self.assertRaisesRegex(ValueError, 'Failed native test'):
-            protocol.accept_attempt(self.qualified(native_result='failed one\n'), source_root=ROOT)
+            protocol.accept_attempt(failed, source_root=ROOT)
 
     def test_ap_executor_architecture_is_separate_from_capture_architecture(self):
         root = self.qualified(skip_ap=True)

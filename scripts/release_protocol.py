@@ -1135,8 +1135,11 @@ def _compat_cleanup_proof(root, *, check_path=True):
             require(raw.get('short_removed') is True and raw.get('short_identity') == identity,
                     'Compatibility independent cleanup identity changed')
         else:
-            require(raw.get('socket_removed') is True and raw.get('socket_identity') == metadata['socket_identity'],
+            require(type(raw.get('socket_removed')) is bool and raw.get('socket_identity') == metadata['socket_identity'],
                     'Compatibility root cleanup identity changed')
+            if raw['socket_removed'] is False:
+                # An audit-only hook relies on the earlier sealed native removal.
+                _socket_cleanup_proof(root, check_path=check_path)
         audits.append({'outcome': 'clean', 'owned_remaining': 0, 'unknown': 0, 'report': name})
     combined = load(relative_file(root, 'outputs/compat-combined-cleanup.json'))
     require(combined.get('audits') == audits, 'Compatibility cleanup audit references changed')
