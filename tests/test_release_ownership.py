@@ -2,6 +2,7 @@ import importlib.util
 import contextlib
 import io
 import json
+import math
 import os
 from pathlib import Path
 import tempfile
@@ -157,6 +158,80 @@ class Ownership(unittest.TestCase):
         native.verify = lambda root: (_ for _ in ()).throw(ValueError('source seal changed'))
         with patch.dict(sys.modules,release_native=native), self.assertRaisesRegex(ValueError,'source seal'):
             ownership.recover_evidence(self.scope,execution,rows)
+
+    def test_recovery_accepts_adjacent_finished_at_without_rewriting_records(self):
+        execution, metadata, plan, profile, rows, state, result, resolution = self.recovery_fixture()
+        lower, upper = 1792751962.6755495, 1792751962.6755497
+        self.assertEqual(math.nextafter(lower, math.inf), upper)
+        binding = resolution['release_recovery']
+        native = types.SimpleNamespace(verify=lambda root: {})
+        for saved, separate in [(lower, upper), (upper, lower)]:
+            with self.subTest(saved=saved, separate=separate):
+                state['result']['finished_at'] = saved
+                result['finished_at'] = separate
+                args = (self.scope,execution,metadata,plan,profile,state,result,resolution,
+                        binding['journal_sha256'],binding['ownership_baseline_sha256'])
+                self.assertEqual(ownership.validate_resolution(*args)['attempt'], 'attempt')
+                for name, value in [('state',state), ('result',result)]:
+                    (execution/(name+'.json')).write_text(json.dumps(value))
+                paths = [self.scope/'process-journal.jsonl', self.scope/'ownership-baseline.json',
+                         *execution.glob('*.json')]
+                before = {p:p.read_bytes() for p in paths}
+                with patch.dict(sys.modules,release_native=native), \
+                     patch.object(protocol,'read_attempt',return_value=(metadata,plan,profile)), \
+                     patch.object(ownership,'inspect_processes',return_value=dict(passed=True)):
+                    receipt = ownership.recover_evidence(self.scope,execution,rows)
+                    self.assertTrue(protocol.load(receipt)['qualification_unchanged'])
+                    self.assertEqual(ownership.recover_evidence(self.scope,execution,rows),receipt)
+                self.assertEqual(before,{p:p.read_bytes() for p in paths})
+                self.assertEqual(protocol.load(self.scope/'recovery/managed-state.json'),state)
+                self.assertEqual(protocol.load(self.scope/'recovery/managed-result.json'),result)
+                self.assertEqual(result['exit_code'],1)
+                self.assertEqual(result['cleanup'],dict(status='failed',exit_code=1))
+                # Each direction is a separate evidence snapshot, never a rewrite.
+                import shutil
+                shutil.rmtree(self.scope/'recovery')
+
+    def test_recovery_rejects_other_result_differences(self):
+        execution, metadata, plan, profile, rows, state, result, resolution = self.recovery_fixture()
+        lower, upper = 1792751962.6755495, 1792751962.6755497
+        state['result']['finished_at'] = lower
+        result['finished_at'] = upper
+        binding = resolution['release_recovery']
+        bad_results = [dict(result,finished_at=value) for value in
+                       [math.nextafter(upper,math.inf),
+                        math.nextafter(math.nextafter(lower,-math.inf),-math.inf),
+                        True, False, math.inf, -math.inf, math.nan, int(lower), str(lower), None]]
+        bad_results += [{key:value for key,value in result.items() if key != 'finished_at'}]
+        for key, value in [('id','other'), ('root','other'), ('state','completed'), ('exit_code',0),
+                           ('cleanup',dict(status='completed',exit_code=0)),
+                           ('cleanup',dict(result['cleanup'],finished_at=upper)),
+                           ('extra','unexpected')]:
+            bad_results.append(dict(result,**{key:value}))
+        bad_results.append({key:value for key,value in result.items() if key != 'cleanup'})
+        bad_pairs = [(state,bad) for bad in bad_results]
+        for value in [True, False, math.inf, -math.inf, math.nan, int(lower), str(lower), None]:
+            bad_pairs.append((dict(state,result=dict(state['result'],finished_at=value)),result))
+        bad_pairs.append((dict(state,result={key:value for key,value in state['result'].items()
+                                            if key != 'finished_at'}),result))
+        native = types.SimpleNamespace(verify=lambda root: {})
+        for index, (bad_state, bad) in enumerate(bad_pairs):
+            with self.subTest(index=index, state=bad_state['result'], result=bad):
+                args = (self.scope,execution,metadata,plan,profile,bad_state,bad,resolution,
+                        binding['journal_sha256'],binding['ownership_baseline_sha256'])
+                with self.assertRaises(ValueError):
+                    ownership.validate_resolution(*args)
+                for name, value in [('state',bad_state), ('result',bad)]:
+                    (execution/(name+'.json')).write_text(json.dumps(value))
+                before = {p:p.read_bytes() for p in execution.glob('*.json')}
+                with patch.dict(sys.modules,release_native=native), \
+                     patch.object(protocol,'read_attempt',return_value=(metadata,plan,profile)), \
+                     patch.object(ownership,'inspect_processes') as audit:
+                    with self.assertRaises(ValueError):
+                        ownership.recover_evidence(self.scope,execution,rows)
+                    audit.assert_not_called()
+                self.assertEqual(before,{p:p.read_bytes() for p in execution.glob('*.json')})
+                self.assertFalse((self.scope/'recovery').exists())
 
     def test_recovery_does_not_relax_live_or_unknown_processes(self):
         execution, metadata, plan, profile, rows, state, result, resolution = self.recovery_fixture()
