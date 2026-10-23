@@ -68,6 +68,10 @@ Run the selected recipe's actual setup on each host. Use
 origins, staged files, raw socket paths and private permissions. Include actual
 fixture constructors, package-backed helpers, test discovery/result parsing,
 resource exclusions and owned-process cleanup. Record host limitations explicitly.
+When constructing a clean test environment, retain variables required by the
+tests' explicit environment-reference contracts, including `HOME`. A missing
+caller variable is a harness failure; preserve it and correct the child
+environment before rerunning, without weakening the test.
 
 Check compiler discovery and offline license inputs in the packaging subprocess
 environment, not only the build shell. For the new runner, the
