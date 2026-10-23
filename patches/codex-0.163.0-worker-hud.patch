@@ -11208,7 +11208,7 @@ index f717e2426..7a49ebb6a 100644
 +                                                   100% context left
 diff --git a/codex-rs/tui/src/bottom_pane/worker_hud.rs b/codex-rs/tui/src/bottom_pane/worker_hud.rs
 new file mode 100644
-index 000000000..b15918547
+index 000000000..084304cd9
 --- /dev/null
 +++ b/codex-rs/tui/src/bottom_pane/worker_hud.rs
 @@ -0,0 +1,2012 @@
@@ -12557,7 +12557,7 @@ index 000000000..b15918547
 +        );
 +        let lines = hud.lines(120);
 +        assert_eq!(lines[0].to_string(), "  Workers stale · counts unavailable");
-+        assert!(lines[1].to_string().contains("stale · ? · ? tok"));
++        assert!(lines[1].to_string().contains("stale · longest ? · ? tok"));
 +        assert_eq!(
 +            lines[2].to_string(),
 +            "  Background · cargo test 0 · seen 1:02"
