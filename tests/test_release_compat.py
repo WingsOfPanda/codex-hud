@@ -28,11 +28,18 @@ class Compatibility(unittest.TestCase):
         self.git('init', '-q')
         (self.source / 'patch').write_text('frontend patch')
         (self.source / 'fixture.py').write_text('fixture source')
+        for name in compat.RECOVERY_FIXTURES:
+            path = self.source / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text('recovery fixture source')
         self.git('add', '.')
         self.git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', 'source')
         self.commit = self.git('rev-parse', 'HEAD').strip()
         self.package = self.root / 'package'
         self.package.mkdir()
+        for package, value in ((self.package, b'new runtime'), (self.root / 'old', b'old runtime')):
+            (package / 'bin').mkdir(parents=True)
+            (package / 'bin/codex-plus-runtime').write_bytes(value)
         self.archive = self.root / 'package.tar.gz'
         self.archive.write_bytes(b'archive')
         self.stock = self.root / 'stock'
@@ -59,7 +66,8 @@ class Compatibility(unittest.TestCase):
             previous_release=dict(tag='0.163.0-plus.0.4.6', targets={'x86_64': {'manifest_sha256': '1' * 64}}),
             compat=dict(recipe_revision=1, previous_source_commit='2' * 40,
                 stock_binary_sha256={'x86_64': compat.digest(self.stock)},
-                fixture_files={'fixture.py': compat.digest(self.source / 'fixture.py')}, ap_version='0.7.35'))
+                fixture_files={name: compat.digest(self.source / name)
+                    for name in ('fixture.py', *compat.RECOVERY_FIXTURES)}, ap_version='0.7.35'))
         profile = dict(architecture='x86_64', source_root=str(self.source), short_root=str(self.short), python={'path': sys.executable})
         config = dict(old_package=str(self.root / 'old'), new_package=str(self.package), new_archive=str(self.archive),
             stock_binary=str(self.stock), qualification_evidence=str(approval),
@@ -87,7 +95,7 @@ class Compatibility(unittest.TestCase):
                 code = """import importlib.util, pathlib
 from recipe_context import CONFIG, NEW_VERSION
 root = pathlib.Path(__import__('sys').argv[1])
-for filename in ('verify-mixes.py','archive-identity.py','run-native-compat-v5.py','old-tui-root-result-v5.py','frontend_contract.py'):
+for filename in ('verify-mixes.py','archive-identity.py','run-native-compat-v5.py','old-tui-root-result-v5.py','frontend_contract.py','recovery-policy.py'):
     spec = importlib.util.spec_from_file_location('check', root/filename)
     module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
     if hasattr(module, 'validate_config'): module.validate_config(CONFIG)
@@ -128,11 +136,12 @@ assert NEW_VERSION == __import__('sys').argv[2]
         with self.assertRaisesRegex(ValueError, 'protocol'):
             self.prepare(plan, profile, config, 'protocol')
 
-    def test_coordinator_reports_bind_dedicated_results_and_native_capture_bytes(self):
+    def native_evidence(self, name='attempt'):
         plan, profile, config = self.inputs()
-        prepared = self.prepare(plan, profile, config)
+        prepared = self.prepare(plan, profile, config, name)
         scope = Path(prepared['scope'])
         bound = json.loads((scope / 'native.config.json').read_text())
+        (scope / 'short-binding.json').write_text(json.dumps({'path': str(self.short / 'aa')}))
         evidence = scope / 'evidence'
         captures = evidence / 'cursor-v2'
         captures.mkdir(parents=True)
@@ -148,16 +157,172 @@ assert NEW_VERSION == __import__('sys').argv[2]
             archive={'archive_sha256': config['new_archive_sha256']}, packages={'new': {'manifest_sha256': config['new_manifest_sha256']}},
             evidence_sha256={str(path.relative_to(evidence)): compat.digest(path) for path in evidence.rglob('*.json') if not path.is_relative_to(captures)},
             stages=[dict(name=name, passed=True, exit_code=0) for name in compat.GATES])
+        cases = []
+        new_sha = compat.digest(self.package / 'bin/codex-plus-runtime')
+        old_sha = compat.digest(self.root / 'old/bin/codex-plus-runtime')
+        for suite, scenarios in (
+                ('detached', ('cleanup-recovery-success', 'cleanup-recovery-failure', 'cleanup-recovery-old-reader',
+                    'goal-cleanup-recovery', 'goal-cleanup-recovery-old-reader', 'daemon-graceful',
+                    'observation-gap', 'cancellation', 'watch-recovery')),
+                ('goals', ('input-epoch', 'paused-recovery', 'replaced-recovery',
+                    'mixed-independent-priority', 'pre-report-recovery-barrier'))):
+            for scenario in scenarios:
+                path = evidence / 'recovery-policy' / suite / scenario / 'report.json'
+                path.parent.mkdir(parents=True)
+                case = dict(passed=True, scenario=scenario, runtime_sha256=new_sha,
+                    stock_sha256=compat.digest(self.stock), stock_version='codex-cli 0.163.0',
+                    remote_model_requests=0, private_home_removed=True,
+                    private_home=str(self.short / 'aa' / scenario / 'home'))
+                if scenario.endswith('old-reader'):
+                    case['old_runtime_sha256'] = old_sha
+                if scenario.startswith('cleanup-recovery'):
+                    case['recovery_policy'] = dict(exit_code=0 if scenario.endswith('success') else 7,
+                        old_reader=scenario.endswith('old-reader'),
+                        notification='REPORT ONLY:' if scenario.endswith('old-reader') else 'RECOVERY REQUIRED:',
+                        one_workload=True, original_result_preserved=True,
+                        claims_held_until_verified_resolution=True)
+                elif scenario.startswith('goal-cleanup-recovery'):
+                    old_reader = scenario.endswith('old-reader')
+                    case['goal_recovery'] = dict(old_reader=old_reader,
+                        notification='REPORT ONLY:' if old_reader else 'RECOVERY REQUIRED:',
+                        report_barrier=int(old_reader), original_result_preserved=True,
+                        one_workload=True, cleanup_claim_retained=old_reader, recovered_in_same_callback=not old_reader)
+                path.write_text(json.dumps(case))
+                cases.append(dict(suite=suite, scenario=scenario,
+                    report=str(path.relative_to(evidence / 'recovery-policy')), sha256=compat.digest(path)))
+        recovery = evidence / 'recovery-policy/report.json'
+        recovery.write_text(json.dumps(dict(schema=1, passed=True, source_commit=self.commit,
+            runtime_sha256=new_sha, old_runtime_sha256=old_sha,
+            stock_sha256=compat.digest(self.stock), cases=cases)))
+        raw['packages']['new']['helper_sha256'] = new_sha
+        raw['packages']['old'] = {'helper_sha256': old_sha}
+        raw['evidence_sha256'].update({str(path.relative_to(evidence)): compat.digest(path)
+            for path in (recovery, *(evidence / 'recovery-policy' / row['report'] for row in cases))})
         (evidence / 'report.json').write_text(json.dumps(raw))
+        return scope, raw
+
+    def test_coordinator_reports_bind_dedicated_results_and_native_capture_bytes(self):
+        scope, raw = self.native_evidence()
+        evidence = scope / 'evidence'
+        captures = evidence / 'cursor-v2'
         result = compat.export_reports(scope)
         report = json.loads(Path(result['compat']).read_text())
         self.assertEqual(set(report['checks']), set(compat.GATES))
         self.assertIn('compat/evidence/rollback/gate.json', report['checks']['quiet-rollback']['evidence'])
+        recovery_binding = report['checks']['packaged-recovery-policy']['evidence']
+        self.assertIn('compat/evidence/recovery-policy/report.json', recovery_binding)
+        self.assertEqual(sum(name.endswith('/report.json') and '/recovery-policy/' in name
+            for name in recovery_binding), 15)
         inventory = json.loads(Path(result['capture_manifest']).read_text())
         self.assertEqual(inventory['files']['compat/evidence/cursor-v2/screen.txt']['sha256'], compat.digest(captures / 'screen.txt'))
         (evidence / 'rollback/gate.json').write_text('tampered')
         with self.assertRaisesRegex(ValueError, 'dedicated report changed'):
             compat.export_reports(scope)
+
+    def test_export_rejects_invalid_recovery_reports_despite_passing_stage(self):
+        mutations = {
+            'missing': lambda report: report['cases'].pop(),
+            'failed': lambda report: report.update(passed=False),
+            'wrong-helper': lambda report: report.update(runtime_sha256='c' * 64),
+            'wrong-old-helper': lambda report: report.update(old_runtime_sha256='c' * 64),
+            'wrong-stock': lambda report: report.update(stock_sha256='c' * 64),
+        }
+        for name, mutate in mutations.items():
+            with self.subTest(name=name):
+                scope, raw = self.native_evidence(name)
+                path = scope / 'evidence/recovery-policy/report.json'
+                recovery = json.loads(path.read_text())
+                mutate(recovery)
+                path.write_text(json.dumps(recovery))
+                raw['evidence_sha256']['recovery-policy/report.json'] = compat.digest(path)
+                (scope / 'evidence/report.json').write_text(json.dumps(raw))
+                with self.assertRaisesRegex(ValueError, '[Rr]ecovery'):
+                    compat.export_reports(scope)
+
+    def test_export_reads_each_recovery_case_and_its_cleanup_and_policy(self):
+        mutations = {
+            'failed-case': lambda case: case.update(passed=False),
+            'wrong-helper-case': lambda case: case.update(runtime_sha256='c' * 64),
+            'wrong-old-helper-case': lambda case: case.update(old_runtime_sha256='c' * 64),
+            'wrong-stock-case': lambda case: case.update(stock_sha256='c' * 64),
+            'paid-request': lambda case: case.update(remote_model_requests=1),
+            'unclean-home': lambda case: case.update(private_home_removed=False),
+            'escaped-home': lambda case: case.update(private_home='/outside-owned-scope/home'),
+            'sibling-home': lambda case: case.update(private_home=str(self.short / 'bb/home')),
+            'dotdot-home': lambda case: case.update(private_home=str(self.short / 'aa/../outside/home')),
+            'allocation-root': lambda case: case.update(private_home=str(self.short / 'aa')),
+            'wrong-policy': lambda case: case['recovery_policy'].update(notification='RECOVERY REQUIRED:'),
+        }
+        for name, mutate in mutations.items():
+            with self.subTest(name=name):
+                scope, raw = self.native_evidence(name)
+                root = scope / 'evidence/recovery-policy'
+                recovery = json.loads((root / 'report.json').read_text())
+                row = recovery['cases'][2]
+                path = root / row['report']
+                case = json.loads(path.read_text())
+                mutate(case)
+                path.write_text(json.dumps(case))
+                row['sha256'] = compat.digest(path)
+                (root / 'report.json').write_text(json.dumps(recovery))
+                for path in (path, root / 'report.json'):
+                    raw['evidence_sha256'][str(path.relative_to(scope / 'evidence'))] = compat.digest(path)
+                (scope / 'evidence/report.json').write_text(json.dumps(raw))
+                with self.assertRaisesRegex(ValueError, '[Rr]ecovery'):
+                    compat.export_reports(scope)
+
+    def test_recovery_report_hash_and_native_evidence_inventory_are_required(self):
+        for changed in ('case-hash', 'native-inventory'):
+            with self.subTest(changed=changed):
+                scope, raw = self.native_evidence(changed)
+                path = scope / 'evidence/recovery-policy/detached/cleanup-recovery-success/report.json'
+                if changed == 'case-hash':
+                    path.write_text(path.read_text() + '\n')
+                    raw['evidence_sha256'][str(path.relative_to(scope / 'evidence'))] = compat.digest(path)
+                else:
+                    del raw['evidence_sha256'][str(path.relative_to(scope / 'evidence'))]
+                (scope / 'evidence/report.json').write_text(json.dumps(raw))
+                with self.assertRaisesRegex(ValueError, '[Rr]ecovery'):
+                    compat.export_reports(scope)
+
+    def test_recovery_runner_executes_all_cases_with_bound_helpers_and_owned_homes(self):
+        scope, raw = self.native_evidence()
+        config = json.loads((scope / 'native.config.json').read_text())
+        short = self.short / 'aa'
+        short.mkdir()
+        called = []
+        templates = scope / 'evidence/recovery-policy'
+        class Fixture:
+            def __init__(inner, runtime, binary, evidence):
+                self.assertEqual(runtime, self.package / 'bin/codex-plus-runtime')
+                self.assertEqual(binary, self.stock)
+                inner.evidence = evidence
+                evidence.mkdir(parents=True)
+                inner.home = short / evidence.name / 'home'
+                inner.home.mkdir(parents=True)
+                inner.report = json.loads((templates / evidence.parent.name / evidence.name / 'report.json').read_text())
+            def close(inner, passed):
+                self.assertEqual(inner.old_runtime, self.root / 'old/bin/codex-plus-runtime')
+                inner.report['passed'] = passed
+                (inner.evidence / 'report.json').write_text(json.dumps(inner.report))
+                inner.home.rmdir()
+        modules = {}
+        for suite, name in (('detached', 'test_detached_jobs_stock'), ('goals', 'test_custom_goals_stock')):
+            modules[name] = SimpleNamespace(SCENARIOS={scenario: lambda fixture, scenario=scenario:
+                called.append(scenario) for scenario in compat.RECOVERY_CASES[suite]})
+        fixture = SimpleNamespace(CustomGoalServer=Fixture)
+        modules.update(fixtures=SimpleNamespace(custom_goal_server=fixture),
+            **{'fixtures.detached_jobs': SimpleNamespace(DetachedJobServer=Fixture),
+               'recipe_context': SimpleNamespace(CONFIG=config, DATA=scope),
+               'fixture_scope': SimpleNamespace(validate_short=lambda: short)})
+        spec = importlib.util.spec_from_file_location('recovery_recipe', compat.RECIPE / 'recovery-policy.py')
+        recipe = importlib.util.module_from_spec(spec)
+        with patch.object(os, 'umask'), patch.dict(sys.modules, modules), patch.object(sys, 'path', list(sys.path)), patch.dict(os.environ,
+                TMPDIR=str(short), CODEX_PLUS_RELEASE_QA_SCOPE=str(scope)):
+            spec.loader.exec_module(recipe)
+            recipe.run(scope / 'runner-evidence')
+        self.assertEqual(called, [scenario for cases in compat.RECOVERY_CASES.values() for scenario in cases])
+        self.assertEqual(len(compat.validate_recovery_reports(scope / 'runner-evidence', config)), 15)
 
     def test_setup_failure_stops_before_native_gates_and_preserves_allocation(self):
         plan, profile, config = self.inputs()
@@ -287,7 +452,7 @@ assert 'changed frontend requires fresh package build' not in driver
         fixture.profile['native_build'].update(official_binary=str(official), official_sha256=compat.digest(official), cargo_jobs=1, test_threads=1)
         source = fixture.base / 'product-source'
         for name in ('scripts/package-release.py', 'scripts/native-results.py', 'rust-runtime/Cargo.toml',
-                     'rust-runtime/Cargo.lock', 'bin/codex-plus', fixture.plan['patch']['path']):
+                     'rust-runtime/Cargo.lock', 'bin/codex-plus', fixture.plan['patch']['path'], *compat.RECOVERY_FIXTURES):
             path = source / name
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes((SCRIPTS.parent / name).read_bytes())
@@ -299,6 +464,8 @@ assert 'changed frontend requires fresh package build' not in driver
         fixture.observed['plus_source_commit'] = fixture.plan['plus_source_commit']
         fixture.profile['source_root'] = str(source)
         fixture.plan['compat']['stock_binary_sha256']['x86_64'] = compat.digest(official)
+        fixture.plan['compat']['fixture_files'].update({name: compat.digest(SCRIPTS.parent / name)
+            for name in compat.RECOVERY_FIXTURES})
         for name in ('python', 'executor_package_root'):
             fixture.observed[name] = copy.deepcopy(fixture.profile[name])
         for arch in fixture.plan['targets']:
@@ -354,6 +521,9 @@ assert 'changed frontend requires fresh package build' not in driver
         self.assertIn(str(site / 'pyte/__init__.py'), rows['compat']['input']['executed'])
         self.assertNotIn(str(site / 'pyte/escape.py'), rows['compat']['input']['executed'])
         self.assertIn(str(site / 'pyte/escape.py'), fixtures.protocol.load(root / 'compat-preparation.json')['closure'])
+        for name in compat.RECOVERY_FIXTURES:
+            self.assertIn(str(source / name), fixtures.protocol.load(root / 'compat-preparation.json')['closure'])
+            self.assertIn(str(source / name), rows['compat']['input']['executed'])
         self.assertEqual(rows['captures']['cleanup']['outcome'], 'clean')
         (site / 'pyte/escape.py').write_text('CHANGED_SUBMODULE = True\n')
         with patch.object(workflow.native, 'verify', return_value={}):

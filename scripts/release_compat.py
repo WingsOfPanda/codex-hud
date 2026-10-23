@@ -17,7 +17,15 @@ import sys
 RECIPE = Path(__file__).resolve().parent / 'release_recipes/compat'
 UPSTREAM = {'version': '0.163.0', 'tag': 'rust-v0.163.0',
             'commit': '83086188ae0614bd882818ff1aa23f3194962012'}
-GATES = ('quiet-rollback', 'advisor-nine-checks', 'actual-old-tui-root-result', 'packaged-cursor-v2')
+GATES = ('quiet-rollback', 'advisor-nine-checks', 'actual-old-tui-root-result', 'packaged-cursor-v2', 'packaged-recovery-policy')
+RECOVERY_CASES = {
+    'detached': ('cleanup-recovery-success', 'cleanup-recovery-failure', 'cleanup-recovery-old-reader',
+        'goal-cleanup-recovery', 'goal-cleanup-recovery-old-reader', 'daemon-graceful',
+        'observation-gap', 'cancellation', 'watch-recovery'),
+    'goals': ('input-epoch', 'paused-recovery', 'replaced-recovery',
+        'mixed-independent-priority', 'pre-report-recovery-barrier')}
+RECOVERY_FIXTURES = ('tests/test_detached_jobs_stock.py', 'tests/test_custom_goals_stock.py',
+    'tests/fixtures/detached_jobs.py', 'tests/fixtures/custom_goal_server.py')
 
 
 def require(value, message):
@@ -33,6 +41,63 @@ def digest(path):
 def write(path, value):
     with Path(path).open('x') as stream:
         stream.write(json.dumps(value, indent=2) + '\n')
+
+
+def validate_recovery_reports(evidence, config):
+    """Read every case; a successful command or aggregate cannot replace its proof."""
+    evidence = Path(evidence)
+    path = evidence / 'report.json'
+    require(path.is_file() and not path.is_symlink(), 'Recovery report missing')
+    report = json.loads(path.read_text())
+    identities = {'runtime_sha256': digest(Path(config['new_package']) / 'bin/codex-plus-runtime'),
+        'old_runtime_sha256': digest(Path(config['old_package']) / 'bin/codex-plus-runtime'),
+        'stock_sha256': config['stock_binary_sha256'][config['architecture']]}
+    require(report.get('schema') == 1 and report.get('passed') is True and
+        report.get('source_commit') == config['source_commit'] and
+        all(report.get(key) == value for key, value in identities.items()), 'Recovery identity/result mismatch')
+    short = Path(json.loads((Path(config['scope']) / 'short-binding.json').read_text())['path'])
+    require(short.parent == Path(config['short_root']) and len(short.name) == 2 and short.name.isalnum(),
+        'Recovery short allocation mismatch')
+    owned_short = short.resolve()
+    expected = [(suite, scenario) for suite, cases in RECOVERY_CASES.items() for scenario in cases]
+    require([(row.get('suite'), row.get('scenario')) for row in report.get('cases', [])] == expected,
+        'Recovery case inventory incomplete')
+    bindings = {'report.json': digest(path)}
+    for row in report['cases']:
+        name = f"{row['suite']}/{row['scenario']}/report.json"
+        path = evidence / name
+        require(row.get('report') == name and path.is_file() and not path.is_symlink() and
+            digest(path) == row.get('sha256'), 'Recovery case report missing or changed')
+        case = json.loads(path.read_text())
+        require(case.get('passed') is True and case.get('scenario') == row['scenario'] and
+            case.get('runtime_sha256') == identities['runtime_sha256'] and
+            case.get('stock_sha256') == identities['stock_sha256'] and
+            case.get('stock_version') == 'codex-cli ' + UPSTREAM['version'] and
+            case.get('remote_model_requests') == 0 and case.get('private_home_removed') is True,
+            'Recovery case failed, wrong helper/daemon, paid request, or unresolved cleanup')
+        home = Path(case.get('private_home', ''))
+        resolved_home = home.resolve()
+        require(home.is_absolute() and '..' not in home.parts and resolved_home != owned_short and
+            resolved_home.is_relative_to(owned_short) and not home.exists(),
+            'Recovery private home escaped owned scope or survived cleanup')
+        scenario = row['scenario']
+        old_reader = scenario.endswith('old-reader')
+        if old_reader:
+            require(case.get('old_runtime_sha256') == identities['old_runtime_sha256'],
+                'Recovery old helper mismatch')
+        notification = 'REPORT ONLY:' if old_reader else 'RECOVERY REQUIRED:'
+        if scenario.startswith('cleanup-recovery'):
+            require(case.get('recovery_policy') == dict(exit_code=0 if scenario.endswith('success') else 7,
+                old_reader=old_reader, notification=notification, one_workload=True,
+                original_result_preserved=True, claims_held_until_verified_resolution=True),
+                'Recovery execution policy mismatch')
+        elif scenario.startswith('goal-cleanup-recovery'):
+            require(case.get('goal_recovery') == dict(old_reader=old_reader, notification=notification,
+                report_barrier=int(old_reader), original_result_preserved=True, one_workload=True,
+                cleanup_claim_retained=old_reader, recovered_in_same_callback=not old_reader),
+                'Recovery goal policy mismatch')
+        bindings[name] = digest(path)
+    return bindings
 
 
 def validate_config(config):
@@ -56,6 +121,7 @@ def validate_config(config):
     require(bool(config['fixture_files']), 'Fixture closure missing')
     for name, sha in config['fixture_files'].items():
         require(not Path(name).is_absolute() and '..' not in Path(name).parts and re.fullmatch('[0-9a-f]{64}', sha), 'Unsafe fixture binding')
+    require(set(RECOVERY_FIXTURES) <= config['fixture_files'].keys(), 'Recovery fixture closure missing')
     require(config['recipe_hashes'] == {path.name: digest(path) for path in RECIPE.iterdir() if path.is_file()}, 'Recipe bytes changed')
     return config
 
@@ -132,9 +198,14 @@ def export_reports(scope):
             raw['packages']['new']['manifest_sha256'] == config['new_manifest_sha256'], 'Native package binding mismatch')
     for name, sha in raw['evidence_sha256'].items():
         require(not Path(name).is_absolute() and '..' not in Path(name).parts and digest(evidence / name) == sha, 'Native dedicated report changed')
+    recovery = {'recovery-policy/' + name: sha for name, sha in
+                validate_recovery_reports(evidence / 'recovery-policy', config).items()}
+    require(all(raw['evidence_sha256'].get(name) == sha for name, sha in recovery.items()),
+            'Recovery dedicated reports missing from native evidence')
     root = scope.parent
     reports = ('report.json', 'rollback/gate.json', 'advisor-nine-checks.json', 'old-tui-root-result/report.json')
     raw_bindings = {str((evidence / name).relative_to(root)): digest(evidence / name) for name in reports}
+    raw_bindings.update({str((evidence / name).relative_to(root)): sha for name, sha in recovery.items()})
     captures = evidence / 'cursor-v2'
     manifest = json.loads((captures / 'manifest.json').read_text())
     integrity = json.loads((captures / 'integrity.json').read_text())
@@ -203,7 +274,7 @@ def run(scope, *, setup_only=False):
         return {'passed': True, 'setup_only': True, 'native_gates_run': False, 'evidence': str(scope / 'preflight.json')}
     with (scope / 'native-owned.log').open('x') as log:
         result = owned_run.run([sys.executable, RECIPE / 'run-native-compat-v5.py', '--config', scope / 'native.config.json', '--evidence', scope / 'evidence'],
-                               cwd=scope, env=env, stdout=log, timeout=750)
+                               cwd=scope, env=env, stdout=log, timeout=930)
     require(result.returncode == 0, 'Native compatibility failed; preserve raw evidence')
     return {'passed': True, 'evidence': str(scope / 'evidence/report.json'), 'cleanup_required': True,
             'reports': export_reports(scope)}

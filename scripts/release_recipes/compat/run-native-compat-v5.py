@@ -15,6 +15,8 @@ import traceback
 
 sys.dont_write_bytecode = True
 AREA = Path(__file__).resolve().parent
+sys.path.insert(0, str(AREA.parents[1]))
+from release_compat import validate_recovery_reports
 SOURCE = CONFIG['source_commit']
 ORIGIN = CONFIG['source_commit']
 PATCH = CONFIG['frontend_patch_sha256']
@@ -98,9 +100,9 @@ def run(args):
         save()
 
     def timeout(signum, frame):
-        raise TimeoutError('native combined compatibility gate exceeded 720 seconds')
+        raise TimeoutError('native combined compatibility gate exceeded 900 seconds')
     signal.signal(signal.SIGALRM, timeout)
-    signal.alarm(720)
+    signal.alarm(900)
     save()
     try:
         stage('quiet-rollback', [sys.executable, AREA/'verify-mixes.py', '--source', source,
@@ -122,6 +124,9 @@ def run(args):
             '--footer-contract', DATA/'footer-contract.json',
             '--footer-contract-sha256', gate.digest(DATA/'footer-contract.json'),
             '--evidence', evidence/'cursor-v2'], 300)
+        stage('packaged-recovery-policy', [sys.executable, AREA/'recovery-policy.py',
+            '--evidence', evidence/'recovery-policy'], 180)
+        recovery = validate_recovery_reports(evidence/'recovery-policy', config)
         rollback = json.loads((evidence/'rollback/gate.json').read_text())
         advisor = json.loads((evidence/'advisor-nine-checks.json').read_text())
         tui = json.loads((evidence/'old-tui-root-result/report.json').read_text())
@@ -144,9 +149,11 @@ def run(args):
         report.update(passed=True, rollback_qualified=True, rollback_floor=OLD_VERSION,
             nine_advisor_checks_passed=True, actual_old_tui_new_cli_root_result_proved=True,
             fresh_packaged_cursor_v2_passed=True, ap_replay='separate root gate pending',
+            packaged_recovery_policy_passed=True,
             restart_required_before_production_claude=False,
             evidence_sha256={str(path.relative_to(evidence)):gate.digest(path) for path in (
-                evidence/'rollback/gate.json', evidence/'advisor-nine-checks.json', evidence/'old-tui-root-result/report.json')})
+                evidence/'rollback/gate.json', evidence/'advisor-nine-checks.json', evidence/'old-tui-root-result/report.json')}
+                | {'recovery-policy/' + name: sha for name, sha in recovery.items()})
     except BaseException:
         report['error'] = traceback.format_exc()
         raise

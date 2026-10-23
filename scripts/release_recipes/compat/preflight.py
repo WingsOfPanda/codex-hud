@@ -95,10 +95,15 @@ imports = {
     'fixtures.worker_shell_wait_provider': ['cell_result', 'wait_script'],
     'native_smoke': ['Terminal', 'advisor_rows', 'advisor_transcript_rows', 'composer_ready', 'wait', 'write_model_catalog'],
     'test_background_integration': ['RecordingClient', 'stop', 'wait'],
+    'test_detached_jobs_stock': ['SCENARIOS'],
+    'test_custom_goals_stock': ['SCENARIOS'],
 }
 for name, symbols in imports.items():
     module = importlib.import_module(name)
     assert all(hasattr(module, symbol) for symbol in symbols)
+recovery = load('recovery_contract', RECIPE.parents[1] / 'release_compat.py')
+for suite, module in (('detached', 'test_detached_jobs_stock'), ('goals', 'test_custom_goals_stock')):
+    assert set(recovery.RECOVERY_CASES[suite]) <= importlib.import_module(module).SCENARIOS.keys()
 load('frozen_old_tui', RECIPE / 'old-tui-root-result-v5.py').self_check()
 load('frozen_driver', RECIPE / 'run-native-compat-v5.py').validate_config(config)
 
