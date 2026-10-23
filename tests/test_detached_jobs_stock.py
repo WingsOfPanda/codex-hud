@@ -563,7 +563,7 @@ def cleanup_recovery(f, *, exit_code=0, old_reader=False):
         shutil.copy2(f.old_runtime, prior)
         f.runtime = prior
         assert f.job(ident)["result"] == result["result"], "old helper changed execution truth"
-        f.cli("observe", "--parent", f.parent)
+        f.observe()
     before = f.provider.count
     f.finish(command)
     wait(lambda: f.delivered(), "recovery notification was not delivered")
@@ -596,10 +596,108 @@ def cleanup_recovery(f, *, exit_code=0, old_reader=False):
         claims_held_until_verified_resolution=True)
 
 
+def goal_cleanup_recovery(f, *, old_reader=False):
+    f.supervisor_lock = (f.home / "codex-plus" / f"{f.parent}.supervisor.lock").open("w")
+    fcntl.flock(f.supervisor_lock, fcntl.LOCK_EX)
+    f.goal("provenance", "--cwd", f.work, "--load-kind", "fresh")
+    f.goal("start", "--objective", "Recover the private failed cleanup without replay")
+    snapshot = f.goal()
+    goal, epoch = snapshot["goal"], snapshot["input_epoch"]
+    cleanup = dict(argv=["/usr/bin/false"], cwd=str(f.work), env={}, deadline_seconds=5)
+    manifest, directory = f.manifest("goal-cleanup-recovery", keys=["goal-recovery-resource"], cleanup=cleanup)
+    ops = operations(manifest)
+    ops[0].extend(["--goal", goal["id"], "--revision", str(goal["revision"]),
+                   "--input-epoch", str(epoch)])
+    binding = ["--id", goal["id"], "--revision", goal["revision"], "--input-epoch", epoch]
+    def admit(turn):
+        f.goal("admit", *binding, "--turn", turn)
+        f.supervisor_lock.close()
+        f.supervisor_lock = None
+    command = f.commands(ops, on_turn=admit)
+    ident, _ = launched(f, command)
+    f.goal("checkpoint", *binding, "--turn", command["turn"], "--checkpoint",
+           json.dumps(dict(disposition="wait", jobs=[f"{f.parent}:execution:{ident}"])))
+    (directory / "release").touch()
+    result = finished(f, ident, directory, "failed")
+    assert result["result"]["exit_code"] == 0
+    original = (f.job_directory(ident) / "result.json").read_bytes()
+    watched = wait(lambda: next((row for row in f.state()["jobs"]
+        if row["execution"] == ident and row["status"] != "armed"), None),
+        "goal recovery outcome was not observed")
+    assert watched["report"] == 1 and watched.get("recovery_allowed") == 1, watched
+    current_runtime = f.runtime
+    if old_reader:
+        stop_rust_observers(f.home)
+        prior = f.root / "previous/bin/codex-plus-runtime"
+        prior.parent.mkdir(parents=True)
+        shutil.copy2(f.old_runtime, prior)
+        f.runtime = prior
+        f.observe()
+    else:
+        driver = directory / "recover-in-callback.py"
+        driver.write_text("import json,os,subprocess\nfrom pathlib import Path\n"
+            + "runtime=" + repr(str(f.runtime)) + "\n"
+            + "ident=" + repr(ident) + "\n"
+            + "directory=Path(" + repr(str(directory)) + ")\n"
+            + """root=os.environ['CODEX_THREAD_ID']
+def run(*args):
+    p=subprocess.run([runtime,*args],capture_output=True,text=True,timeout=12)
+    assert p.returncode == 0, (args,p.stdout,p.stderr)
+    return json.loads(p.stdout)
+s=run('goal','status','--thread',root,'--json')
+turn=(s.get('binding') or {}).get('turn') or s['current_turn']['id']
+binding=['--thread',root,'--id',s['goal']['id'],'--revision',str(s['goal']['revision']),
+         '--input-epoch',str(s['input_epoch']),'--turn',turn]
+run('goal','admit',*binding,'--json')
+proof=directory/'callback-resolution.json'
+proof.write_text(json.dumps(dict(root=root,id=ident,cleanup_verified=True,
+    evidence='Private workload ended; false cleanup has no effects; resolver must verify exact process absence.')))
+resolved=run('job','resolve','--id',ident,'--evidence',str(proof))
+assert resolved['state']=='failed' and resolved['resolution']['cleanup_verified'] is True
+run('goal','checkpoint',*binding,'--checkpoint',json.dumps(dict(disposition='complete',
+    evidence=['fixture:known-exit-preserved-and-cleanup-verified-without-replay'])),'--json')
+(directory/'callback-recovery-done').touch()
+""")
+        args = dict(cmd=shlex.join([str(Path(sys.executable).resolve()), str(driver)]),
+                    yield_time_ms=10000, max_output_tokens=1000, login=False)
+        f.provider.root_steps.extend([
+            (execute("text(await tools.exec_command(" + json.dumps(args) + "));", "recover-goal"), None),
+            (message("Private goal cleanup recovered without replay"), None)])
+    before = f.provider.count
+    f.finish(command)
+    requests = 1 if old_reader else 2
+    wait(lambda: f.provider.count == before + requests, "goal recovery did not produce its expected turn")
+    wait(lambda: f.thread()["status"]["type"] == "idle", "goal recovery turn did not finish")
+    current = f.goal()
+    assert current["report_barrier"] == int(old_reader), current
+    with sqlite3.connect(f.home / "codex-plus/background.sqlite") as database:
+        messages = [row[0] for row in database.execute(
+            "SELECT message FROM goal_dispatches WHERE root=?", (f.parent,))]
+    prefix = "REPORT ONLY:" if old_reader else "RECOVERY REQUIRED:"
+    assert sum(message.startswith(prefix) for message in messages) == 1, messages
+    assert (directory / "runs").read_text() == "run\n"
+    assert (f.job_directory(ident) / "result.json").read_bytes() == original
+    assert f.cli("job", "maintenance", "status")["execution_quiet"] is (not old_reader)
+    f.report["goal_recovery"] = dict(old_reader=old_reader, notification=prefix,
+        report_barrier=current["report_barrier"], original_result_preserved=True,
+        one_workload=True, cleanup_claim_retained=old_reader,
+        recovered_in_same_callback=not old_reader)
+    if old_reader:
+        f.mutate("pause", current["goal"])
+    else:
+        assert (directory / "callback-recovery-done").is_file()
+        wait(lambda: f.goal()["goal"]["state"] == "complete", "recovered goal did not complete")
+    f.quiet(.3)
+    stop_rust_observers(f.home)
+    f.runtime = current_runtime
+
+
 SCENARIOS = {"completion": completion,
     "cleanup-recovery-success": cleanup_recovery,
     "cleanup-recovery-failure": lambda f: cleanup_recovery(f, exit_code=7),
     "cleanup-recovery-old-reader": lambda f: cleanup_recovery(f, exit_code=7, old_reader=True),
+    "goal-cleanup-recovery": goal_cleanup_recovery,
+    "goal-cleanup-recovery-old-reader": lambda f: goal_cleanup_recovery(f, old_reader=True),
     "daemon-graceful": lambda f: restart(f),
     "daemon-abrupt": lambda f: restart(f, abrupt=True),
     "observation-gap": lambda f: restart(f, abrupt=True, observation_gap=True),
@@ -633,8 +731,8 @@ def main():
     args = parser.parse_args()
     runtime, binary = args.runtime.resolve(strict=True), args.stock_binary.resolve(strict=True)
     old_runtime = args.old_runtime.resolve(strict=True) if args.old_runtime else None
-    if args.scenario == "cleanup-recovery-old-reader" and old_runtime is None:
-        parser.error("--old-runtime is required for cleanup-recovery-old-reader")
+    if args.scenario.endswith("recovery-old-reader") and old_runtime is None:
+        parser.error("--old-runtime is required for an old-reader recovery scenario")
     config = ""
     if args.scenario.startswith("managed-"):
         config = ('[permissions.unrestricted.filesystem]\n":root"="write"\n'
