@@ -2,7 +2,6 @@
 import argparse
 import hashlib
 import json
-import math
 import os
 from pathlib import Path
 import shutil
@@ -186,18 +185,7 @@ def validate_resolution(root, execution, metadata, plan, profile, state, result,
                      isinstance(proof.get('subtree_cleanup_evidence'), str) and
                      bool(proof['subtree_cleanup_evidence'].strip()), 'Recovery evidence binding mismatch')
     helper = Path(profile['executor_package_root']) / 'bin/codex-plus-runtime'
-    saved_result = state.get('result')
-    result_matches = saved_result == result
-    if not result_matches and isinstance(saved_result, dict) and isinstance(result, dict):
-        saved_finished = saved_result.get('finished_at')
-        finished = result.get('finished_at')
-        # Separate JSON serialization may round the timestamp to an adjacent float.
-        result_matches = (type(saved_finished) is float and type(finished) is float and
-                          math.isfinite(saved_finished) and math.isfinite(finished) and
-                          math.nextafter(saved_finished, finished) == finished and
-                          {key: value for key, value in saved_result.items() if key != 'finished_at'} ==
-                          {key: value for key, value in result.items() if key != 'finished_at'})
-    protocol.require(result_matches and
+    protocol.require(protocol.recovery_results_match(state.get('result'), result) and
                      Path(state['package']).resolve() == Path(profile['executor_package_root']).resolve() and
                      state['runtime']['sha256'] == protocol.file_record(helper)['sha256'],
                      'Recovery executor/result identity mismatch')

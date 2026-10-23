@@ -9,6 +9,7 @@ import hashlib
 import importlib.util
 import io
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -644,6 +645,21 @@ def status(root):
             'next_action': 'review-failure' if refused else ('record-' + missing[0] if missing else 'accept')}
 
 
+def recovery_results_match(saved_result, result):
+    if saved_result == result:
+        return True
+    if not isinstance(saved_result, dict) or not isinstance(result, dict):
+        return False
+    saved_finished = saved_result.get('finished_at')
+    finished = result.get('finished_at')
+    # Separate JSON serialization may round the timestamp to an adjacent float.
+    return (type(saved_finished) is float and type(finished) is float and
+            math.isfinite(saved_finished) and math.isfinite(finished) and
+            math.nextafter(saved_finished, finished) == finished and
+            {key: value for key, value in saved_result.items() if key != 'finished_at'} ==
+            {key: value for key, value in result.items() if key != 'finished_at'})
+
+
 def _verify_recovery(root, transport):
     path = Path(root) / 'recovery/receipt.json'
     if not path.exists():
@@ -666,7 +682,7 @@ def _verify_recovery(root, transport):
     require(receipt['binding'] == expected, 'Recovery receipt binding changed')
     state, result, resolution = (load(relative_file(root, 'recovery/managed-' + name + '.json'))
                                  for name in ('state', 'result', 'resolution'))
-    require(state.get('result') == result and state.get('resolution') == resolution and
+    require(recovery_results_match(state.get('result'), result) and state.get('resolution') == resolution and
             resolution.get('cleanup_verified') is True and
             type(receipt.get('result_absent', False)) is bool and
             receipt.get('result_absent', False) == (result is None) and
