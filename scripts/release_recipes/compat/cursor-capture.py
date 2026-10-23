@@ -204,8 +204,8 @@ def run_fixture(effort,form=None):
                     full_HUD_detached=any('cursor-detached-' in line for line in below),
                     full_HUD_advisor=any(line.strip().startswith('Advisor ·') for line in below),
                     full_HUD_overflow=any(re.fullmatch(r'\+\d+ more',line.strip()) for line in below),
-                    affected_unknown_job_visible=any(line.strip().startswith('Background · cursor-detached-0')
-                        and ('unknown' in line or 'stale' in line) for line in below),
+                    affected_unknown_job_visible=any(line.strip()=='Background · cursor-detached-0 · needs review · ?'
+                        for line in below),
                     full_HUD_six_activity_rows=sum(line.strip().startswith(('GPT-','Background ·','Advisor ·'))
                         or bool(re.fullmatch(r'\+\d+ more',line.strip())) for line in below)==6,
                     aggregate_unavailable_banner_removed='Background status unavailable' not in text,
