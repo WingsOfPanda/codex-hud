@@ -153,7 +153,11 @@ measured improvement or “not measured,” not a whole-release estimate from on
 **Exit check:** every rollout target has an operator-confirmed result and released
 hold, and required restarts have verified outcomes. Otherwise report rollout or
 restart as pending while retaining the separate published-release status. Archive
-the completed checklist and assign each remaining follow-up an owner.
+the completed checklist and assign each remaining follow-up an owner. For every
+problem encountered, complete the checklist's incident record and update the
+owning recipe or linked guidance with the verified cause and earliest preventive
+check. Keep unresolved hypotheses labeled as such; record lessons before closing
+the release, without changing already published artifacts.
 
 ## Recovery
 

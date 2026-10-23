@@ -53,6 +53,13 @@ architectures' evidence on the same host.
 - Old/new tooling diff / retained rehearsal evidence at original identity:
 - One preventive check added before the next expensive run:
 
+Repeat this incident row for each problem encountered. Link the correction in the
+owning recipe/reference rather than duplicating its procedure here.
+
+| Problem and evidence | Verified cause or unresolved hypothesis | Corrective change / earliest preventive check | Check result | Time lost | Owner / follow-up |
+| --- | --- | --- | --- | --- | --- |
+| | | | | | |
+
 ## Publication and rollout
 
 - [ ] Both archive/manifest/tree identities agree with qualification.
