@@ -5,6 +5,7 @@ import json
 import os
 import platform
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -484,8 +485,36 @@ assert 'changed frontend requires fresh package build' not in driver
         package = root / report['package_dir']
         fixtures.protocol.write_once(root / 'native-preparation.json', {'sealed': 'fixture'})
         fixtures.protocol.write_once(root / 'ownership-baseline.json', {'processes': {}})
+        for defect in ('read-only-modes', 'content', 'missing', 'extra', 'symlink'):
+            candidate = fixture.base / ('previous-' + defect)
+            shutil.copytree(old.package, candidate)
+            helper = candidate / 'bin/codex-plus-runtime'
+            if defect == 'read-only-modes':
+                for path in candidate.rglob('*'):
+                    if path.is_file():
+                        path.chmod(path.stat().st_mode & ~0o222)
+                self.assertEqual({name: (row['sha256'], row['size']) for name, row in
+                    packaging.package_release.tree_files(candidate).items()},
+                    {name: (row['sha256'], row['size']) for name, row in old.manifest['files'].items()})
+            elif defect == 'content':
+                helper.write_bytes(helper.read_bytes() + b'changed')
+            elif defect == 'missing':
+                helper.unlink()
+            elif defect == 'extra':
+                (candidate / 'extra').write_text('unqualified')
+            else:
+                helper.unlink()
+                helper.symlink_to(old.package / 'bin/codex-plus-runtime')
+            with patch.object(workflow.native, 'verify', return_value={}):
+                with self.assertRaisesRegex(ValueError, 'inventory|package entry', msg=defect):
+                    workflow.prepare_attempt(root, candidate)
+            for name in ('outputs/compat-package-approval.json', 'outputs/compat-previous-package.json',
+                         'compat', 'compat-preparation.json', 'compat-job-proposal.json'):
+                self.assertFalse((root / name).exists(), (defect, name))
+        canonical = fixture.base / 'previous-canonical'
+        shutil.copytree(old.package, canonical)
         with patch.object(workflow.native, 'verify', return_value={}):
-            proposal = workflow.prepare_attempt(root, old.package)
+            proposal = workflow.prepare_attempt(root, canonical)
             workflow.verify_attempt(root)
         self.assertEqual(proposal['argv'][3], 'run-attempt')
         scope = root / 'compat'
@@ -517,7 +546,8 @@ assert 'changed frontend requires fresh package build' not in driver
         rows = fixtures.protocol._receipts(root)
         self.assertEqual(rows['compat']['input']['execution']['job_id'], 'managed-compatible')
         self.assertEqual(rows['compat']['input']['previous_package'], 'outputs/compat-previous-package.json')
-        self.assertIn(str(old.package / 'bin/codex'), rows['compat']['input']['executed'])
+        self.assertIn(str(canonical / 'bin/codex'), rows['compat']['input']['executed'])
+        self.assertIn(str(SCRIPTS / 'package-release.py'), rows['compat']['input']['executed'])
         self.assertIn(str(site / 'pyte/__init__.py'), rows['compat']['input']['executed'])
         self.assertNotIn(str(site / 'pyte/escape.py'), rows['compat']['input']['executed'])
         self.assertIn(str(site / 'pyte/escape.py'), fixtures.protocol.load(root / 'compat-preparation.json')['closure'])
