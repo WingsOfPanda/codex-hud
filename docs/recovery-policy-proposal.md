@@ -11,6 +11,9 @@ authorization, and continues toward the requested outcome. Independent authorize
 work continues. Ask the user for a concrete missing decision, access or authority,
 not merely because cleanup needs investigation.
 
+Scope: Codex Plus roots only. Claude job-watch rules, including “never invent a
+recovery at fire time,” and the Claude `Still ask first` policy remain unchanged.
+
 Keep three facts separate:
 
 | Fact | Meaning |
@@ -59,6 +62,8 @@ reconcile uncertain delivery instead of resending.
    cancellation/cleanup policy. Independently verify ended-work cleanup. Perform
    authorized ownership-specific cleanup and record supported `job resolve`
    evidence only when every obligation is proven. Retain original results.
+   Recovery mutations touch only this job's exact owned identities; foreign jobs,
+   users' processes and unrelated tmux sessions/processes are outside this scope.
    **Done:** verified cleanup is recorded, or a specific obligation has an owner
    and bounded observation/escalation path. Keep claims until proof; a missing
    receipt or permission-denied read is not proof of absence.
@@ -111,33 +116,19 @@ does not assert migration-free or mixed-version compatibility.
 
 ## Proposed global instruction replacement
 
-Fleet-config should review this replacement for the completion/recovery paragraphs
-in the full release-owned AGENTS block. **Draft only; do not edit the live file now.**
-
-```markdown
-On `LIVE COMPLETION`, inspect results and continue the authorized task.
-On `RECOVERY REQUIRED`, investigate the exact execution and cleanup state,
-perform verified recovery within current authorization, and continue independent
-work. Preserve failed outcomes and keep resource claims until release is proven.
-A retry is a new reviewed execution after diagnosis; never blindly replay an
-unknown command or infer cleanup from heartbeat age.
-
-On `REPORT ONLY`, report the evidence and inspect it read-only. Continue only
-independent work that is still authorized; resume affected follow-ups after
-continuation authority and execution conditions are positively established.
-Respect newer stop/pause/cancel instructions and admission/delivery uncertainty.
-Ask for a concrete missing decision or authority, not a ritual confirmation.
-Legacy report barriers still require explicit renewed user direction.
-
-When only finite recovery work remains, register it with the existing observer
-and end the turn. Repeated notifications without changed evidence do not justify
-another retry or status-only model turn.
-```
+The [complete proposed block](proposals/recovery-agents-block.md) is the single
+source for `rollout.agents_md`. **Draft only; do not edit the live file now.**
+It replaces the LIVE COMPLETION / REPORT ONLY / uncertain-delivery paragraphs
+(live lines 101–107 at fleet review), and explicitly limits recovery mutations to
+this job's exact owned processes, files and records. Other roots' jobs, other
+users' processes, and unrelated tmux sessions/processes are excluded.
 
 Ship the installed recovery documentation with the decision table and procedure
 before activating this block. Keep advisor and unrelated goal text byte-identical
 unless implementation review identifies a necessary matching change. The handoff
-must contain the complete reviewed block, not just this excerpt.
+must contain the complete reviewed block. The Plus-owned goals sentence about
+newer user direction, report-only barriers and existing approvals stays unchanged
+and remains true: this policy does not override an authority barrier.
 
 ## Acceptance cases
 
@@ -148,7 +139,7 @@ must contain the complete reviewed block, not just this excerpt.
 | Unknown result with live owned process | Observe/reconcile; no duplicate launch or released claim. |
 | Ended command, uncertain external effect | Evidence or a specific decision before repetition; cleanup does not prove replay safe. |
 | Nonzero test exit after verified subtree cleanup | Test stays failed; cleanup can be clean; preserve the original diagnostic even if later reporting fails. |
-| Foreign or unreadable process identity | No broad waiver, signal or claim release; bounded investigation with an explicit remaining blocker. |
+| Foreign job/user/tmux process or unreadable identity | Read-only diagnosis may establish ownership; no mutation, signal, blanket waiver or claim release without this job's exact ownership proof. |
 | Repeated identical observation | No duplicate wake/retry/model polling; meaningful changed evidence can advance the task. |
 | Mixed live/recovery/cancelled jobs | Independent work proceeds; authority is never borrowed from a sibling. |
 | Pause/edit/clear/newer input during recovery | Newer authority wins; late receipts cannot resurrect prior work. |
@@ -165,10 +156,28 @@ the instruction/runtime contract and old/new helper behavior together.
 
 This is a proposal to fleet-config. Implementation changes frozen 0.4.8 source and
 requires a new candidate identity and affected qualification. Preserve published
-0.4.7 artifacts and original receipts. Fleet-config owns pin/policy rollout and its
-approval. Ship code, installed workflow and the exact global block together;
-assess TUI/helper restarts and rollback before rollout. Keep legacy barriers
-conservative during mixed operation instead of clearing them through new wording.
+0.4.7 artifacts and original receipts. Activation requirements from fleet review:
+
+1. Fleet-config owns rollout approval, staging, quiet checks and lockstep. In the
+   policy rollout commit, its RELEASING.md assigns verified resolution to the job's
+   owner within that task's authority. Fleet-config never resolves another root's
+   job or waives a failed quiet check. `executions: wait` still blocks unresolved
+   cleanup.
+2. On each box, install the qualified code first and the exact full block immediately
+   afterward, in the same sitting. Never distribute the policy ahead of its code.
+   `session_restart: required`: running TUIs retain old code/instructions until
+   restart. Qualify the interim helper mix; legacy barriers remain conservative.
+3. Quiet rollback restores both the retained package and its previous full block.
+   The live 0.4.7 block is byte-identical to the committed
+   [0.4.4 block](releases/0.163.0-plus.0.4.4/agents-block.md), SHA256
+   `2e5f0b01f3ac15834b8da7c90e436b91e0cc81e3c5ac79d584c2d30603dd8a59`.
+   Name this rollback policy in the handoff notes or an agreed artifact field;
+   do not add an unreviewed handoff schema key. Qualify 0.4.7 reading new written
+   recovery records/events conservatively, both-direction holds, and restored
+   policy behavior. Until those gates pass, rollback is unqualified and the floor
+   cannot move.
+4. Keep Claude rules and configuration unchanged. This rollout applies only to
+   Codex Plus roots and does not expand their permissions or job ownership.
 
 For the current 0.4.8 incident, command failure is known and cleanup is unverified.
 The intended future behavior is to inspect exact guard/process/resource evidence,
