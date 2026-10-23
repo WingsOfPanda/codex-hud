@@ -72,6 +72,10 @@ When constructing a clean test environment, retain variables required by the
 tests' explicit environment-reference contracts, including `HOME`. A missing
 caller variable is a harness failure; preserve it and correct the child
 environment before rerunning, without weakening the test.
+Use the standard release-profile helper for timed native integration checks.
+Debug unit tests remain useful, but unoptimized binary hashing can dominate ARM
+launch time. Measure the actual path before changing a deadline; preserve the
+debug failure and qualify the optimized helper with the unchanged assertions.
 
 Check compiler discovery and offline license inputs in the packaging subprocess
 environment, not only the build shell. For the new runner, the
