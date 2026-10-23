@@ -204,6 +204,149 @@ class NativeTests(unittest.TestCase):
         self.assertEqual(result, 'metadata')
         self.assertNotIn('CODEX_PLUS_RELEASE_CARGO', os.environ)
 
+    def notice_tools(self):
+        sysroot = self.base / 'sysroot'
+        copyright = sysroot / 'share/doc/rust/COPYRIGHT-library.html'
+        copyright.parent.mkdir(parents=True)
+        copyright.write_text('Rust library notices\n')
+        for name, body in {
+            'rustc': 'case "$*" in\n--version) echo "rustc 1.99.1 (fixture)";;\n'
+                     f'"--print sysroot") echo "{sysroot}";;\n*) exit 9;;\nesac\n',
+            'cargo': 'if [ "$1" = --version ]; then echo "cargo 1.99.1 (fixture)"; '
+                     'else echo "offline fixture source unavailable" >&2; exit 17; fi\n',
+        }.items():
+            tool = self.base / name
+            tool.write_text('#!/bin/sh\nset -eu\n' + body)
+            tool.chmod(0o755)
+            self.profile['toolchain'][name] = str(tool)
+        self.observed['toolchain'] = copy.deepcopy(self.profile['toolchain'])
+        self.plan['targets']['x86_64']['profile_sha256'] = protocol.digest(self.profile)
+        return copyright
+
+    def test_notice_generator_resolves_pinned_compiler_in_child_environment(self):
+        self.notice_tools()
+        c = native.Context(self.attempt(), 'frontend')
+        result = subprocess.run([c.PYTHON, '-B', str(c.SOURCE / 'scripts/runtime-notices.py'),
+                                 '--target', c.TARGET, '--output-dir', str(c.BASE / 'notices')],
+                                env=c.ENV, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('cargo failed: offline fixture source unavailable', result.stderr)
+
+    def test_compiler_adapter_only_strips_the_exact_pinned_version(self):
+        self.notice_tools()
+        c = native.Context(self.attempt(), 'frontend')
+        for prefix, code in (([], 0), (['+1.99.1'], 0), (['+1.99.0'], 9)):
+            with self.subTest(prefix=prefix):
+                result = subprocess.run(['rustc', *prefix, '--version'], env=c.ENV,
+                                        capture_output=True, text=True)
+                self.assertEqual(result.returncode, code)
+                if code == 0:
+                    self.assertEqual(result.stdout.strip(), 'rustc 1.99.1 (fixture)')
+
+    def packaging_fixture(self):
+        copyright = self.notice_tools()
+        c = native.Context(self.attempt(), 'frontend')
+        c.UPSTREAM.mkdir()
+        for name in ('LICENSE', 'NOTICE', 'codex-rs/vendor/bubblewrap/COPYING',
+                     'third_party/v8/rusty_v8_150_4_0_release_manifests.sha256'):
+            path = c.UPSTREAM / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes((ROOT / 'LICENSE').read_bytes())
+        for name in ('cli', 'code-mode-host'):
+            path = c.UPSTREAM / 'codex-rs' / name / 'Cargo.toml'
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(f'[package]\nname = "codex-{name}"\nversion = "1.0.0"\n')
+        (c.UPSTREAM / 'codex-rs/Cargo.toml').write_text('[workspace]\nmembers=["cli","code-mode-host"]\n')
+        (c.UPSTREAM / 'codex-rs/Cargo.lock').write_text('version=4\n' + ''.join(
+            f'[[package]]\nname="codex-{name}"\nversion="1.0.0"\n' for name in ('cli', 'code-mode-host')))
+        cargo = Path(self.profile['toolchain']['cargo'])
+        cargo.write_text('#!' + c.PYTHON + '\n' + '''import json,sys,tomllib
+from pathlib import Path
+args=sys.argv[1:]
+if args == ['--version']:
+    print('cargo 1.99.1 (fixture)')
+    raise SystemExit(0)
+assert '--offline' in args and '--locked' in args
+manifest=Path(args[args.index('--manifest-path')+1])
+names={'codex-plus-runtime': manifest} if manifest.parent.name == 'rust-runtime' else {
+    'codex-cli': manifest.parent/'cli/Cargo.toml',
+    'codex-code-mode-host': manifest.parent/'code-mode-host/Cargo.toml'}
+packages=[dict(id=name,name=name,version=tomllib.loads(path.read_text())['package']['version'],
+    source=None,license='MIT',manifest_path=str(path)) for name,path in names.items()]
+if args[0] == 'metadata':
+    print(json.dumps(dict(packages=packages,resolve=dict(root=packages[0]['id'],
+        nodes=[dict(id=p['id'],deps=[]) for p in packages]))))
+else:
+    assert args[0] == 'tree'
+    print('\\n'.join(p['name']+' v'+p['version']+'|' for p in packages))
+''')
+        recipe = native.module(native.RECIPE / 'packaging-preflight.py')
+        notices = native.module(ROOT / 'scripts/runtime-notices.py')
+        packager = native.module(ROOT / 'scripts/package-release.py')
+        cache = Path(c.profile['native_build']['license_cache'])
+        cache.mkdir()
+        license_file = cache / 'fixture-license'
+        license_file.write_text('fixture cached license')
+        packager.LICENSE_DOWNLOADS = {'fixture-license': ('fixture-url', native.sha(license_file))}
+        supplement = self.base / 'supplement.json'
+        supplement.write_text('{}')
+        notices.LICENSE_SOURCES = supplement
+        return recipe, c, notices, packager, cache, copyright
+
+    def test_packaging_preflight_exercises_both_product_notice_graphs(self):
+        recipe, c, notices, packager, cache, _ = self.packaging_fixture()
+        output = c.BASE / 'evidence/packaging-preflight'
+        with patch.object(recipe, 'module', side_effect=[notices, packager]), \
+             patch.dict(os.environ, c.ENV, clear=True):
+            report = recipe.check(c.SOURCE, c.UPSTREAM, c.TARGET, cache, output)
+        self.assertEqual(report['packages'], {'helper': 1, 'upstream': 2})
+        self.assertEqual(report['outcome'], 'passed')
+        self.assertEqual(set(report['compiler_versions']), {'rustc', 'cargo'})
+        self.assertEqual(len(report['product_scripts']), 2)
+        self.assertTrue((output / 'preflight.json').is_file())
+
+    def test_packaging_preflight_refuses_missing_compiler_and_license_inputs(self):
+        for missing in ('compiler', 'compiler-version', 'cargo-version', 'copyright',
+                        'cache', 'upstream-license', 'offline-source'):
+            with self.subTest(missing=missing):
+                # Each case owns a fresh fixture, including the attempt's socket root.
+                fixture = NativeTests()
+                fixture.setUp()
+                try:
+                    recipe, c, notices, packager, cache, copyright = fixture.packaging_fixture()
+                    if missing == 'compiler':
+                        c.ENV['PATH'] = '/usr/bin:/bin'
+                    elif missing in ('compiler-version', 'cargo-version'):
+                        tool = 'rustc' if missing == 'compiler-version' else 'cargo'
+                        Path(c.profile['toolchain'][tool]).write_text(
+                            '#!/bin/sh\necho "' + tool + ' 1.99.0 (wrong pin)"\n')
+                    elif missing == 'copyright':
+                        copyright.unlink()
+                    elif missing == 'cache':
+                        (cache / 'fixture-license').unlink()
+                    elif missing == 'upstream-license':
+                        (c.UPSTREAM / 'LICENSE').unlink()
+                    else:
+                        Path(c.profile['toolchain']['cargo']).write_text(
+                            '#!/bin/sh\nif [ "$1" = --version ]; then echo "cargo 1.99.1 (fixture)"; '
+                            'else echo "offline source unavailable" >&2; exit 17; fi\n')
+                    with patch.object(recipe, 'module', side_effect=[notices, packager]), \
+                         patch.dict(os.environ, c.ENV, clear=True), self.assertRaises((OSError, ValueError)):
+                        recipe.check(c.SOURCE, c.UPSTREAM, c.TARGET, cache, c.BASE / 'notices')
+                    self.assertFalse((c.BASE / 'notices/preflight.json').exists())
+                finally:
+                    fixture.doCleanups()
+
+    def test_supplemental_preflight_checks_only_generator_download_inputs(self):
+        recipe = native.module(native.RECIPE / 'packaging-preflight.py')
+        supplements = {'fixture': {'basis': 'published-license-declaration',
+            'archive': {'sha256': 'archive'},
+            'source_evidence': {'Cargo.toml': {'url': 'archive-url', 'sha256': 'local-source'}},
+            'files': [{'sha256': 'remote'}, {'sha256': 'local', 'local_path': 'Cargo.toml'},
+                      {'sha256': 'embedded', 'text': 'embedded notice'}]}}
+        self.assertEqual(list(recipe.supplemental_inputs(supplements, self.base)),
+                         [(self.base / 'remote', 'remote'), (self.base / 'archive', 'archive')])
+
     def test_prepare_missing_input_refuses_before_any_process_launch(self):
         root = self.attempt()
         with patch.object(native, 'observe') as observe, patch.object(native, 'owned_run') as execute:
@@ -512,6 +655,11 @@ class NativeTests(unittest.TestCase):
                 native.module(native.RECIPE / 'build.py').frontend(c)
                 names = [name for name, _, _ in calls]
                 self.assertLess(names.index('bwrap-build'), names.index('frontend-build'))
+                self.assertLess(names.index('patch-apply'), names.index('packaging-preflight'))
+                self.assertLess(names.index('packaging-preflight'), names.index('bwrap-build'))
+                preflight = next(row for row in calls if row[0] == 'packaging-preflight')
+                self.assertEqual(preflight[2], calls[0][2])
+                self.assertIn(str(c.BASE / 'evidence/packaging-preflight'), preflight[1])
                 self.assertEqual(calls[0][1][-1], str(root / 'upstream'))
                 for name in ('bwrap-build', 'frontend-build'):
                     argv = next(row[1] for row in calls if row[0] == name)

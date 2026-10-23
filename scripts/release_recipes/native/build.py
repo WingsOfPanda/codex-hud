@@ -34,6 +34,10 @@ def frontend(c):
     patch = c.SOURCE / c.plan['patch']['path']
     c.run('patch-clean-apply-check', ['/usr/bin/git', '-C', c.UPSTREAM, 'apply', '--check', patch])
     c.run('patch-apply', ['/usr/bin/git', '-C', c.UPSTREAM, 'apply', '--index', patch])
+    c.run('packaging-preflight', [c.PYTHON, c.INPUTS / 'packaging-preflight.py',
+        '--source', c.SOURCE, '--upstream-source', c.UPSTREAM, '--target', c.TARGET,
+        '--license-cache', c.profile['native_build']['license_cache'],
+        '--output-dir', c.BASE / 'evidence/packaging-preflight'], cwd=c.SOURCE, timeout=300)
     c.ENV['INSTA_WORKSPACE_ROOT'] = str(c.UPSTREAM / 'codex-rs')
     build = [c.CARGO, 'build', '--locked', '--offline', '--release', '--target', c.TARGET,
         '--jobs', str(c.JOBS), '--timings', '--message-format=json']
