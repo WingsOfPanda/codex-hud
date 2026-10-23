@@ -212,3 +212,11 @@ owner supplies cleanup proof. For the new runner, follow its
 receipts remain failed. Record the earliest preventive check for the supported
 cause in the owning recipe or reference doc, then return to the earliest unmet
 exit check.
+
+Compare both the raw managed result and the copy stored in state before recovery.
+Their `finished_at` floats can differ by one representable step after a JSON
+round trip. The recovery validator permits only that finite, adjacent-float
+difference; every other result field must match. Preserve both original files,
+record the validator revision, and keep cleanup resolution separate from package
+acceptance. A larger timestamp difference or any outcome/identity difference
+requires investigation, not normalization of the records.
