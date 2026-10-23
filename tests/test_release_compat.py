@@ -249,6 +249,8 @@ assert NEW_VERSION == __import__('sys').argv[2]
             'unclean-home': lambda case: case.update(private_home_removed=False),
             'escaped-home': lambda case: case.update(private_home='/outside-owned-scope/home'),
             'sibling-home': lambda case: case.update(private_home=str(self.short / 'bb/home')),
+            'dotdot-home': lambda case: case.update(private_home=str(self.short / 'aa/../outside/home')),
+            'allocation-root': lambda case: case.update(private_home=str(self.short / 'aa')),
             'wrong-policy': lambda case: case['recovery_policy'].update(notification='RECOVERY REQUIRED:'),
         }
         for name, mutate in mutations.items():

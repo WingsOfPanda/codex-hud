@@ -58,6 +58,7 @@ def validate_recovery_reports(evidence, config):
     short = Path(json.loads((Path(config['scope']) / 'short-binding.json').read_text())['path'])
     require(short.parent == Path(config['short_root']) and len(short.name) == 2 and short.name.isalnum(),
         'Recovery short allocation mismatch')
+    owned_short = short.resolve()
     expected = [(suite, scenario) for suite, cases in RECOVERY_CASES.items() for scenario in cases]
     require([(row.get('suite'), row.get('scenario')) for row in report.get('cases', [])] == expected,
         'Recovery case inventory incomplete')
@@ -75,7 +76,9 @@ def validate_recovery_reports(evidence, config):
             case.get('remote_model_requests') == 0 and case.get('private_home_removed') is True,
             'Recovery case failed, wrong helper/daemon, paid request, or unresolved cleanup')
         home = Path(case.get('private_home', ''))
-        require(home.is_absolute() and home.is_relative_to(short) and not home.exists(),
+        resolved_home = home.resolve()
+        require(home.is_absolute() and '..' not in home.parts and resolved_home != owned_short and
+            resolved_home.is_relative_to(owned_short) and not home.exists(),
             'Recovery private home escaped owned scope or survived cleanup')
         scenario = row['scenario']
         old_reader = scenario.endswith('old-reader')
