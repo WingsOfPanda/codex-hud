@@ -32,7 +32,7 @@ def bound_execution(directory, profile, expected):
 
 
 def closure(profile):
-    paths = [SCRIPTS / name for name in ('release_compat.py', 'release_native.py',
+    paths = [SCRIPTS / name for name in ('release_compat.py', 'release_native.py', 'package-release.py',
                                        'release_protocol.py', 'release_ownership.py')]
     paths += [path for path in compat.RECIPE.iterdir() if path.is_file()]
     paths += [Path(profile['python']['path']), Path(profile['executor_package_root']) / 'bin/codex-plus-runtime']
@@ -64,6 +64,17 @@ def prepare_attempt(root, old_package):
     root = Path(root).resolve(strict=True)
     metadata, plan, profile = protocol.require_native_attempt(root)
     native.verify(root)
+    old = Path(old_package).resolve(strict=True)
+    old_manifest = protocol.load(old / 'codex-plus.json')
+    pin = plan['previous_release']['targets'][metadata['architecture']]['manifest_sha256']
+    protocol.require(native.sha(old / 'codex-plus.json') == pin and
+        old_manifest['release'] == plan['previous_release']['tag'] and
+        old_manifest['plus_commit'] == plan['compat']['previous_source_commit'] and
+        old_manifest['target'] == profile['triple'], 'Previous package identity mismatch')
+    verifier = native.module(SCRIPTS / 'package-release.py')
+    old_files = verifier.tree_files(old)
+    protocol.require(old_files == old_manifest['files'] and
+        verifier.tree_sha256(old_files) == old_manifest['tree_sha256'], 'Previous package inventory mismatch')
     approval = protocol.approve_package(root, source_root=profile['source_root'])
     approval_path = root / 'outputs/compat-package-approval.json'
     protocol.write_once(approval_path, approval)
@@ -71,20 +82,13 @@ def prepare_attempt(root, old_package):
     package = protocol.relative_file(root, package_report['package_dir'])
     archive = protocol.relative_file(root, package_report['archive'])
     helper = Path(profile['executor_package_root']) / 'bin/codex-plus-runtime'
-    settings = {'old_package': str(Path(old_package).resolve(strict=True)), 'new_package': str(package),
+    settings = {'old_package': str(old), 'new_package': str(package),
         'new_archive': str(archive), 'stock_binary': profile['native_build']['official_binary'],
         'qualification_evidence': str(approval_path), 'new_manifest_sha256': approval['manifest_sha256'],
         'new_archive_sha256': approval['archive_sha256'], 'qualification_evidence_sha256': native.sha(approval_path),
         'root_accepted_final_package': True}
     prepared = compat.prepare(plan, profile, root, config=settings,
         helper_binding={'helper': str(helper), 'sha256': native.sha(helper)})
-    old = Path(settings['old_package'])
-    old_manifest = protocol.load(old / 'codex-plus.json')
-    pin = plan['previous_release']['targets'][metadata['architecture']]['manifest_sha256']
-    protocol.require(native.sha(old / 'codex-plus.json') == pin and
-        old_manifest['release'] == plan['previous_release']['tag'] and
-        old_manifest['plus_commit'] == plan['compat']['previous_source_commit'] and
-        old_manifest['target'] == profile['triple'], 'Previous package identity mismatch')
     protocol.write_once(root / 'outputs/compat-previous-package.json', {'path': str(old), 'manifest_sha256': pin})
     files = closure(profile)
     for name in plan['compat']['fixture_files']:
