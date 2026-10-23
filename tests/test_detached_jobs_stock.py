@@ -11,6 +11,7 @@ import json
 import os
 from pathlib import Path
 import shlex
+import shutil
 import sqlite3
 import sys
 import time
@@ -534,7 +535,71 @@ def resources(f):
     wait(lambda: f.delivered(2), "first root completion missing")
 
 
+def cleanup_recovery(f, *, exit_code=0, old_reader=False):
+    """A real failed cleanup retains claims and needs no command replay."""
+    cleanup = dict(argv=["/usr/bin/false"], cwd=str(f.work), env={}, deadline_seconds=5)
+    manifest, directory = f.manifest("cleanup-recovery", keys=["recovery-resource"], cleanup=cleanup)
+    with (directory / "workload.py").open("a") as stream:
+        stream.write(f"raise SystemExit({exit_code})\n")
+    command = f.commands(operations(manifest))
+    ident, _ = launched(f, command)
+    (directory / "release").touch()
+    result = finished(f, ident, directory, "failed")
+    assert result["result"]["exit_code"] == exit_code, result
+    assert result["result"]["cleanup"]["status"] == "failed", result
+    original = (f.job_directory(ident) / "result.json").read_bytes()
+    def observed():
+        return next((row for row in f.state()["jobs"]
+                     if row["execution"] == ident and row["status"] != "armed"), None)
+    watched = wait(observed, "failed cleanup was not observed")
+    assert all(row["message"] is None for row in f.state()["callbacks"]), "busy parent froze callback early"
+    current_runtime = f.runtime
+    if old_reader:
+        assert watched["report"] == 1 and watched.get("recovery_allowed") == 1, watched
+        assert f.old_runtime is not None, "--old-runtime is required for old-reader recovery"
+        stop_rust_observers(f.home)
+        prior = f.root / "previous/bin/codex-plus-runtime"
+        prior.parent.mkdir(parents=True)
+        shutil.copy2(f.old_runtime, prior)
+        f.runtime = prior
+        assert f.job(ident)["result"] == result["result"], "old helper changed execution truth"
+        f.cli("observe", "--parent", f.parent)
+    before = f.provider.count
+    f.finish(command)
+    wait(lambda: f.delivered(), "recovery notification was not delivered")
+    wait(lambda: f.thread()["status"]["type"] == "idle", "recovery callback did not settle")
+    callback = f.state()["callbacks"][0]
+    prefix = "REPORT ONLY:" if old_reader else "RECOVERY REQUIRED:"
+    assert callback["message"].startswith(prefix), callback
+    assert watched["report"] == 1 and watched.get("recovery_allowed") == 1, watched
+    assert f.provider.count == before + 1, "recovery caused duplicate model turns"
+    assert f.cli("job", "maintenance", "status")["execution_quiet"] is False
+    f.quiet(.3)
+    assert (directory / "runs").read_text() == "run\n"
+    stop_rust_observers(f.home)
+    f.runtime = current_runtime
+    evidence = directory / "resolution-evidence.json"
+    evidence.write_text(json.dumps(dict(root=f.parent, id=ident, cleanup_verified=True,
+        evidence="Private fixture workload ended; cleanup was /usr/bin/false with no external effects. "
+                 "The resolver must verify executor lock and exact process/group absence.")))
+    resolution = f.commands([["job", "resolve", "--id", ident, "--evidence", str(evidence)]])
+    rows = f.responses(resolution)
+    assert rows[0]["returncode"] == 0, rows
+    f.finish(resolution)
+    assert (f.job_directory(ident) / "result.json").read_bytes() == original
+    assert f.job(ident)["state"] == "failed"
+    assert f.job(ident)["resolution"]["cleanup_verified"] is True
+    assert f.cli("job", "maintenance", "status")["execution_quiet"] is True
+    assert (directory / "runs").read_text() == "run\n"
+    f.report["recovery_policy"] = dict(exit_code=exit_code, old_reader=old_reader,
+        notification=prefix, one_workload=True, original_result_preserved=True,
+        claims_held_until_verified_resolution=True)
+
+
 SCENARIOS = {"completion": completion,
+    "cleanup-recovery-success": cleanup_recovery,
+    "cleanup-recovery-failure": lambda f: cleanup_recovery(f, exit_code=7),
+    "cleanup-recovery-old-reader": lambda f: cleanup_recovery(f, exit_code=7, old_reader=True),
     "daemon-graceful": lambda f: restart(f),
     "daemon-abrupt": lambda f: restart(f, abrupt=True),
     "observation-gap": lambda f: restart(f, abrupt=True, observation_gap=True),
@@ -564,8 +629,12 @@ def main():
     parser.add_argument("--stock-binary", type=Path, required=True)
     parser.add_argument("--evidence", type=Path, required=True)
     parser.add_argument("--scenario", choices=SCENARIOS, required=True)
+    parser.add_argument("--old-runtime", type=Path)
     args = parser.parse_args()
     runtime, binary = args.runtime.resolve(strict=True), args.stock_binary.resolve(strict=True)
+    old_runtime = args.old_runtime.resolve(strict=True) if args.old_runtime else None
+    if args.scenario == "cleanup-recovery-old-reader" and old_runtime is None:
+        parser.error("--old-runtime is required for cleanup-recovery-old-reader")
     config = ""
     if args.scenario.startswith("managed-"):
         config = ('[permissions.unrestricted.filesystem]\n":root"="write"\n'
@@ -573,6 +642,7 @@ def main():
         if args.scenario == "managed-network":
             config += '[features.network_proxy]\nenabled=true\n'
     f = DetachedJobServer(runtime, binary, args.evidence.resolve(), config=config)
+    f.old_runtime = old_runtime
     passed = False
     try:
         assert f.report["stock_version"] == "codex-cli 0.163.0", f.report

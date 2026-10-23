@@ -77,7 +77,10 @@ decide which prior evidence remains applicable. Keep each launched attempt immut
 
 **Exit check:** the selected checks pass against the actual frozen files and child
 environments on both hosts; all required tools, fixture setup and cleanup proofs
-are present. Missing checks are blockers, not implied passes.
+are present. Both targets have non-rehearsal prepared attempts and reviewed
+proposals under the same combined plan before either build launches. A rehearsal
+that skips a native dependency probe does not satisfy that prerequisite. Missing
+checks are blockers, not implied passes.
 
 ## 3. Execute native work
 
@@ -167,6 +170,7 @@ the release, without changing already published artifacts.
 | --- | --- |
 | Preparation fails | Repair the cause; pass the affected setup check before compilation. |
 | Product/test fails | Preserve the original result; review the change and invalidated gates under the selected path's reuse rules. |
+| `RECOVERY REQUIRED` | Follow [bounded recovery](recovery.md) under current authority; keep affected claims until verified cleanup and continue independent authorized work. |
 | Cleanup uncertain or observation lost | Inspect exact process/descendant/socket/source evidence through [status and cancellation](background-work.md#status-and-cancellation); retain unknowns until resolved. |
 | `REPORT ONLY` | Report known results and wait for explicit renewed user direction before old follow-ups, even if preparation was previously authorized. |
 | Footer says stale | Check actual execution/result and observer health; classify running, ended or unknown. Age alone authorizes no termination or replay. |

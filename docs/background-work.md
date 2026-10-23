@@ -36,8 +36,10 @@ workers may still use their models while the main session is idle.
    waiting notice. **Do not keep the turn open with sleeps, `wait_agent`, or
    repeated process polls.** Already-finished jobs should be reviewed immediately.
 4. Read the notification kind. For `LIVE`, inspect the identified results and
-   continue the current authorized task. For `REPORT ONLY`, report the outcomes
-   and wait for renewed user direction before resuming the old follow-up work.
+   continue the current authorized task. For `RECOVERY REQUIRED`, follow
+   [bounded job recovery](recovery.md). For `REPORT ONLY`, report and inspect
+   read-only; keep independent authorized work moving while affected follow-ups
+   remain subject to authority/cleanup checks and any legacy renewal barrier.
    Existing registrations keep watching remaining jobs. Register new work before
    ending the turn again if only background work remains.
 
@@ -90,8 +92,16 @@ positively observed still running can produce a later live completion. An RPC
 error does not prove completion, and the recovery classification survives retries.
 An old reason does not renew permission to carry out follow-up actions.
 Reports use the same idle-session delivery path as live wakes: they may start a
-model turn to report the result, then wait for the user. They are not held until
-the next manual prompt.
+model turn to report and diagnose. Ask for a concrete missing decision or authority
+rather than a ritual confirmation; legacy report barriers still require explicit
+renewal before affected follow-ups. Reports need not wait for the next manual prompt.
+
+A continuous authorized execution watch uses `RECOVERY REQUIRED` for known
+command results with unresolved cleanup, or genuinely unknown outcomes requiring
+investigation. Known exits remain known. The recovery wake grants no replay or
+resource-release permission; [recovery](recovery.md) defines the proof and scope.
+The new ledger marker preserves conservative legacy report behavior and does not
+override observer gaps, cancelled registrations or frozen callback text.
 
 Notifications already submitted before the interruption keep their original
 identity and frozen text during reconciliation. They cannot safely be relabelled

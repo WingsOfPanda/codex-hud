@@ -1,7 +1,8 @@
 # Recovery within the authorized task
 
-Status: **proposed for 0.4.8; not implemented or active**. This design does not
-clear an existing report barrier, qualify a package, or authorize installation.
+Status: **0.4.8 implementation candidate; not activated on the fleet**. Existing
+legacy report barriers remain intact. Source tests do not qualify a release or
+authorize installation; use the published handoff for actual compatibility results.
 
 ## Decision
 
@@ -27,7 +28,7 @@ failed or unknown command successful. A notification carries facts, not permissi
 
 ## Notification decisions
 
-These are proposed visible labels, backed by exact root/job/turn and current
+These visible labels are backed by exact root/job/turn and current
 input/goal checks. Labels alone do not authorize actions.
 
 | Situation | Delivery and root action |
@@ -94,7 +95,7 @@ reason. Preserve pause/edit/clear, input precedence, single-dispatch and success
 end-of-turn rules. Model-written Continue cannot bypass an authority barrier or
 reactivate a superseded goal. Non-goal work still needs current root admission.
 
-Review these implementation seams together:
+Implementation and acceptance cover these seams together:
 
 - `background.rs`: retain known command outcomes in `execution_outcome`; distinguish
   live recovery from lost continuation authority. Unresolved cleanup alone should
@@ -110,14 +111,18 @@ Review these implementation seams together:
 - Instructions/docs: replace blanket stop wording with this workflow. HUD refresh
   remains read-only; this proposal needs no new footer row or configuration switch.
 
-Reuse existing records/state where possible. Before implementation freeze, document
-any necessary event, ledger or protocol change from actual code. This proposal
-does not assert migration-free or mixed-version compatibility.
+The intended compatibility encoding keeps legacy-readable recovery jobs at
+`report=1` and adds a default-zero SQLite `jobs.recovery_allowed` marker. Only
+positively live observation can authorize the new recovery path. Old helpers
+ignore the marker and remain conservative; legacy/manual/restart barriers retain
+marker zero. Execution record JSON remains separate from this ledger addition.
+The old-helper behavior, migration and frozen callback cases require actual
+qualification; an additive column alone is not compatibility evidence.
 
-## Proposed global instruction replacement
+## Global instruction activation
 
-The [complete proposed block](proposals/recovery-agents-block.md) is the single
-source for `rollout.agents_md`. **Draft only; do not edit the live file now.**
+The [complete candidate block](proposals/recovery-agents-block.md) is the single
+source for `rollout.agents_md`. **Install only with its qualified runtime.**
 It replaces the LIVE COMPLETION / REPORT ONLY / uncertain-delivery paragraphs
 (live lines 101–107 at fleet review), and explicitly limits recovery mutations to
 this job's exact owned processes, files and records. Other roots' jobs, other
@@ -154,7 +159,7 @@ the instruction/runtime contract and old/new helper behavior together.
 
 ## Activation and current release
 
-This is a proposal to fleet-config. Implementation changes frozen 0.4.8 source and
+This implementation changes frozen 0.4.8 source and
 requires a new candidate identity and affected qualification. Preserve published
 0.4.7 artifacts and original receipts. Activation requirements from fleet review:
 
@@ -183,5 +188,5 @@ For the current 0.4.8 incident, command failure is known and cleanup is unverifi
 The intended future behavior is to inspect exact guard/process/resource evidence,
 perform authorized verified reconciliation, fix the outdated footer assertion and
 failed-stage reporting, apply the private ARM profile correction, and prepare both
-targets before any new launch. This proposal performs none of those actions and
-does not claim the release is qualified.
+targets before any new launch. A policy document or code change alone performs
+none of that recovery and does not qualify the release.

@@ -72,8 +72,13 @@ Handle coordinator notifications by kind:
 
 - `LIVE COMPLETION`: inspect the referenced results and continue the current
   authorized task. End the turn again when only registered work remains.
-- `REPORT ONLY`: report the outcomes and wait for renewed user direction before
-  resuming the old follow-up actions; the registration reason is only context.
+- `RECOVERY REQUIRED`: follow [bounded job recovery](docs/recovery.md): investigate
+  and perform verified recovery within current authority, while independent work
+  continues. Preserve original outcomes and claims until cleanup is proven.
+- `REPORT ONLY`: report and inspect read-only. Independent authorized work may
+  continue; affected follow-ups require established authority and execution
+  conditions. Legacy report barriers require explicit renewed user direction.
+  A registration reason is context, not permission.
 
 For cancellation, unavailable watcher health, or uncertain delivery, follow
 [status and cancellation](docs/background-work.md#status-and-cancellation).
