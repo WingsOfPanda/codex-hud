@@ -3,6 +3,7 @@ import copy
 import importlib.util
 import io
 import json
+import math
 from pathlib import Path
 import shutil
 import subprocess
@@ -573,7 +574,7 @@ class ReleaseProtocolTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'qualified inventory'):
             protocol._executed(profile, [str(binary)], plan=self.plan, previous_package=proof)
 
-    def test_forensic_recovery_export_preserves_raw_records_and_original_failure(self):
+    def forensic_recovery(self, saved_finished=None, finished=None):
         root = self.attempt()
         self.receipt(root, 'package', {}, outcome='failed', exit_code=9)
         metadata, _, _ = protocol.read_attempt(root)
@@ -586,8 +587,13 @@ class ReleaseProtocolTests(unittest.TestCase):
             'journal_sha256': protocol.file_record(root / 'process-journal.jsonl')['sha256'],
             'ownership_baseline_sha256': protocol.file_record(root / 'ownership-baseline.json')['sha256']}
         resolution = {'cleanup_verified': True, 'release_recovery': dict(binding, subtree_cleanup_evidence='explicit root proof')}
-        result = {'exit_code': 9}
-        records = {'recovery/managed-state.json': {'result': result, 'resolution': resolution},
+        result = {'id': 'job', 'root': 'root', 'state': 'failed', 'exit_code': 9,
+                  'cleanup': {'status': 'failed', 'exit_code': 1}}
+        saved_result = copy.deepcopy(result)
+        if saved_finished is not None:
+            saved_result['finished_at'] = saved_finished
+            result['finished_at'] = finished
+        records = {'recovery/managed-state.json': {'result': saved_result, 'resolution': resolution},
                    'recovery/managed-result.json': result, 'recovery/managed-resolution.json': resolution}
         for name, value in records.items():
             self.put(root, name, value)
@@ -600,17 +606,56 @@ class ReleaseProtocolTests(unittest.TestCase):
         for name in ('socket-removal-intent.json', 'socket-quarantine.json', 'socket-moved.json',
                      'socket-deleted.json', 'socket-cleanup-retries/01-intent.json'):
             self.put(root, name, {'identity': metadata['socket_identity']})
-        bundle = self.base / 'recovered-failure.tgz'
-        exported = self.export(root, bundle)
-        imported = protocol.import_attempt(bundle, self.base / 'recovered-import', expected_sha256=exported['sha256'])
-        self.assertEqual(protocol.status(imported)['refused'], ['package'])
-        for name in names + ['socket-cleanup-retries/01-intent.json', 'socket-deleted.json']:
-            self.assertEqual((imported / name).read_bytes(), (root / name).read_bytes())
-        with self.assertRaisesRegex(ValueError, 'Missing/failed'):
-            protocol.approve_package(imported, source_root=ROOT, archive=self.base / 'not-present.tar.gz')
-        (root / 'process-journal.jsonl').write_text('changed journal')
-        with self.assertRaisesRegex(ValueError, 'Evidence output changed'):
-            protocol.status(root)
+        return root, names + ['recovery/receipt.json', 'socket-cleanup-retries/01-intent.json',
+                              'socket-deleted.json']
+
+    def test_forensic_recovery_export_preserves_raw_records_and_original_failure(self):
+        lower, upper = 1792751962.6755495, 1792751962.6755497
+        for index, (saved, separate) in enumerate([(None,None), (lower,upper), (upper,lower)]):
+            with self.subTest(saved=saved, separate=separate):
+                root, names = self.forensic_recovery(saved, separate)
+                before = {name: (root / name).read_bytes() for name in names}
+                bundle = self.base / f'recovered-failure-{index}.tgz'
+                exported = self.export(root, bundle)
+                imported = protocol.import_attempt(bundle, self.base / f'recovered-import-{index}',
+                                                   expected_sha256=exported['sha256'])
+                for attempt in (root, imported):
+                    verdict = protocol.status(attempt)
+                    self.assertEqual(verdict['refused'], ['package'])
+                    self.assertEqual(verdict['next_action'], 'review-failure')
+                    self.assertEqual(before, {name: (attempt / name).read_bytes() for name in names})
+                    with self.assertRaisesRegex(ValueError, 'Missing/failed'):
+                        protocol.approve_package(attempt, source_root=ROOT,
+                                                 archive=self.base / 'not-present.tar.gz')
+                (root / 'process-journal.jsonl').write_text('changed journal')
+                with self.assertRaisesRegex(ValueError, 'Evidence output changed'):
+                    protocol.status(root)
+
+    def test_forensic_recovery_rejects_result_drift_and_tampering(self):
+        lower, upper = 1792751962.6755495, 1792751962.6755497
+        cases = [('finished_at',math.nextafter(upper,math.inf)),
+                 ('finished_at',math.nextafter(math.nextafter(lower,-math.inf),-math.inf)),
+                 ('exit_code',0), ('state','completed'), ('id','other'), ('root','other'),
+                 ('cleanup',{'status': 'completed', 'exit_code': 0}), ('extra',True),
+                 ('hash',None)]
+        for index, (key, value) in enumerate(cases):
+            with self.subTest(key=key, value=value):
+                root, names = self.forensic_recovery(lower, upper)
+                result_name = 'recovery/managed-result.json'
+                result = protocol.load(root / result_name)
+                result[key] = value
+                self.put(root, result_name, result)
+                if key != 'hash':
+                    receipt = protocol.load(root / 'recovery/receipt.json')
+                    receipt['files'][result_name] = protocol.file_record(root / result_name)
+                    self.put(root, 'recovery/receipt.json', receipt)
+                before = {name: (root / name).read_bytes() for name in names}
+                message = 'Evidence output changed' if key == 'hash' else 'managed snapshots disagree'
+                with self.assertRaisesRegex(ValueError, message):
+                    protocol.status(root)
+                with self.assertRaisesRegex(ValueError, message):
+                    protocol.export_attempt(root, self.base / f'invalid-recovery-{index}.tgz')
+                self.assertEqual(before, {name: (root / name).read_bytes() for name in names})
 
     def test_pkg_config_profile_is_optional_and_requires_exact_scoped_input_pins(self):
         profile = copy.deepcopy(self.profile)
