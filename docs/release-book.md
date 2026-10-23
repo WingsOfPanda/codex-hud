@@ -220,3 +220,5 @@ difference; every other result field must match. Preserve both original files,
 record the validator revision, and keep cleanup resolution separate from package
 acceptance. A larger timestamp difference or any outcome/identity difference
 requires investigation, not normalization of the records.
+Exercise recovery status, export and import with the same preserved pair too;
+passing cleanup validation alone does not prove the forensic transport path.
