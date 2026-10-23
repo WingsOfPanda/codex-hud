@@ -1,0 +1,1030 @@
+{
+  "schema": 1,
+  "passed": true,
+  "architecture": "aarch64",
+  "source_commit": "05f883c228b18830ed93f691460715525b42a825",
+  "fixture_source": {
+    "path": "/data/liupan/codex-plus-build/release048/source-v4",
+    "commit": "05f883c228b18830ed93f691460715525b42a825",
+    "shipping_source_commit": "05f883c228b18830ed93f691460715525b42a825",
+    "fixture_repair_already_shipping": true,
+    "files_sha256": {
+      "docs/releases/0.163.0-plus.0.4.0/verify-operator-probes.py": "c355e717df4ef0e5ccee821ba700472f9c1b0d0bf61bb6ed5dd5a39ae3d0e095",
+      "docs/ultracode-bootstrap.txt": "521d563b280999e64ca21ab300038c38fdb8280678405af88e50620afe2ce799",
+      "docs/ultracode-policy.md": "1fa54c30b6f6dff6fe9572a51fe6600dd7c1f29286d79862693cedf5588152c8",
+      "tests/fixtures/advisor_provider.py": "56be04e60bba22e086502d26374a4440fa64e926d1726a13cd2279bbef5f58af",
+      "tests/fixtures/background_provider.py": "208b0647f59c8af41f8f93c1452171eda583a075cdc5dc98bef5b2c7d59130fa",
+      "tests/fixtures/cooperative_upgrade.py": "4c4deaad6aa91c9c1cb63574f8c29ec15030bbf8cc5a32a521f59801e45071de",
+      "tests/fixtures/custom_goal_server.py": "fc327041ca3740733b57e5b707d973e734bd6e4d3dfcb711fe83bf7dc7c3e7b7",
+      "tests/fixtures/custom_goal_wire.py": "a5142581cdd72bb23d177852a62cd923464fc62d660a9131243f27a8572b3516",
+      "tests/fixtures/detached_jobs.py": "c8533963e306f5b3708cd3570ba04dcc567169e78dfa5a854ddff94203af99e0",
+      "tests/fixtures/foreground_advisor_provider.py": "5dab03b3c6cff17920a521649c5a1d0414d7039872673c6bf03b5597aa7e904f",
+      "tests/fixtures/interruption_provider.py": "9cf3c7c60edb739d36ca807ad11935905174dae9bd7e82ddce5772c658f49f42",
+      "tests/fixtures/native_server.py": "ea110fdc3ef776bb6e449c051f7755c053f4b2d2a00550b0f895b1074f84168f",
+      "tests/fixtures/recovery_provider.py": "d6fa2bcfc5708ddeb7ad9ac7b3ce9b21cfc2db818113909b3e627ad403c7a4af",
+      "tests/fixtures/release_package_provider.py": "25efcca34009d2572c756c09fb6d53443d158c42dfd5419077fffa036b1ebe1e",
+      "tests/fixtures/shell_policy_provider.py": "d6db582ed0dbfc05f259bb0024e2414262d62609eac1eda423c08f8f295aafda",
+      "tests/fixtures/ultracode_bootstrap.py": "a2ef3a7bf7fa5e663186e920421b5829084c31ea5b37f89aa82541cad082ee2c",
+      "tests/fixtures/upstream_0163.py": "2d0ce16e120e8f3c2242cee737fd97bcd20f3d5b504e08fef606012be4edf0f3",
+      "tests/fixtures/worker_shell_wait_provider.py": "f584860aba202e3265ae60517ea7a7891ea466e2b6d00ac17cf0dcd53681359a",
+      "tests/native_smoke.py": "85bfa420b6fefb8bb68c2c1c7afb9df5a387e2213424248f9aa3821f3b52e972",
+      "tests/test_advisor.py": "59d118a2b463b9751de729c4e2c37c499f43455217cc21a9db73dfcbc31d699a",
+      "tests/test_advisor_foreground_integration.py": "cbd00286f88abb36037c9800786c52a285a5abd82166ea2cb046a96e34b597ab",
+      "tests/test_advisor_integration.py": "6765b711e3b9118072a2cbcf6fbf79853a54e50630b7968e9543c21ddfde43bc",
+      "tests/test_advisor_stop_integration.py": "3691052ca1429bdb59e1452147fab392e1b5303b17ca151657f25255e83feed9",
+      "tests/test_background.py": "1c04b3aef7d741f9d2f55f4f0b3515192bd28afbd244d24db7c9fa95b6dbc697",
+      "tests/test_background_integration.py": "e3a6e8db36509a3601e96caba88203ea001ceb8c5b4307d4d0c2582242ab50bc",
+      "tests/test_background_recovery_integration.py": "8c400072a4519223672c788a9682956b5d4c8b63f66a25d2297225b0b94ee605",
+      "tests/test_build_artifacts.py": "dd0dd6c48922e2909ec3da51c00f9c5db56132f1545d9a541cfce28c2d0bafce",
+      "tests/test_build_native.py": "bb9c3630e9fcf1f263f3a07176913288ee2da50eb240c9f8cdd3f1b3f1310f47",
+      "tests/test_claude_advisor.py": "26404b99a8a90629087739a3f7d6a162696b90b1e6e6518f1a4310c7c55163b4",
+      "tests/test_claude_advisor_stdio.py": "bcb2bf0f08bb915a8f76dc60b2e16787d60a6dac40c3cc5bdb841eb3bff3aa2e",
+      "tests/test_command_display_tui.py": "ea9b65883ed0293c2c603713d6544ba0b0461f19da069fd7ef0fe8ac88e2dcd9",
+      "tests/test_cooperative_upgrade_integration.py": "9aab907001b7b05df3acf0a5a2104fd4f8d189eaec694fa04e9a5d2e72af4cca",
+      "tests/test_custom_goal_tui.py": "dfa99069fb615aab83f2e250facd22e87945e06478f7103b477256c75bd1c613",
+      "tests/test_custom_goals_stock.py": "49c8f5402da9e5f003d2bbe093d736ee777f91cbc95a89dfd07eb793cb5563c9",
+      "tests/test_detached_execution_hud_tui.py": "857145d32ef11ff7d1bbbecca41b24a06ee3bb79ca802a234c05b7a3242f4ba4",
+      "tests/test_detached_fixture_cleanup.py": "2d262ea1863a3f7128b72e1a84dcb83b0b5460a840f492e11f3f4faf97a071cc",
+      "tests/test_detached_job_session.py": "b4dce9905b974ca7d071faf1d1e211678cf7f4984eca08801b1a0cf13645c1ce",
+      "tests/test_detached_job_tui.py": "4b7cab907be564c5454a834fcbdd60a6f4e322e32f2ee37dc9696a1cc4e78fa2",
+      "tests/test_detached_jobs_stock.py": "6c7832199352fdb7405943f323935028901598bf1cbf13c726b79f821c060d03",
+      "tests/test_executor_reconcile_startup.py": "03cc281ed01ccc93e40a77132d4bd2b5839ac76f9f3374f8306952287866c0e1",
+      "tests/test_fleet_footer.py": "8f9823313236df3cf427bcd211afc66abc743c59a965ce8cfa52767fbf6dac8d",
+      "tests/test_footer_rows_tui.py": "7fcdfaffe33eaa5f15c271986b471113909bf47949a3a3a941089cec35a232b1",
+      "tests/test_goal_placement_tui.py": "5f1dbc15ec2bbe2a81e1e9c9d654e06855f63dce1f154834d690901ea474eb37",
+      "tests/test_goal_rollback.py": "e17c2ea0e1746e0787c9690cfed908a8e492d8ca24274b1a7ecf774a38b7d085",
+      "tests/test_interruption_integration.py": "d9681bc17d19b6da482bc0b0ebed4a7c82533c7a9b9c06cba00802ac0f10c70e",
+      "tests/test_launcher.py": "25e27478025e75db5289d3971cc3bc6581ea22459c4303d9b283da27639cd09e",
+      "tests/test_morandi_command_colors_tui.py": "fa6c05d520a9fa37c3455d6bee514037a6e2e831ab621c949d472d4b3d436747",
+      "tests/test_morandi_tui.py": "794536ab3046bfee971622e94e9fb34d6dc8d166400c8df1feaf62911b5d1dc1",
+      "tests/test_native_results.py": "42d75837b1622dc323c8dbaa393b2f3af51287590900b7121e8a6588de0abe21",
+      "tests/test_observer_handoff.py": "a33027c1624c7976b57da26763c52e8ee7d3666fea0d7657726b308f5047dc69",
+      "tests/test_packaging.py": "a4168f9b136f4b531edd4ebcb20dda9264c0b4eea0d16a112c9a42545152fdb0",
+      "tests/test_release_package.py": "1263a7fb60ae0671051efdeda3c9686e2d433fa4a0f58b0d1534555712f477b4",
+      "tests/test_release_preflight.py": "4e7ed4f1f1e7c22e4d554627a35a84a35dd2e93b9f7c2fa6b48ee8987e5ea0c2",
+      "tests/test_runner.py": "63cc949b45c7198d6a159a88945a88b4223d65c4bc3554b2c555ffb95f6f0936",
+      "tests/test_rust_runtime_acceptance.py": "d508583c2e036e1cc0c5ba34c2a42e224e98085f0d44dfd98eb1c0488272848e",
+      "tests/test_rust_runtime_advisor_regressions.py": "69bc5e068a3d55b820423c9eb0b92aac4035b960fbc182e277f5cdc5df369e08",
+      "tests/test_rust_runtime_runner.py": "e678492a71791de10dc565fc6e1f88277a570d5d318509461f5d396d07b03b2d",
+      "tests/test_rust_runtime_stock_integration.py": "f064f93a5fe112dc5bc2e23ce644201891bd0db912c40050cd225082cc9288dd",
+      "tests/test_rust_runtime_stock_lifecycle.py": "acc7caccafc7484273799003c2d0ee1d9512a444983c861a346a873f1415476d",
+      "tests/test_rust_runtime_upgrade.py": "9e758bb350d27d0967a11f544a8615877bcc17eac6df9f6309e831fad33297fb",
+      "tests/test_shell_policy_integration.py": "0286fc7a9021f848cd840157bf7e5c971b59dd04c00f8504d9b4f4afa2872ad7",
+      "tests/test_shell_topics_tui.py": "d20432407e6d82072c5e482be9482f1f3b2dc42be1a36920a1116ef411751d7c",
+      "tests/test_status_lines_tui.py": "c8274d9cb27cfb45d577d202008df426ff64127fa3c9d8e4f7614aa12aba1b13",
+      "tests/test_terminal_evidence.py": "e0842036749d2b1eac29306b184ae2351bfcae1001d9704efa0107d2bd1d372e",
+      "tests/test_terminal_fixture.py": "e8228a5b2675dc41e032dbc00964082b183541c91b07c72e8e7f86d7308e964d",
+      "tests/test_tool_activity_tui.py": "5e4ab62a29483c04a1b6bc9577aa3525fce2879b6c2ef0d3ed39663e88850419",
+      "tests/test_ultracode_admission.py": "5c2874eeb0e50d8e4bb175affa90b5dc49ea45ded5e8f707c3f608f9d0e09d64",
+      "tests/test_ultracode_bootstrap.py": "004b5985db934b93b353b93ad670a9d2d12c197da525aad6a1fd3f453d4bab02",
+      "tests/test_ultracode_contracts.py": "086c53dd80d590d493983f760988fb7f9b1c738a08f038625ed63bc69ce68879",
+      "tests/test_ultracode_empty_history.py": "26cd40664dd85991e2600f2f2d157a9f6e08d183d709a577a5abc2316cdc7ea1",
+      "tests/test_ultracode_setting_footer.py": "14aa2420031c13d1c4e98e08ab6d3e757ec28924eb389a839e1162779f9e2550",
+      "tests/test_ultracode_tui.py": "a8db41b69494ed1bb4a772828b793ac4c0652120bb6e72c69d089fe82526d9ee",
+      "tests/test_upgrade.py": "97f94c31847854e493cf1a8bb07bc1d079640656e7e7dcd03437a8730f0eb260",
+      "tests/test_upstream_0163_integration.py": "123d92c810ab435896074f87652fa019efc7c61f76a422b526ba6c4880c83df0",
+      "tests/test_upstream_0163_tui.py": "a05ff417c6e62d9d74cfd06192719ecefd69338464c6d30b6b09042d41530bc2",
+      "tests/test_weekly_reset_tui.py": "764dce3bbb9f69f37ff105be70d7fb953c72afb07d781195194d101be408c2ce",
+      "tests/test_worker_roles_tui.py": "4630220f099c69187b8df00a28392998163d6638a5646954a3fb0e13ee35fcb3",
+      "tests/test_worker_shell_wait_fixture.py": "d726c2504d0f5af66e0b013329eb27dcc5c607dfc2c6ee47e91e20b7a6110447",
+      "tests/test_worker_shell_wait_integration.py": "1ac5f3bbf3a01d3eef5561920c35b7f5bc0908e1c19101a37bde0ecb2db543ea"
+    }
+  },
+  "frontend_compile_origin": "05f883c228b18830ed93f691460715525b42a825",
+  "rollback_floor": "0.4.7",
+  "configuration_sha256": "e9b5e50e2e940510f0b95d1c102ab1f880c2ed8c0d4ced2c07d894975658692f",
+  "packages": {
+    "old": {
+      "path": "/data/liupan/codex-plus-build/release048/previous-047-canonical/codex-plus-0.163.0-plus.0.4.7-aarch64-unknown-linux-gnu",
+      "manifest_sha256": "1fa660d903be81b306e4b29346855eef09e004d752e1afbb3348412fd3e2ef9c",
+      "tree_sha256": "6c6c736dea7a0c02a6aa33103883b8c7ffe4ac461b8379bedea3b54efb8c9372",
+      "helper_sha256": "d7f9ebd6e2f8189d467d334f3e7b0df4823a00add79e62823cbc33e1316d54bb",
+      "manifest": {
+        "build": {
+          "cargo_profile": "release",
+          "glibc": "2.39",
+          "rust": "1.99.1"
+        },
+        "coordinator_protocol": 5,
+        "execution_record_format": 1,
+        "files": {
+          "GLOSSARY.md": {
+            "mode": "0644",
+            "sha256": "c7bb07843cf67637c872dc006aa7d2c229a466dd752994809d96c99f0bb81e3f",
+            "size": 1555
+          },
+          "LICENSE": {
+            "mode": "0644",
+            "sha256": "d17f227e4df5da1600391338865ce0f3055211760a36688f816941d58232d8dc",
+            "size": 10926
+          },
+          "NOTICE": {
+            "mode": "0644",
+            "sha256": "9d71575ecfd9a843fc1677b0efb08053c6ba9fd686a0de1a6f5382fd3c220915",
+            "size": 242
+          },
+          "README.md": {
+            "mode": "0644",
+            "sha256": "9799cdcc5243f920e646064f0c95be1e9b3bc7bad68762db9478743fffc79949",
+            "size": 18271
+          },
+          "bin/codex": {
+            "mode": "0755",
+            "sha256": "9003982a3d005339927122eeeb7dc65914e4ae90f327912d1ad9525aa0fdd3b8",
+            "size": 253797896
+          },
+          "bin/codex-code-mode-host": {
+            "mode": "0755",
+            "sha256": "7a0eb28f240725c7d54e085001de976101937ce9bc5d15bd16beefa4a72a12f6",
+            "size": 64671096
+          },
+          "bin/codex-plus": {
+            "mode": "0755",
+            "sha256": "3b4e81133e7e35a08b067ead0f7a79f6a150d31e1842c6d265e1e3a7a82808ef",
+            "size": 981
+          },
+          "bin/codex-plus-runtime": {
+            "mode": "0755",
+            "sha256": "d7f9ebd6e2f8189d467d334f3e7b0df4823a00add79e62823cbc33e1316d54bb",
+            "size": 5263200
+          },
+          "codex-package.json": {
+            "mode": "0644",
+            "sha256": "d5a8fde18135bcc5a0ff4903b9c91343b46b2efd97b48c24f92fb4be9003cba4",
+            "size": 205
+          },
+          "codex-path/rg": {
+            "mode": "0755",
+            "sha256": "e36d0eb52e70696bdf1781392722e05a21bb91d3b7b762ef5ec20e5df2ec687b",
+            "size": 4506992
+          },
+          "codex-resources/bwrap": {
+            "mode": "0755",
+            "sha256": "7d53e8e533cab3b46590b9126989cb4ada6c68a306017d56260fa51499ae3807",
+            "size": 398456
+          },
+          "docs/advisor.md": {
+            "mode": "0644",
+            "sha256": "2cd0e3278771121a410dd7e9a68c5075108edf4028db2c9092e9b999e057a0a7",
+            "size": 14773
+          },
+          "docs/audit-fixes.md": {
+            "mode": "0644",
+            "sha256": "bea14398390dcde2354dc9aa7c1db61f3039c0f0b205aafbb8d3dc542d1ca1d0",
+            "size": 6800
+          },
+          "docs/background-work.md": {
+            "mode": "0644",
+            "sha256": "59e8034a06c8dc8a9a71913ef7fbe34f1d9d5cdfa6eab27e34099fd91dee8408",
+            "size": 24437
+          },
+          "docs/command-display.md": {
+            "mode": "0644",
+            "sha256": "91748476e3ee6f453db1e1eba26b2d282abb68ce26275458862a3d4d7e4b10da",
+            "size": 3057
+          },
+          "docs/custom-goals.md": {
+            "mode": "0644",
+            "sha256": "e18a40026a73945763eb0a3173ab88459d8cd9f4ceebd1e7a045ddf1f422e77c",
+            "size": 26204
+          },
+          "docs/detached-jobs-fleet.md": {
+            "mode": "0644",
+            "sha256": "0dd343a67a351cf2a377cd9519f84d271f44bc6f9853c22360e1e146f8b769ea",
+            "size": 9485
+          },
+          "docs/detached-jobs.md": {
+            "mode": "0644",
+            "sha256": "ed323825af6c86f41a1e477160cacd13cb589da496f1130b2273095f560c933d",
+            "size": 14927
+          },
+          "docs/evidence/advisor-topic.json": {
+            "mode": "0644",
+            "sha256": "49ff11b89c283ce919108d96e4e9b650d2a85ad5fff9be61e48dbb6e89dffd4b",
+            "size": 3995
+          },
+          "docs/evidence/audit-fixes.json": {
+            "mode": "0644",
+            "sha256": "cbfabafbf8af074b960b4a8287fb21c7947af56c44d2351d793e3a8f47c3ee6c",
+            "size": 26123
+          },
+          "docs/evidence/compact-command-display.json": {
+            "mode": "0644",
+            "sha256": "2bb5b7d0dfe3ac13f15a13d71845cb98a1297986d2019b63b41c283395ef5333",
+            "size": 3989
+          },
+          "docs/evidence/custom-goals.json": {
+            "mode": "0644",
+            "sha256": "181b1b87a463bcce69a87c6dd12a3d0521bb204fb26a75d0f01c7907907b1e54",
+            "size": 21418
+          },
+          "docs/evidence/detached-jobs.json": {
+            "mode": "0644",
+            "sha256": "ea52cb81d5d158106e6794954ab67ecb4cf842516320b6a5348130551cd2cdfd",
+            "size": 9216
+          },
+          "docs/evidence/morandi-bright.json": {
+            "mode": "0644",
+            "sha256": "87f78ca34253f9cb7bc794ab978b0fae99d15b7e5eb5e158d615d39c9678a4d0",
+            "size": 5121
+          },
+          "docs/evidence/morandi-theme.json": {
+            "mode": "0644",
+            "sha256": "df9248dcde927e7b20813257377b487fabb1b255629bddbc77e87d8fac1dd7f6",
+            "size": 6961
+          },
+          "docs/evidence/notice-resolution.json": {
+            "mode": "0644",
+            "sha256": "ffd0393b98f48bbe292f0526292705b9b9c8ed3daa25f3b511c1ee0c007e9150",
+            "size": 24421
+          },
+          "docs/evidence/parallel-tool-rows.json": {
+            "mode": "0644",
+            "sha256": "3ddffeac9609dc106e5f1b298505296aca67a07bbed4bc807ffaa09f593dc9dd",
+            "size": 6878
+          },
+          "docs/evidence/shell-topics.json": {
+            "mode": "0644",
+            "sha256": "2c8cba1e9750b84b8bb6dabd98b12e5c74ee6273be603c2c5551b7e5a0b07070",
+            "size": 4592
+          },
+          "docs/evidence/ultracode.json": {
+            "mode": "0644",
+            "sha256": "69100d11834c85e4b4be1b9dd43939a41cc93be2c117972ccb3dc921902b1183",
+            "size": 13922
+          },
+          "docs/evidence/weekly-reset.json": {
+            "mode": "0644",
+            "sha256": "93f81292e4f848de16c83f858dfe01d99994634580649fa44b8d12325c2069bd",
+            "size": 3921
+          },
+          "docs/goals.md": {
+            "mode": "0644",
+            "sha256": "9cc346f56496560c1a4386cd9ecafe625cdaa7d100557511a40f37053d1608ca",
+            "size": 12030
+          },
+          "docs/notice-resolution.md": {
+            "mode": "0644",
+            "sha256": "a9c49993314cf989570ac98334d240c0b391e238a90751dca55e24fcb2814f27",
+            "size": 5954
+          },
+          "docs/release-notes.md": {
+            "mode": "0644",
+            "sha256": "73d11674cb67761c7cc508da08023a9bca3780f07a5074744e5e7681a9f916d4",
+            "size": 10007
+          },
+          "docs/release-performance.md": {
+            "mode": "0644",
+            "sha256": "dfe42d95c901961ed9839976308a19b1bf2b85bcb5809d6837fe61d17e24a1a2",
+            "size": 10058
+          },
+          "docs/releases/0.163.0-plus.0.4.4.md": {
+            "mode": "0644",
+            "sha256": "7d2fe975391a26c6c4a299ed49fe67179899e352843308411af7d4de8c806780",
+            "size": 5797
+          },
+          "docs/releases/0.163.0-plus.0.4.4/agents-block.md": {
+            "mode": "0644",
+            "sha256": "2e5f0b01f3ac15834b8da7c90e436b91e0cc81e3c5ac79d584c2d30603dd8a59",
+            "size": 3940
+          },
+          "docs/releases/0.163.0-plus.0.4.5.md": {
+            "mode": "0644",
+            "sha256": "1f47eee87493c450be3c7aec7f3f350e84517068f34ed846d8d6b68aca0d37da",
+            "size": 5862
+          },
+          "docs/releases/0.163.0-plus.0.4.6.md": {
+            "mode": "0644",
+            "sha256": "c4d7e8ee13a84ac99bb4c87d734c942484d1e5ed06e07a6dcc51cafb6b30e89e",
+            "size": 6181
+          },
+          "docs/releases/0.163.0-plus.0.4.7.md": {
+            "mode": "0644",
+            "sha256": "1da6736a0bf63589dd22ca27503e70484676eab62a8c092045431b0a28d8381c",
+            "size": 2012
+          },
+          "docs/releasing.md": {
+            "mode": "0644",
+            "sha256": "ad0456a755ea1fd56570d31407335eb852e1d37046ba3d89be97eeeff8470e45",
+            "size": 20657
+          },
+          "docs/rust-runtime.md": {
+            "mode": "0644",
+            "sha256": "c5bad2c2789f7a11c109dfd0932ae5045d768aa417dbd262f560d521582314a5",
+            "size": 7685
+          },
+          "docs/shell-workflow.md": {
+            "mode": "0644",
+            "sha256": "5d32f3546c8a4f6fe4d77e3e4450d2d34b2ed9cb79648146ce977ad4cf82c825",
+            "size": 11036
+          },
+          "docs/themes.md": {
+            "mode": "0644",
+            "sha256": "c78c784b2e625eb4cc2fea80df3fa1f9b7594d970f609372cedf125a8b622596",
+            "size": 3059
+          },
+          "docs/ultracode-bootstrap.txt": {
+            "mode": "0644",
+            "sha256": "521d563b280999e64ca21ab300038c38fdb8280678405af88e50620afe2ce799",
+            "size": 858
+          },
+          "docs/ultracode-policy.md": {
+            "mode": "0644",
+            "sha256": "1fa54c30b6f6dff6fe9572a51fe6600dd7c1f29286d79862693cedf5588152c8",
+            "size": 5572
+          },
+          "docs/ultracode.md": {
+            "mode": "0644",
+            "sha256": "d479fbadcd00d7cc8658eb3c14f6bd275e851017c0325d36da65c6000d1def9a",
+            "size": 6048
+          },
+          "docs/verification.md": {
+            "mode": "0644",
+            "sha256": "2d0b8172acbc956f8ce03b9a2806d39df742db74030381217d4895b8719fd4bb",
+            "size": 47584
+          },
+          "licenses/bubblewrap-COPYING": {
+            "mode": "0644",
+            "sha256": "b7993225104d90ddd8024fd838faf300bea5e83d91203eab98e29512acebd69c",
+            "size": 25383
+          },
+          "licenses/codex-native-NOTICES.txt": {
+            "mode": "0644",
+            "sha256": "c89240895fab8e00b3f234129ec6e6939dc7614f4ac81000bbff2b666aa74e94",
+            "size": 10058411
+          },
+          "licenses/codex-native-dependencies.json": {
+            "mode": "0644",
+            "sha256": "cfb05b8017baa1e89871ca2fe152de0b6108f9068a939557c76e9a12228ed249",
+            "size": 765187
+          },
+          "licenses/codex-plus-LICENSE": {
+            "mode": "0644",
+            "sha256": "f010d194c29359e269113e286f2cc3803a64fc30f49120ac98c79bf2cbac6e9f",
+            "size": 1069
+          },
+          "licenses/codex-plus-runtime-NOTICES.txt": {
+            "mode": "0644",
+            "sha256": "3112d9faa3c941f37236bad747349f3991cd298a87988ee3cca6b0e76a444ec2",
+            "size": 1369056
+          },
+          "licenses/codex-plus-runtime-dependencies.json": {
+            "mode": "0644",
+            "sha256": "7c8d88cf56a12477174beda3ccf6e346415c742f4a5711cc3d65e7769fb91887",
+            "size": 99020
+          },
+          "licenses/codex-plus-runtime-rust-COPYRIGHT.html": {
+            "mode": "0644",
+            "sha256": "5647be074c8edf7339fd863055923a8fc80bc5610a8d4661ec3b767b9d392c27",
+            "size": 1499465
+          },
+          "licenses/provenance.json": {
+            "mode": "0644",
+            "sha256": "be2bfd43beda92036a12a27f243b080adb050097caee103ad10cbc0becdd174f",
+            "size": 1887
+          },
+          "licenses/ripgrep-LICENSE-MIT": {
+            "mode": "0644",
+            "sha256": "0f96a83840e146e43c0ec96a22ec1f392e0680e6c1226e6f3ba87e0740af850f",
+            "size": 1081
+          },
+          "licenses/ripgrep-LICENSE-UNLICENSE": {
+            "mode": "0644",
+            "sha256": "7e12e5df4bae12cb21581ba157ced20e1986a0508dd10d0e8a4ab9a4cf94e85c",
+            "size": 1211
+          },
+          "licenses/rusty-v8-LICENSE": {
+            "mode": "0644",
+            "sha256": "1c6356fb751d45f0c53093ebf8a7f5e580e802f51999178e19d60f3ec39e147d",
+            "size": 1078
+          },
+          "licenses/rusty-v8-release-manifests.sha256": {
+            "mode": "0644",
+            "sha256": "7036a86ed062f4edd81667e161e5e94eade669c69362b136ccba9a1508fecc4b",
+            "size": 1040
+          },
+          "licenses/v8-LICENSE": {
+            "mode": "0644",
+            "sha256": "6ab33af8774a0f396ee3aeeb761e3229057682d6f9fa7f572e390c2cb3a6e509",
+            "size": 3093
+          },
+          "licenses/v8-LICENSE.v8": {
+            "mode": "0644",
+            "sha256": "4af93c12062c58058378de2397dc1c92bbff9ddfb1d583a01c84127557ce97ca",
+            "size": 1527
+          }
+        },
+        "frontend_patch_sha256": "0fddca41265c39d7c2fe7f590dcc98fe59dfba43d2ef0389d646687f92ef6ad3",
+        "native": {
+          "cargo_lock_sha256": "474027168f7ea748515a67bf302ce6d25f4cb22e1e25051299c6042b8846d492",
+          "files": {
+            "bin/codex": "9003982a3d005339927122eeeb7dc65914e4ae90f327912d1ad9525aa0fdd3b8",
+            "bin/codex-code-mode-host": "7a0eb28f240725c7d54e085001de976101937ce9bc5d15bd16beefa4a72a12f6",
+            "licenses/codex-native-NOTICES.txt": "c89240895fab8e00b3f234129ec6e6939dc7614f4ac81000bbff2b666aa74e94",
+            "licenses/codex-native-dependencies.json": "cfb05b8017baa1e89871ca2fe152de0b6108f9068a939557c76e9a12228ed249"
+          },
+          "rust": "1.99.1",
+          "source_sha256": "ffc1476ebf4e5bcdfc75ff0b25a144f87504e5aae6edfa21626e754a04eceb64"
+        },
+        "plus_commit": "d25cc2470202edd3ed917fac93ad22f52e4e5a2d",
+        "release": "0.163.0-plus.0.4.7",
+        "resources": {
+          "bwrap": {
+            "license": "licenses/bubblewrap-COPYING",
+            "upstream_commit": "83086188ae0614bd882818ff1aa23f3194962012",
+            "upstream_path": "codex-rs/vendor/bubblewrap"
+          },
+          "rg": {
+            "archive_member": "ripgrep-15.2.0-aarch64-unknown-linux-gnu/rg",
+            "archive_sha256": "a740b91c82eaf9914cfedd353572f2791cbe0162c84101ee0951058f4dcbc90d",
+            "archive_size": 1854661,
+            "archive_url": "https://github.com/BurntSushi/ripgrep/releases/download/15.2.0/ripgrep-15.2.0-aarch64-unknown-linux-gnu.tar.gz",
+            "manifest": "scripts/codex_package/rg",
+            "manifest_sha256": "41a10ca63365560d899a82b6f825fd7b420a18b34f660a98bffeece77eeae1f1"
+          },
+          "rusty-v8": {
+            "checksum_manifest": "licenses/rusty-v8-release-manifests.sha256",
+            "crate_version": "150.4.0",
+            "release": "rusty-v8-v150.4.0",
+            "v8_version": "15.0.245.2"
+          }
+        },
+        "runtime": {
+          "cargo_lock_sha256": "93f05c9cff147639fa5e2ed83443e4f9d2143f621458556d3dc4ab4c4dddd886",
+          "files": {
+            "bin/codex-plus-runtime": "d7f9ebd6e2f8189d467d334f3e7b0df4823a00add79e62823cbc33e1316d54bb",
+            "licenses/codex-plus-runtime-NOTICES.txt": "3112d9faa3c941f37236bad747349f3991cd298a87988ee3cca6b0e76a444ec2",
+            "licenses/codex-plus-runtime-dependencies.json": "7c8d88cf56a12477174beda3ccf6e346415c742f4a5711cc3d65e7769fb91887",
+            "licenses/codex-plus-runtime-rust-COPYRIGHT.html": "5647be074c8edf7339fd863055923a8fc80bc5610a8d4661ec3b767b9d392c27"
+          },
+          "rust": "1.99.1",
+          "source_sha256": "c168f6d182c4657984f1109269c600d93c7f76d798854a250a7ead108f28fada"
+        },
+        "schema_version": 1,
+        "target": "aarch64-unknown-linux-gnu",
+        "tree_sha256": "6c6c736dea7a0c02a6aa33103883b8c7ffe4ac461b8379bedea3b54efb8c9372",
+        "upstream": {
+          "commit": "83086188ae0614bd882818ff1aa23f3194962012",
+          "tag": "rust-v0.163.0",
+          "version": "0.163.0"
+        },
+        "voice": false
+      }
+    },
+    "new": {
+      "path": "/data/liupan/codex-plus-build/release048/native-arm-v5/attempts/0.163.0-plus.0.4.8-aarch64-f321897466a339cb/extracted/codex-plus-0.163.0-plus.0.4.8-aarch64-unknown-linux-gnu",
+      "manifest_sha256": "5e489015bd1f0655cd5e43609890bcf07e08aae06712aff5f3f385bd66f3784f",
+      "tree_sha256": "b4f9c84d2d85524189055df21fb55cbdd3d95905af8dce394236358b1e9617eb",
+      "helper_sha256": "c02c56f55f726aa88c0ae0ccbff6826e9c3ecfa1a19c64a87351b82bb1b33b9e",
+      "manifest": {
+        "build": {
+          "cargo_profile": "release",
+          "glibc": "2.39",
+          "rust": "1.99.1"
+        },
+        "coordinator_protocol": 5,
+        "execution_record_format": 1,
+        "files": {
+          "GLOSSARY.md": {
+            "mode": "0644",
+            "sha256": "a01e2fe43c0324495df638c24bb05ccdc7c5ee5074202e1d59a73dc2165576c1",
+            "size": 1850
+          },
+          "LICENSE": {
+            "mode": "0644",
+            "sha256": "d17f227e4df5da1600391338865ce0f3055211760a36688f816941d58232d8dc",
+            "size": 10926
+          },
+          "NOTICE": {
+            "mode": "0644",
+            "sha256": "9d71575ecfd9a843fc1677b0efb08053c6ba9fd686a0de1a6f5382fd3c220915",
+            "size": 242
+          },
+          "README.md": {
+            "mode": "0644",
+            "sha256": "b0a7806cb2337c25ceb1dbc857e27e7b0af2800fb85cea85edce88624f2e4e4a",
+            "size": 18430
+          },
+          "bin/codex": {
+            "mode": "0755",
+            "sha256": "26247714e22b9a6fec887f87af3d55a75fa717afbe06338cb3963ad3b26bd7c3",
+            "size": 253535752
+          },
+          "bin/codex-code-mode-host": {
+            "mode": "0755",
+            "sha256": "49489330516a1efe88e560775c6f431d5ca774b1382cd3378abb47207d05daa0",
+            "size": 64671096
+          },
+          "bin/codex-plus": {
+            "mode": "0755",
+            "sha256": "3b4e81133e7e35a08b067ead0f7a79f6a150d31e1842c6d265e1e3a7a82808ef",
+            "size": 981
+          },
+          "bin/codex-plus-runtime": {
+            "mode": "0755",
+            "sha256": "c02c56f55f726aa88c0ae0ccbff6826e9c3ecfa1a19c64a87351b82bb1b33b9e",
+            "size": 5197664
+          },
+          "codex-package.json": {
+            "mode": "0644",
+            "sha256": "d5a8fde18135bcc5a0ff4903b9c91343b46b2efd97b48c24f92fb4be9003cba4",
+            "size": 205
+          },
+          "codex-path/rg": {
+            "mode": "0755",
+            "sha256": "e36d0eb52e70696bdf1781392722e05a21bb91d3b7b762ef5ec20e5df2ec687b",
+            "size": 4506992
+          },
+          "codex-resources/bwrap": {
+            "mode": "0755",
+            "sha256": "e7dd733f023dbdaa0ecc56e2b2ebdfe4cbc3b70cb0d95a7d8adab551d6e27fcf",
+            "size": 398456
+          },
+          "docs/advisor.md": {
+            "mode": "0644",
+            "sha256": "2cd0e3278771121a410dd7e9a68c5075108edf4028db2c9092e9b999e057a0a7",
+            "size": 14773
+          },
+          "docs/audit-fixes.md": {
+            "mode": "0644",
+            "sha256": "bea14398390dcde2354dc9aa7c1db61f3039c0f0b205aafbb8d3dc542d1ca1d0",
+            "size": 6800
+          },
+          "docs/background-work.md": {
+            "mode": "0644",
+            "sha256": "2c0bb2c63f6397b68fb7dde9d45d20786a9cbcb12726c8ab37fc06f312c91ff7",
+            "size": 25205
+          },
+          "docs/command-display.md": {
+            "mode": "0644",
+            "sha256": "91748476e3ee6f453db1e1eba26b2d282abb68ce26275458862a3d4d7e4b10da",
+            "size": 3057
+          },
+          "docs/custom-goals.md": {
+            "mode": "0644",
+            "sha256": "e18a40026a73945763eb0a3173ab88459d8cd9f4ceebd1e7a045ddf1f422e77c",
+            "size": 26204
+          },
+          "docs/detached-jobs-fleet.md": {
+            "mode": "0644",
+            "sha256": "0dd343a67a351cf2a377cd9519f84d271f44bc6f9853c22360e1e146f8b769ea",
+            "size": 9485
+          },
+          "docs/detached-jobs.md": {
+            "mode": "0644",
+            "sha256": "624f7056f8d8b7a90cf9a1026faf2ad91d3cf37981afac894d2a8ac2f637928d",
+            "size": 15332
+          },
+          "docs/evidence/advisor-topic.json": {
+            "mode": "0644",
+            "sha256": "49ff11b89c283ce919108d96e4e9b650d2a85ad5fff9be61e48dbb6e89dffd4b",
+            "size": 3995
+          },
+          "docs/evidence/audit-fixes.json": {
+            "mode": "0644",
+            "sha256": "cbfabafbf8af074b960b4a8287fb21c7947af56c44d2351d793e3a8f47c3ee6c",
+            "size": 26123
+          },
+          "docs/evidence/compact-command-display.json": {
+            "mode": "0644",
+            "sha256": "2bb5b7d0dfe3ac13f15a13d71845cb98a1297986d2019b63b41c283395ef5333",
+            "size": 3989
+          },
+          "docs/evidence/custom-goals.json": {
+            "mode": "0644",
+            "sha256": "181b1b87a463bcce69a87c6dd12a3d0521bb204fb26a75d0f01c7907907b1e54",
+            "size": 21418
+          },
+          "docs/evidence/detached-jobs.json": {
+            "mode": "0644",
+            "sha256": "ea52cb81d5d158106e6794954ab67ecb4cf842516320b6a5348130551cd2cdfd",
+            "size": 9216
+          },
+          "docs/evidence/morandi-bright.json": {
+            "mode": "0644",
+            "sha256": "87f78ca34253f9cb7bc794ab978b0fae99d15b7e5eb5e158d615d39c9678a4d0",
+            "size": 5121
+          },
+          "docs/evidence/morandi-theme.json": {
+            "mode": "0644",
+            "sha256": "df9248dcde927e7b20813257377b487fabb1b255629bddbc77e87d8fac1dd7f6",
+            "size": 6961
+          },
+          "docs/evidence/notice-resolution.json": {
+            "mode": "0644",
+            "sha256": "ffd0393b98f48bbe292f0526292705b9b9c8ed3daa25f3b511c1ee0c007e9150",
+            "size": 24421
+          },
+          "docs/evidence/parallel-tool-rows.json": {
+            "mode": "0644",
+            "sha256": "3ddffeac9609dc106e5f1b298505296aca67a07bbed4bc807ffaa09f593dc9dd",
+            "size": 6878
+          },
+          "docs/evidence/shell-topics.json": {
+            "mode": "0644",
+            "sha256": "2c8cba1e9750b84b8bb6dabd98b12e5c74ee6273be603c2c5551b7e5a0b07070",
+            "size": 4592
+          },
+          "docs/evidence/ultracode.json": {
+            "mode": "0644",
+            "sha256": "69100d11834c85e4b4be1b9dd43939a41cc93be2c117972ccb3dc921902b1183",
+            "size": 13922
+          },
+          "docs/evidence/weekly-reset.json": {
+            "mode": "0644",
+            "sha256": "93f81292e4f848de16c83f858dfe01d99994634580649fa44b8d12325c2069bd",
+            "size": 3921
+          },
+          "docs/goals.md": {
+            "mode": "0644",
+            "sha256": "8ff0f7449d28ebb27ff1e084b6de58b28f50d84f155dd6c363d8863f823c4ab5",
+            "size": 12301
+          },
+          "docs/notice-resolution.md": {
+            "mode": "0644",
+            "sha256": "a9c49993314cf989570ac98334d240c0b391e238a90751dca55e24fcb2814f27",
+            "size": 5954
+          },
+          "docs/proposals/recovery-agents-block.md": {
+            "mode": "0644",
+            "sha256": "62b25e0d02c12ecfa1821076cc3086cf947614602c71e5cad3f6dce0bae5d2a1",
+            "size": 5082
+          },
+          "docs/recovery.md": {
+            "mode": "0644",
+            "sha256": "6d2d6b3cf10ec775b2f62412e34485ea61f67aacb5e4b403f5e2a2925fefc89e",
+            "size": 13052
+          },
+          "docs/release-book.md": {
+            "mode": "0644",
+            "sha256": "1c0d6b2c1ab90e31f00f7ea48053c358a6c8f88912124ce2bb8009cbe1961468",
+            "size": 14418
+          },
+          "docs/release-checklist.md": {
+            "mode": "0644",
+            "sha256": "d953a251e0dca9d46cd1c99db2ed86710d6b7ea7dcf4a3a0f54cbd531c64d423",
+            "size": 4629
+          },
+          "docs/release-notes.md": {
+            "mode": "0644",
+            "sha256": "73d11674cb67761c7cc508da08023a9bca3780f07a5074744e5e7681a9f916d4",
+            "size": 10007
+          },
+          "docs/release-performance.md": {
+            "mode": "0644",
+            "sha256": "7c1c2d268c840195aed23b8022f81485c74d5eafde001c75f88a63f13c88d45d",
+            "size": 11078
+          },
+          "docs/release-protocol.md": {
+            "mode": "0644",
+            "sha256": "854c3d69628716de6dd06f9ec8d7a8c5326fe941773fa1cc1cebece7db1153ec",
+            "size": 13866
+          },
+          "docs/releases/0.163.0-plus.0.4.4.md": {
+            "mode": "0644",
+            "sha256": "7d2fe975391a26c6c4a299ed49fe67179899e352843308411af7d4de8c806780",
+            "size": 5797
+          },
+          "docs/releases/0.163.0-plus.0.4.4/agents-block.md": {
+            "mode": "0644",
+            "sha256": "2e5f0b01f3ac15834b8da7c90e436b91e0cc81e3c5ac79d584c2d30603dd8a59",
+            "size": 3940
+          },
+          "docs/releases/0.163.0-plus.0.4.5.md": {
+            "mode": "0644",
+            "sha256": "1f47eee87493c450be3c7aec7f3f350e84517068f34ed846d8d6b68aca0d37da",
+            "size": 5862
+          },
+          "docs/releases/0.163.0-plus.0.4.6.md": {
+            "mode": "0644",
+            "sha256": "c4d7e8ee13a84ac99bb4c87d734c942484d1e5ed06e07a6dcc51cafb6b30e89e",
+            "size": 6181
+          },
+          "docs/releases/0.163.0-plus.0.4.7.md": {
+            "mode": "0644",
+            "sha256": "82b6597be55dd2956eeca7e800f9fda8ab77902a0c6055cc66691cf90e0ce4f3",
+            "size": 3141
+          },
+          "docs/releases/0.163.0-plus.0.4.8.md": {
+            "mode": "0644",
+            "sha256": "2dffe8f4bbdbaeda795557f89559a9b2bcb570d0887b59db5b8273edba73bc70",
+            "size": 3793
+          },
+          "docs/releasing.md": {
+            "mode": "0644",
+            "sha256": "355bed7ba80b085434716593738250b510897bedda9924a963fa1a0f7e3404bf",
+            "size": 20733
+          },
+          "docs/rust-runtime.md": {
+            "mode": "0644",
+            "sha256": "c5bad2c2789f7a11c109dfd0932ae5045d768aa417dbd262f560d521582314a5",
+            "size": 7685
+          },
+          "docs/shell-workflow.md": {
+            "mode": "0644",
+            "sha256": "5d32f3546c8a4f6fe4d77e3e4450d2d34b2ed9cb79648146ce977ad4cf82c825",
+            "size": 11036
+          },
+          "docs/themes.md": {
+            "mode": "0644",
+            "sha256": "c78c784b2e625eb4cc2fea80df3fa1f9b7594d970f609372cedf125a8b622596",
+            "size": 3059
+          },
+          "docs/ultracode-bootstrap.txt": {
+            "mode": "0644",
+            "sha256": "521d563b280999e64ca21ab300038c38fdb8280678405af88e50620afe2ce799",
+            "size": 858
+          },
+          "docs/ultracode-policy.md": {
+            "mode": "0644",
+            "sha256": "1fa54c30b6f6dff6fe9572a51fe6600dd7c1f29286d79862693cedf5588152c8",
+            "size": 5572
+          },
+          "docs/ultracode.md": {
+            "mode": "0644",
+            "sha256": "d479fbadcd00d7cc8658eb3c14f6bd275e851017c0325d36da65c6000d1def9a",
+            "size": 6048
+          },
+          "docs/verification.md": {
+            "mode": "0644",
+            "sha256": "bdea2508f429ac7fe3399ab2d9475573759b4c515ecb131ce86675690115db81",
+            "size": 48305
+          },
+          "licenses/bubblewrap-COPYING": {
+            "mode": "0644",
+            "sha256": "b7993225104d90ddd8024fd838faf300bea5e83d91203eab98e29512acebd69c",
+            "size": 25383
+          },
+          "licenses/codex-native-NOTICES.txt": {
+            "mode": "0644",
+            "sha256": "c89240895fab8e00b3f234129ec6e6939dc7614f4ac81000bbff2b666aa74e94",
+            "size": 10058411
+          },
+          "licenses/codex-native-dependencies.json": {
+            "mode": "0644",
+            "sha256": "cfb05b8017baa1e89871ca2fe152de0b6108f9068a939557c76e9a12228ed249",
+            "size": 765187
+          },
+          "licenses/codex-plus-LICENSE": {
+            "mode": "0644",
+            "sha256": "f010d194c29359e269113e286f2cc3803a64fc30f49120ac98c79bf2cbac6e9f",
+            "size": 1069
+          },
+          "licenses/codex-plus-runtime-NOTICES.txt": {
+            "mode": "0644",
+            "sha256": "89379892fae6c7dd9f4c2d7a8618303916b136631e58f1fbf0004d7849295d28",
+            "size": 1369056
+          },
+          "licenses/codex-plus-runtime-dependencies.json": {
+            "mode": "0644",
+            "sha256": "a77bad200b92fbc8094a25b8f907fd4048e29495d35235f3e05564de9155d608",
+            "size": 99020
+          },
+          "licenses/codex-plus-runtime-rust-COPYRIGHT.html": {
+            "mode": "0644",
+            "sha256": "5647be074c8edf7339fd863055923a8fc80bc5610a8d4661ec3b767b9d392c27",
+            "size": 1499465
+          },
+          "licenses/provenance.json": {
+            "mode": "0644",
+            "sha256": "be2bfd43beda92036a12a27f243b080adb050097caee103ad10cbc0becdd174f",
+            "size": 1887
+          },
+          "licenses/ripgrep-LICENSE-MIT": {
+            "mode": "0644",
+            "sha256": "0f96a83840e146e43c0ec96a22ec1f392e0680e6c1226e6f3ba87e0740af850f",
+            "size": 1081
+          },
+          "licenses/ripgrep-LICENSE-UNLICENSE": {
+            "mode": "0644",
+            "sha256": "7e12e5df4bae12cb21581ba157ced20e1986a0508dd10d0e8a4ab9a4cf94e85c",
+            "size": 1211
+          },
+          "licenses/rusty-v8-LICENSE": {
+            "mode": "0644",
+            "sha256": "1c6356fb751d45f0c53093ebf8a7f5e580e802f51999178e19d60f3ec39e147d",
+            "size": 1078
+          },
+          "licenses/rusty-v8-release-manifests.sha256": {
+            "mode": "0644",
+            "sha256": "7036a86ed062f4edd81667e161e5e94eade669c69362b136ccba9a1508fecc4b",
+            "size": 1040
+          },
+          "licenses/v8-LICENSE": {
+            "mode": "0644",
+            "sha256": "6ab33af8774a0f396ee3aeeb761e3229057682d6f9fa7f572e390c2cb3a6e509",
+            "size": 3093
+          },
+          "licenses/v8-LICENSE.v8": {
+            "mode": "0644",
+            "sha256": "4af93c12062c58058378de2397dc1c92bbff9ddfb1d583a01c84127557ce97ca",
+            "size": 1527
+          },
+          "release/protocol-v1.md": {
+            "mode": "0644",
+            "sha256": "e1c5eeae5a24bc4e1732e1ecf549b66fb8e4ac986969622781ae199e778152a6",
+            "size": 18954
+          }
+        },
+        "frontend_patch_sha256": "4955f39559483ea63db01a0bce39245ed72915999b6449f165e8be1b9190f4ab",
+        "native": {
+          "cargo_lock_sha256": "474027168f7ea748515a67bf302ce6d25f4cb22e1e25051299c6042b8846d492",
+          "files": {
+            "bin/codex": "26247714e22b9a6fec887f87af3d55a75fa717afbe06338cb3963ad3b26bd7c3",
+            "bin/codex-code-mode-host": "49489330516a1efe88e560775c6f431d5ca774b1382cd3378abb47207d05daa0",
+            "licenses/codex-native-NOTICES.txt": "c89240895fab8e00b3f234129ec6e6939dc7614f4ac81000bbff2b666aa74e94",
+            "licenses/codex-native-dependencies.json": "cfb05b8017baa1e89871ca2fe152de0b6108f9068a939557c76e9a12228ed249"
+          },
+          "rust": "1.99.1",
+          "source_sha256": "ffc1476ebf4e5bcdfc75ff0b25a144f87504e5aae6edfa21626e754a04eceb64"
+        },
+        "plus_commit": "05f883c228b18830ed93f691460715525b42a825",
+        "release": "0.163.0-plus.0.4.8",
+        "resources": {
+          "bwrap": {
+            "license": "licenses/bubblewrap-COPYING",
+            "upstream_commit": "83086188ae0614bd882818ff1aa23f3194962012",
+            "upstream_path": "codex-rs/vendor/bubblewrap"
+          },
+          "rg": {
+            "archive_member": "ripgrep-15.2.0-aarch64-unknown-linux-gnu/rg",
+            "archive_sha256": "a740b91c82eaf9914cfedd353572f2791cbe0162c84101ee0951058f4dcbc90d",
+            "archive_size": 1854661,
+            "archive_url": "https://github.com/BurntSushi/ripgrep/releases/download/15.2.0/ripgrep-15.2.0-aarch64-unknown-linux-gnu.tar.gz",
+            "manifest": "scripts/codex_package/rg",
+            "manifest_sha256": "41a10ca63365560d899a82b6f825fd7b420a18b34f660a98bffeece77eeae1f1"
+          },
+          "rusty-v8": {
+            "checksum_manifest": "licenses/rusty-v8-release-manifests.sha256",
+            "crate_version": "150.4.0",
+            "release": "rusty-v8-v150.4.0",
+            "v8_version": "15.0.245.2"
+          }
+        },
+        "runtime": {
+          "cargo_lock_sha256": "ce7347c5a47909336c974704803ee75cc8d6c4dc831a056d89d26881f45fa05b",
+          "files": {
+            "bin/codex-plus-runtime": "c02c56f55f726aa88c0ae0ccbff6826e9c3ecfa1a19c64a87351b82bb1b33b9e",
+            "licenses/codex-plus-runtime-NOTICES.txt": "89379892fae6c7dd9f4c2d7a8618303916b136631e58f1fbf0004d7849295d28",
+            "licenses/codex-plus-runtime-dependencies.json": "a77bad200b92fbc8094a25b8f907fd4048e29495d35235f3e05564de9155d608",
+            "licenses/codex-plus-runtime-rust-COPYRIGHT.html": "5647be074c8edf7339fd863055923a8fc80bc5610a8d4661ec3b767b9d392c27"
+          },
+          "rust": "1.99.1",
+          "source_sha256": "c6d2ac583f6e5dc613d53b67cbf818c503b5398bdd341804ffc5dbdcc6a7565d"
+        },
+        "schema_version": 1,
+        "target": "aarch64-unknown-linux-gnu",
+        "tree_sha256": "b4f9c84d2d85524189055df21fb55cbdd3d95905af8dce394236358b1e9617eb",
+        "upstream": {
+          "commit": "83086188ae0614bd882818ff1aa23f3194962012",
+          "tag": "rust-v0.163.0",
+          "version": "0.163.0"
+        },
+        "voice": false
+      }
+    }
+  },
+  "archive": {
+    "archive": "/data/liupan/codex-plus-build/release048/native-arm-v5/attempts/0.163.0-plus.0.4.8-aarch64-f321897466a339cb/packages/codex-plus-0.163.0-plus.0.4.8-aarch64-unknown-linux-gnu.tar.gz",
+    "archive_sha256": "b0b91a747a73490e749d7e791e138010759ccc0ad04f1a37de0e30a7dfe0df08",
+    "manifest_sha256": "5e489015bd1f0655cd5e43609890bcf07e08aae06712aff5f3f385bd66f3784f",
+    "tree_sha256": "b4f9c84d2d85524189055df21fb55cbdd3d95905af8dce394236358b1e9617eb",
+    "helper_sha256": "c02c56f55f726aa88c0ae0ccbff6826e9c3ecfa1a19c64a87351b82bb1b33b9e",
+    "release": "0.163.0-plus.0.4.8",
+    "plus_commit": "05f883c228b18830ed93f691460715525b42a825",
+    "target": "aarch64-unknown-linux-gnu"
+  },
+  "qualification_evidence": "/data/liupan/codex-plus-build/release048/native-arm-v5/attempts/0.163.0-plus.0.4.8-aarch64-f321897466a339cb/outputs/compat-package-approval.json",
+  "qualification_evidence_sha256": "6af33637fc7bfef18750fd77702d4ffb31ef6421e9d0ed0e6d1c99bf5f5c73d8",
+  "gate_sha256": "d59cf42e1bb8a84dcf41ffc0fd1deff6a411169f72f09ac3097bcf3a60a79454",
+  "stages": [
+    {
+      "name": "quiet-rollback",
+      "argv": [
+        "/usr/bin/python3.12",
+        "/data/liupan/codex-plus-build/release048/tooling-v5/scripts/release_recipes/compat/verify-mixes.py",
+        "--source",
+        "/data/liupan/codex-plus-build/release048/source-v4",
+        "--fixture-source",
+        "/data/liupan/codex-plus-build/release048/source-v4",
+        "--source-commit",
+        "05f883c228b18830ed93f691460715525b42a825",
+        "--old",
+        "/data/liupan/codex-plus-build/release048/previous-047-canonical/codex-plus-0.163.0-plus.0.4.7-aarch64-unknown-linux-gnu",
+        "--new",
+        "/data/liupan/codex-plus-build/release048/native-arm-v5/attempts/0.163.0-plus.0.4.8-aarch64-f321897466a339cb/extracted/codex-plus-0.163.0-plus.0.4.8-aarch64-unknown-linux-gnu",
+        "--new-manifest-sha256",
+        "5e489015bd1f0655cd5e43609890bcf07e08aae06712aff5f3f385bd66f3784f",
+        "--stock-binary",
+        "/data/liupan/codex-plus-build/plus020/official/bin/codex",
+        "--gate-sha256",
+        "d59cf42e1bb8a84dcf41ffc0fd1deff6a411169f72f09ac3097bcf3a60a79454",
+        "--evidence",
+        "/data/liupan/codex-plus-build/release048/native-arm-v5/attempts/0.163.0-plus.0.4.8-aarch64-f321897466a339cb/compat/evidence/rollback"
+      ],
+      "passed": true,
+      "exit_code": 0,
+      "log": "/data/liupan/codex-plus-build/release048/native-arm-v5/attempts/0.163.0-plus.0.4.8-aarch64-f321897466a339cb/compat/evidence/quiet-rollback.log"
+    },
+    {
+      "name": "advisor-nine-checks",
+      "argv": [
+        "/usr/bin/python3.12",
+        "/data/liupan/codex-plus-build/release048/tooling-v5/scripts/release_recipes/compat/bootstrap-advisor.py",
+        "/data/liupan/codex-plus-build/release048/tooling-v5/scripts/release_recipes/compat/check-advisor-mixes.py",
+        "--source",
+        "/data/liupan/codex-plus-build/release048/source-v4",
+        "--old-runtime",
+        "/data/liupan/codex-plus-build/release048/previous-047-canonical/codex-plus-0.163.0-plus.0.4.7-aarch64-unknown-linux-gnu/bin/codex-plus-runtime",
+        "--new-runtime",
+        "/data/liupan/codex-plus-build/release048/native-arm-v5/attempts/0.163.0-plus.0.4.8-aarch64-f321897466a339cb/extracted/codex-plus-0.163.0-plus.0.4.8-aarch64-unknown-linux-gnu/bin/codex-plus-runtime",
+        "--report",
+        "/data/liupan/codex-plus-build/release048/native-arm-v5/attempts/0.163.0-plus.0.4.8-aarch64-f321897466a339cb/compat/evidence/advisor-nine-checks.json"
+      ],
+      "passed": true,
+      "exit_code": 0,
+      "log": "/data/liupan/codex-plus-build/release048/native-arm-v5/attempts/0.163.0-plus.0.4.8-aarch64-f321897466a339cb/compat/evidence/advisor-nine-checks.log"
+    },
+    {
+      "name": "actual-old-tui-root-result",
+      "argv": [
+        "/usr/bin/python3.12",
+        "/data/liupan/codex-plus-build/release048/tooling-v5/scripts/release_recipes/compat/old-tui-root-result-v5.py",
+        "--source",
+        "/data/liupan/codex-plus-build/release048/source-v4",
+        "--old-package",
+        "/data/liupan/codex-plus-build/release048/previous-047-canonical/codex-plus-0.163.0-plus.0.4.7-aarch64-unknown-linux-gnu",
+        "--new-package",
+        "/data/liupan/codex-plus-build/release048/native-arm-v5/attempts/0.163.0-plus.0.4.8-aarch64-f321897466a339cb/extracted/codex-plus-0.163.0-plus.0.4.8-aarch64-unknown-linux-gnu",
+        "--new-manifest-sha256",
+        "5e489015bd1f0655cd5e43609890bcf07e08aae06712aff5f3f385bd66f3784f",
+        "--stock-binary",
+        "/data/liupan/codex-plus-build/plus020/official/bin/codex",
+        "--evidence",
+        "/data/liupan/codex-plus-build/release048/native-arm-v5/attempts/0.163.0-plus.0.4.8-aarch64-f321897466a339cb/compat/evidence/old-tui-root-result"
+      ],
+      "passed": true,
+      "exit_code": 0,
+      "log": "/data/liupan/codex-plus-build/release048/native-arm-v5/attempts/0.163.0-plus.0.4.8-aarch64-f321897466a339cb/compat/evidence/actual-old-tui-root-result.log"
+    },
+    {
+      "name": "packaged-cursor-v2",
+      "argv": [
+        "/usr/bin/python3.12",
+        "/data/liupan/codex-plus-build/release048/tooling-v5/scripts/release_recipes/compat/run-cursor.py",
+        "--config",
+        "/data/liupan/codex-plus-build/release048/native-arm-v5/attempts/0.163.0-plus.0.4.8-aarch64-f321897466a339cb/compat/native.config.json",
+        "--footer-contract",
+        "/data/liupan/codex-plus-build/release048/native-arm-v5/attempts/0.163.0-plus.0.4.8-aarch64-f321897466a339cb/compat/footer-contract.json",
+        "--footer-contract-sha256",
+        "269ad1c251b853a53d59cd6f524598e05b586272ecc74e2e643f935ab35eca91",
+        "--evidence",
+        "/data/liupan/codex-plus-build/release048/native-arm-v5/attempts/0.163.0-plus.0.4.8-aarch64-f321897466a339cb/compat/evidence/cursor-v2"
+      ],
+      "passed": true,
+      "exit_code": 0,
+      "log": "/data/liupan/codex-plus-build/release048/native-arm-v5/attempts/0.163.0-plus.0.4.8-aarch64-f321897466a339cb/compat/evidence/packaged-cursor-v2.log"
+    },
+    {
+      "name": "packaged-recovery-policy",
+      "argv": [
+        "/usr/bin/python3.12",
+        "/data/liupan/codex-plus-build/release048/tooling-v5/scripts/release_recipes/compat/recovery-policy.py",
+        "--evidence",
+        "/data/liupan/codex-plus-build/release048/native-arm-v5/attempts/0.163.0-plus.0.4.8-aarch64-f321897466a339cb/compat/evidence/recovery-policy"
+      ],
+      "passed": true,
+      "exit_code": 0,
+      "log": "/data/liupan/codex-plus-build/release048/native-arm-v5/attempts/0.163.0-plus.0.4.8-aarch64-f321897466a339cb/compat/evidence/packaged-recovery-policy.log"
+    }
+  ],
+  "external_provider_requests": 0,
+  "crosshost_advisor": "separate root gate pending",
+  "rollback_qualified": true,
+  "nine_advisor_checks_passed": true,
+  "actual_old_tui_new_cli_root_result_proved": true,
+  "fresh_packaged_cursor_v2_passed": true,
+  "ap_replay": "separate root gate pending",
+  "packaged_recovery_policy_passed": true,
+  "restart_required_before_production_claude": false,
+  "evidence_sha256": {
+    "rollback/gate.json": "09ee75898c1ac6944cc6bf85d55c9bcfb3bf783018f765e525ba32c67b16b9fc",
+    "advisor-nine-checks.json": "76da455d7ad1a66e3e2445e59b88820c483c9f846cf5c28e8d91926afdbeedee",
+    "old-tui-root-result/report.json": "3af48254d18c2374fa9c4f5a20301aefc7cf89bb0c86b937303be7f7afa762ef",
+    "recovery-policy/report.json": "3f5323fcc0aac9d6fc15a6421a5068a6219759498218f5ae3428d4718fcdbb0b",
+    "recovery-policy/detached/cleanup-recovery-success/report.json": "8de7531979de25fbdd07c8d52873b4787868037408c0bfe4630231d29e2c2690",
+    "recovery-policy/detached/cleanup-recovery-failure/report.json": "89f3e62b6da7162c6d46cb5b704c2a9ef8a2205997c832d4185fda74efbc6671",
+    "recovery-policy/detached/cleanup-recovery-old-reader/report.json": "eb3bfabf3143fff759ea5f982207db8609646e8594f59c49c9888169d2dfc037",
+    "recovery-policy/detached/goal-cleanup-recovery/report.json": "5c37b6d307e77b00ab116c9836ab36d085e77bfea1407651fdb5e69419777f03",
+    "recovery-policy/detached/goal-cleanup-recovery-old-reader/report.json": "31680af95b451e713fa5733b9fd7744c91fbab85496467144e62e42e847451d2",
+    "recovery-policy/detached/daemon-graceful/report.json": "ae41c2fd242bf7725530c35e8130b5ff8b3453e6949af502d4bed319291d3fcf",
+    "recovery-policy/detached/observation-gap/report.json": "f1d80ccbd3d78da54fc9fa4de416d60615b899d84785829e29d57e71b4445e6f",
+    "recovery-policy/detached/cancellation/report.json": "0fce3e270a7e41b95443880a530ff277fed2c49a36b0a2823b6db552afee43c5",
+    "recovery-policy/detached/watch-recovery/report.json": "acb3fa695b09640972cf4e5723887bb4af25ebfd769416791c9880eada2c7c1b",
+    "recovery-policy/goals/input-epoch/report.json": "d16d664ac6d755c5ee44c1cc28cb7c82f5ca96f3002fb981f0d3caca0cd04d84",
+    "recovery-policy/goals/paused-recovery/report.json": "38542df1f659cf8388c4c633ce857b0addeb7d4a3f88cac3155d48abf276db0b",
+    "recovery-policy/goals/replaced-recovery/report.json": "fe9f8068b83f73cf4ab0c6a9f45dc0dc3a9230fff4bf0379455a545662f8f68e",
+    "recovery-policy/goals/mixed-independent-priority/report.json": "7b763e20d8f27b81304e6c8f3f8054b2552395eefa1b3855269839ab6e598f2c",
+    "recovery-policy/goals/pre-report-recovery-barrier/report.json": "2daaee6a7f3caf0c5a97df10f6acb80947f1bccdb02990d0db3a59226d991f94"
+  }
+}

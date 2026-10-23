@@ -1,0 +1,25 @@
+warning: `--logfile` is deprecated
+running 20 tests
+test insert_history::tests::morandi_history_emits_shared_palette_for_text_fills_and_hyperlinks ... ok
+test custom_terminal::tests::morandi::morandi_frame_emits_representable_capabilities_and_keeps_modifiers ... ok
+test custom_terminal::tests::morandi::morandi_preview_and_cancel_repaint_unchanged_ansi_cells_and_cursor_anchor ... ok
+test bottom_pane::status_line_style::tests::morandi_status_line_palette_is_distinct_on_light_and_dark_terminals ... ok
+test morandi::tests::morandi_changes_colors_only_and_respects_external_cells ... ok
+test morandi::tests::morandi_limited_capabilities_preserve_roles_and_modifiers ... ok
+test morandi::tests::morandi_other_themes_are_exact_identity_even_without_color_support ... ok
+test morandi::tests::morandi_rgb_compression_is_continuous_and_keeps_decorative_gradients ... ok
+test morandi::tests::morandi_final_status_buffer_keeps_eight_readable_distinct_roles ... ok
+test style::contrast::tests::morandi_ansi_hues_wrap_at_red_and_fall_back_to_readable_colors ... ok
+test style::contrast::tests::morandi_hue_policy_preserves_neutrals_and_other_capabilities ... ok
+test morandi::tests::morandi_resolves_semantic_text_against_the_painted_surface ... ok
+test custom_terminal::tests::morandi::morandi_no_color_frame_keeps_text_and_bold ... ok
+test insert_history::tests::morandi_no_color_history_preserves_text_and_modifiers ... ok
+test style::contrast::tests::morandi_theme_switches_do_not_reuse_the_default_contrast_policy ... ok
+test render::highlight::model_tests::morandi_theme_resolves_once_with_semantic_syntax_markdown_and_diff_scopes ... ok
+test exec_cell::compact::tests::morandi_command_success_matches_context_and_keeps_failure_attention_distinct ... ok
+test render::highlight::model_tests::morandi_custom_file_keeps_precedence_and_invalid_file_warning ... ok
+test theme_picker::model_tests::morandi_theme_previews_selects_and_restores_the_active_ui_palette ... ok
+test bottom_pane::status_line_style::tests::morandi_status_line_palette_at_supported_color_depths ... ok
+
+test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 5909 filtered out; finished in 0.16s
+

@@ -1,0 +1,90 @@
+## Codex Plus shell work and completion wakes
+
+Apply this workflow in every repository, including independent AP sessions.
+
+For finite noninteractive shell work, capture logs from launch:
+
+```sh
+# codex-plus-shell: auto
+# codex-plus-task: Verify runtime tests
+codex-plus run -- PROGRAM ARGUMENTS
+```
+
+Put the mode marker first, then a printable `# codex-plus-task: TOPIC` line
+with a three-to-six-word purpose (at most 120 characters). Choose:
+- `# codex-plus-shell: auto`: short or uncertain duration; request `yield_time_ms=2000`.
+- `# codex-plus-shell: background`: known long work; request a short yield, such as `250`.
+- `# codex-plus-shell: foreground`: explicitly requested foreground work.
+
+Use an explicit shell for shell syntax: `codex-plus run -- bash -c 'COMMAND'`.
+The runner closes stdin. Keep interactive or unclassified commands in ordinary
+visible execution. For persistent services, check readiness with finite work.
+On completion, inspect the result and give a concise outcome with its log path.
+
+When a root session has only finite background work remaining, register it:
+
+```sh
+codex-plus park --process TOOL_SESSION_ID --worker CHILD_THREAD_ID --reason "Review results and continue the task"
+```
+
+Use only applicable options; repeat them for multiple jobs. Process IDs are native
+shell-tool session IDs, not OS PIDs. Workers must be direct children, selected by
+thread UUID or canonical path. Keep the reason within 240 printable characters.
+AP workers finish their brief within the turn; parking is for interactive root sessions.
+Native subagents return results to their parent.
+Plan native-worker assignments around preparation, quick checks and a clear handoff.
+Workers return expected runs over sixteen minutes, hardware trials, serving experiments
+and service restarts before launch. The root reviews and launches them with
+[reviewed detached jobs](/home/liupan/.local/share/fleet-config/codex-plus/current/docs/detached-jobs.md#agent-workflow),
+using existing authorization and safe parallelism across worktrees/resources.
+Sixteen minutes is an estimate: an allowed quick check that overruns finishes in
+one bounded local wait. Before a permitted worker shell wait, read
+[worker shell waits](/home/liupan/.local/share/fleet-config/codex-plus/current/docs/shell-workflow.md#native-subagent-waits).
+AP workers use native shell work and finish within their turn; managed detached jobs are for interactive roots. Leave `job maintenance
+enter/leave` to the host operator.
+
+Confirm jobs are armed or already registered, give a short waiting notice, and
+end the turn. Let the local observer monitor them. Review already-finished jobs
+immediately. If registration fails, resolve or report the monitoring failure.
+
+On `LIVE COMPLETION`, inspect results and continue the authorized task.
+On `RECOVERY REQUIRED`, investigate the exact execution and cleanup state,
+perform verified recovery within current authorization, and continue independent
+work. Preserve failed outcomes and keep resource claims until release is proven.
+A retry is a new reviewed execution after diagnosis; never blindly replay an
+unknown command or infer cleanup from heartbeat age.
+
+Recovery mutations are limited to processes, files and records this job owns by
+exact identity. Never signal or modify another root's job, another user's process,
+or a tmux session or process this task did not launch. Read-only inspection may
+establish identity; uncertainty is not ownership.
+
+On `REPORT ONLY`, report the evidence and inspect it read-only. Continue only
+independent work that is still authorized; resume affected follow-ups after
+continuation authority and execution conditions are positively established.
+Respect newer stop/pause/cancel instructions and admission/delivery uncertainty.
+Ask for a concrete missing decision or authority, not a ritual confirmation.
+Legacy report barriers still require explicit renewed user direction.
+
+For uncertain delivery, lost outcomes or unavailable watcher health, inspect
+`codex-plus park --status` and the exact job status, and preserve the ledger.
+Reconcile evidence without blindly resending callbacks or rerunning jobs.
+When only finite recovery work remains, register it with the existing observer
+and end the turn. Repeated notifications without changed evidence do not justify
+another retry or status-only model turn.
+
+## Advisor
+
+Before starting, resuming, or recovering an advisor consultation, run
+`codex-plus advisor --help` and follow its workflow. The main root session owns
+consultations and reviews their findings before acting. Advice grants no
+additional permission.
+
+## Plus-owned goals
+
+For Plus-owned `/goal` work, read
+[goal checkpoints and recovery](/home/liupan/.local/share/fleet-config/codex-plus/current/docs/goals.md#model-workflow)
+on start/resume, before ending a goal turn, or when goal status needs input.
+Use the admitted identity and structured checkpoint; while registered jobs run,
+end the turn and let the local observer wake you. Preserve newer user direction,
+report-only barriers and existing action approvals.

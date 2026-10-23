@@ -1,0 +1,83 @@
+{
+  "package": "/home/liupan/Aerius/codex-plus/.build/release048/native-x86-v5/attempts/0.163.0-plus.0.4.8-x86_64-77d89c12976f0ed8/extracted/codex-plus-0.163.0-plus.0.4.8-x86_64-unknown-linux-gnu",
+  "native_host": "x86_64",
+  "checks": {
+    "manifest": {
+      "passed": true,
+      "result": {
+        "files": 68,
+        "tree_sha256": "524de42872d3d22bf5434dbd1233fa87cc96cda8711a3a40e7226b84abd70bf3",
+        "target": "x86_64-unknown-linux-gnu",
+        "voice": false
+      }
+    },
+    "public_commands": {
+      "passed": true,
+      "result": {
+        "native_version": "codex-cli 0.163.0",
+        "plus_version": "codex-plus 0.163.0-plus.0.4.8 (Plus 05f883c228b1; upstream 0.163.0)",
+        "outside_cwd_symlink": true,
+        "helper_log": "PACKAGE_RUN\n"
+      }
+    },
+    "wrapper": {
+      "passed": true,
+      "result": {
+        "native_path_args_stdout_exit_preserved": true,
+        "runner_uses_home_local_bin_codex_wrapper": true,
+        "daemon_update_test_used_only_stubs": true
+      }
+    },
+    "resources": {
+      "passed": false,
+      "error": "Traceback (most recent call last):\n  File \"/home/liupan/Aerius/codex-plus/.build/release048/source-v4/tests/test_release_package.py\", line 384, in main\n    report['checks'][name] = {'passed': True, 'result': check(root)}\n                                                        ^^^^^^^^^^^\n  File \"/home/liupan/Aerius/codex-plus/.build/release048/source-v4/tests/test_release_package.py\", line 372, in <lambda>\n    ('resources', lambda root: resources_check(package, root, evidence)),\n                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/liupan/Aerius/codex-plus/.build/release048/source-v4/tests/test_release_package.py\", line 216, in resources_check\n    command([package / 'codex-resources/bwrap', '--ro-bind', '/', '/', '--unshare-pid', '--as-pid-1',\n  File \"/home/liupan/Aerius/codex-plus/.build/release048/source-v4/tests/test_release_package.py\", line 39, in command\n    assert result.returncode == expected, f'{args}: exit={result.returncode}\\n{result.stdout}\\n{result.stderr}'\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: [PosixPath('/home/liupan/Aerius/codex-plus/.build/release048/native-x86-v5/attempts/0.163.0-plus.0.4.8-x86_64-77d89c12976f0ed8/extracted/codex-plus-0.163.0-plus.0.4.8-x86_64-unknown-linux-gnu/codex-resources/bwrap'), '--ro-bind', '/', '/', '--unshare-pid', '--as-pid-1', '--proc', '/proc', '--dev', '/dev', '--', '/bin/sh', '-c', 'test $$ = 1 && printf PACKAGE_BWRAP']: exit=1\n\nbwrap: setting up uid map: Permission denied\n\n"
+    },
+    "exec": {
+      "passed": true,
+      "result": {
+        "finite_exec": true,
+        "loopback_requests": 1
+      }
+    },
+    "stdio_code_mode": {
+      "passed": true,
+      "result": {
+        "initialize": {
+          "userAgent": "release_package/0.163.0 (Ubuntu 24.4.0; x86_64) unknown (release_package; 1)",
+          "codexHome": "/tmp/9Z/stdio_code_mode/isolated/home",
+          "platformFamily": "unix",
+          "platformOs": "linux"
+        },
+        "typed_thread_turn": true,
+        "code_mode_host": [
+          "/tmp/9Z/stdio_code_mode/package/bin/codex-code-mode-host"
+        ],
+        "execution": {
+          "chunk_id": "34df07",
+          "wall_time_seconds": 9.84e-06,
+          "exit_code": 0,
+          "original_token_count": 52,
+          "output": "/tmp/9Z/stdio_code_mode/package/codex-path/rg\nripgrep 15.2.0 (rev e89fff89ac)\n\nfeatures:+pcre2\nsimd(compile):+SSE2,-SSSE3,-AVX2\nsimd(runtime):+SSE2,+SSSE3,+AVX2\n\nPCRE2 10.45 is available (JIT is available)\n"
+        }
+      }
+    },
+    "manifest_after_runtime": {
+      "passed": true,
+      "result": {
+        "files": 68,
+        "tree_sha256": "524de42872d3d22bf5434dbd1233fa87cc96cda8711a3a40e7226b84abd70bf3",
+        "target": "x86_64-unknown-linux-gnu",
+        "voice": false
+      }
+    }
+  },
+  "official_cli": "/home/liupan/Aerius/codex-plus/.build/upstream-0163/official-x86/bin/codex",
+  "remote_model_requests": 0,
+  "official_cli_unchanged": true,
+  "official_cli_sha256": "399ff69c431c066e40de318fba45c2b07f45a76b19939d247ee4828fc70c4215",
+  "skipped": [
+    "terminal suites",
+    "official daemon helper park"
+  ],
+  "passed": false
+}

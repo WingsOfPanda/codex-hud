@@ -1,0 +1,22 @@
+insert_history::tests::markdown_link_label_survives_history_wrapping: test
+insert_history::tests::morandi_history_emits_shared_palette_for_text_fills_and_hyperlinks: test
+insert_history::tests::morandi_no_color_history_preserves_text_and_modifiers: test
+insert_history::tests::vt100_blockquote_line_emits_green_fg: test
+insert_history::tests::vt100_blockquote_wrap_preserves_color_on_all_wrapped_lines: test
+insert_history::tests::vt100_colored_prefix_then_plain_text_resets_color: test
+insert_history::tests::vt100_deep_nested_mixed_list_third_level_marker_is_colored: test
+insert_history::tests::vt100_long_unwrapped_url_does_not_insert_extra_blank_gap_before_content: test
+insert_history::tests::vt100_prefixed_mixed_url_line_preserves_prefix_on_wrapped_rows: test
+insert_history::tests::vt100_prefixed_mixed_url_line_wraps_suffix_words_together: test
+insert_history::tests::vt100_prefixed_non_url_line_preserves_prefix_on_wrapped_rows: test
+insert_history::tests::vt100_prefixed_url_keeps_prefix_and_url_on_same_row: test
+insert_history::tests::vt100_prefixed_url_like_without_scheme_keeps_prefix_and_token_on_same_row: test
+insert_history::tests::vt100_terminal_wrap_policy_does_not_pre_wrap_long_paragraph: test
+insert_history::tests::vt100_unwrapped_url_like_clears_continuation_rows: test
+insert_history::tests::vt100_user_message_url_wrap_preserves_gutter_and_background: test
+insert_history::tests::vt100_zellij_raw_insert_keeps_soft_wrapped_tail_above_viewport: test
+insert_history::tests::vt100_zellij_raw_replay_keeps_overflowing_soft_wrapped_tail_above_viewport: test
+insert_history::tests::writes_bold_then_regular_spans: test
+insert_history::tests::writes_semantic_web_link_without_emitting_untrusted_controls: test
+
+20 tests, 0 benchmarks

@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "raw_package_exit_code": 0,
+  "raw_failed_checks": [],
+  "qualified_checks": 7,
+  "host_limitation": null,
+  "raw_report_unchanged": true,
+  "terminal_suites": "Fresh packaged frontend matrix is a separate required controller gate; compatibility and AP replay remain root-owned"
+}
