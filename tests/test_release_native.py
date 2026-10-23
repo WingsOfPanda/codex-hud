@@ -413,6 +413,58 @@ else:
                         native.run(root, self.base / 'execution')
                     self.assertEqual(before, failed.read_bytes())
 
+    def test_package_failure_records_artifacts_installed_from_private_build(self):
+        root = self.attempt()
+        context = self.setup_runner(root)
+        c = native.Context(root, 'frontend')
+        built = c.CARGO_TARGET / c.TARGET / 'release/codex'
+        built.parent.mkdir(parents=True)
+        built.write_bytes(core_tests.packaging.elf(62))
+        built.chmod(0o700)
+        error = b'packaged-footer-rows failed (1); original footer assertion\n'
+        invoked = []
+
+        def fail_package(argv, *, stdout, **kwargs):
+            stage = argv[argv.index('--stage') + 1]
+            invoked.append(stage)
+            if stage == 'frontend':
+                with patch.object(c, 'run', return_value=''):
+                    c.install_native('codex')
+            if stage == 'package':
+                packaged = c.PACKAGE / 'bin/codex'
+                packaged.parent.mkdir(parents=True)
+                shutil.copy2(c.NATIVE / 'codex', packaged)
+                packaged.chmod(0o755)
+                self.assertEqual(native.sha(packaged), native.sha(built))
+                self.assertEqual(packaged.stat().st_size, built.stat().st_size)
+                stdout.write(error)
+                return 1
+            return self.fake_stage(argv, stdout=stdout, **kwargs)
+
+        with patch.object(native, 'verify', return_value=context), \
+             patch.object(native, 'execution_identity', return_value=('fixture-job', 'c' * 64)), \
+             patch.object(native, 'owned_run', side_effect=fail_package):
+            with self.assertRaisesRegex(ValueError, 'Stage package failed; preserve logs'):
+                native.run(root, self.base / 'execution')
+            receipt_path = root / 'receipts/package.json'
+            original = receipt_path.read_bytes()
+            receipt = protocol.load(receipt_path)
+            self.assertEqual(receipt['input']['execution']['outcome'], 'failed')
+            self.assertEqual(receipt['input']['execution']['exit_code'], 1)
+            self.assertEqual((root / 'logs/package.log').read_bytes(), error)
+            self.assertEqual(receipt['outputs']['logs/package.log'],
+                             protocol.file_record(root / 'logs/package.log'))
+            self.assertEqual(receipt['input']['executed'][str(c.PACKAGE / 'bin/codex')]['mode'], '0755')
+            self.assertEqual(protocol.load(root / 'receipts/frontend.json')['outputs']['native/codex']['mode'], '0755')
+            self.assertEqual(c.NATIVE.stat().st_mode & 0o777, 0o700)
+            self.assertEqual(protocol.status(root)['refused'], ['package'])
+            with self.assertRaisesRegex(ValueError, 'Missing/failed'):
+                protocol.approve_package(root, source_root=ROOT)
+            with self.assertRaisesRegex(ValueError, 'immutable'):
+                native.run(root, self.base / 'execution')
+            self.assertEqual(receipt_path.read_bytes(), original)
+            self.assertEqual(invoked, list(native.STAGES[:native.STAGES.index('package') + 1]))
+
     def test_unsealed_runner_skips_passed_receipts_and_rejects_tamper(self):
         # The mocked cleanup never seals the socket; this does not qualify post-seal managed resume.
         root = self.attempt()
