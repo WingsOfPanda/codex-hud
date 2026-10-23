@@ -87,6 +87,9 @@ private parent directories remain `0700`. Exercise the package failure-receipt p
 as well as success: a mode mismatch must not obscure the original failed gate.
 When HUD wording changes, update the exact footer assertions alongside it and
 verify the changed contract on the native client before running the full matrix.
+Run the affected native Rust filters too: a passing terminal fixture does not
+verify their assertions. Keep an assertion-only correction distinct from a
+production rendering change; neither permits rewriting a failed receipt.
 
 Repair and regression-test a shared recipe before freezing a new tooling revision.
 Use the [change-impact rule](release-protocol.md#changes-and-evidence-validity) to
