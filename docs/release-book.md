@@ -94,10 +94,21 @@ verify the changed contract on the native client before running the full matrix.
 Run the affected native Rust filters too: a passing terminal fixture does not
 verify their assertions. Keep an assertion-only correction distinct from a
 production rendering change; neither permits rewriting a failed receipt.
+Cursor-capture recipes have their own footer assertions. Replay their actual
+checks against saved screen/cursor pairs when wording changes; update the exact
+new contract rather than accepting both obsolete and current labels. Keep that
+diagnostic replay separate from fresh candidate qualification.
 
 Repair and regression-test a shared recipe before freezing a new tooling revision.
 Use the [change-impact rule](release-protocol.md#changes-and-evidence-validity) to
 decide which prior evidence remains applicable. Keep each launched attempt immutable.
+
+Keep native preparation and launch close together. If a new unreadable host login
+invalidates preparation before any managed job or workload exists, preserve that
+attempt, establish the new process's exact identity, and use normal initialization
+for a fresh before-work baseline. Never rewrite the old baseline or exempt SSH
+processes as a class. A conditional local launch review must name the exact allowed
+attempt-binding and baseline changes; any other difference needs review.
 
 Stage the previous release from its digest-pinned archive into a private directory
 outside the attempts, preserving archive modes. Verify its complete file inventory
