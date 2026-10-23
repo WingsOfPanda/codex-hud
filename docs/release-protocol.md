@@ -5,7 +5,8 @@ runner. Check its status before preparing or launching an attempt.
 
 ## Qualification status
 
-Status checked 2026-10-23: **under qualification, not a shipping release path**.
+Status checked 2026-10-23: **under qualification; candidates remain unpublished
+until the complete qualification gate passes**.
 [0.4.7](releases/0.163.0-plus.0.4.7.md) is published; fleet-config reported its
 installation on all four hosts. Its accepted artifacts remain separate from the
 new runner's experiments. There is no qualified generic fallback controller in
@@ -24,6 +25,12 @@ this document; historical acceptance alone does not qualify a new recipe.
   tests and a real x86 offline preflight using the preserved 0.4.7 product. This
   does not qualify the 0.4.8 product or the full runner. Native qualification,
   compatibility, captures, AP replay and handoff acceptance remain pending.
+- The 0.4.8 candidate at `02ee22b` passed all five x86 native stages and cleanup.
+  Its later compatibility attempt rejected the installed previous package's
+  read-only modes. ARM built and verified its archive, then package fixtures
+  failed on hard links across `/data` and `/tmp`. These are separate retained
+  failures, not a passing release. The corrected fixtures and early reference
+  inventory check require fresh qualification under a new source/tooling plan.
 
 Working evidence is under the coordinator's main-checkout
 `.build/release-protocol/`: success in `preparation/v3/`, private failures in
@@ -220,8 +227,9 @@ pressure and Cargo freshness; keep cold, warm and helper-only results separate.
 
 Before calling the workflow repeatable, retain evidence of actual managed
 success and failure/recovery rehearsals on x86 and ARM, followed by a complete
-non-publishable native qualification of the frozen product. Verify export/import,
+unpublished native qualification of the frozen product. Verify export/import,
 native result counts, compatibility, captures, AP replay, and generated handoff.
+Only after that acceptance review may separately authorized publication proceed.
 For the next ordinary revision, the plan/version/note may change; release-specific
 executable adapters must not be necessary. A newly required tooling fix gets its
 own regression check and is reported as such.

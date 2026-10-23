@@ -68,6 +68,10 @@ Run the selected recipe's actual setup on each host. Use
 origins, staged files, raw socket paths and private permissions. Include actual
 fixture constructors, package-backed helpers, test discovery/result parsing,
 resource exclusions and owned-process cleanup. Record host limitations explicitly.
+Record the devices containing the source package and fixture scratch roots.
+Copies between `/data` and `/tmp` must support different filesystems; test the
+actual topology before a native launch. Do not require hard links for a private
+package copy or assume that an atomic rename can cross devices.
 When constructing a clean test environment, retain variables required by the
 tests' explicit environment-reference contracts, including `HOME`. A missing
 caller variable is a harness failure; preserve it and correct the child
@@ -94,6 +98,12 @@ production rendering change; neither permits rewriting a failed receipt.
 Repair and regression-test a shared recipe before freezing a new tooling revision.
 Use the [change-impact rule](release-protocol.md#changes-and-evidence-validity) to
 decide which prior evidence remains applicable. Keep each launched attempt immutable.
+
+Stage the previous release from its digest-pinned archive into a private directory
+outside the attempts, preserving archive modes. Verify its complete file inventory
+before compatibility preparation. Installed fleet copies may have write bits
+removed; do not change their modes or use them where canonical archive modes are
+required. Check the reference independently on both architectures.
 
 **Exit check:** the selected checks pass against the actual frozen files and child
 environments on both hosts; all required tools, fixture setup and cleanup proofs
