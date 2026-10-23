@@ -2,9 +2,12 @@
 import hashlib
 import base64
 import copy
+import errno
 import importlib.util
 import json
+import os
 from pathlib import Path
+import stat
 import subprocess
 import tarfile
 import tempfile
@@ -43,6 +46,48 @@ class ReleaseIdentityTests(unittest.TestCase):
         self.assertEqual(manifest['package']['version'], package_release.PLUS_VERSION)
         self.assertEqual(runtime['version'], package_release.PLUS_VERSION)
         self.assertIn(f'docs/releases/{package_release.RELEASE}.md', package_release.DOCS)
+
+
+class QualificationCopyTests(unittest.TestCase):
+    def check_copy(self, check_name):
+        import test_release_package as qualification
+
+        with tempfile.TemporaryDirectory() as temporary:
+            area = Path(temporary)
+            package = area / 'source'
+            (package / 'bin').mkdir(parents=True)
+            for name, mode in (('bin/codex', 0o755), ('bin/codex-code-mode-host', 0o755),
+                               ('payload', 0o644)):
+                path = package / name
+                path.write_bytes(f'original {name}\n'.encode())
+                path.chmod(mode)
+            original = {path.relative_to(package):
+                        (path.read_bytes(), stat.S_IMODE(path.stat().st_mode))
+                        for path in package.rglob('*') if path.is_file()}
+            root, evidence = area / 'fixture', area / 'evidence'
+            root.mkdir()
+            evidence.mkdir()
+            args = [package, root] + ([evidence] if check_name == 'stdio_check' else [])
+            with patch.object(os, 'link', side_effect=OSError(errno.EXDEV, 'cross-device link')), \
+                 patch.object(qualification, 'private_env',
+                              side_effect=RuntimeError('fixture copy ready')):
+                with self.assertRaisesRegex(RuntimeError, 'fixture copy ready'):
+                    getattr(qualification, check_name)(*args)
+            copied = root / 'package/payload'
+            self.assertEqual((copied.read_bytes(), stat.S_IMODE(copied.stat().st_mode)),
+                             original[Path('payload')])
+            self.assertFalse(copied.samefile(package / 'payload'))
+            copied.write_bytes(b'private fixture mutation\n')
+            copied.chmod(0o600)
+            self.assertEqual({path.relative_to(package):
+                              (path.read_bytes(), stat.S_IMODE(path.stat().st_mode))
+                              for path in package.rglob('*') if path.is_file()}, original)
+
+    def test_wrapper_fixture_copies_across_filesystems(self):
+        self.check_copy('wrapper_check')
+
+    def test_stdio_fixture_copies_across_filesystems(self):
+        self.check_copy('stdio_check')
 
 
 class PackageIntegrityTests(unittest.TestCase):
