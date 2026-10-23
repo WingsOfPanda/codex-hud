@@ -1,8 +1,49 @@
 # Repeatable native release workflow
 
-This workflow is under qualification. Unit tests and recorded publication replay
-do not establish a successful composed native run. Keep the published 0.4.7
-artifacts and their original evidence unchanged while rehearsing it.
+Use this reference when the [release book](release-book.md) selects the new native
+runner. Check its status before preparing or launching an attempt.
+
+## Qualification status
+
+Status checked 2026-10-23: **under qualification, not a shipping release path**.
+[0.4.7](releases/0.163.0-plus.0.4.7.md) is published; fleet-config reported its
+installation on all four hosts. Its accepted artifacts remain separate from the
+new runner's experiments. There is no qualified generic fallback controller in
+this document; historical acceptance alone does not qualify a new recipe.
+
+- Success rehearsals and private injected-failure/interruption recovery passed on
+  both architectures. Rehearsals exercised lifecycle and real setup, not full builds.
+- Full x86 proof at tooling `24ed9384a260b8a5254a471e9125d5a00601700c`, execution
+  `5bfcf26a-35fe-41eb-b20f-9dda549cddab`, passed preflight, frontend and helper,
+  then failed license generation because plain `rustc` was absent from its PATH.
+- The coordinator verified cleanup and used supported `job resolve` plus
+  `release_ownership.py recover`. The original workload/cleanup failure remains
+  unchanged; this is not package acceptance or permission to reuse those receipts.
+- Packaging repair and its early check remain unimplemented. Another full proof
+  is blocked on the prerequisite below. Full native qualification, compatibility,
+  captures, AP replay and handoff acceptance remain pending for this workflow.
+
+Working evidence is under the coordinator's main-checkout
+`.build/release-protocol/`: success in `preparation/v3/`, private failures in
+`private-failures/` and `private-failure-preparation/arm-return/`, and recovery in
+`fullproof-a1-recovery/verification.json`. These are dated local references; publish
+durable acceptance evidence with the workflow once its completion gate passes.
+
+### Packaging preflight prerequisite
+
+Before the next full proof, implement a focused checked-in check using the actual
+packaging child environment from `release_native.Context`. It must resolve the
+pinned `rustc` and Cargo invocation forms used by the product's
+`scripts/runtime-notices.py`, verify their versions, obtain the sysroot, read
+`share/doc/rust/COPYRIGHT-library.html`, and resolve the required offline Cargo
+metadata/source and license-text inputs. Include both helper and upstream native
+license inputs; a host-shell `rustc --version` alone does not meet this check.
+
+Run that check before frontend compilation on both hosts. Keep regression cases
+for missing compiler discovery and missing offline license inputs. Record whether
+the fix scopes PATH to packaging or changes other build stages, then freeze the
+corrected tooling and plan. `release-preflight.py` currently covers imports,
+staging, sockets and archives; it does **not** provide this packaging check.
 
 ## Ownership and inputs
 
@@ -22,10 +63,43 @@ profiles and receipts. `plus_source_commit` identifies the shipped product;
 silently change the product freeze. Profiles bind the actual compiler, Python,
 installed executor, local paths and bounded build concurrency.
 
+The runner invokes `scripts/package-release.py` and its license generator from
+`profile.source_root` at `plus_source_commit`; the recipe and its child-environment
+construction come from `profile.tooling_root` at `tooling_commit`. Record that
+provenance with the plan. A change to a product-snapshot file refreezes the product;
+an environment repair confined to the recipe changes tooling. Both require a
+change-impact review; changing a label cannot preserve invalidated proof.
+
 ## Local preparation
 
 Run the checked-in tools from the pinned tooling checkout. The native owner
 supplies the host profile and reviewed plan. These commands do not launch a job:
+
+- `PLAN` is reviewed JSON conforming to [Plan](../release/protocol-v1.md#plan).
+- `PROFILE` is host-observed JSON conforming to
+  [Native profile](../release/protocol-v1.md#native-profile-and-initialization).
+  The native owner supplies real paths and pins; schema examples are not qualified
+  host profiles. There is no universal ready-to-launch profile template.
+- `HOOK` is a JSON command for the pinned
+  [ownership helper](../scripts/release_ownership.py). Use this shape, replacing
+  `PYTHON`, `TOOLING` and `PROFILE_PYTHON_ENV` with the exact absolute interpreter,
+  tooling root and environment returned by `release_native.python_env(profile)`:
+
+```text
+{
+  "argv": ["PYTHON", "-B", "TOOLING/scripts/release_ownership.py", "audit",
+           "--attempt", "{attempt}", "--output", "{report}"],
+  "cwd": "TOOLING",
+  "env": PROFILE_PYTHON_ENV,
+  "deadline_seconds": 180
+}
+```
+
+`{attempt}` and `{report}` are literal runner substitutions. This is data selecting
+the existing helper, not a generated cleanup script. Preparation validates and
+freezes the hook, captures the baseline, and derives final `cleanup` from `audit`.
+Use the profile's exact Python and loader environment for the commands below;
+`python3` is shorthand for that pinned interpreter, not an unverified PATH choice.
 
 ```sh
 python3 -B scripts/release_native.py init --plan PLAN --profile PROFILE --rehearsal
@@ -43,6 +117,34 @@ native tests. Compatibility and cursor capture run after package approval under
 their own managed job. AP replay uses a pinned AP checkout and installed bundle;
 it does not install AP. An x86 replay of ARM captures is recorded as x86 replay
 of native ARM evidence, not execution of ARM binaries on x86.
+
+After package approval, follow the checked-in
+[compatibility/capture and AP commands](../scripts/release_recipes/compat/README.md).
+After export/import, use the core's
+[acceptance and handoff commands](../release/protocol-v1.md#operator-commands).
+
+## Changes and evidence validity
+
+For each repair, record the old and new commits, reviewed diff, changed input
+dependencies, and affected gates. Retain original receipts with their original
+identities. Earlier rehearsal evidence may remain supporting lifecycle evidence
+when the diff proves its behavior and dependencies unchanged; it is never relabeled
+as a run of the new commit. A packaging-only environment repair needs its new
+regression/preflight and full packaging proof. Changes to lifecycle, supervision,
+receipt, cleanup or recovery behavior require the affected success/failure/
+interruption scenarios. If dependency impact is uncertain, repeat that scenario.
+
+The shipping acceptance validator still requires exact plan/receipt bindings;
+this review does not override them. Separate the reuse paths:
+
+| Path | Allowed reuse |
+| --- | --- |
+| Existing helper-only packaging | Only the unchanged native binaries and provenance permitted by [native package requirements](releasing.md#native-binaries) |
+| Existing test-only correction | The exact unchanged harness/results under [saved native results](verification.md#saved-native-results) |
+| New runner, new attempt | Cargo's normal verified cache reuse; no copying prior attempt artifacts or stage receipts into acceptance |
+
+The next proof after `5bfcf26a` is a fresh attempt. Its passed frontend/helper
+records remain diagnostic evidence, not transferable acceptance receipts.
 
 ## Failures and recovery
 
@@ -83,11 +185,9 @@ list is not evidence that creation failed: resolve the existing tag/node to its
 database ID before proceeding. Never create a duplicate release to resolve a
 listing delay.
 
-Measure build, test-harness, qualification, recovery and transfer durations
-separately. The 0.4.7 ARM total of about 45 minutes already included its roughly
-18-minute test-harness build. Additional CPU cores cannot fix orchestration,
-fixture setup or cleanup mistakes. Change concurrency or cache reuse only after
-measurements and corresponding identity checks justify it.
+Use [phase timing and measurement limits](release-performance.md#measurement-limits)
+to distinguish execution, transfer and waits. Change concurrency or cache reuse
+only after measurements and corresponding identity checks justify it.
 
 Before adding a new cache, compare two real attempts with the same plan, profile
 and tooling and no intervening build in their shared Cargo target directory.
@@ -98,6 +198,12 @@ mtimes; if dependencies and the helper rebuild too, investigate flags and the
 environment first. A stable, verified checkout may be justified by that evidence;
 in-place resume and a separate artifact cache are not prerequisites for a correct
 fresh attempt. Claim fast retries only after measuring them on each architecture.
+Call the first and second comparable attempts A1 and A2. A run after a tooling,
+PATH or profile change is not a controlled A2 comparison; label the difference and
+possible cache invalidation. Reuse naturally required runs when comparable rather
+than adding release gates solely to collect timings. For a CPU experiment, change
+only concurrency within current resource limits and record wall time, memory
+pressure and Cargo freshness; keep cold, warm and helper-only results separate.
 
 ## Completion gate for this workflow
 

@@ -21,16 +21,12 @@ updates; increment its patch component for Plus fixes and its minor component
 for Plus features. Every new combination still needs qualified target packages.
 Existing published `plus.N` releases retain their original identities.
 
-The current revision is `0.163.0-plus.0.4.7`: a brighter existing Morandi palette,
-matching command-success/Context green, and Morandi-only ANSI256 hue preservation.
-The upstream base stays 0.163.0. Build fresh release frontends on both architectures;
-retain only exact applicable development test evidence. The helper changes version
-only, so verify the unchanged advisor worker identity and successful old/new mixes.
-Qualify quiet rollback to 0.4.6, both-direction holds, 0.4.6 TUI/new wrapper operation,
-and package-backed palette/command/AP capture checks on both targets. Use protocol 5,
-execution format 1, no daemon restart, quiet checkpoint, drained executions, session
-restart required and `agents_md: null`. No new configuration keys or settings changes
-are needed. Propose retention floor 0.4.6 only after native qualification passes.
+Published revision `0.163.0-plus.0.4.7` is historical evidence, not pending work.
+Its [note](releases/0.163.0-plus.0.4.7.md) and
+[qualification](releases/0.163.0-plus.0.4.7/qualification.json) record the accepted
+source, gates, limits and rollback floor. The older revision instructions below
+describe their historical requirements; select the next release's gates from its
+actual changes rather than rerunning a published release.
 
 The preceding revision is `0.163.0-plus.0.4.6`: compact command display, the Morandi
 theme, and advisor model diagnostics. Build the changed frontend and helper
@@ -332,9 +328,10 @@ a quiet rollback, beyond ordinary `previous` cleanup. No shared-daemon restart
 is needed when both releases use upstream 0.163.0. See
 [the cutover contract](background-work.md#cooperative-package-upgrades).
 
-Once the release and its handoff asset are verified, message fleet-config only
-the tag. Fleet-config runs `stage.py pin` to validate the asset digests and stage
-`pins.next.json`, then `stage.py test` in throwaway homes on x86 and ARM. It owns
+Once the public release and its handoff asset are verified, send fleet-config the
+tag plus the digest-verification reference. Fleet-config runs `stage.py pin` to
+validate the asset digests and stage `pins.next.json`, then `stage.py test` in
+throwaway homes on x86 and ARM. It owns
 the rollout approval, deployment, AP/PATH checks, official-daemon maintenance,
 and rollback. Build, publish, and merge retain their separate user gates. Do not
 retrofit this asset into already published releases as part of this procedure.

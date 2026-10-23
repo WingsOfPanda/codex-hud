@@ -28,9 +28,9 @@ version pins, update policy, and global configuration belong to `fleet-config`.
 
 ## Working in this repo
 
-Before preparing, recovering or publishing a release, read the
-[release book](docs/release-book.md) and use its linked checklist. Check the
-workflow's qualification status before selecting a runner.
+Release preparation, recovery or publication: follow the
+[release book](docs/release-book.md) and its checklist, starting at path selection
+or the recovery branch for interrupted work.
 
 Use `./bin/codex-plus` from the repository root, or its absolute path from another
 working directory; do not assume the command is installed on PATH.

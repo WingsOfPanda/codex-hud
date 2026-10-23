@@ -63,9 +63,11 @@ We cannot attribute all recompilation to the path change alone.
    native directory, extracted package, source clones and another archive copy.
    Qualify on the native host and fetch the accepted archive once by digest.
 5. **Preserve completed work and truthful outcomes.** A failed run stays failed.
-   Reuse only explicitly reviewed passed stages with unchanged dependencies and
-   original receipts. Track fresh and retained work separately; copied historical
-   durations are not fresh execution time.
+   For the existing packaging path, reuse only the binaries/results allowed by
+   [native package requirements](releasing.md#native-binaries) and
+   [saved native results](verification.md#saved-native-results). The new runner's
+   [reuse contract](release-protocol.md#changes-and-evidence-validity) is stricter.
+   Track fresh and retained work separately; historical durations are not fresh time.
 
 ## Cleanup and result handling
 
@@ -162,6 +164,17 @@ Its report and the saved 74-test replay are retained under
 the saved test evidence came from ARM, but the tools were not rerun on ARM.
 
 ## Measurement limits
+
+Record actual start/end and wall duration for preflight, frontend, helper,
+packaging, harness construction, tests, compatibility/captures, AP replay, transfer,
+recovery, review/approval wait, publication and rollout. Mark overlap and cache
+conditions. The [0.4.7 qualification record](releases/0.163.0-plus.0.4.7/qualification.json)
+records ARM native/package time of 2726.949489 seconds, including its 1055.888969-second
+harness build; the latter is not extra time. Its 319.2385-second archive transfer
+is separate. These stage observations exclude preparation/review/recovery gaps.
+
+For warm-cache or CPU comparisons, use the
+[controlled comparison method](release-protocol.md#publication-and-timing).
 
 The retained records establish the costs above and show that the final scoped
 helper path worked. They do not establish a new end-to-end release speedup,

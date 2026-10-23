@@ -10,10 +10,13 @@ reason. Replace placeholders with actual evidence; an unchecked item is not a pa
 - Coordinator / native x86 owner / native ARM owner / fleet peer:
 - Product commit / upstream commit / patch SHA256:
 - Tooling commit / plan digest / host profile digests:
+- Packager and license-generator supplying commit / child-environment identity:
 - Previous and in-use versions / qualified rollback / proposed retain:
 - Config changes and defaults / exact policy block hash or unchanged:
 - Preparation / publication / merge / rollout authorization references:
-- New runner qualification status and supported recipe chosen:
+- Grant scope (action/release or explicit broader scope) / recovery authorizer:
+- Selected path / pinned recipe entry point / closure / applicable acceptance:
+- New runner qualification status if selected / unresolved launch prerequisites:
 
 ## Acceptance matrix
 
@@ -25,6 +28,7 @@ architectures' evidence on the same host.
 | --- | --- | --- | --- |
 | Source/tooling/profile freeze and clean isolated workspace | | | |
 | Actual interpreter/import/tool/compiler discovery | | | |
+| Packaging child environment, offline license inputs and required early check | | | |
 | Fixture sockets, permissions and package-backed helper setup | | | |
 | Resource/exclusion check and cleanup preflight | | | |
 | Managed proposal review / execution UUID / observation | | | |
@@ -46,6 +50,7 @@ architectures' evidence on the same host.
 - Exact recovery evidence and supported resolution:
 - Preserved accepted artifacts and identity checks permitting reuse:
 - Invalidated gates and why / next attempt identity:
+- Old/new tooling diff / retained rehearsal evidence at original identity:
 - One preventive check added before the next expensive run:
 
 ## Publication and rollout
@@ -55,7 +60,7 @@ architectures' evidence on the same host.
 - [ ] Policy block is unchanged/null or byte-identical to the reviewed replacement.
 - [ ] Exact GitHub release ID and tag/companion commit recorded.
 - [ ] Five uploaded asset digests and downloaded handoff bytes verified.
-- [ ] Published release rechecked; URL and verification sent to fleet-config.
+- [ ] Published release rechecked; tag plus digest-verification reference sent to fleet-config.
 - [ ] Main merge status recorded independently.
 - [ ] Fleet reports installation/quiet checks/holds released for each host.
 - [ ] Required TUI restart verified separately from installed package.
@@ -75,4 +80,5 @@ settings. Include Cargo compiled/fresh counts for reuse experiments.
 - Exact registered jobs if waiting:
 - Passed work that must not be repeated:
 - Release completion evidence / open follow-up issues:
+- Published / merged / installed / restarted status recorded separately:
 - Next-release improvement and measured benefit, or not yet measured:
