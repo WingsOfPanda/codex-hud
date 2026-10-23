@@ -14,7 +14,7 @@ use uuid::Uuid;
 pub const MAX_SECONDS: f64 = 24.0 * 60.0 * 60.0;
 pub const TERMINAL: &[&str] = &["completed", "failed", "interrupted", "lost"];
 pub const UPGRADE_WARNING: &str = "Coordinator upgrade unavailable; continuing installed observer.";
-const CLAIMABLE: &str = "park IN (SELECT id FROM parks WHERE parent=? AND state='armed') AND (status='armed' OR callback IS NULL OR callback IN (SELECT id FROM callbacks WHERE state='ready' AND message IS NULL))";
+const CLAIMABLE: &str = "park IN (SELECT id FROM parks WHERE parent=? AND state IN ('armed','complete')) AND (((status='armed' OR callback IS NULL OR callback IN (SELECT id FROM callbacks WHERE state='ready' AND message IS NULL)) AND park IN (SELECT id FROM parks WHERE state='armed')) OR (recovery_allowed=1 AND callback IN (SELECT id FROM callbacks WHERE state IN ('goal_owned','goal_settled')) AND NOT EXISTS (SELECT 1 FROM goal_dispatch_jobs d JOIN goal_dispatches g ON g.id=d.dispatch WHERE d.job=jobs.id AND g.state NOT IN ('ready','invalidated'))))";
 const JOB_TERMINAL: &str = "jobs.status IN ('completed','failed','interrupted','lost')";
 const CALLBACK_OPEN: &str = "state IN ('ready','pending','starting','in_flight','uncertain','cancel_requested','cancel_uncertain')";
 
@@ -113,10 +113,25 @@ pub(crate) fn execution_cleanup_unresolved(record: &Value) -> bool {
         && record["resolution"]["cleanup_verified"] != true
 }
 
+pub(crate) fn execution_recovery_required(record: &Value) -> bool {
+    record["state"] == "unknown" || execution_cleanup_unresolved(record)
+}
+
 pub(crate) fn add_execution_refs(directory: &Path, root: &str, results: &mut [Value]) {
     for result in results {
         if let Some(id) = result["execution"].as_str() {
             let refs = execution_refs(directory, root, id);
+            match crate::executions::read(directory.parent().unwrap(), root, id) {
+                Ok(record) => {
+                    result["recovery_required"] =
+                        json!(result["status"] == "lost" || execution_recovery_required(&record));
+                }
+                Err(error) => {
+                    result["recovery_required"] = json!(true);
+                    result["evidence_status"] = json!("unavailable");
+                    result["evidence_error"] = json!(format!("{error:#}"));
+                }
+            }
             result["result_refs"] = refs;
         }
     }
@@ -191,6 +206,7 @@ impl Store {
                         ("observer_run", "TEXT"),
                         ("recovery_pending", "INTEGER NOT NULL DEFAULT 1"),
                         ("report", "INTEGER NOT NULL DEFAULT 0"),
+                        ("recovery_allowed", "INTEGER NOT NULL DEFAULT 0"),
                         ("label", "TEXT"),
                         ("interruption_pending", "INTEGER NOT NULL DEFAULT 0"),
                     ],
@@ -516,7 +532,7 @@ impl Store {
         recovering: bool,
     ) -> Result<()> {
         self.transaction(false, |s| {
-            s.execute(&format!("UPDATE jobs SET recovery_pending=1 WHERE {CLAIMABLE} AND observer_run IS NOT NULL AND observer_run<>?"), &[json!(parent),json!(run_id)])?;
+            s.execute(&format!("UPDATE jobs SET recovery_pending=1,recovery_allowed=0 WHERE {CLAIMABLE} AND observer_run IS NOT NULL AND observer_run<>?"), &[json!(parent),json!(run_id)])?;
             s.execute(&format!("UPDATE jobs SET report=1 WHERE {CLAIMABLE} AND recovery_pending=1 AND status IN ('completed','failed','interrupted','lost')"), &[json!(parent)])?;
             s.execute(&format!("UPDATE jobs SET observer_run=? WHERE {CLAIMABLE}"), &[json!(run_id),json!(parent)])?;
             if recovering { s.execute("UPDATE callbacks SET state='uncertain' WHERE parent=? AND state IN ('in_flight','starting')", &[json!(parent)])?; }
@@ -529,7 +545,7 @@ impl Store {
         };
         self.transaction(false, |s| {
             s.execute("UPDATE parks SET generation=? WHERE parent=? AND state='armed' AND generation IS NULL", &[json!(generation),json!(parent)])?;
-            s.execute(&format!("UPDATE jobs SET recovery_pending=1,report=CASE WHEN status IN ('completed','failed','interrupted','lost') THEN 1 ELSE report END WHERE {CLAIMABLE} AND park IN (SELECT id FROM parks WHERE generation<>? AND (recovery_generation IS NULL OR recovery_generation<>?))"), &[json!(parent),json!(generation),json!(generation)])?;
+            s.execute(&format!("UPDATE jobs SET recovery_pending=1,recovery_allowed=0,report=CASE WHEN status IN ('completed','failed','interrupted','lost') THEN 1 ELSE report END WHERE {CLAIMABLE} AND park IN (SELECT id FROM parks WHERE generation<>? AND (recovery_generation IS NULL OR recovery_generation<>?))"), &[json!(parent),json!(generation),json!(generation)])?;
             s.execute("UPDATE parks SET recovery_generation=? WHERE parent=? AND state='armed' AND generation<>?", &[json!(generation),json!(parent),json!(generation)])
         })?;
         self.exists("SELECT 1 FROM parks WHERE parent=? AND state='armed' AND recovery_generation IS NOT NULL LIMIT 1", &[json!(parent)])
@@ -601,7 +617,8 @@ impl Store {
             (status, exit_code)
         };
         if status.is_some_and(|v| TERMINAL.contains(&v)) {
-            self.execute("UPDATE jobs SET status=?,exit_code=?,turn=COALESCE(turn,?),report=CASE WHEN ?='lost' AND kind='execution' THEN 1 ELSE MAX(report,recovery_pending) END,recovery_pending=0 WHERE id=? AND status='armed'", &[json!(status),json!(exit_code),json!(turn),json!(status),job["id"].clone()])?;
+            // Legacy helpers see report-only; continuous observation permits bounded recovery in this helper.
+            self.execute("UPDATE jobs SET status=?,exit_code=?,turn=COALESCE(turn,?),recovery_allowed=CASE WHEN ? AND report=0 AND recovery_pending=0 AND observer_run=? THEN 1 ELSE 0 END,report=CASE WHEN ? OR (?='lost' AND kind='execution') THEN 1 ELSE MAX(report,recovery_pending) END,recovery_pending=0 WHERE id=? AND status='armed'", &[json!(status),json!(exit_code),json!(turn),json!(job["live_recovery"] == true && !truth(&current["recovery_generation"])),job["observer_run"].clone(),json!(job["execution_recovery"] == true),json!(status),job["id"].clone()])?;
         }
         Ok(())
     }
@@ -612,7 +629,7 @@ impl Store {
         self.transaction(true, |s| {
             // Retire callbacks created by older batching races, before they can block fresh work.
             s.execute("UPDATE callbacks SET state=CASE WHEN EXISTS (SELECT 1 FROM jobs JOIN parks ON parks.id=jobs.park WHERE jobs.callback=callbacks.id AND parks.state='cancelled') THEN 'cancelled' ELSE 'expired' END WHERE parent=? AND state='ready' AND message IS NULL AND queue IS NULL AND EXISTS (SELECT 1 FROM jobs JOIN parks ON parks.id=jobs.park WHERE jobs.callback=callbacks.id AND parks.state IN ('cancelled','expired'))", &[json!(parent)])?;
-            let rows = s.rows(&format!("SELECT jobs.id,jobs.report,parks.origin FROM jobs JOIN parks ON parks.id=jobs.park WHERE parks.parent=? AND parks.state='armed' AND {JOB_TERMINAL} AND jobs.callback IS NULL AND NOT EXISTS (SELECT 1 FROM goal_jobs WHERE goal_jobs.job=jobs.id)"), &[json!(parent)])?;
+            let rows = s.rows(&format!("SELECT jobs.id,jobs.report,jobs.recovery_allowed,parks.origin FROM jobs JOIN parks ON parks.id=jobs.park WHERE parks.parent=? AND parks.state='armed' AND {JOB_TERMINAL} AND jobs.callback IS NULL AND NOT EXISTS (SELECT 1 FROM goal_jobs WHERE goal_jobs.job=jobs.id)"), &[json!(parent)])?;
             #[cfg(test)]
             BATCH_SELECTED.with(|hook| {
                 if let Some(hook) = hook.borrow_mut().take() { hook(); }
@@ -620,7 +637,7 @@ impl Store {
             let Some(first) = rows.first() else { return Ok(()); };
             let id = Uuid::new_v4().to_string();
             s.execute("INSERT INTO callbacks (id,parent,client,state,queue,error) VALUES (?,?,?,'ready',NULL,NULL)", &[json!(id),json!(parent),json!(Uuid::new_v4().to_string())])?;
-            for row in rows.iter().filter(|r|r["origin"]==first["origin"] && r["report"]==first["report"]) { s.execute("UPDATE jobs SET callback=? WHERE id=? AND callback IS NULL", &[json!(id),row["id"].clone()])?; }
+            for row in rows.iter().filter(|r|r["origin"]==first["origin"] && r["report"]==first["report"] && r["recovery_allowed"]==first["recovery_allowed"]) { s.execute("UPDATE jobs SET callback=? WHERE id=? AND callback IS NULL", &[json!(id),row["id"].clone()])?; }
             Ok(())
         })
     }
@@ -631,6 +648,7 @@ impl Store {
         )?;
         let remaining = self.rows("SELECT COUNT(*) AS count FROM jobs JOIN parks ON parks.id=jobs.park WHERE parks.parent=? AND jobs.status='armed' AND parks.state='armed'", &[json!(parent)])?[0]["count"].clone();
         let mut details = Vec::new();
+        let mut recovery = rows.iter().any(|row| row["recovery_allowed"] == 1);
         for row in rows.iter().take(3) {
             let source = if truth(&row["label"]) {
                 &row["label"]
@@ -645,29 +663,45 @@ impl Store {
                 label(source),
                 text(&row["status"])
             );
-            if row["status"] == "lost" {
+            if row["status"] == "lost" || row["kind"] == "execution" {
                 let known_receipt = if let Some(execution) = row["execution"].as_str() {
                     let home = self
                         .directory
                         .parent()
                         .ok_or_else(|| anyhow!("state directory has no home"))?;
-                    let record = crate::executions::read(home, parent, execution)?;
-                    if record["result"].is_object()
-                        && matches!(
-                            record["state"].as_str(),
-                            Some("completed" | "failed" | "cancelled")
-                        )
-                    {
-                        Some(execution_cleanup_unresolved(&record))
-                    } else {
-                        None
+                    match crate::executions::read(home, parent, execution) {
+                        Ok(record) => {
+                            if record["result"].is_object()
+                                && matches!(
+                                    record["state"].as_str(),
+                                    Some("completed" | "failed" | "cancelled")
+                                )
+                            {
+                                Some(execution_cleanup_unresolved(&record))
+                            } else {
+                                None
+                            }
+                        }
+                        Err(error) => {
+                            // Missing evidence cannot erase terminal facts retained by the ledger.
+                            recovery = true;
+                            detail.push_str(" evidence=UNAVAILABLE");
+                            detail.push_str(&format!(
+                                " evidence_error={}",
+                                json!(format!("{error:#}"))
+                            ));
+                            (row["status"] != "lost").then_some(true)
+                        }
                     }
                 } else {
                     None
                 };
                 detail.push_str(match known_receipt {
                     Some(true) => " cleanup=UNRESOLVED command_receipt=KNOWN",
-                    Some(false) => " cleanup=RESOLVED command_receipt=KNOWN",
+                    Some(false) if row["status"] == "lost" => {
+                        " cleanup=RESOLVED command_receipt=KNOWN"
+                    }
+                    Some(false) => "",
                     None => " outcome=UNKNOWN",
                 });
             }
@@ -686,14 +720,20 @@ impl Store {
         if rows.len() > 3 {
             details.push_str(&format!("; +{} more", rows.len() - 3));
         }
-        let report = rows.iter().any(|r| truth(&r["report"]));
+        let report = rows
+            .iter()
+            .any(|r| truth(&r["report"]) && r["recovery_allowed"] != 1);
         let header = if report {
             "REPORT ONLY"
+        } else if recovery {
+            "RECOVERY REQUIRED"
         } else {
             "LIVE COMPLETION"
         };
         let warning = if report {
             "Do not resume earlier actions from this report. Do not rerun lost jobs. "
+        } else if recovery {
+            "Investigate only within current authorization; preserve original outcomes and resource claims. Do not blindly replay unknown work. Continue independent authorized work. "
         } else {
             ""
         };
@@ -949,6 +989,93 @@ mod tests {
                 .message(PARENT, &ready)
                 .unwrap()
                 .starts_with("REPORT ONLY")
+        );
+    }
+
+    #[test]
+    fn recovery_batches_isolate_reports_and_cancelled_jobs_and_freeze_submissions() {
+        let home = tempfile::tempdir().unwrap();
+        let mut store = Store::open(home.path()).unwrap();
+        register(&mut store, &[job("cancelled")]);
+        store.cancel(PARENT, None, None).unwrap();
+        let record = crate::executions::prepare(home.path(), PARENT, &json!({"root":PARENT,"turn":"origin","goal":null}), &json!({"schema":1,"topic":"mixed recovery","argv":["/usr/bin/true"],"cwd":home.path()})).unwrap();
+        let id = record["id"].as_str().unwrap();
+        let mut record = crate::executions::cancel(home.path(), PARENT, id).unwrap();
+        record["result"]["cleanup"]["status"] = json!("unknown");
+        let path = home
+            .path()
+            .join("codex-plus/executions/v1")
+            .join(PARENT)
+            .join(id)
+            .join("state.json");
+        crate::local::atomic_json(&path, &record).unwrap();
+        let mut recovery = job("recovery");
+        recovery.kind = "execution".into();
+        recovery.thread = PARENT.into();
+        recovery.execution = Some(id.into());
+        register(&mut store, &[recovery, job("report"), job("live")]);
+        store.claim_observation(PARENT, "observer", false).unwrap();
+        store.observe_job(&json!({"id":"recovery","observer_run":"observer","execution_recovery":true,"live_recovery":true}), Some("interrupted"), None, None, false).unwrap();
+        store
+            .execute("UPDATE jobs SET report=1 WHERE id='report'", &[])
+            .unwrap();
+        complete(&mut store, "report");
+        complete(&mut store, "live");
+        store.batch(PARENT).unwrap();
+        let callbacks = store.status(PARENT).unwrap()["callbacks"]
+            .as_array()
+            .unwrap()
+            .clone();
+        assert_eq!(callbacks.len(), 3);
+        let mut headers = Vec::new();
+        let mut recovery_callback = None;
+        for callback in callbacks {
+            let claimed = store
+                .claim_callback(&callback, false, false)
+                .unwrap()
+                .unwrap();
+            let message = claimed["message"].as_str().unwrap();
+            headers.push(message.split(':').next().unwrap().to_owned());
+            if message.starts_with("RECOVERY REQUIRED") {
+                recovery_callback = Some(claimed);
+            }
+        }
+        headers.sort();
+        assert_eq!(
+            headers,
+            ["LIVE COMPLETION", "RECOVERY REQUIRED", "REPORT ONLY"]
+        );
+        let frozen = recovery_callback.unwrap();
+        store.claim_observation(PARENT, "restart", true).unwrap();
+        store
+            .observe_generation(PARENT, Some("new-generation"))
+            .unwrap();
+        let status = store.status(PARENT).unwrap();
+        let callback = status["callbacks"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|row| row["id"] == frozen["id"])
+            .unwrap();
+        assert_eq!(callback["message"], frozen["message"]);
+        assert_eq!(callback["client"], frozen["client"]);
+        assert_eq!(
+            status["jobs"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|row| row["id"] == "recovery")
+                .unwrap()["recovery_allowed"],
+            1
+        );
+        store.cancel(PARENT, None, None).unwrap();
+        store.batch(PARENT).unwrap();
+        assert!(
+            store
+                .next_callback(PARENT, false, false)
+                .unwrap()
+                .0
+                .is_none()
         );
     }
 
@@ -1591,6 +1718,7 @@ mod tests {
         assert_eq!(status["jobs"][0]["exit_code"], json!(0));
         assert_eq!(status["jobs"][0]["turn"], Value::Null);
         assert_eq!(status["jobs"][0]["recovery_pending"], json!(1));
+        assert_eq!(status["jobs"][0]["recovery_allowed"], json!(0));
         assert_eq!(status["callbacks"][0]["idempotent"], json!(0));
         assert_eq!(status["callbacks"][0]["message"], Value::Null);
         assert_eq!(

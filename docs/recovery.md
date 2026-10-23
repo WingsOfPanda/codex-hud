@@ -44,6 +44,12 @@ Classify jobs individually in a mixed batch. A live sibling cannot authorize a
 cancelled or uncertain job. Preserve already-submitted callback text and IDs;
 reconcile uncertain delivery instead of resending.
 
+If an execution record cannot be read, retain any outcome already observed in
+the ledger and report the evidence error with its file references. Before an
+outcome has been observed, recovery requires a trusted current goal-wait
+association and uninterrupted observation; without that evidence, report only.
+An unreadable job must not prevent an independent completion from being delivered.
+
 ## One bounded recovery pass
 
 1. **Check scope.** Read current user direction, goal state and exact admission.

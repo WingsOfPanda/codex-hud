@@ -431,14 +431,14 @@ fn terminal_projections_remove_settled_outcomes_and_surface_monitoring_gaps() {
     for state in [State::Completed, State::Failed, State::Cancelled] {
         let (temp, root, mut record, dir) = setup("exit 0");
         record.state = state;
-        record.started_at = Some(local::now());
+        record.started_at = Some(100.0);
         record.error = (state == State::Failed).then(|| "known command failure".into());
         record.result = Some(Outcome {
             schema: 1,
             id: record.id.clone(),
             root: root.clone(),
             state,
-            finished_at: local::now(),
+            finished_at: 101.0,
             exit_code: if state == State::Cancelled {
                 None
             } else {
@@ -515,7 +515,7 @@ fn terminal_projections_remove_settled_outcomes_and_surface_monitoring_gaps() {
 fn active_projection_preserves_running_state_and_start_time() {
     let (temp, root, mut record, dir) = setup("exit 0");
     record.state = State::Running;
-    record.started_at = Some(local::now());
+    record.started_at = Some(100.0);
     save(temp.path(), &dir, &mut record).unwrap();
     let path = temp.path().join(format!(
         "codex-plus/execution-status/{root}/{}.json",
