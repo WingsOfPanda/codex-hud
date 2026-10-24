@@ -1119,6 +1119,11 @@
     "sha256": "be4029f0891ba17eef2e8569136c8e0ab64ca7c81be10b1565782d159fe0e7f8",
     "size": 4321
   },
+  "release-checklist.md": {
+    "mode": "0644",
+    "sha256": "98e4d0c8532304fd69ab13b373faff3c080252005acb64f7ec3e47c04173b022",
+    "size": 6914
+  },
   "x86_64/acceptance.json": {
     "mode": "0644",
     "sha256": "0b75fc851e56dd9db28d9b22f9ee809f83559b314f289a0eb254b787380291ab",
