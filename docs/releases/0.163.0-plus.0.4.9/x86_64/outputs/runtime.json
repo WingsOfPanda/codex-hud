@@ -1,0 +1,1 @@
+{"architecture":"x86_64","checks":{"runtime":{"evidence":{"evidence/runtime-detail.json":"9a795fe9abf46d570a1b2be0c60bb06d3255442e2a734e46f70f332055b2b7b1"},"outcome":"passed"}},"plus_source_commit":"651a1eb03a08d69af0fd1cc69252bdff2c8f4b27"}

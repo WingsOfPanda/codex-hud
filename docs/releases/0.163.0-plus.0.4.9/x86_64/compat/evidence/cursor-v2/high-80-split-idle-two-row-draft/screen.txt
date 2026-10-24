@@ -1,0 +1,40 @@
+
+  >_ OpenAI Codex (v0.163.0)
+     /tmp/cn/f-9wlm711c/w
+  permissions: YOLO mode
+
+  Worked for 5s • 13:25
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+› cursor-draft-first
+  cursor-draft-second
+
+  gpt-6.1-sol high · /tmp/cn/f-9wlm711c/w · compact
+  Context 100% left
+  Advisor · GPT-6-Astra (xhigh) · 1 call · last 0:05
+  GPT-6.1-Sol (high) [general] · worker 1 · 0:26 · ? tok
+  GPT-6-Astra (medium) [general] · worker 2 · 0:26 · ? tok
+  Background · cursor-native-shell · seen 0:13
+  Background · cursor-detached-0 · needs review · ?
+  +5 more

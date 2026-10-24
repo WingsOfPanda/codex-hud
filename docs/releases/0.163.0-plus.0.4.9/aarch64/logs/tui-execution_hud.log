@@ -1,0 +1,11 @@
+warning: `--logfile` is deprecated
+running 6 tests
+test bottom_pane::worker_hud::execution_tests::execution_hud_review_row_preserves_unknown_duration_without_adding_rows ... ok
+test app::execution_hud::tests::execution_hud_rejects_symlink_directories_files_and_fifo ... ok
+test bottom_pane::worker_hud::execution_tests::execution_hud_shares_worker_advisor_native_warning_and_overflow_budget ... ok
+test app::execution_hud::tests::execution_hud_unknown_keeps_review_state_and_only_reports_known_duration ... ok
+test bottom_pane::worker_hud::execution_tests::execution_hud_shares_six_rows_and_preserves_native_shells ... ok
+test app::execution_hud::tests::execution_hud_bounds_and_validates_each_published_record ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 5923 filtered out; finished in 0.01s
+

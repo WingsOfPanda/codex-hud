@@ -1,0 +1,35 @@
+{
+  "passed": true,
+  "raw_tmux_pairs": 20,
+  "baseline_only": false,
+  "development_pre_package": false,
+  "candidate_acceptance": true,
+  "coherence": "cursor/dimensions before and after each pair",
+  "busy_pairs_seconds": 5,
+  "busy_working_row_verified_above_cursor": true,
+  "working_row_positions": [
+    {
+      "size": "100x40",
+      "row": 27,
+      "position": "above"
+    },
+    {
+      "size": "80-split",
+      "row": 27,
+      "position": "above"
+    }
+  ],
+  "fixture_tui": {
+    "theme": "morandi",
+    "status_line": [
+      "model-with-reasoning",
+      "current-dir",
+      "compact-display",
+      "context-remaining",
+      "weekly-limit"
+    ],
+    "status_line_use_colors": true
+  },
+  "model_calls": 0,
+  "AP_replay_performed": false
+}

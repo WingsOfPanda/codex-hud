@@ -1,0 +1,94 @@
+{
+  "schema": 1,
+  "passed": true,
+  "source_commit": "651a1eb03a08d69af0fd1cc69252bdff2c8f4b27",
+  "runtime_sha256": "92dd8c8549c0cc961e572ac5e8abdb64ed4e980bfa5af906f4c98be23ed12fc4",
+  "old_runtime_sha256": "f4483c19198e05304f8a6178736a8ccaedd0def815abab4e8aa21413946065c8",
+  "stock_sha256": "399ff69c431c066e40de318fba45c2b07f45a76b19939d247ee4828fc70c4215",
+  "cases": [
+    {
+      "suite": "detached",
+      "scenario": "cleanup-recovery-success",
+      "report": "detached/cleanup-recovery-success/report.json",
+      "sha256": "ab2460e5851db7e64a536b58db71dc4055dbe31613916e151d32f2a2d2ab828f"
+    },
+    {
+      "suite": "detached",
+      "scenario": "cleanup-recovery-failure",
+      "report": "detached/cleanup-recovery-failure/report.json",
+      "sha256": "d5d24dabafcf091aa4ee94473380e8d8001b72a06d7bd2573a3612b38eea624c"
+    },
+    {
+      "suite": "detached",
+      "scenario": "cleanup-recovery-old-reader",
+      "report": "detached/cleanup-recovery-old-reader/report.json",
+      "sha256": "0c335ea5569a69e7a343168cd9d09621065994ea775f6401d670917c7ab1a835"
+    },
+    {
+      "suite": "detached",
+      "scenario": "goal-cleanup-recovery",
+      "report": "detached/goal-cleanup-recovery/report.json",
+      "sha256": "00e326ed65cb09aac0203f2cf2f56ab1da9daa1a4765320bfac09a95ec5233fc"
+    },
+    {
+      "suite": "detached",
+      "scenario": "goal-cleanup-recovery-old-reader",
+      "report": "detached/goal-cleanup-recovery-old-reader/report.json",
+      "sha256": "8aada65a6d4471e40882bce9ef0627bb9a4c2b88fecce0f3dc15323a3be58f7b"
+    },
+    {
+      "suite": "detached",
+      "scenario": "daemon-graceful",
+      "report": "detached/daemon-graceful/report.json",
+      "sha256": "a529bb9fdccd96c4718cc698c1b44c17d6e0ac698961173cccc28d168a14bd67"
+    },
+    {
+      "suite": "detached",
+      "scenario": "observation-gap",
+      "report": "detached/observation-gap/report.json",
+      "sha256": "0e26a332fb54a17c42d73ae53f302940f465d861fea6ee2813480a94b45d0172"
+    },
+    {
+      "suite": "detached",
+      "scenario": "cancellation",
+      "report": "detached/cancellation/report.json",
+      "sha256": "7bacd4d57839884dc6e0de4f8c4aebe50244e1a8c8348c893a64be7c1230a440"
+    },
+    {
+      "suite": "detached",
+      "scenario": "watch-recovery",
+      "report": "detached/watch-recovery/report.json",
+      "sha256": "660e9cafbd19a8af6b75454f966558479665564ca6cc9166d830e0167583ce3f"
+    },
+    {
+      "suite": "goals",
+      "scenario": "input-epoch",
+      "report": "goals/input-epoch/report.json",
+      "sha256": "31d58099d036143fbab85e490c58859246132bd15f51507f19c3d5c3a6d10d5b"
+    },
+    {
+      "suite": "goals",
+      "scenario": "paused-recovery",
+      "report": "goals/paused-recovery/report.json",
+      "sha256": "01972b21795b2ea612cb26cc0bb8a04b3151a1e14178a829489a7b4653ac5926"
+    },
+    {
+      "suite": "goals",
+      "scenario": "replaced-recovery",
+      "report": "goals/replaced-recovery/report.json",
+      "sha256": "5db352f3cf75bf7e328697076833ebfdb5b16dba33d0c0272822efd9cbd2b80e"
+    },
+    {
+      "suite": "goals",
+      "scenario": "mixed-independent-priority",
+      "report": "goals/mixed-independent-priority/report.json",
+      "sha256": "3fdc41e5bd6e3dea091355856394ed1da5f90e4fc7f279a9fabad2e705ef22aa"
+    },
+    {
+      "suite": "goals",
+      "scenario": "pre-report-recovery-barrier",
+      "report": "goals/pre-report-recovery-barrier/report.json",
+      "sha256": "9ed46cb1a190de152205b521d32a8c446096e44fcec2e023e55cb359b9489d90"
+    }
+  ]
+}

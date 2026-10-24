@@ -1,0 +1,29 @@
+{
+  "id": 472,
+  "method": "item/tool/requestUserInput",
+  "params": {
+    "threadId": "00000000-0000-0000-0000-000000000009",
+    "turnId": "cursor-form",
+    "itemId": "notes-form",
+    "isBlocking": true,
+    "questions": [
+      {
+        "id": "notes",
+        "header": "Native notes",
+        "question": "Choose the fixture option and add notes.",
+        "isOther": false,
+        "isSecret": false,
+        "options": [
+          {
+            "label": "Alpha",
+            "description": "First fixture option"
+          },
+          {
+            "label": "Beta",
+            "description": "Second fixture option"
+          }
+        ]
+      }
+    ]
+  }
+}

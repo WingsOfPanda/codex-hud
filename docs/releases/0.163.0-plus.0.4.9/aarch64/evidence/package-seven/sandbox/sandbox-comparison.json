@@ -1,0 +1,84 @@
+{
+  "raw_bwrap": {
+    "official": {
+      "argv": [
+        "/data/liupan/codex-plus-build/plus020/official/codex-resources/bwrap",
+        "--ro-bind",
+        "/",
+        "/",
+        "--unshare-pid",
+        "--as-pid-1",
+        "--proc",
+        "/proc",
+        "--dev",
+        "/dev",
+        "--",
+        "/bin/sh",
+        "-c",
+        "test $$ = 1 && printf PACKAGE_BWRAP"
+      ],
+      "returncode": 0,
+      "stdout": "PACKAGE_BWRAP",
+      "stderr": ""
+    },
+    "plus": {
+      "argv": [
+        "/data/liupan/codex-plus-build/release049/native-arm/attempts/0.163.0-plus.0.4.9-aarch64-ece9d635dcfd9792/extracted/codex-plus-0.163.0-plus.0.4.9-aarch64-unknown-linux-gnu/codex-resources/bwrap",
+        "--ro-bind",
+        "/",
+        "/",
+        "--unshare-pid",
+        "--as-pid-1",
+        "--proc",
+        "/proc",
+        "--dev",
+        "/dev",
+        "--",
+        "/bin/sh",
+        "-c",
+        "test $$ = 1 && printf PACKAGE_BWRAP"
+      ],
+      "returncode": 0,
+      "stdout": "PACKAGE_BWRAP",
+      "stderr": ""
+    }
+  },
+  "official": {
+    "argv": [
+      "/data/liupan/codex-plus-build/plus020/official/bin/codex",
+      "sandbox",
+      "--",
+      "/bin/sh",
+      "-c",
+      "printf \"PRIVATE_SANDBOX_OK\\n\"; if touch denied-file; then exit 17; fi; printf \"READ_ONLY_ENFORCED\\n\""
+    ],
+    "returncode": 0,
+    "stdout": "PRIVATE_SANDBOX_OK\nREAD_ONLY_ENFORCED\n",
+    "stderr": "touch: cannot touch 'denied-file': Read-only file system\n",
+    "sha256": "8a96f66d059d653e68bfd5f3c79337e6f1d7d170d80bf705eb7d0249b34c0ece",
+    "passed": true,
+    "binary_unchanged": true
+  },
+  "plus": {
+    "argv": [
+      "/data/liupan/codex-plus-build/release049/native-arm/attempts/0.163.0-plus.0.4.9-aarch64-ece9d635dcfd9792/extracted/codex-plus-0.163.0-plus.0.4.9-aarch64-unknown-linux-gnu/bin/codex",
+      "sandbox",
+      "--",
+      "/bin/sh",
+      "-c",
+      "printf \"PRIVATE_SANDBOX_OK\\n\"; if touch denied-file; then exit 17; fi; printf \"READ_ONLY_ENFORCED\\n\""
+    ],
+    "returncode": 0,
+    "stdout": "PRIVATE_SANDBOX_OK\nREAD_ONLY_ENFORCED\n",
+    "stderr": "touch: cannot touch 'denied-file': Read-only file system\n",
+    "sha256": "4fb45d88aa617f4b41a3be985a9a46293c5137e20ea81f37371991be2f1f5512",
+    "passed": true,
+    "binary_unchanged": true
+  },
+  "raw_bwrap_same_uid_map_failure": false,
+  "host_policy": {
+    "apparmor_restrict_unprivileged_userns": "0",
+    "unprivileged_userns_clone": "1"
+  },
+  "passed": true
+}

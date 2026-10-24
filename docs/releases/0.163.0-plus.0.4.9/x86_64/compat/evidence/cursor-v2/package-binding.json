@@ -1,0 +1,10 @@
+{
+  "accepted": true,
+  "native": true,
+  "archive_sha256": "55f3608fee149eb159402c34c05fb020328cb7b814cc9cced99df55c6dd6b124",
+  "manifest_sha256": "26c5aa99f29898c8a5d15242aa6a471305b14febf4493a485049423ab715b4ae",
+  "source": "651a1eb03a08d69af0fd1cc69252bdff2c8f4b27",
+  "qualification_evidence_sha256": "58a10d7300184aaa830cd23121f4deddeb4719c7f36874cbf1e730a7ac4fdc2e",
+  "capture_manifest_sha256": "e05a6e4c003b99451e9d318822ea6ded51e8c6bf36d33418ff09e1803b49cc4b",
+  "integrity_sha256": "d8f0d2e5f2e333ce12b680d1e3ae535f91b8929bbd8ff3b90717d41751785fca"
+}

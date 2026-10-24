@@ -1,0 +1,84 @@
+{
+  "raw_bwrap": {
+    "official": {
+      "argv": [
+        "/home/liupan/Aerius/codex-plus/.build/upstream-0163/official-x86/codex-resources/bwrap",
+        "--ro-bind",
+        "/",
+        "/",
+        "--unshare-pid",
+        "--as-pid-1",
+        "--proc",
+        "/proc",
+        "--dev",
+        "/dev",
+        "--",
+        "/bin/sh",
+        "-c",
+        "test $$ = 1 && printf PACKAGE_BWRAP"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "bwrap: setting up uid map: Permission denied\n"
+    },
+    "plus": {
+      "argv": [
+        "/home/liupan/Aerius/codex-plus/.build/release049-pilot/native-x86/attempts/0.163.0-plus.0.4.9-x86_64-da063065aba042fe/extracted/codex-plus-0.163.0-plus.0.4.9-x86_64-unknown-linux-gnu/codex-resources/bwrap",
+        "--ro-bind",
+        "/",
+        "/",
+        "--unshare-pid",
+        "--as-pid-1",
+        "--proc",
+        "/proc",
+        "--dev",
+        "/dev",
+        "--",
+        "/bin/sh",
+        "-c",
+        "test $$ = 1 && printf PACKAGE_BWRAP"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "bwrap: setting up uid map: Permission denied\n"
+    }
+  },
+  "official": {
+    "argv": [
+      "/home/liupan/Aerius/codex-plus/.build/upstream-0163/official-x86/bin/codex",
+      "sandbox",
+      "--",
+      "/bin/sh",
+      "-c",
+      "printf \"PRIVATE_SANDBOX_OK\\n\"; if touch denied-file; then exit 17; fi; printf \"READ_ONLY_ENFORCED\\n\""
+    ],
+    "returncode": 0,
+    "stdout": "PRIVATE_SANDBOX_OK\nREAD_ONLY_ENFORCED\n",
+    "stderr": "touch: cannot touch 'denied-file': Read-only file system\n",
+    "sha256": "399ff69c431c066e40de318fba45c2b07f45a76b19939d247ee4828fc70c4215",
+    "passed": true,
+    "binary_unchanged": true
+  },
+  "plus": {
+    "argv": [
+      "/home/liupan/Aerius/codex-plus/.build/release049-pilot/native-x86/attempts/0.163.0-plus.0.4.9-x86_64-da063065aba042fe/extracted/codex-plus-0.163.0-plus.0.4.9-x86_64-unknown-linux-gnu/bin/codex",
+      "sandbox",
+      "--",
+      "/bin/sh",
+      "-c",
+      "printf \"PRIVATE_SANDBOX_OK\\n\"; if touch denied-file; then exit 17; fi; printf \"READ_ONLY_ENFORCED\\n\""
+    ],
+    "returncode": 0,
+    "stdout": "PRIVATE_SANDBOX_OK\nREAD_ONLY_ENFORCED\n",
+    "stderr": "touch: cannot touch 'denied-file': Read-only file system\n",
+    "sha256": "f37c3e1fbfa116e970d0930e902b925ecfa64edef4c7c8a58d33773cd3352a6b",
+    "passed": true,
+    "binary_unchanged": true
+  },
+  "raw_bwrap_same_uid_map_failure": true,
+  "host_policy": {
+    "apparmor_restrict_unprivileged_userns": "1",
+    "unprivileged_userns_clone": "1"
+  },
+  "passed": true
+}

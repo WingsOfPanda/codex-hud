@@ -1,0 +1,167 @@
+{
+  "passed": true,
+  "captures": [
+    {
+      "state": "high-100x40-idle-empty",
+      "expected": "idle",
+      "actual": "idle",
+      "passed": true,
+      "placed_cursor_y": 30
+    },
+    {
+      "state": "high-100x40-idle-help",
+      "expected": "idle",
+      "actual": "idle",
+      "passed": true,
+      "placed_cursor_y": 29
+    },
+    {
+      "state": "high-100x40-busy-midturn-t0",
+      "expected": "busy",
+      "actual": "busy",
+      "passed": true,
+      "placed_cursor_y": 30
+    },
+    {
+      "state": "high-100x40-busy-midturn-t5",
+      "expected": "busy",
+      "actual": "busy",
+      "passed": true,
+      "placed_cursor_y": 30
+    },
+    {
+      "state": "high-100x40-busy-typed",
+      "expected": "busy",
+      "actual": "busy",
+      "passed": true,
+      "placed_cursor_y": 30
+    },
+    {
+      "state": "high-100x40-idle-two-row-draft",
+      "expected": "unknown",
+      "actual": "unknown",
+      "passed": true,
+      "placed_cursor_y": 30
+    },
+    {
+      "state": "high-80-split-idle-empty",
+      "expected": "idle",
+      "actual": "idle",
+      "passed": true,
+      "placed_cursor_y": 30
+    },
+    {
+      "state": "high-80-split-idle-help",
+      "expected": "idle",
+      "actual": "idle",
+      "passed": true,
+      "placed_cursor_y": 29
+    },
+    {
+      "state": "high-80-split-busy-midturn-t0",
+      "expected": "busy",
+      "actual": "busy",
+      "passed": true,
+      "placed_cursor_y": 30
+    },
+    {
+      "state": "high-80-split-busy-midturn-t5",
+      "expected": "busy",
+      "actual": "busy",
+      "passed": true,
+      "placed_cursor_y": 30
+    },
+    {
+      "state": "high-80-split-busy-typed",
+      "expected": "busy",
+      "actual": "busy",
+      "passed": true,
+      "placed_cursor_y": 30
+    },
+    {
+      "state": "high-80-split-idle-two-row-draft",
+      "expected": "unknown",
+      "actual": "unknown",
+      "passed": true,
+      "placed_cursor_y": 30
+    },
+    {
+      "state": "high-80-split-approval-dialog",
+      "expected": "unknown",
+      "actual": "unknown",
+      "passed": true,
+      "placed_cursor_y": -1
+    },
+    {
+      "state": "high-100x40-approval-dialog",
+      "expected": "unknown",
+      "actual": "unknown",
+      "passed": true,
+      "placed_cursor_y": -1
+    },
+    {
+      "state": "ultra-100x40-idle-empty",
+      "expected": "idle",
+      "actual": "idle",
+      "passed": true,
+      "placed_cursor_y": 30
+    },
+    {
+      "state": "ultra-80-split-idle-empty",
+      "expected": "idle",
+      "actual": "idle",
+      "passed": true,
+      "placed_cursor_y": 30
+    },
+    {
+      "state": "form-100x40-request-user-input-notes",
+      "expected": "unknown",
+      "actual": "unknown",
+      "passed": true,
+      "placed_cursor_y": 36
+    },
+    {
+      "state": "form-80-split-request-user-input-notes",
+      "expected": "unknown",
+      "actual": "unknown",
+      "passed": true,
+      "placed_cursor_y": 36
+    },
+    {
+      "state": "form-100x40-mcp-text-elicitation",
+      "expected": "unknown",
+      "actual": "unknown",
+      "passed": true,
+      "placed_cursor_y": 36
+    },
+    {
+      "state": "form-80-split-mcp-text-elicitation",
+      "expected": "unknown",
+      "actual": "unknown",
+      "passed": true,
+      "placed_cursor_y": 36
+    }
+  ],
+  "busy_pairs": [
+    {
+      "size": "100x40",
+      "before_state": "high-100x40-busy-midturn-t0",
+      "after_state": "high-100x40-busy-midturn-t5",
+      "before_sha256": "2b9e6845f119575705354873aed5c7435f33eb6a2b3e70043b8a57840f70a592",
+      "after_sha256": "ddad10382ecc3459a6cf1bd09bf5a9e45471a39490b5319d9418fa0cba275878",
+      "changed": true,
+      "passed": true,
+      "producer": "actual AP screenToCursor export"
+    },
+    {
+      "size": "80-split",
+      "before_state": "high-80-split-busy-midturn-t0",
+      "after_state": "high-80-split-busy-midturn-t5",
+      "before_sha256": "d9011b056be0a3de1ff490bca49d003094c1c6ead9cdb0debac93b00bf943098",
+      "after_sha256": "739f51bb26078dbcb55dc6bcaff76a8471cc41da0878aaac566782d94c480697",
+      "changed": true,
+      "passed": true,
+      "producer": "actual AP screenToCursor export"
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "before_at": "2026-10-24T05:25:02.437062+00:00",
+  "after_at": "2026-10-24T05:25:07.445042+00:00",
+  "cursor_before": [
+    30,
+    2
+  ],
+  "cursor_after": [
+    30,
+    2
+  ],
+  "changed_rows": [
+    {
+      "row": 27,
+      "before": "\u2022 Working (0s \u2022 esc to interrupt)",
+      "after": "\u2022 Working (5s \u2022 esc to interrupt)",
+      "relative_before": "above",
+      "relative_after": "above",
+      "working_or_interrupt": true
+    },
+    {
+      "row": 35,
+      "before": "  GPT-6.1-Sol (high) [general] \u00b7 worker 1 \u00b7 0:13 \u00b7 ? tok",
+      "after": "  GPT-6.1-Sol (high) [general] \u00b7 worker 1 \u00b7 0:18 \u00b7 ? tok",
+      "relative_before": "below",
+      "relative_after": "below",
+      "working_or_interrupt": false
+    },
+    {
+      "row": 36,
+      "before": "  GPT-6-Astra (medium) [general] \u00b7 worker 2 \u00b7 0:13 \u00b7 ? tok",
+      "after": "  GPT-6-Astra (medium) [general] \u00b7 worker 2 \u00b7 0:18 \u00b7 ? tok",
+      "relative_before": "below",
+      "relative_after": "below",
+      "working_or_interrupt": false
+    },
+    {
+      "row": 37,
+      "before": "  Background \u00b7 cursor-native-shell \u00b7 seen 0:00",
+      "after": "  Background \u00b7 cursor-native-shell \u00b7 seen 0:05",
+      "relative_before": "below",
+      "relative_after": "below",
+      "working_or_interrupt": false
+    }
+  ]
+}

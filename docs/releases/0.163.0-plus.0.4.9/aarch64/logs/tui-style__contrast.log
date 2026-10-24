@@ -1,0 +1,13 @@
+warning: `--logfile` is deprecated
+running 8 tests
+test style::contrast::tests::morandi_ansi_hues_wrap_at_red_and_fall_back_to_readable_colors ... ok
+test style::contrast::tests::morandi_hue_policy_preserves_neutrals_and_other_capabilities ... ok
+test style::contrast::tests::foreground_meets_minimum_after_palette_conversion ... ok
+test style::contrast::tests::selection_uses_terminal_defaults_without_a_known_palette ... ok
+test style::contrast::tests::selection_text_stays_readable_after_palette_conversion ... ok
+test style::contrast::tests::shaded_surface_contrast_uses_its_rendered_palette_background ... ok
+test style::contrast::tests::repeated_colors_follow_palette_changes_and_remain_bounded ... ok
+test style::contrast::tests::morandi_theme_switches_do_not_reuse_the_default_contrast_policy ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 5921 filtered out; finished in 0.06s
+

@@ -1,0 +1,1460 @@
+{
+  "passed": true,
+  "source_commit": "651a1eb03a08d69af0fd1cc69252bdff2c8f4b27",
+  "packages": {
+    "old": {
+      "path": "/home/liupan/Aerius/codex-plus/.build/release049-pilot/previous-048/x86-canonical/codex-plus-0.163.0-plus.0.4.8-x86_64-unknown-linux-gnu",
+      "manifest_sha256": "5c13b1bf3cc4a37480fe8fdb8b2a3cf5683eba1188d6086c8327a14572b6973a",
+      "tree_sha256": "524de42872d3d22bf5434dbd1233fa87cc96cda8711a3a40e7226b84abd70bf3",
+      "helper_sha256": "f4483c19198e05304f8a6178736a8ccaedd0def815abab4e8aa21413946065c8",
+      "manifest": {
+        "build": {
+          "cargo_profile": "release",
+          "glibc": "2.39",
+          "rust": "1.99.1"
+        },
+        "coordinator_protocol": 5,
+        "execution_record_format": 1,
+        "files": {
+          "GLOSSARY.md": {
+            "mode": "0644",
+            "sha256": "a01e2fe43c0324495df638c24bb05ccdc7c5ee5074202e1d59a73dc2165576c1",
+            "size": 1850
+          },
+          "LICENSE": {
+            "mode": "0644",
+            "sha256": "d17f227e4df5da1600391338865ce0f3055211760a36688f816941d58232d8dc",
+            "size": 10926
+          },
+          "NOTICE": {
+            "mode": "0644",
+            "sha256": "9d71575ecfd9a843fc1677b0efb08053c6ba9fd686a0de1a6f5382fd3c220915",
+            "size": 242
+          },
+          "README.md": {
+            "mode": "0644",
+            "sha256": "b0a7806cb2337c25ceb1dbc857e27e7b0af2800fb85cea85edce88624f2e4e4a",
+            "size": 18430
+          },
+          "bin/codex": {
+            "mode": "0755",
+            "sha256": "94c458357393f590507ec0f0d29567469176ede45053c87fbfd4de893209807c",
+            "size": 285972600
+          },
+          "bin/codex-code-mode-host": {
+            "mode": "0755",
+            "sha256": "b89680143810c9b3481d5f6cdc8f57fcdd2a14107ae6b053c0313dc580776cbe",
+            "size": 67734480
+          },
+          "bin/codex-plus": {
+            "mode": "0755",
+            "sha256": "3b4e81133e7e35a08b067ead0f7a79f6a150d31e1842c6d265e1e3a7a82808ef",
+            "size": 981
+          },
+          "bin/codex-plus-runtime": {
+            "mode": "0755",
+            "sha256": "f4483c19198e05304f8a6178736a8ccaedd0def815abab4e8aa21413946065c8",
+            "size": 5757936
+          },
+          "codex-package.json": {
+            "mode": "0644",
+            "sha256": "e9a19a0f99029bebd0353d6015c4cd3ce5a384490b90a676f9f45b09403d6ea9",
+            "size": 204
+          },
+          "codex-path/rg": {
+            "mode": "0755",
+            "sha256": "e62198eb19b136b88c330af83647b5a962cb99b6b1f066758568f12de1974849",
+            "size": 5408904
+          },
+          "codex-resources/bwrap": {
+            "mode": "0755",
+            "sha256": "566337e0f17277bddbacc83ce2e2e1589c57971c3bae45c53ac98961ae552173",
+            "size": 383144
+          },
+          "docs/advisor.md": {
+            "mode": "0644",
+            "sha256": "2cd0e3278771121a410dd7e9a68c5075108edf4028db2c9092e9b999e057a0a7",
+            "size": 14773
+          },
+          "docs/audit-fixes.md": {
+            "mode": "0644",
+            "sha256": "bea14398390dcde2354dc9aa7c1db61f3039c0f0b205aafbb8d3dc542d1ca1d0",
+            "size": 6800
+          },
+          "docs/background-work.md": {
+            "mode": "0644",
+            "sha256": "2c0bb2c63f6397b68fb7dde9d45d20786a9cbcb12726c8ab37fc06f312c91ff7",
+            "size": 25205
+          },
+          "docs/command-display.md": {
+            "mode": "0644",
+            "sha256": "91748476e3ee6f453db1e1eba26b2d282abb68ce26275458862a3d4d7e4b10da",
+            "size": 3057
+          },
+          "docs/custom-goals.md": {
+            "mode": "0644",
+            "sha256": "e18a40026a73945763eb0a3173ab88459d8cd9f4ceebd1e7a045ddf1f422e77c",
+            "size": 26204
+          },
+          "docs/detached-jobs-fleet.md": {
+            "mode": "0644",
+            "sha256": "0dd343a67a351cf2a377cd9519f84d271f44bc6f9853c22360e1e146f8b769ea",
+            "size": 9485
+          },
+          "docs/detached-jobs.md": {
+            "mode": "0644",
+            "sha256": "624f7056f8d8b7a90cf9a1026faf2ad91d3cf37981afac894d2a8ac2f637928d",
+            "size": 15332
+          },
+          "docs/evidence/advisor-topic.json": {
+            "mode": "0644",
+            "sha256": "49ff11b89c283ce919108d96e4e9b650d2a85ad5fff9be61e48dbb6e89dffd4b",
+            "size": 3995
+          },
+          "docs/evidence/audit-fixes.json": {
+            "mode": "0644",
+            "sha256": "cbfabafbf8af074b960b4a8287fb21c7947af56c44d2351d793e3a8f47c3ee6c",
+            "size": 26123
+          },
+          "docs/evidence/compact-command-display.json": {
+            "mode": "0644",
+            "sha256": "2bb5b7d0dfe3ac13f15a13d71845cb98a1297986d2019b63b41c283395ef5333",
+            "size": 3989
+          },
+          "docs/evidence/custom-goals.json": {
+            "mode": "0644",
+            "sha256": "181b1b87a463bcce69a87c6dd12a3d0521bb204fb26a75d0f01c7907907b1e54",
+            "size": 21418
+          },
+          "docs/evidence/detached-jobs.json": {
+            "mode": "0644",
+            "sha256": "ea52cb81d5d158106e6794954ab67ecb4cf842516320b6a5348130551cd2cdfd",
+            "size": 9216
+          },
+          "docs/evidence/morandi-bright.json": {
+            "mode": "0644",
+            "sha256": "87f78ca34253f9cb7bc794ab978b0fae99d15b7e5eb5e158d615d39c9678a4d0",
+            "size": 5121
+          },
+          "docs/evidence/morandi-theme.json": {
+            "mode": "0644",
+            "sha256": "df9248dcde927e7b20813257377b487fabb1b255629bddbc77e87d8fac1dd7f6",
+            "size": 6961
+          },
+          "docs/evidence/notice-resolution.json": {
+            "mode": "0644",
+            "sha256": "ffd0393b98f48bbe292f0526292705b9b9c8ed3daa25f3b511c1ee0c007e9150",
+            "size": 24421
+          },
+          "docs/evidence/parallel-tool-rows.json": {
+            "mode": "0644",
+            "sha256": "3ddffeac9609dc106e5f1b298505296aca67a07bbed4bc807ffaa09f593dc9dd",
+            "size": 6878
+          },
+          "docs/evidence/shell-topics.json": {
+            "mode": "0644",
+            "sha256": "2c8cba1e9750b84b8bb6dabd98b12e5c74ee6273be603c2c5551b7e5a0b07070",
+            "size": 4592
+          },
+          "docs/evidence/ultracode.json": {
+            "mode": "0644",
+            "sha256": "69100d11834c85e4b4be1b9dd43939a41cc93be2c117972ccb3dc921902b1183",
+            "size": 13922
+          },
+          "docs/evidence/weekly-reset.json": {
+            "mode": "0644",
+            "sha256": "93f81292e4f848de16c83f858dfe01d99994634580649fa44b8d12325c2069bd",
+            "size": 3921
+          },
+          "docs/goals.md": {
+            "mode": "0644",
+            "sha256": "8ff0f7449d28ebb27ff1e084b6de58b28f50d84f155dd6c363d8863f823c4ab5",
+            "size": 12301
+          },
+          "docs/notice-resolution.md": {
+            "mode": "0644",
+            "sha256": "a9c49993314cf989570ac98334d240c0b391e238a90751dca55e24fcb2814f27",
+            "size": 5954
+          },
+          "docs/proposals/recovery-agents-block.md": {
+            "mode": "0644",
+            "sha256": "62b25e0d02c12ecfa1821076cc3086cf947614602c71e5cad3f6dce0bae5d2a1",
+            "size": 5082
+          },
+          "docs/recovery.md": {
+            "mode": "0644",
+            "sha256": "6d2d6b3cf10ec775b2f62412e34485ea61f67aacb5e4b403f5e2a2925fefc89e",
+            "size": 13052
+          },
+          "docs/release-book.md": {
+            "mode": "0644",
+            "sha256": "1c0d6b2c1ab90e31f00f7ea48053c358a6c8f88912124ce2bb8009cbe1961468",
+            "size": 14418
+          },
+          "docs/release-checklist.md": {
+            "mode": "0644",
+            "sha256": "d953a251e0dca9d46cd1c99db2ed86710d6b7ea7dcf4a3a0f54cbd531c64d423",
+            "size": 4629
+          },
+          "docs/release-notes.md": {
+            "mode": "0644",
+            "sha256": "73d11674cb67761c7cc508da08023a9bca3780f07a5074744e5e7681a9f916d4",
+            "size": 10007
+          },
+          "docs/release-performance.md": {
+            "mode": "0644",
+            "sha256": "7c1c2d268c840195aed23b8022f81485c74d5eafde001c75f88a63f13c88d45d",
+            "size": 11078
+          },
+          "docs/release-protocol.md": {
+            "mode": "0644",
+            "sha256": "854c3d69628716de6dd06f9ec8d7a8c5326fe941773fa1cc1cebece7db1153ec",
+            "size": 13866
+          },
+          "docs/releases/0.163.0-plus.0.4.4.md": {
+            "mode": "0644",
+            "sha256": "7d2fe975391a26c6c4a299ed49fe67179899e352843308411af7d4de8c806780",
+            "size": 5797
+          },
+          "docs/releases/0.163.0-plus.0.4.4/agents-block.md": {
+            "mode": "0644",
+            "sha256": "2e5f0b01f3ac15834b8da7c90e436b91e0cc81e3c5ac79d584c2d30603dd8a59",
+            "size": 3940
+          },
+          "docs/releases/0.163.0-plus.0.4.5.md": {
+            "mode": "0644",
+            "sha256": "1f47eee87493c450be3c7aec7f3f350e84517068f34ed846d8d6b68aca0d37da",
+            "size": 5862
+          },
+          "docs/releases/0.163.0-plus.0.4.6.md": {
+            "mode": "0644",
+            "sha256": "c4d7e8ee13a84ac99bb4c87d734c942484d1e5ed06e07a6dcc51cafb6b30e89e",
+            "size": 6181
+          },
+          "docs/releases/0.163.0-plus.0.4.7.md": {
+            "mode": "0644",
+            "sha256": "82b6597be55dd2956eeca7e800f9fda8ab77902a0c6055cc66691cf90e0ce4f3",
+            "size": 3141
+          },
+          "docs/releases/0.163.0-plus.0.4.8.md": {
+            "mode": "0644",
+            "sha256": "2dffe8f4bbdbaeda795557f89559a9b2bcb570d0887b59db5b8273edba73bc70",
+            "size": 3793
+          },
+          "docs/releasing.md": {
+            "mode": "0644",
+            "sha256": "355bed7ba80b085434716593738250b510897bedda9924a963fa1a0f7e3404bf",
+            "size": 20733
+          },
+          "docs/rust-runtime.md": {
+            "mode": "0644",
+            "sha256": "c5bad2c2789f7a11c109dfd0932ae5045d768aa417dbd262f560d521582314a5",
+            "size": 7685
+          },
+          "docs/shell-workflow.md": {
+            "mode": "0644",
+            "sha256": "5d32f3546c8a4f6fe4d77e3e4450d2d34b2ed9cb79648146ce977ad4cf82c825",
+            "size": 11036
+          },
+          "docs/themes.md": {
+            "mode": "0644",
+            "sha256": "c78c784b2e625eb4cc2fea80df3fa1f9b7594d970f609372cedf125a8b622596",
+            "size": 3059
+          },
+          "docs/ultracode-bootstrap.txt": {
+            "mode": "0644",
+            "sha256": "521d563b280999e64ca21ab300038c38fdb8280678405af88e50620afe2ce799",
+            "size": 858
+          },
+          "docs/ultracode-policy.md": {
+            "mode": "0644",
+            "sha256": "1fa54c30b6f6dff6fe9572a51fe6600dd7c1f29286d79862693cedf5588152c8",
+            "size": 5572
+          },
+          "docs/ultracode.md": {
+            "mode": "0644",
+            "sha256": "d479fbadcd00d7cc8658eb3c14f6bd275e851017c0325d36da65c6000d1def9a",
+            "size": 6048
+          },
+          "docs/verification.md": {
+            "mode": "0644",
+            "sha256": "bdea2508f429ac7fe3399ab2d9475573759b4c515ecb131ce86675690115db81",
+            "size": 48305
+          },
+          "licenses/bubblewrap-COPYING": {
+            "mode": "0644",
+            "sha256": "b7993225104d90ddd8024fd838faf300bea5e83d91203eab98e29512acebd69c",
+            "size": 25383
+          },
+          "licenses/codex-native-NOTICES.txt": {
+            "mode": "0644",
+            "sha256": "dbfb96299f55ef02a09620c8dbe218c82c499231125139d99b4a322e96c93977",
+            "size": 10095190
+          },
+          "licenses/codex-native-dependencies.json": {
+            "mode": "0644",
+            "sha256": "ad2cca5427558cb2ce590826e5a2348b114c33bcf14b8697b46c6953e2dcf32a",
+            "size": 767100
+          },
+          "licenses/codex-plus-LICENSE": {
+            "mode": "0644",
+            "sha256": "f010d194c29359e269113e286f2cc3803a64fc30f49120ac98c79bf2cbac6e9f",
+            "size": 1069
+          },
+          "licenses/codex-plus-runtime-NOTICES.txt": {
+            "mode": "0644",
+            "sha256": "89379892fae6c7dd9f4c2d7a8618303916b136631e58f1fbf0004d7849295d28",
+            "size": 1369056
+          },
+          "licenses/codex-plus-runtime-dependencies.json": {
+            "mode": "0644",
+            "sha256": "9d05c542db2351a6b9098638b0e54435c47f44e5b952a690a818b70982bb1998",
+            "size": 99019
+          },
+          "licenses/codex-plus-runtime-rust-COPYRIGHT.html": {
+            "mode": "0644",
+            "sha256": "5647be074c8edf7339fd863055923a8fc80bc5610a8d4661ec3b767b9d392c27",
+            "size": 1499465
+          },
+          "licenses/provenance.json": {
+            "mode": "0644",
+            "sha256": "be2bfd43beda92036a12a27f243b080adb050097caee103ad10cbc0becdd174f",
+            "size": 1887
+          },
+          "licenses/ripgrep-LICENSE-MIT": {
+            "mode": "0644",
+            "sha256": "0f96a83840e146e43c0ec96a22ec1f392e0680e6c1226e6f3ba87e0740af850f",
+            "size": 1081
+          },
+          "licenses/ripgrep-LICENSE-UNLICENSE": {
+            "mode": "0644",
+            "sha256": "7e12e5df4bae12cb21581ba157ced20e1986a0508dd10d0e8a4ab9a4cf94e85c",
+            "size": 1211
+          },
+          "licenses/rusty-v8-LICENSE": {
+            "mode": "0644",
+            "sha256": "1c6356fb751d45f0c53093ebf8a7f5e580e802f51999178e19d60f3ec39e147d",
+            "size": 1078
+          },
+          "licenses/rusty-v8-release-manifests.sha256": {
+            "mode": "0644",
+            "sha256": "7036a86ed062f4edd81667e161e5e94eade669c69362b136ccba9a1508fecc4b",
+            "size": 1040
+          },
+          "licenses/v8-LICENSE": {
+            "mode": "0644",
+            "sha256": "6ab33af8774a0f396ee3aeeb761e3229057682d6f9fa7f572e390c2cb3a6e509",
+            "size": 3093
+          },
+          "licenses/v8-LICENSE.v8": {
+            "mode": "0644",
+            "sha256": "4af93c12062c58058378de2397dc1c92bbff9ddfb1d583a01c84127557ce97ca",
+            "size": 1527
+          },
+          "release/protocol-v1.md": {
+            "mode": "0644",
+            "sha256": "e1c5eeae5a24bc4e1732e1ecf549b66fb8e4ac986969622781ae199e778152a6",
+            "size": 18954
+          }
+        },
+        "frontend_patch_sha256": "4955f39559483ea63db01a0bce39245ed72915999b6449f165e8be1b9190f4ab",
+        "native": {
+          "cargo_lock_sha256": "474027168f7ea748515a67bf302ce6d25f4cb22e1e25051299c6042b8846d492",
+          "files": {
+            "bin/codex": "94c458357393f590507ec0f0d29567469176ede45053c87fbfd4de893209807c",
+            "bin/codex-code-mode-host": "b89680143810c9b3481d5f6cdc8f57fcdd2a14107ae6b053c0313dc580776cbe",
+            "licenses/codex-native-NOTICES.txt": "dbfb96299f55ef02a09620c8dbe218c82c499231125139d99b4a322e96c93977",
+            "licenses/codex-native-dependencies.json": "ad2cca5427558cb2ce590826e5a2348b114c33bcf14b8697b46c6953e2dcf32a"
+          },
+          "rust": "1.99.1",
+          "source_sha256": "ffc1476ebf4e5bcdfc75ff0b25a144f87504e5aae6edfa21626e754a04eceb64"
+        },
+        "plus_commit": "05f883c228b18830ed93f691460715525b42a825",
+        "release": "0.163.0-plus.0.4.8",
+        "resources": {
+          "bwrap": {
+            "license": "licenses/bubblewrap-COPYING",
+            "upstream_commit": "83086188ae0614bd882818ff1aa23f3194962012",
+            "upstream_path": "codex-rs/vendor/bubblewrap"
+          },
+          "rg": {
+            "archive_member": "ripgrep-15.2.0-x86_64-unknown-linux-musl/rg",
+            "archive_sha256": "33e15bcf1624b25cdd2a55813a47a2f95dbe126268203e76aa6a585d1e7b149c",
+            "archive_size": 2265718,
+            "archive_url": "https://github.com/BurntSushi/ripgrep/releases/download/15.2.0/ripgrep-15.2.0-x86_64-unknown-linux-musl.tar.gz",
+            "manifest": "scripts/codex_package/rg",
+            "manifest_sha256": "41a10ca63365560d899a82b6f825fd7b420a18b34f660a98bffeece77eeae1f1"
+          },
+          "rusty-v8": {
+            "checksum_manifest": "licenses/rusty-v8-release-manifests.sha256",
+            "crate_version": "150.4.0",
+            "release": "rusty-v8-v150.4.0",
+            "v8_version": "15.0.245.2"
+          }
+        },
+        "runtime": {
+          "cargo_lock_sha256": "ce7347c5a47909336c974704803ee75cc8d6c4dc831a056d89d26881f45fa05b",
+          "files": {
+            "bin/codex-plus-runtime": "f4483c19198e05304f8a6178736a8ccaedd0def815abab4e8aa21413946065c8",
+            "licenses/codex-plus-runtime-NOTICES.txt": "89379892fae6c7dd9f4c2d7a8618303916b136631e58f1fbf0004d7849295d28",
+            "licenses/codex-plus-runtime-dependencies.json": "9d05c542db2351a6b9098638b0e54435c47f44e5b952a690a818b70982bb1998",
+            "licenses/codex-plus-runtime-rust-COPYRIGHT.html": "5647be074c8edf7339fd863055923a8fc80bc5610a8d4661ec3b767b9d392c27"
+          },
+          "rust": "1.99.1",
+          "source_sha256": "c6d2ac583f6e5dc613d53b67cbf818c503b5398bdd341804ffc5dbdcc6a7565d"
+        },
+        "schema_version": 1,
+        "target": "x86_64-unknown-linux-gnu",
+        "tree_sha256": "524de42872d3d22bf5434dbd1233fa87cc96cda8711a3a40e7226b84abd70bf3",
+        "upstream": {
+          "commit": "83086188ae0614bd882818ff1aa23f3194962012",
+          "tag": "rust-v0.163.0",
+          "version": "0.163.0"
+        },
+        "voice": false
+      }
+    },
+    "new": {
+      "path": "/home/liupan/Aerius/codex-plus/.build/release049-pilot/native-x86/attempts/0.163.0-plus.0.4.9-x86_64-da063065aba042fe/extracted/codex-plus-0.163.0-plus.0.4.9-x86_64-unknown-linux-gnu",
+      "manifest_sha256": "26c5aa99f29898c8a5d15242aa6a471305b14febf4493a485049423ab715b4ae",
+      "tree_sha256": "10e507840d6406d19bcf66a8c36cfc756cbfef0cab15558ba43ff607eea343e3",
+      "helper_sha256": "92dd8c8549c0cc961e572ac5e8abdb64ed4e980bfa5af906f4c98be23ed12fc4",
+      "manifest": {
+        "build": {
+          "cargo_profile": "release",
+          "glibc": "2.39",
+          "rust": "1.99.1"
+        },
+        "coordinator_protocol": 5,
+        "execution_record_format": 1,
+        "files": {
+          "GLOSSARY.md": {
+            "mode": "0644",
+            "sha256": "a01e2fe43c0324495df638c24bb05ccdc7c5ee5074202e1d59a73dc2165576c1",
+            "size": 1850
+          },
+          "LICENSE": {
+            "mode": "0644",
+            "sha256": "d17f227e4df5da1600391338865ce0f3055211760a36688f816941d58232d8dc",
+            "size": 10926
+          },
+          "NOTICE": {
+            "mode": "0644",
+            "sha256": "9d71575ecfd9a843fc1677b0efb08053c6ba9fd686a0de1a6f5382fd3c220915",
+            "size": 242
+          },
+          "README.md": {
+            "mode": "0644",
+            "sha256": "b0a7806cb2337c25ceb1dbc857e27e7b0af2800fb85cea85edce88624f2e4e4a",
+            "size": 18430
+          },
+          "bin/codex": {
+            "mode": "0755",
+            "sha256": "f37c3e1fbfa116e970d0930e902b925ecfa64edef4c7c8a58d33773cd3352a6b",
+            "size": 285972600
+          },
+          "bin/codex-code-mode-host": {
+            "mode": "0755",
+            "sha256": "d9aa3b3ff42f4095cbc4ba521cfe3730f4883a58403e9cb4eab0c219c0392f7e",
+            "size": 67734480
+          },
+          "bin/codex-plus": {
+            "mode": "0755",
+            "sha256": "3b4e81133e7e35a08b067ead0f7a79f6a150d31e1842c6d265e1e3a7a82808ef",
+            "size": 981
+          },
+          "bin/codex-plus-runtime": {
+            "mode": "0755",
+            "sha256": "92dd8c8549c0cc961e572ac5e8abdb64ed4e980bfa5af906f4c98be23ed12fc4",
+            "size": 5862416
+          },
+          "codex-package.json": {
+            "mode": "0644",
+            "sha256": "e9a19a0f99029bebd0353d6015c4cd3ce5a384490b90a676f9f45b09403d6ea9",
+            "size": 204
+          },
+          "codex-path/rg": {
+            "mode": "0755",
+            "sha256": "e62198eb19b136b88c330af83647b5a962cb99b6b1f066758568f12de1974849",
+            "size": 5408904
+          },
+          "codex-resources/bwrap": {
+            "mode": "0755",
+            "sha256": "879a735bfe538813ee60a370a31ebc94cb89e67a9671b60353fc3313b6a7eaf7",
+            "size": 383144
+          },
+          "docs/advisor.md": {
+            "mode": "0644",
+            "sha256": "2cd0e3278771121a410dd7e9a68c5075108edf4028db2c9092e9b999e057a0a7",
+            "size": 14773
+          },
+          "docs/audit-fixes.md": {
+            "mode": "0644",
+            "sha256": "bea14398390dcde2354dc9aa7c1db61f3039c0f0b205aafbb8d3dc542d1ca1d0",
+            "size": 6800
+          },
+          "docs/background-work.md": {
+            "mode": "0644",
+            "sha256": "2c0bb2c63f6397b68fb7dde9d45d20786a9cbcb12726c8ab37fc06f312c91ff7",
+            "size": 25205
+          },
+          "docs/command-display.md": {
+            "mode": "0644",
+            "sha256": "91748476e3ee6f453db1e1eba26b2d282abb68ce26275458862a3d4d7e4b10da",
+            "size": 3057
+          },
+          "docs/custom-goals.md": {
+            "mode": "0644",
+            "sha256": "e18a40026a73945763eb0a3173ab88459d8cd9f4ceebd1e7a045ddf1f422e77c",
+            "size": 26204
+          },
+          "docs/detached-jobs-fleet.md": {
+            "mode": "0644",
+            "sha256": "0dd343a67a351cf2a377cd9519f84d271f44bc6f9853c22360e1e146f8b769ea",
+            "size": 9485
+          },
+          "docs/detached-jobs.md": {
+            "mode": "0644",
+            "sha256": "624f7056f8d8b7a90cf9a1026faf2ad91d3cf37981afac894d2a8ac2f637928d",
+            "size": 15332
+          },
+          "docs/evidence/advisor-topic.json": {
+            "mode": "0644",
+            "sha256": "49ff11b89c283ce919108d96e4e9b650d2a85ad5fff9be61e48dbb6e89dffd4b",
+            "size": 3995
+          },
+          "docs/evidence/audit-fixes.json": {
+            "mode": "0644",
+            "sha256": "cbfabafbf8af074b960b4a8287fb21c7947af56c44d2351d793e3a8f47c3ee6c",
+            "size": 26123
+          },
+          "docs/evidence/compact-command-display.json": {
+            "mode": "0644",
+            "sha256": "2bb5b7d0dfe3ac13f15a13d71845cb98a1297986d2019b63b41c283395ef5333",
+            "size": 3989
+          },
+          "docs/evidence/custom-goals.json": {
+            "mode": "0644",
+            "sha256": "181b1b87a463bcce69a87c6dd12a3d0521bb204fb26a75d0f01c7907907b1e54",
+            "size": 21418
+          },
+          "docs/evidence/detached-jobs.json": {
+            "mode": "0644",
+            "sha256": "ea52cb81d5d158106e6794954ab67ecb4cf842516320b6a5348130551cd2cdfd",
+            "size": 9216
+          },
+          "docs/evidence/morandi-bright.json": {
+            "mode": "0644",
+            "sha256": "87f78ca34253f9cb7bc794ab978b0fae99d15b7e5eb5e158d615d39c9678a4d0",
+            "size": 5121
+          },
+          "docs/evidence/morandi-theme.json": {
+            "mode": "0644",
+            "sha256": "df9248dcde927e7b20813257377b487fabb1b255629bddbc77e87d8fac1dd7f6",
+            "size": 6961
+          },
+          "docs/evidence/notice-resolution.json": {
+            "mode": "0644",
+            "sha256": "ffd0393b98f48bbe292f0526292705b9b9c8ed3daa25f3b511c1ee0c007e9150",
+            "size": 24421
+          },
+          "docs/evidence/parallel-tool-rows.json": {
+            "mode": "0644",
+            "sha256": "3ddffeac9609dc106e5f1b298505296aca67a07bbed4bc807ffaa09f593dc9dd",
+            "size": 6878
+          },
+          "docs/evidence/shell-topics.json": {
+            "mode": "0644",
+            "sha256": "2c8cba1e9750b84b8bb6dabd98b12e5c74ee6273be603c2c5551b7e5a0b07070",
+            "size": 4592
+          },
+          "docs/evidence/ultracode.json": {
+            "mode": "0644",
+            "sha256": "69100d11834c85e4b4be1b9dd43939a41cc93be2c117972ccb3dc921902b1183",
+            "size": 13922
+          },
+          "docs/evidence/weekly-reset.json": {
+            "mode": "0644",
+            "sha256": "93f81292e4f848de16c83f858dfe01d99994634580649fa44b8d12325c2069bd",
+            "size": 3921
+          },
+          "docs/goals.md": {
+            "mode": "0644",
+            "sha256": "8ff0f7449d28ebb27ff1e084b6de58b28f50d84f155dd6c363d8863f823c4ab5",
+            "size": 12301
+          },
+          "docs/notice-resolution.md": {
+            "mode": "0644",
+            "sha256": "a9c49993314cf989570ac98334d240c0b391e238a90751dca55e24fcb2814f27",
+            "size": 5954
+          },
+          "docs/proposals/recovery-agents-block.md": {
+            "mode": "0644",
+            "sha256": "62b25e0d02c12ecfa1821076cc3086cf947614602c71e5cad3f6dce0bae5d2a1",
+            "size": 5082
+          },
+          "docs/recovery.md": {
+            "mode": "0644",
+            "sha256": "62bb89494a579fd28ddf22e356365d41d67f999e4118a791c3c54d6d390d20f3",
+            "size": 14974
+          },
+          "docs/release-book.md": {
+            "mode": "0644",
+            "sha256": "61186b4e85defbc853e7b1bef06bcd108b83fade2d280cdce4d21528152b3b54",
+            "size": 26215
+          },
+          "docs/release-checklist.md": {
+            "mode": "0644",
+            "sha256": "803e719871e54f802056cea67bef75765a4046052427fcfacd668efcf662691a",
+            "size": 6610
+          },
+          "docs/release-notes.md": {
+            "mode": "0644",
+            "sha256": "73d11674cb67761c7cc508da08023a9bca3780f07a5074744e5e7681a9f916d4",
+            "size": 10007
+          },
+          "docs/release-performance.md": {
+            "mode": "0644",
+            "sha256": "7c1c2d268c840195aed23b8022f81485c74d5eafde001c75f88a63f13c88d45d",
+            "size": 11078
+          },
+          "docs/release-protocol.md": {
+            "mode": "0644",
+            "sha256": "860e2d5c2aaf92a14cec4fac3b40c4c44fcf2a66d37359291d7d1b8e7d777683",
+            "size": 20079
+          },
+          "docs/release-publication.md": {
+            "mode": "0644",
+            "sha256": "3a096b63bcc58b468000eaef2f01708feceef28149c3404518827fdf8c42fe21",
+            "size": 5977
+          },
+          "docs/releases/0.163.0-plus.0.4.4.md": {
+            "mode": "0644",
+            "sha256": "7d2fe975391a26c6c4a299ed49fe67179899e352843308411af7d4de8c806780",
+            "size": 5797
+          },
+          "docs/releases/0.163.0-plus.0.4.4/agents-block.md": {
+            "mode": "0644",
+            "sha256": "2e5f0b01f3ac15834b8da7c90e436b91e0cc81e3c5ac79d584c2d30603dd8a59",
+            "size": 3940
+          },
+          "docs/releases/0.163.0-plus.0.4.5.md": {
+            "mode": "0644",
+            "sha256": "1f47eee87493c450be3c7aec7f3f350e84517068f34ed846d8d6b68aca0d37da",
+            "size": 5862
+          },
+          "docs/releases/0.163.0-plus.0.4.6.md": {
+            "mode": "0644",
+            "sha256": "c4d7e8ee13a84ac99bb4c87d734c942484d1e5ed06e07a6dcc51cafb6b30e89e",
+            "size": 6181
+          },
+          "docs/releases/0.163.0-plus.0.4.7.md": {
+            "mode": "0644",
+            "sha256": "82b6597be55dd2956eeca7e800f9fda8ab77902a0c6055cc66691cf90e0ce4f3",
+            "size": 3141
+          },
+          "docs/releases/0.163.0-plus.0.4.8.md": {
+            "mode": "0644",
+            "sha256": "92b980e6f70005debfa67c86247a6e7b38e1b39248f707677590f02112dfe94e",
+            "size": 6102
+          },
+          "docs/releases/0.163.0-plus.0.4.9.md": {
+            "mode": "0644",
+            "sha256": "df06ae11a68091fe17a87a7e919adc50439e49bb49b5e3750306328839360202",
+            "size": 1991
+          },
+          "docs/releasing.md": {
+            "mode": "0644",
+            "sha256": "701bcf2de2dbcebee74fab67b812ee6597ad6dc1c7b5cbf15510e3000b79b358",
+            "size": 20826
+          },
+          "docs/rust-runtime.md": {
+            "mode": "0644",
+            "sha256": "c5bad2c2789f7a11c109dfd0932ae5045d768aa417dbd262f560d521582314a5",
+            "size": 7685
+          },
+          "docs/shell-workflow.md": {
+            "mode": "0644",
+            "sha256": "5d32f3546c8a4f6fe4d77e3e4450d2d34b2ed9cb79648146ce977ad4cf82c825",
+            "size": 11036
+          },
+          "docs/themes.md": {
+            "mode": "0644",
+            "sha256": "c78c784b2e625eb4cc2fea80df3fa1f9b7594d970f609372cedf125a8b622596",
+            "size": 3059
+          },
+          "docs/ultracode-bootstrap.txt": {
+            "mode": "0644",
+            "sha256": "521d563b280999e64ca21ab300038c38fdb8280678405af88e50620afe2ce799",
+            "size": 858
+          },
+          "docs/ultracode-policy.md": {
+            "mode": "0644",
+            "sha256": "1fa54c30b6f6dff6fe9572a51fe6600dd7c1f29286d79862693cedf5588152c8",
+            "size": 5572
+          },
+          "docs/ultracode.md": {
+            "mode": "0644",
+            "sha256": "d479fbadcd00d7cc8658eb3c14f6bd275e851017c0325d36da65c6000d1def9a",
+            "size": 6048
+          },
+          "docs/verification.md": {
+            "mode": "0644",
+            "sha256": "bdea2508f429ac7fe3399ab2d9475573759b4c515ecb131ce86675690115db81",
+            "size": 48305
+          },
+          "licenses/bubblewrap-COPYING": {
+            "mode": "0644",
+            "sha256": "b7993225104d90ddd8024fd838faf300bea5e83d91203eab98e29512acebd69c",
+            "size": 25383
+          },
+          "licenses/codex-native-NOTICES.txt": {
+            "mode": "0644",
+            "sha256": "dbfb96299f55ef02a09620c8dbe218c82c499231125139d99b4a322e96c93977",
+            "size": 10095190
+          },
+          "licenses/codex-native-dependencies.json": {
+            "mode": "0644",
+            "sha256": "ad2cca5427558cb2ce590826e5a2348b114c33bcf14b8697b46c6953e2dcf32a",
+            "size": 767100
+          },
+          "licenses/codex-plus-LICENSE": {
+            "mode": "0644",
+            "sha256": "f010d194c29359e269113e286f2cc3803a64fc30f49120ac98c79bf2cbac6e9f",
+            "size": 1069
+          },
+          "licenses/codex-plus-runtime-NOTICES.txt": {
+            "mode": "0644",
+            "sha256": "118d1ccf65b502850d1ab52daa50ee5c3603abff6b51895eaddaed2926cadd16",
+            "size": 1369056
+          },
+          "licenses/codex-plus-runtime-dependencies.json": {
+            "mode": "0644",
+            "sha256": "9a4275fbfe4fa4902c0be67146ef5ea946eeb7af40f9b175177b08b16b5a7cc5",
+            "size": 99019
+          },
+          "licenses/codex-plus-runtime-rust-COPYRIGHT.html": {
+            "mode": "0644",
+            "sha256": "5647be074c8edf7339fd863055923a8fc80bc5610a8d4661ec3b767b9d392c27",
+            "size": 1499465
+          },
+          "licenses/provenance.json": {
+            "mode": "0644",
+            "sha256": "be2bfd43beda92036a12a27f243b080adb050097caee103ad10cbc0becdd174f",
+            "size": 1887
+          },
+          "licenses/ripgrep-LICENSE-MIT": {
+            "mode": "0644",
+            "sha256": "0f96a83840e146e43c0ec96a22ec1f392e0680e6c1226e6f3ba87e0740af850f",
+            "size": 1081
+          },
+          "licenses/ripgrep-LICENSE-UNLICENSE": {
+            "mode": "0644",
+            "sha256": "7e12e5df4bae12cb21581ba157ced20e1986a0508dd10d0e8a4ab9a4cf94e85c",
+            "size": 1211
+          },
+          "licenses/rusty-v8-LICENSE": {
+            "mode": "0644",
+            "sha256": "1c6356fb751d45f0c53093ebf8a7f5e580e802f51999178e19d60f3ec39e147d",
+            "size": 1078
+          },
+          "licenses/rusty-v8-release-manifests.sha256": {
+            "mode": "0644",
+            "sha256": "7036a86ed062f4edd81667e161e5e94eade669c69362b136ccba9a1508fecc4b",
+            "size": 1040
+          },
+          "licenses/v8-LICENSE": {
+            "mode": "0644",
+            "sha256": "6ab33af8774a0f396ee3aeeb761e3229057682d6f9fa7f572e390c2cb3a6e509",
+            "size": 3093
+          },
+          "licenses/v8-LICENSE.v8": {
+            "mode": "0644",
+            "sha256": "4af93c12062c58058378de2397dc1c92bbff9ddfb1d583a01c84127557ce97ca",
+            "size": 1527
+          },
+          "release/protocol-v1.md": {
+            "mode": "0644",
+            "sha256": "29c359f697086b393b81396866b3db0dd65cc0044fd20d86cce34364497b9f76",
+            "size": 19175
+          }
+        },
+        "frontend_patch_sha256": "4955f39559483ea63db01a0bce39245ed72915999b6449f165e8be1b9190f4ab",
+        "native": {
+          "cargo_lock_sha256": "474027168f7ea748515a67bf302ce6d25f4cb22e1e25051299c6042b8846d492",
+          "files": {
+            "bin/codex": "f37c3e1fbfa116e970d0930e902b925ecfa64edef4c7c8a58d33773cd3352a6b",
+            "bin/codex-code-mode-host": "d9aa3b3ff42f4095cbc4ba521cfe3730f4883a58403e9cb4eab0c219c0392f7e",
+            "licenses/codex-native-NOTICES.txt": "dbfb96299f55ef02a09620c8dbe218c82c499231125139d99b4a322e96c93977",
+            "licenses/codex-native-dependencies.json": "ad2cca5427558cb2ce590826e5a2348b114c33bcf14b8697b46c6953e2dcf32a"
+          },
+          "rust": "1.99.1",
+          "source_sha256": "ffc1476ebf4e5bcdfc75ff0b25a144f87504e5aae6edfa21626e754a04eceb64"
+        },
+        "plus_commit": "651a1eb03a08d69af0fd1cc69252bdff2c8f4b27",
+        "release": "0.163.0-plus.0.4.9",
+        "resources": {
+          "bwrap": {
+            "license": "licenses/bubblewrap-COPYING",
+            "upstream_commit": "83086188ae0614bd882818ff1aa23f3194962012",
+            "upstream_path": "codex-rs/vendor/bubblewrap"
+          },
+          "rg": {
+            "archive_member": "ripgrep-15.2.0-x86_64-unknown-linux-musl/rg",
+            "archive_sha256": "33e15bcf1624b25cdd2a55813a47a2f95dbe126268203e76aa6a585d1e7b149c",
+            "archive_size": 2265718,
+            "archive_url": "https://github.com/BurntSushi/ripgrep/releases/download/15.2.0/ripgrep-15.2.0-x86_64-unknown-linux-musl.tar.gz",
+            "manifest": "scripts/codex_package/rg",
+            "manifest_sha256": "41a10ca63365560d899a82b6f825fd7b420a18b34f660a98bffeece77eeae1f1"
+          },
+          "rusty-v8": {
+            "checksum_manifest": "licenses/rusty-v8-release-manifests.sha256",
+            "crate_version": "150.4.0",
+            "release": "rusty-v8-v150.4.0",
+            "v8_version": "15.0.245.2"
+          }
+        },
+        "runtime": {
+          "cargo_lock_sha256": "646f2dc981e6aaab88d3ff9304ef62ec9d92c1bfcd8b3478e5159486531cec76",
+          "files": {
+            "bin/codex-plus-runtime": "92dd8c8549c0cc961e572ac5e8abdb64ed4e980bfa5af906f4c98be23ed12fc4",
+            "licenses/codex-plus-runtime-NOTICES.txt": "118d1ccf65b502850d1ab52daa50ee5c3603abff6b51895eaddaed2926cadd16",
+            "licenses/codex-plus-runtime-dependencies.json": "9a4275fbfe4fa4902c0be67146ef5ea946eeb7af40f9b175177b08b16b5a7cc5",
+            "licenses/codex-plus-runtime-rust-COPYRIGHT.html": "5647be074c8edf7339fd863055923a8fc80bc5610a8d4661ec3b767b9d392c27"
+          },
+          "rust": "1.99.1",
+          "source_sha256": "993d4524cc0e1352825fe3288facc687878e6e585c54f68d6a4887bd2ca11fe8"
+        },
+        "schema_version": 1,
+        "target": "x86_64-unknown-linux-gnu",
+        "tree_sha256": "10e507840d6406d19bcf66a8c36cfc756cbfef0cab15558ba43ff607eea343e3",
+        "upstream": {
+          "commit": "83086188ae0614bd882818ff1aa23f3194962012",
+          "tag": "rust-v0.163.0",
+          "version": "0.163.0"
+        },
+        "voice": false
+      }
+    }
+  },
+  "stock_binary": "/home/liupan/Aerius/codex-plus/.build/upstream-0163/official-x86/bin/codex",
+  "stock_sha256": "399ff69c431c066e40de318fba45c2b07f45a76b19939d247ee4828fc70c4215",
+  "remote_provider_requests": 0,
+  "consultation": "explicit local stub; no SSH",
+  "limitation": "Private stub transport only; no external provider calls.",
+  "seed_turn": "01a16c5e-7c8e-7cb1-8e91-e648d58141a2",
+  "fixture_thread_name": "old-previous-new-candidate-private-proof",
+  "root_request_classification": [
+    {
+      "thread_id": "01a16c5e-7c85-7c53-acb3-76b1fecdf0d1",
+      "turn_id": "01a16c5e-7d3a-7973-8532-41e44e48d76c",
+      "thread_source": null,
+      "tools_count": 11
+    },
+    {
+      "thread_id": "01a16c5e-7c85-7c53-acb3-76b1fecdf0d1",
+      "turn_id": "01a16c5e-7d3a-7973-8532-41e44e48d76c",
+      "thread_source": null,
+      "tools_count": 11
+    }
+  ],
+  "title_request_count": 0,
+  "parent": "01a16c5e-7c85-7c53-acb3-76b1fecdf0d1",
+  "root_requests": 2,
+  "seed_requests": [
+    {
+      "time": 1792819494.066353,
+      "body": {
+        "model": "gpt-6.1-sol",
+        "stream": true,
+        "input": [
+          {
+            "type": "message",
+            "id": "msg_5d5823d9-cf6d-5b1a-8619-a384ac1a26f7",
+            "role": "developer",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Read fixture evidence."
+              }
+            ]
+          },
+          {
+            "type": "message",
+            "id": "msg_01a16c5e-7ca2-7231-af9e-52643b99caac",
+            "role": "developer",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "<skills_instructions>\n## Skills\nA skill is a set of local instructions to follow that is stored in a `SKILL.md` file. Below is the list of skills that can be used. Each entry includes a name, description, and a short path that can be expanded into an absolute path using the skill roots table.\n### Skill roots\n- `r0` = `/tmp/cn/a45-t51gyuex/h/skills/.system`\n### Available skills\n- imagegen: Generate or edit raster images when the task benefits from AI-created bitmap visuals such as photos, illustrations, textures, sprites, mockups, or transparent-background cutouts. Use when Codex should create a brand-new image, transform an existing image, or derive visual variants from references, and the output should be a bitmap asset rather than repo-native code or vector. Do not use when the task is better handled by editing existing SVG/vector/code-native assets, extending an established icon or logo system, or building the visual directly in HTML/CSS/canvas. (file: r0/imagegen/SKILL.md)\n- openai-docs: Use for Codex models/pricing, scheduled tasks, skills, settings, setup, troubleshooting, customization, automations, and self-knowledge\u2014including 'you,' 'your,' 'this app,' or 'this coding agent' when they refer to Codex\u2014and for OpenAI APIs/products and ChatGPT Work. Also use for model choice/migration, prompting, SDKs, Responses, Realtime, agents, evals, and Chat/Work/Codex comparisons. Do not use for generic app/software tasks that merely mention Codex. (file: r0/openai-docs/SKILL.md)\n- skill-creator: Create or update a Codex skill with appropriately scoped instructions and any needed supporting resources. (file: r0/skill-creator/SKILL.md)\n- skill-installer: Install Codex skills into $CODEX_HOME/skills from a curated list or a GitHub repo path. Use when a user asks to list installable skills, install a curated skill, or install a skill from another repo (including private repos). (file: r0/skill-installer/SKILL.md)\n</skills_instructions>"
+              },
+              {
+                "type": "input_text",
+                "text": "<permissions instructions>\nFilesystem sandboxing defines which files can be read or written. `sandbox_mode` is `danger-full-access`: No filesystem sandboxing - all commands are permitted. Network access is enabled.\nApproval policy is currently never. Do not provide the `sandbox_permissions` for any reason, commands will be rejected.\n</permissions instructions>"
+              }
+            ]
+          },
+          {
+            "type": "message",
+            "id": "msg_01a16c5e-7ca2-7231-af9e-527307276616",
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "<environment_context>\n  <cwd>/tmp/cn/a45-t51gyuex/w</cwd>\n  <shell>bash</shell>\n  <current_date>2026-10-24</current_date>\n  <timezone>Asia/Shanghai</timezone>\n  <filesystem><workspace_roots><root>/tmp/cn/a45-t51gyuex/w</root></workspace_roots><permission_profile type=\"disabled\"><file_system type=\"unrestricted\" /></permission_profile></filesystem>\n</environment_context>"
+              }
+            ]
+          },
+          {
+            "type": "message",
+            "id": "msg_01a16c5e-7ca4-7110-8491-0a44f372ae3c",
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Seed private root."
+              }
+            ]
+          }
+        ],
+        "tools": [
+          {
+            "type": "custom",
+            "name": "exec",
+            "description": "Run JavaScript code to orchestrate/compose tool calls\n- Evaluates the provided JavaScript code in a fresh V8 isolate as an async module.\n- All nested tools are available on the global `tools` object, for example `await tools.exec_command(...)`. Tool names are exposed as normalized JavaScript identifiers, for example `await tools.mcp__ologs__get_profile(...)`.\n- Nested tool methods take either a string or an object as their input argument.\n- Nested tools return either an object or a string, based on the description.\n- Runs raw JavaScript -- no Node, no file system, no network access, no console.\n- Accepts raw JavaScript source text, not JSON, quoted strings, or markdown code fences.\n- You may optionally start the tool input with a first-line pragma like `// @exec: {\"yield_time_ms\": 10000, \"max_output_tokens\": 1000}`.\n- `yield_time_ms` asks `exec` to yield early if the script is still running. Defaults to 30000 ms.\n- `max_output_tokens` sets the token budget for direct `exec` results. Defaults to 10000 tokens.\n- When the JS code is fully evaluated, the isolate's lifetime ends and unawaited promises are silently discarded.\n\n- Global helpers:\n- `exit()`: Immediately ends the current script successfully (like an early return from the top level).\n- `text(value: string | number | boolean | undefined | null)`: Appends a text item. Non-string values are stringified with `JSON.stringify(...)` when possible.\n- `image(imageUrlOrItem: string | { image_url: string; detail?: \"auto\" | \"low\" | \"high\" | \"original\" | null } | ImageContent, detail?: \"auto\" | \"low\" | \"high\" | \"original\" | null)`: Appends an image item. `image_url` should be a base64-encoded `data:` URL. To forward an MCP tool image, pass an individual `ImageContent` block from `result.content`, for example `image(result.content[0])`. MCP image blocks may request detail with `_meta: { \"codex/imageDetail\": \"original\" }`. When provided, the second `detail` argument overrides any detail embedded in the first argument.\n- `audio(audioUrlOrItem: string | { audio_url: string } | AudioContent)`: Appends an audio item. `audio_url` should be a base64-encoded `data:` URL. To forward an MCP tool audio block, pass an individual `AudioContent` block from `result.content`, for example `audio(result.content[0])`.\n- `generatedImage(result: { image_url: string; output_hint?: string })`: Appends an image-generation result and its optional output hint. HTTP(S) URLs are not supported.\n- `store(key: string, value: any)`: stores a serializable value under a string key for later `exec` calls in the same session.\n- `load(key: string)`: returns the stored value for a string key, or `undefined` if it is missing.\n- `notify(value: string | number | boolean | undefined | null)`: immediately injects an extra `custom_tool_call_output` for the current `exec` call. Values are stringified like `text(...)`.\n- `setTimeout(callback: () => void, delayMs?: number)`: schedules a callback to run later and returns a timeout id. Pending timeouts do not keep `exec` alive by themselves; await an explicit promise if you need to wait for one.\n- `clearTimeout(timeoutId?: number)`: cancels a timeout created by `setTimeout`.\n- `ALL_TOOLS`: metadata for the enabled nested tools as `{ name, description }` entries.\n- `yield_control()`: yields the accumulated output to the model immediately while the script keeps running.\n\nSome deferred nested tools may be omitted from this description. They are still available on the global `tools` object and listed in `ALL_TOOLS`.\nTo find one, filter `ALL_TOOLS` by `name` and `description`.\n\nTool availability can change between calls.",
+            "format": {
+              "type": "grammar",
+              "syntax": "lark",
+              "definition": "\nstart: pragma_source | plain_source\npragma_source: PRAGMA_LINE NEWLINE SOURCE\nplain_source: SOURCE\n\nPRAGMA_LINE: /[ \\t]*\\/\\/ @exec:[^\\r\\n]*/\nNEWLINE: /\\r?\\n/\nSOURCE: /[\\s\\S]+/\n"
+            }
+          },
+          {
+            "type": "function",
+            "name": "wait",
+            "description": "Waits on a yielded `exec` cell and returns new output or completion.\n- Use `wait` only after `exec` returns `Script running with cell ID ...`.\n- `cell_id` identifies the running `exec` cell to resume.\n- `yield_time_ms` controls how long to wait for more output before yielding again. Defaults to 10000 ms.\n- `max_tokens` limits how much new output this wait call returns. Defaults to 10000 tokens.\n- `terminate: true` stops the running cell; false or omitted waits for output.\n- `wait` returns only the new output since the last yield, or the final completion or termination result for that cell.\n- If the cell is still running, `wait` may yield again with the same `cell_id`.\n- If the cell has already finished, `wait` returns the completed result and closes the cell.",
+            "strict": false,
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "cell_id": {
+                  "type": "string",
+                  "description": "Identifier of the running exec cell."
+                },
+                "max_tokens": {
+                  "type": "number",
+                  "description": "Output token budget for this wait call. Defaults to 10000 tokens."
+                },
+                "terminate": {
+                  "type": "boolean",
+                  "description": "True stops the running exec cell; false or omitted waits for output."
+                },
+                "yield_time_ms": {
+                  "type": "number",
+                  "description": "Wait before yielding more output. Defaults to 10000 ms."
+                }
+              },
+              "required": [
+                "cell_id"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "type": "function",
+            "name": "exec_command",
+            "description": "Runs a command in a PTY, returning output or a session ID for ongoing interaction.\n\nexec tool declaration:\n```ts\ndeclare const tools: { exec_command(args: {\n  // Shell command to execute.\n  cmd: string;\n  // User-facing approval question for `require_escalated`; omit otherwise.\n  justification?: string;\n  // True runs the shell with -l/-i semantics; false disables them. Defaults to true.\n  login?: boolean;\n  // Output token budget. Defaults to 10000 tokens; larger requests may be capped by policy.\n  max_output_tokens?: number;\n  // Reusable approval prefix for `cmd`, only with `sandbox_permissions: \"require_escalated\"`; for example [\"git\", \"pull\"].\n  prefix_rule?: Array<string>;\n  // Per-command sandbox override. Defaults to `use_default`; use `require_escalated` for unsandboxed execution.\n  sandbox_permissions?: \"use_default\" | \"require_escalated\";\n  // Shell binary to launch. Defaults to the user's default shell.\n  shell?: string;\n  // True allocates a PTY for the command; false or omitted uses plain pipes.\n  tty?: boolean;\n  // Working directory for the command. Defaults to the turn cwd.\n  workdir?: string;\n  // Wait before yielding output. Defaults to 10000 ms; effective range is 250-30000 ms.\n  yield_time_ms?: number;\n}): Promise<{\n  // Chunk identifier included when the response reports one.\n  chunk_id?: string;\n  // Process exit code when the command finished during this call.\n  exit_code?: number;\n  // Approximate token count before output truncation.\n  original_token_count?: number;\n  // Command output text, possibly truncated.\n  output: string;\n  // Session identifier to pass to write_stdin when the process is still running.\n  session_id?: number;\n  // Elapsed wall time spent waiting for output in seconds.\n  wall_time_seconds: number;\n}>; };\n```",
+            "strict": false,
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "cmd": {
+                  "type": "string",
+                  "description": "Shell command to execute."
+                },
+                "justification": {
+                  "type": "string",
+                  "description": "User-facing approval question for `require_escalated`; omit otherwise."
+                },
+                "login": {
+                  "type": "boolean",
+                  "description": "True runs the shell with -l/-i semantics; false disables them. Defaults to true."
+                },
+                "max_output_tokens": {
+                  "type": "number",
+                  "description": "Output token budget. Defaults to 10000 tokens; larger requests may be capped by policy."
+                },
+                "prefix_rule": {
+                  "type": "array",
+                  "description": "Reusable approval prefix for `cmd`, only with `sandbox_permissions: \"require_escalated\"`; for example [\"git\", \"pull\"].",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "sandbox_permissions": {
+                  "type": "string",
+                  "description": "Per-command sandbox override. Defaults to `use_default`; use `require_escalated` for unsandboxed execution.",
+                  "enum": [
+                    "use_default",
+                    "require_escalated"
+                  ]
+                },
+                "shell": {
+                  "type": "string",
+                  "description": "Shell binary to launch. Defaults to the user's default shell."
+                },
+                "tty": {
+                  "type": "boolean",
+                  "description": "True allocates a PTY for the command; false or omitted uses plain pipes."
+                },
+                "workdir": {
+                  "type": "string",
+                  "description": "Working directory for the command. Defaults to the turn cwd."
+                },
+                "yield_time_ms": {
+                  "type": "number",
+                  "description": "Wait before yielding output. Defaults to 10000 ms; effective range is 250-30000 ms."
+                }
+              },
+              "required": [
+                "cmd"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "type": "function",
+            "name": "write_stdin",
+            "description": "Writes characters to an existing unified exec session and returns recent output.\n\nexec tool declaration:\n```ts\ndeclare const tools: { write_stdin(args: {\n  // Bytes to write to stdin. Defaults to empty, which polls without writing.\n  chars?: string;\n  // Output token budget. Defaults to 10000 tokens; larger requests may be capped by policy.\n  max_output_tokens?: number;\n  // Identifier of the running unified exec session.\n  session_id: number;\n  // Wait before yielding output. Non-empty writes default to 250 ms and cap at 30000 ms; empty polls wait 5000-300000 ms by default.\n  yield_time_ms?: number;\n}): Promise<{\n  // Chunk identifier included when the response reports one.\n  chunk_id?: string;\n  // Process exit code when the command finished during this call.\n  exit_code?: number;\n  // Approximate token count before output truncation.\n  original_token_count?: number;\n  // Command output text, possibly truncated.\n  output: string;\n  // Session identifier to pass to write_stdin when the process is still running.\n  session_id?: number;\n  // Elapsed wall time spent waiting for output in seconds.\n  wall_time_seconds: number;\n}>; };\n```",
+            "strict": false,
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "chars": {
+                  "type": "string",
+                  "description": "Bytes to write to stdin. Defaults to empty, which polls without writing."
+                },
+                "max_output_tokens": {
+                  "type": "number",
+                  "description": "Output token budget. Defaults to 10000 tokens; larger requests may be capped by policy."
+                },
+                "session_id": {
+                  "type": "number",
+                  "description": "Identifier of the running unified exec session."
+                },
+                "yield_time_ms": {
+                  "type": "number",
+                  "description": "Wait before yielding output. Non-empty writes default to 250 ms and cap at 30000 ms; empty polls wait 5000-300000 ms by default."
+                }
+              },
+              "required": [
+                "session_id"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "type": "function",
+            "name": "request_user_input",
+            "description": "Request user input for one to three short questions and wait for the response. This tool is only available in Plan mode.",
+            "strict": false,
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "questions": {
+                  "type": "array",
+                  "description": "Questions to show the user. Prefer 1 and do not exceed 3",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "header": {
+                        "type": "string",
+                        "description": "Short header label shown in the UI (12 or fewer chars)."
+                      },
+                      "id": {
+                        "type": "string",
+                        "description": "Stable identifier for mapping answers (snake_case)."
+                      },
+                      "options": {
+                        "type": "array",
+                        "description": "Provide 2-3 mutually exclusive choices. Put the recommended option first and suffix its label with \"(Recommended)\". Do not include an \"Other\" option in this list; the client will add a free-form \"Other\" option automatically.",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "description": {
+                              "type": "string",
+                              "description": "One short sentence explaining impact/tradeoff if selected."
+                            },
+                            "label": {
+                              "type": "string",
+                              "description": "User-facing label (1-5 words)."
+                            }
+                          },
+                          "required": [
+                            "label",
+                            "description"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "question": {
+                        "type": "string",
+                        "description": "Single-sentence prompt shown to the user."
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "header",
+                      "question",
+                      "options"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "questions"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "type": "function",
+            "name": "view_image",
+            "description": "View a local image file from the filesystem when visual inspection is needed. Use this for images already available on disk.\n\nexec tool declaration:\n```ts\ndeclare const tools: { view_image(args: {\n  // Local filesystem path to an image file.\n  path: string;\n}): Promise<{\n  // Image detail hint returned by view_image. Returns `high` for default resized behavior or `original` when original resolution is preserved.\n  detail: \"high\" | \"original\";\n  // Data URL for the loaded image.\n  image_url: string;\n}>; };\n```",
+            "strict": false,
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "Local filesystem path to an image file."
+                }
+              },
+              "required": [
+                "path"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "type": "namespace",
+            "name": "multi_agent_v1",
+            "description": "Tools for spawning and managing sub-agents.",
+            "tools": [
+              {
+                "type": "function",
+                "name": "close_agent",
+                "description": "Close an agent and any open descendants when they are no longer needed, and return the target agent's previous status before shutdown was requested. Completed agents remain open and count toward the concurrency limit until closed. Don't keep agents open for too long if they are not needed anymore.\n\nexec tool declaration:\n```ts\ndeclare const tools: { multi_agent_v1__close_agent(args: {\n  // Agent id to close (from spawn_agent).\n  target: string;\n}): Promise<{\n  // The agent status observed before shutdown was requested.\n  previous_status: (\"pending_init\" | \"running\" | \"interrupted\" | \"shutdown\" | \"not_found\" | { completed: string | null; } | { errored: string; });\n}>; };\n```",
+                "strict": false,
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "target": {
+                      "type": "string",
+                      "description": "Agent id to close (from spawn_agent)."
+                    }
+                  },
+                  "required": [
+                    "target"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              {
+                "type": "function",
+                "name": "resume_agent",
+                "description": "Resume a previously closed agent by id so it can receive send_input and wait_agent calls.\n\nexec tool declaration:\n```ts\ndeclare const tools: { multi_agent_v1__resume_agent(args: {\n  // Agent id to resume.\n  id: string;\n}): Promise<{ status: \"pending_init\" | \"running\" | \"interrupted\" | \"shutdown\" | \"not_found\" | { completed: string | null; } | { errored: string; }; }>; };\n```",
+                "strict": false,
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Agent id to resume."
+                    }
+                  },
+                  "required": [
+                    "id"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              {
+                "type": "function",
+                "name": "send_input",
+                "description": "Send a message to an existing agent. Use interrupt=true to redirect work immediately. You should reuse the agent by send_input if you believe your assigned task is highly dependent on the context of a previous task.\n\nexec tool declaration:\n```ts\ndeclare const tools: { multi_agent_v1__send_input(args: {\n  // True interrupts the current task and handles this message immediately; false or omitted queues it.\n  interrupt?: boolean;\n  // Structured input items. Use this to pass explicit mentions (for example app:// connector paths).\n  items?: Array<{\n  // Audio data URL when type is audio.\n  audio_url?: string;\n  // Image URL when type is image.\n  image_url?: string;\n  // Display name when type is skill or mention.\n  name?: string;\n  // Path when type is local_image/local_audio/skill, or structured mention target such as app://<connector-id> or plugin://<plugin-name>@<marketplace-name> when type is mention.\n  path?: string;\n  // Text content when type is text.\n  text?: string;\n  // Input item type: text, image, local_image, audio, local_audio, skill, or mention.\n  type?: string;\n}>;\n  // Legacy plain-text message to send to the agent. Use either message or items.\n  message?: string;\n  // Agent id to message (from spawn_agent).\n  target: string;\n}): Promise<{\n  // Identifier for the queued input submission.\n  submission_id: string;\n}>; };\n```",
+                "strict": false,
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "interrupt": {
+                      "type": "boolean",
+                      "description": "True interrupts the current task and handles this message immediately; false or omitted queues it."
+                    },
+                    "items": {
+                      "type": "array",
+                      "description": "Structured input items. Use this to pass explicit mentions (for example app:// connector paths).",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "audio_url": {
+                            "type": "string",
+                            "description": "Audio data URL when type is audio."
+                          },
+                          "image_url": {
+                            "type": "string",
+                            "description": "Image URL when type is image."
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Display name when type is skill or mention."
+                          },
+                          "path": {
+                            "type": "string",
+                            "description": "Path when type is local_image/local_audio/skill, or structured mention target such as app://<connector-id> or plugin://<plugin-name>@<marketplace-name> when type is mention."
+                          },
+                          "text": {
+                            "type": "string",
+                            "description": "Text content when type is text."
+                          },
+                          "type": {
+                            "type": "string",
+                            "description": "Input item type: text, image, local_image, audio, local_audio, skill, or mention."
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Legacy plain-text message to send to the agent. Use either message or items."
+                    },
+                    "target": {
+                      "type": "string",
+                      "description": "Agent id to message (from spawn_agent)."
+                    }
+                  },
+                  "required": [
+                    "target"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              {
+                "type": "function",
+                "name": "spawn_agent",
+                "description": "\n        \n        Available model overrides (optional; inherited parent model is preferred):\n- `gpt-6.1-sol`: loopback fixture model Reasoning efforts: high (default), xhigh.\n- `gpt-6-astra`: loopback fixture model Reasoning efforts: high (default), xhigh.\n        Spawn a sub-agent for a well-scoped task. Returns the spawned agent id plus the user-facing nickname when available. Spawned agents inherit your current model by default. Omit `model` to use that preferred default; set `model` only when an explicit override is needed.\nThis spawn_agent tool provides you access to sub-agents that inherit your current model by default. Do not set the `model` field unless the user explicitly asks for a different model. You should follow the rules and guidelines below to use this tool.\n\nDo not spawn sub-agents unless the user or applicable AGENTS.md/skill instructions explicitly ask for sub-agents, delegation, or parallel agent work.\nRequests for depth, thoroughness, research, investigation, or detailed codebase analysis do not count as permission to spawn.\nAgent-role guidance below only helps choose which agent to use after spawning is already authorized; it never authorizes spawning by itself.\n\n### When to delegate vs. do the subtask yourself\n- First, quickly analyze the overall user task and form a succinct high-level plan. Identify which tasks are immediate blockers on the critical path, and which tasks are sidecar tasks that are needed but can run in parallel without blocking the next local step. As part of that plan, explicitly decide what immediate task you should do locally right now. Do this planning step before delegating to agents so you do not hand off the immediate blocking task to a submodel and then waste time waiting on it.\n- Use a subagent when a subtask is easy enough for it to handle and can run in parallel with your local work. Prefer delegating concrete, bounded sidecar tasks that materially advance the main task without blocking your immediate next local step.\n- Do not delegate urgent blocking work when your immediate next step depends on that result. If the very next action is blocked on that task, the main rollout should usually do it locally to keep the critical path moving.\n- Keep work local when the subtask is too difficult to delegate well and when it is tightly coupled, urgent, or likely to block your immediate next step.\n\n### Designing delegated subtasks\n- Subtasks must be concrete, well-defined, and self-contained.\n- Delegated subtasks must materially advance the main task.\n- Do not duplicate work between the main rollout and delegated subtasks.\n- Avoid issuing multiple delegate calls on the same unresolved thread unless the new delegated task is genuinely different and necessary.\n- Narrow the delegated ask to the concrete output you need next.\n- For coding tasks, prefer delegating concrete code-change worker subtasks over read-only explorer analysis when the subagent can make a bounded patch in a clear write scope.\n- When delegating coding work, instruct the submodel to edit files directly in its forked workspace and list the file paths it changed in the final answer.\n- For code-edit subtasks, decompose work so each delegated task has a disjoint write set.\n\n### After you delegate\n- Call wait_agent very sparingly. Only call wait_agent when you need the result immediately for the next critical-path step and you are blocked until it returns.\n- Do not redo delegated subagent tasks yourself; focus on integrating results or tackling non-overlapping work.\n- While the subagent is running in the background, do meaningful non-overlapping work immediately.\n- Do not repeatedly wait by reflex.\n- When a delegated coding task returns, quickly review the uploaded changes, then integrate or refine them.\n\n### Parallel delegation patterns\n- Run multiple independent information-seeking subtasks in parallel when you have distinct questions that can be answered independently.\n- Split implementation into disjoint codebase slices and spawn multiple agents for them in parallel when the write scopes do not overlap.\n- Delegate verification only when it can run in parallel with ongoing implementation and is likely to catch a concrete risk before final integration.\n- The key is to find opportunities to spawn multiple independent subtasks in parallel within the same round, while ensuring each subtask is well-defined, self-contained, and materially advances the main task.\n\nexec tool declaration:\n```ts\ndeclare const tools: { multi_agent_v1__spawn_agent(args: {\n  // True forks the current thread history into the new agent; false or omitted starts with only the initial prompt.\n  fork_context?: boolean;\n  // Structured input items. Use this to pass explicit mentions (for example app:// connector paths).\n  items?: Array<{\n  // Audio data URL when type is audio.\n  audio_url?: string;\n  // Image URL when type is image.\n  image_url?: string;\n  // Display name when type is skill or mention.\n  name?: string;\n  // Path when type is local_image/local_audio/skill, or structured mention target such as app://<connector-id> or plugin://<plugin-name>@<marketplace-name> when type is mention.\n  path?: string;\n  // Text content when type is text.\n  text?: string;\n  // Input item type: text, image, local_image, audio, local_audio, skill, or mention.\n  type?: string;\n}>;\n  // Initial plain-text task for the new agent. Use either message or items.\n  message?: string;\n  // Model override for the new agent. Omit unless an explicit override is needed.\n  model?: string;\n  // Reasoning effort override for the new agent. Omit to inherit the parent effort.\n  reasoning_effort?: string;\n}): Promise<{\n  // Thread identifier for the spawned agent.\n  agent_id: string;\n  // User-facing nickname for the spawned agent when available.\n  nickname: string | null;\n}>; };\n```",
+                "strict": false,
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "fork_context": {
+                      "type": "boolean",
+                      "description": "True forks the current thread history into the new agent; false or omitted starts with only the initial prompt."
+                    },
+                    "items": {
+                      "type": "array",
+                      "description": "Structured input items. Use this to pass explicit mentions (for example app:// connector paths).",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "audio_url": {
+                            "type": "string",
+                            "description": "Audio data URL when type is audio."
+                          },
+                          "image_url": {
+                            "type": "string",
+                            "description": "Image URL when type is image."
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Display name when type is skill or mention."
+                          },
+                          "path": {
+                            "type": "string",
+                            "description": "Path when type is local_image/local_audio/skill, or structured mention target such as app://<connector-id> or plugin://<plugin-name>@<marketplace-name> when type is mention."
+                          },
+                          "text": {
+                            "type": "string",
+                            "description": "Text content when type is text."
+                          },
+                          "type": {
+                            "type": "string",
+                            "description": "Input item type: text, image, local_image, audio, local_audio, skill, or mention."
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Initial plain-text task for the new agent. Use either message or items."
+                    },
+                    "model": {
+                      "type": "string",
+                      "description": "Model override for the new agent. Omit unless an explicit override is needed."
+                    },
+                    "reasoning_effort": {
+                      "type": "string",
+                      "description": "Reasoning effort override for the new agent. Omit to inherit the parent effort."
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              {
+                "type": "function",
+                "name": "wait_agent",
+                "description": "Wait for agents to reach a final status. Completed statuses may include the agent's final message. Returns empty status when timed out. Once the agent reaches a final status, a notification message will be received containing the same completed status.\n\nexec tool declaration:\n```ts\ndeclare const tools: { multi_agent_v1__wait_agent(args: {\n  // Agent ids to wait on. Pass multiple ids to wait for whichever finishes first.\n  targets: Array<string>;\n  // Timeout in milliseconds. Defaults to 30000, min 10000, max 3600000. Prefer longer waits (minutes) to avoid busy polling.\n  timeout_ms?: number;\n}): Promise<{\n  // Final statuses keyed by agent id.\n  status: { [key: string]: \"pending_init\" | \"running\" | \"interrupted\" | \"shutdown\" | \"not_found\" | { completed: string | null; } | { errored: string; }; };\n  // Whether the wait call returned due to timeout before any agent reached a final status.\n  timed_out: boolean;\n}>; };\n```",
+                "strict": false,
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "targets": {
+                      "type": "array",
+                      "description": "Agent ids to wait on. Pass multiple ids to wait for whichever finishes first.",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "timeout_ms": {
+                      "type": "number",
+                      "description": "Timeout in milliseconds. Defaults to 30000, min 10000, max 3600000. Prefer longer waits (minutes) to avoid busy polling."
+                    }
+                  },
+                  "required": [
+                    "targets"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            ]
+          },
+          {
+            "type": "function",
+            "name": "get_goal",
+            "description": "Get the current goal for this thread, including status, budgets, token and elapsed-time usage, and remaining token budget.\n\nexec tool declaration:\n```ts\ndeclare const tools: { get_goal(args: {}): Promise<unknown>; };\n```",
+            "strict": false,
+            "parameters": {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": false
+            }
+          },
+          {
+            "type": "function",
+            "name": "create_goal",
+            "description": "Create a goal only when explicitly requested by the user or system/developer instructions; do not infer goals from ordinary tasks.\nSet token_budget only when an explicit token budget is requested. Fails if an unfinished goal exists; use update_goal only for status.\n\nexec tool declaration:\n```ts\ndeclare const tools: { create_goal(args: {\n  // Required. The concrete objective to start pursuing. This starts a new active goal when no goal exists or replaces the current goal when it is complete.\n  objective: string;\n  // Positive token budget for the new goal. Omit unless explicitly requested.\n  token_budget?: number;\n}): Promise<unknown>; };\n```",
+            "strict": false,
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "objective": {
+                  "type": "string",
+                  "description": "Required. The concrete objective to start pursuing. This starts a new active goal when no goal exists or replaces the current goal when it is complete."
+                },
+                "token_budget": {
+                  "type": "integer",
+                  "description": "Positive token budget for the new goal. Omit unless explicitly requested."
+                }
+              },
+              "required": [
+                "objective"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "type": "function",
+            "name": "update_goal",
+            "description": "Update the existing goal.\nSet status to `paused` only at the user's explicit request to pause this goal, never on your own initiative. Ask if unclear; a later resume revokes that request. Report the returned status and stop goal work. Budget limits take precedence over pausing.\nSet status to `complete` only when the objective has actually been achieved and no required work remains.\nSet status to `blocked` only when the same blocking condition has repeated for at least three consecutive goal turns, counting the original/user-triggered turn and any automatic continuations, and the agent cannot make meaningful progress without user input or an external-state change.\nIf the user resumes a goal that was previously marked `blocked`, treat the resumed run as a fresh blocked audit. If the same blocking condition then repeats for at least three consecutive resumed goal turns, set status to `blocked` again.\nOnce the blocked threshold is satisfied, do not keep reporting that you are still blocked while leaving the goal active; set status to `blocked`.\nDo not use `blocked` merely because the work is hard, slow, uncertain, incomplete, or would benefit from clarification.\nDo not mark a goal complete merely because its budget is nearly exhausted or because you are stopping work.\nYou cannot use this tool to resume, budget-limit, or usage-limit a goal; those status changes are controlled by the user or system.\nWhen marking a budgeted goal achieved with status `complete`, report the final token usage from the tool result to the user.\n\nexec tool declaration:\n```ts\ndeclare const tools: { update_goal(args: {\n  // Required. `paused` requires an explicit user request. Set to `complete` only when the objective is achieved and no required work remains. Set to `blocked` only after the same blocking condition has recurred for at least three consecutive goal turns and the agent is at an impasse. After a previously blocked goal is resumed, the resumed run starts a fresh blocked audit.\n  status: \"complete\" | \"blocked\" | \"paused\";\n}): Promise<unknown>; };\n```",
+            "strict": false,
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "description": "Required. `paused` requires an explicit user request. Set to `complete` only when the objective is achieved and no required work remains. Set to `blocked` only after the same blocking condition has recurred for at least three consecutive goal turns and the agent is at an impasse. After a previously blocked goal is resumed, the resumed run starts a fresh blocked audit.",
+                  "enum": [
+                    "complete",
+                    "blocked",
+                    "paused"
+                  ]
+                }
+              },
+              "required": [
+                "status"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "type": "web_search",
+            "external_web_access": true
+          }
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "reasoning": {
+          "effort": "high",
+          "summary": "auto"
+        },
+        "store": false,
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "prompt_cache_key": "01a16c5e-7c85-7c53-acb3-76b1fecdf0d1",
+        "client_metadata": {
+          "thread_id": "01a16c5e-7c85-7c53-acb3-76b1fecdf0d1",
+          "x-codex-installation-id": "469e259e-469d-472e-806e-4ac0f123193d",
+          "x-codex-window-id": "01a16c5e-7c85-7c53-acb3-76b1fecdf0d1:0",
+          "root_turn_id": "01a16c5e-7c8e-7cb1-8e91-e648d58141a2",
+          "x-codex-turn-metadata": "{\"installation_id\":\"469e259e-469d-472e-806e-4ac0f123193d\",\"session_id\":\"01a16c5e-7c85-7c53-acb3-76b1fecdf0d1\",\"thread_id\":\"01a16c5e-7c85-7c53-acb3-76b1fecdf0d1\",\"agent_name\":\"/root\",\"turn_id\":\"01a16c5e-7c8e-7cb1-8e91-e648d58141a2\",\"window_id\":\"01a16c5e-7c85-7c53-acb3-76b1fecdf0d1:0\",\"window_number\":0,\"context_window_id\":\"01a16c5e-7c86-7a61-becf-44f6cff8e2e7\",\"request_kind\":\"turn\",\"history_initialization\":\"new\",\"root_turn_id\":\"01a16c5e-7c8e-7cb1-8e91-e648d58141a2\",\"sandbox\":\"none\",\"sandbox_mode\":\"danger-full-access\",\"auto_review_enabled\":false,\"node_repl_auto_review_required\":false,\"node_repl_disabled\":false,\"turn_started_at_unix_ms\":1792819494030,\"analytics_enabled\":false,\"model\":\"gpt-6.1-sol\",\"reasoning_effort\":\"high\"}",
+          "turn_id": "01a16c5e-7c8e-7cb1-8e91-e648d58141a2",
+          "session_id": "01a16c5e-7c85-7c53-acb3-76b1fecdf0d1"
+        }
+      }
+    }
+  ],
+  "root_tool_result": {
+    "state": "finished",
+    "exit_code": 0,
+    "log": "/tmp/cn/a45-t51gyuex/h/codex-plus/logs/cbbe3f0c-8ef1-4943-8c68-1cb998e8db43.log",
+    "output": "codex-plus log: /tmp/cn/a45-t51gyuex/h/codex-plus/logs/cbbe3f0c-8ef1-4943-8c68-1cb998e8db43.log\n{\"effort\":\"xhigh\",\"findings\":[{\"message\":\"Private transport fixture only.\",\"severity\":\"low\"}],\"log\":\"/tmp/cn/a45-t51gyuex/h/codex-plus/logs/9b45e707-d9c7-46e3-b7ca-de3be7febcfc.log\",\"model\":\"claude-opus-5-5\",\"next_steps\":[\"Restart with the new context attachment workflow.\"],\"summary\":\"OLD_TUI_ROOT_RECEIVED_CLAUDE_RESULT_candidate\",\"verdict\":\"revise\"}\ncodex-plus result: exit=0 log=/tmp/cn/a45-t51gyuex/h/codex-plus/logs/cbbe3f0c-8ef1-4943-8c68-1cb998e8db43.log\n"
+  },
+  "advisor_result": {
+    "effort": "xhigh",
+    "findings": [
+      {
+        "message": "Private transport fixture only.",
+        "severity": "low"
+      }
+    ],
+    "log": "/tmp/cn/a45-t51gyuex/h/codex-plus/logs/9b45e707-d9c7-46e3-b7ca-de3be7febcfc.log",
+    "model": "claude-opus-5-5",
+    "next_steps": [
+      "Restart with the new context attachment workflow."
+    ],
+    "summary": "OLD_TUI_ROOT_RECEIVED_CLAUDE_RESULT_candidate",
+    "verdict": "revise"
+  },
+  "final_status": {
+    "calls": 1,
+    "effort": "xhigh",
+    "error": null,
+    "finished_at": 1792819495.4277084,
+    "last_duration_secs": 0.8597891330718994,
+    "model": "claude-opus-5-5",
+    "parent": "01a16c5e-7c85-7c53-acb3-76b1fecdf0d1",
+    "started_at": 1792819494.5679193,
+    "state": "done",
+    "updated_at": 1792819495.4277084,
+    "version": 1
+  },
+  "old_claude_display_observed": true,
+  "explicit_context_only": true,
+  "caller_restart_required_before_production_claude": false,
+  "owned_survivors_after_cleanup": [],
+  "root_provider_requests_observed": 2
+}

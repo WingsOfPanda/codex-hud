@@ -1,0 +1,1 @@
+{"architecture":"aarch64","checks":{"runtime":{"evidence":{"evidence/runtime-detail.json":"a9888f09ab26bf58b6b3f9e222a4daaa04b697728ec542960063989ac54c347f"},"outcome":"passed"}},"plus_source_commit":"651a1eb03a08d69af0fd1cc69252bdff2c8f4b27"}
