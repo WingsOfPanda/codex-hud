@@ -1,8 +1,14 @@
 # Recovery within the authorized task
 
-Status: **0.4.8 implementation candidate; not activated on the fleet**. Existing
-legacy report barriers remain intact. Source tests do not qualify a release or
-authorize installation; use the published handoff for actual compatibility results.
+Status: **implemented and qualified in 0.4.8**; see the
+[release evidence](releases/0.163.0-plus.0.4.8/qualification.json).
+Fleet-config reported the code and matching instruction block installed on all
+four hosts on 2026-10-24 (operator report at 07:44–07:46 +08:00, block SHA256
+`62b25e0d02c12ecfa1821076cc3086cf947614602c71e5cad3f6dce0bae5d2a1`).
+The coordinator verified its own restarted TUI executable; other sessions' restarts
+were not established by that check. Check the actual helper and active session instructions
+before using this policy; an older session or legacy barrier retains its original
+restrictions. Publication alone does not establish installation or restart.
 
 ## Decision
 
@@ -93,6 +99,27 @@ An unreadable job must not prevent an independent completion from being delivere
    blocker names who can supply the missing evidence/decision. No status-only
    model loop or new scheduler is needed.
 
+## Evidence comparison rules
+
+Compare both the raw managed result and the copy stored in state before recovery.
+Their `finished_at` floats were observed to differ by one adjacent double between
+the raw result and state copy; the producing step was not established. The recovery
+validator permits only that finite, adjacent-float
+difference; every other result field must match. Preserve both original files,
+record the validator revision, and keep cleanup resolution separate from package
+acceptance. A larger timestamp difference or any outcome/identity difference
+requires investigation, not normalization of the records.
+Exercise recovery status, export and import with the same preserved pair too;
+passing cleanup validation alone does not prove the forensic transport path.
+
+An audit and a removal receipt answer different questions. The compatibility root
+audit can report `socket_removed: false` because native final cleanup already
+removed that socket. Accept this only with the exact socket identity, hash-bound
+original removal receipt and cleanup seal, clean ownership audit, and current
+path absence on the owning host. Test this producer-shaped case through status,
+export, import and AP receipt acceptance; a synthetic `true` audit missed it in 0.4.8.
+
+
 ## Goal and runtime changes
 
 Use existing goal `continue`/`wait` checkpoints for authorized recovery. Reserve
@@ -115,19 +142,20 @@ Implementation and acceptance cover these seams together:
   diagnostic acknowledgement cannot release reservations. The observer itself
   never retries commands or performs speculative cleanup.
 - Instructions/docs: replace blanket stop wording with this workflow. HUD refresh
-  remains read-only; this proposal needs no new footer row or configuration switch.
+  remains read-only; this policy needs no new footer row or configuration switch.
 
-The intended compatibility encoding keeps legacy-readable recovery jobs at
+The 0.4.8 compatibility encoding keeps legacy-readable recovery jobs at
 `report=1` and adds a default-zero SQLite `jobs.recovery_allowed` marker. Only
 positively live observation can authorize the new recovery path. Old helpers
 ignore the marker and remain conservative; legacy/manual/restart barriers retain
 marker zero. Execution record JSON remains separate from this ledger addition.
-The old-helper behavior, migration and frozen callback cases require actual
-qualification; an additive column alone is not compatibility evidence.
+The old-helper behavior, migration and frozen callback cases passed actual 0.4.8
+qualification on both architectures. Future changes still need affected checks;
+an additive column alone is not compatibility evidence.
 
 ## Global instruction activation
 
-The [complete candidate block](proposals/recovery-agents-block.md) is the single
+The [complete instruction block](proposals/recovery-agents-block.md) is the single
 source for `rollout.agents_md`. **Install only with its qualified runtime.**
 It replaces the LIVE COMPLETION / REPORT ONLY / uncertain-delivery paragraphs
 (live lines 101–107 at fleet review), and explicitly limits recovery mutations to
@@ -165,9 +193,10 @@ the instruction/runtime contract and old/new helper behavior together.
 
 ## Activation and current release
 
-This implementation changes frozen 0.4.8 source and
-requires a new candidate identity and affected qualification. Preserve published
-0.4.7 artifacts and original receipts. Activation requirements from fleet review:
+The 0.4.8 implementation and instruction block were shipped together. Future
+runtime or policy changes require their own candidate identity and affected
+qualification; preserve published artifacts and original receipts. The 0.4.8
+activation contract remains the reference for rollout and rollback:
 
 1. Fleet-config owns rollout approval, staging, quiet checks and lockstep. In the
    policy rollout commit, its RELEASING.md assigns verified resolution to the job's
@@ -186,13 +215,14 @@ requires a new candidate identity and affected qualification. Preserve published
    do not add an unreviewed handoff schema key. Qualify 0.4.7 reading new written
    recovery records/events conservatively, both-direction holds, and restored
    policy behavior. Until those gates pass, rollback is unqualified and the floor
-   cannot move.
+   cannot move. Both architectures passed these 0.4.8 gates; the published
+   [qualification record](releases/0.163.0-plus.0.4.8/qualification.json) and
+   [handoff](releases/0.163.0-plus.0.4.8/handoff.json) retain 0.4.7 and the prior block.
 4. Keep Claude rules and configuration unchanged. This rollout applies only to
    Codex Plus roots and does not expand their permissions or job ownership.
 
-For the current 0.4.8 incident, command failure is known and cleanup is unverified.
-The intended future behavior is to inspect exact guard/process/resource evidence,
-perform authorized verified reconciliation, fix the outdated footer assertion and
-failed-stage reporting, apply the private ARM profile correction, and prepare both
-targets before any new launch. A policy document or code change alone performs
-none of that recovery and does not qualify the release.
+The earlier 0.4.8 failures and their recoveries are historical evidence; final
+fresh qualification passed. See the
+[retrospective](releases/0.163.0-plus.0.4.8-retrospective.md) for causes and preventive
+checks. A documentation or code change alone never performs cleanup or qualifies
+a future release.

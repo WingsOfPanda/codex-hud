@@ -1,0 +1,380 @@
+{
+  "E01": {
+    "mode": "0o664",
+    "mtime_ns": 1792725533083070348,
+    "path": "/data/liupan/codex-plus-build/release048/preparation/preparation-refusal.json",
+    "sha256": "dbfbf86f8a72fe6b2c50c356c3886bfed061f8f069a8b450d8a0063606c34218",
+    "size": 7413
+  },
+  "E02": {
+    "mode": "0o600",
+    "mtime_ns": 1792726014650420947,
+    "path": "/data/liupan/codex-plus-build/release048/preparation/libcap-correction-01/correction-evidence.json",
+    "sha256": "2cb8958f56334b581b6b99662e06dda08607f300232913d7804f7e2c2ebd4427",
+    "size": 2809
+  },
+  "E03": {
+    "mode": "0o664",
+    "mtime_ns": 1792737881137581694,
+    "path": "/data/liupan/codex-plus-build/release048/recovery-validation/evidence/failure-review.json",
+    "sha256": "1a5761cd14409ef861d365133d1b1aae967f6c8e63ef17d9ae510d56f9df35d3",
+    "size": 2747
+  },
+  "E04": {
+    "mode": "0o600",
+    "mtime_ns": 1792738585611887090,
+    "path": "/data/liupan/codex-plus-build/release048/recovery-validation/evidence/home-rerun-build.json",
+    "sha256": "709eab9dcc235309f584dfd8cb8ea4ce0b1289e5dfe4507c7bb1413efa11fd54",
+    "size": 2639
+  },
+  "E05": {
+    "mode": "0o664",
+    "mtime_ns": 1792739118599200073,
+    "path": "/data/liupan/codex-plus-build/release048/recovery-validation/evidence/private-case-failure-review.json",
+    "sha256": "4ad7ed188f4b48fd0795016126ccc629a7a0cd20a080df7b7652086798f1062d",
+    "size": 10429
+  },
+  "E06": {
+    "mode": "0o600",
+    "mtime_ns": 1792739664762446774,
+    "path": "/data/liupan/codex-plus-build/release048/recovery-validation/hash-timing-probe-01/result.json",
+    "sha256": "5185a7284d96d53d06dbe621a15ac8a859ec01de383a06c07b76261dfe0b5246",
+    "size": 6853
+  },
+  "E07": {
+    "mode": "0o600",
+    "mtime_ns": 1792743926406773173,
+    "path": "/data/liupan/codex-plus-build/release048/recovery-validation/optimized-01/evidence/build-result.json",
+    "sha256": "7f11e837b4b2ed01a11bd434985a23324218608f688b3969288e8c6cd7eb1e12",
+    "size": 3579
+  },
+  "E08": {
+    "mode": "0o600",
+    "mtime_ns": 1792744513952224044,
+    "path": "/data/liupan/codex-plus-build/release048/recovery-validation/optimized-01/evidence/runtime-validation-receipt.json",
+    "sha256": "37f15d01ee7ce7673f273f777d779d338c1e9d8a86eb4ac1ffb7dc9323529961",
+    "size": 30279
+  },
+  "E09": {
+    "mode": "0o600",
+    "mtime_ns": 1792751956215886224,
+    "path": "/data/liupan/codex-plus-build/release048/native-arm-v3/attempts/0.163.0-plus.0.4.8-aarch64-73408e93c95d2595/evidence/package-seven/report.json",
+    "sha256": "07f258f072fa1e0900de07caf7f4144ef6d590713bbd462a9010f594bff57165",
+    "size": 85134
+  },
+  "E10": {
+    "mode": "0o400",
+    "mtime_ns": 1792751959269909080,
+    "path": "/data/liupan/codex-plus-build/release048/native-arm-v3/attempts/0.163.0-plus.0.4.8-aarch64-73408e93c95d2595/outputs/package.json",
+    "sha256": "7b842fd56eca508a24a05064f2acd0a629371b39dfde904efed7fbc8c55a3ac7",
+    "size": 126
+  },
+  "E11": {
+    "mode": "0o400",
+    "mtime_ns": 1792751958282901692,
+    "path": "/data/liupan/codex-plus-build/release048/native-arm-v3/attempts/0.163.0-plus.0.4.8-aarch64-73408e93c95d2595/outputs/package-cleanup.json",
+    "sha256": "7e74e03943f265dcf24fd89b80a4104701ec009779e351ba173b7b004cede7e6",
+    "size": 1738
+  },
+  "E12": {
+    "mode": "0o600",
+    "mtime_ns": 1792751958000899581,
+    "path": "/data/liupan/codex-plus-build/release048/native-arm-v3/attempts/0.163.0-plus.0.4.8-aarch64-73408e93c95d2595/process-journal.jsonl",
+    "sha256": "ff443171be38de920f40ddcb0ee9bb728e2ccb39ed78a49294e5b066e30327e0",
+    "size": 6118
+  },
+  "E13": {
+    "mode": "0o600",
+    "mtime_ns": 1792753229022374485,
+    "path": "/data/liupan/codex-plus-build/release048/preparation-v3/arm-recovery-review-01/resolution-validator-preview.json",
+    "sha256": "6aaceb7297e27b059d1552dca6a354d1f096161a6cd2ec6feb36763cd77d7100",
+    "size": 638
+  },
+  "E14": {
+    "mode": "0o600",
+    "mtime_ns": 1792756054339916372,
+    "path": "/data/liupan/codex-plus-build/release048/timestamp-handoff/arm-recovery-f873e61/cleanup-recovery-receipt.json",
+    "sha256": "6762a5d28c6c29d68dda41929d32f5c316d73a46b4f51a58e93623da8347ea78",
+    "size": 7281
+  },
+  "E15": {
+    "mode": "0o600",
+    "mtime_ns": 1792756581123729195,
+    "path": "/data/liupan/codex-plus-build/release048/timestamp-handoff/arm-export-1142193/forensic-export-receipt.json",
+    "sha256": "d5ba1690cc3d85763b2ce9b54f8c2367d08e7c128683746c02a45cb3f1a1e82f",
+    "size": 2914
+  },
+  "E16": {
+    "mode": "0o600",
+    "mtime_ns": 1792756230474181855,
+    "path": "/data/liupan/codex-plus-build/release048/timestamp-handoff/arm-recovery-f873e61/diagnostics/diagnostic-receipt.json",
+    "sha256": "ad15ca1cb71800929556ab978e56882e48b1c606d07919f1907c4aa7984a01d7",
+    "size": 8143
+  },
+  "E17": {
+    "mode": "0o600",
+    "mtime_ns": 1792756231961192588,
+    "path": "/data/liupan/codex-plus-build/release048/timestamp-handoff/arm-recovery-f873e61/canonical-reference/canonical-reference-receipt.json",
+    "sha256": "f8b083bf0126d8543c7021b636240f46e592ca13ac586480edb2f72f1804286e",
+    "size": 24116
+  },
+  "E18": {
+    "mode": "0o664",
+    "mtime_ns": 1792757384145603981,
+    "path": "/data/liupan/codex-plus-build/release048/preparation-v4/arm-launch-evidence/ownership-preflight-blocker.json",
+    "sha256": "ae255e18ef545cd2ae7eafa62372cbb8633870d4cb29f9952f07aaa389688ae8",
+    "size": 6687
+  },
+  "E19": {
+    "mode": "0o664",
+    "mtime_ns": 1792757434761146107,
+    "path": "/data/liupan/codex-plus-build/release048/preparation-v4/arm-launch-evidence/foreign-tmux-client.json",
+    "sha256": "55ab63d7869248e381f53d3e48683b9d4a368a3c224463f6816bf168953e57b3",
+    "size": 100
+  },
+  "E20": {
+    "mode": "0o600",
+    "mtime_ns": 1792757932230108551,
+    "path": "/data/liupan/codex-plus-build/release048/preparation-v4/arm-refresh-01/conditional-launch-validation.json",
+    "sha256": "9561ed10ca04faf7087a6b854bcdc86a8e234ca6660a1e0edd2f668869437978",
+    "size": 4509
+  },
+  "E21": {
+    "mode": "0o600",
+    "mtime_ns": 1792766911999789382,
+    "path": "/data/liupan/codex-plus-build/release048/preparation-v5/arm-native-return-01/native-verification-receipt.json",
+    "sha256": "60df46a8a68ad9c9e1ce22ba20984794ada6116820412c4e0f63d6282fe51c10",
+    "size": 8546
+  },
+  "E22": {
+    "mode": "0o600",
+    "mtime_ns": 1792770186368675946,
+    "path": "/data/liupan/codex-plus-build/release048/preparation-v5/arm-compat-return-01/verification-receipt.json",
+    "sha256": "df2420fea1245da6e4b7871448ceb964d78b19e856befd2410dec6af0d42c3b8",
+    "size": 3933
+  },
+  "E23": {
+    "mode": "0o600",
+    "mtime_ns": 1792769219649835465,
+    "path": "/data/liupan/codex-plus-build/release048/preparation-v5/arm-compat-launch-01/preparation-review.json",
+    "sha256": "6963ac47590669239d5293b086fa94d07763b55a176a092049bc84946360ec94",
+    "size": 87714
+  },
+  "E24": {
+    "mode": "0o600",
+    "mtime_ns": 1792770183552664700,
+    "path": "/data/liupan/codex-plus-build/release048/preparation-v5/arm-compat-return-01/export-inventory-verification.json",
+    "sha256": "537b9007e9e78667de815e1b472be2851f635c4b121747a60f7116de44e17dc9",
+    "size": 517
+  },
+  "E25": {
+    "mode": "0o600",
+    "mtime_ns": 1792762259520607016,
+    "path": "/data/liupan/codex-plus-build/release048/tooling-v5/docs/release-book.md",
+    "sha256": "6262ee85962b150d55dae88f96ad43efd9a11039c84ab772bb120d51d15a80dc",
+    "size": 15200
+  },
+  "E26": {
+    "mode": "0o600",
+    "mtime_ns": 1792762259521607032,
+    "path": "/data/liupan/codex-plus-build/release048/tooling-v5/docs/release-protocol.md",
+    "sha256": "854c3d69628716de6dd06f9ec8d7a8c5326fe941773fa1cc1cebece7db1153ec",
+    "size": 13866
+  },
+  "E27": {
+    "mode": "0o600",
+    "mtime_ns": 1792768861793588408,
+    "path": "/data/liupan/codex-plus-build/release048/coordinator-65585b4/scripts/release_protocol.py",
+    "sha256": "9c5045fd4adfe9f11fce18176476fc4cd6598bb8ccd62dc13b42935cae4af7c5",
+    "size": 73512
+  },
+  "E28": {
+    "mode": "0o600",
+    "mtime_ns": 1792762259563607710,
+    "path": "/data/liupan/codex-plus-build/release048/tooling-v5/scripts/release_ownership.py",
+    "sha256": "9cf3ac14902bc54230901a5a28f34aed3765d6c7605ab61db4973ff22f5b2bb8",
+    "size": 21599
+  },
+  "E29": {
+    "mode": "0o600",
+    "mtime_ns": 1792762259566607759,
+    "path": "/data/liupan/codex-plus-build/release048/tooling-v5/scripts/release_recipes/compat/workflow.py",
+    "sha256": "feff84daeb3582f7e8a9328351fc3f00de3df34f850bed44bf846ecfe98be2d5",
+    "size": 35350
+  },
+  "E30": {
+    "mode": "0o644",
+    "mtime_ns": 0,
+    "path": "/data/liupan/codex-plus-build/release048/previous-047-canonical/codex-plus-0.163.0-plus.0.4.7-aarch64-unknown-linux-gnu/codex-plus.json",
+    "sha256": "1fa660d903be81b306e4b29346855eef09e004d752e1afbb3348412fd3e2ef9c",
+    "size": 13222
+  },
+  "E31": {
+    "mode": "0o644",
+    "mtime_ns": 0,
+    "path": "/data/liupan/codex-plus-build/release048/native-arm-v4/attempts/0.163.0-plus.0.4.8-aarch64-c39462ff6eb13e93/extracted/codex-plus-0.163.0-plus.0.4.8-aarch64-unknown-linux-gnu/codex-plus.json",
+    "sha256": "2ebd8c9963e4bd434749b2973ffc621ceba3c29735c5d4e9d13bcbb354f03fd7",
+    "size": 14401
+  },
+  "E32": {
+    "mode": "0o644",
+    "mtime_ns": 0,
+    "path": "/data/liupan/codex-plus-build/release048/native-arm-v5/attempts/0.163.0-plus.0.4.8-aarch64-f321897466a339cb/extracted/codex-plus-0.163.0-plus.0.4.8-aarch64-unknown-linux-gnu/codex-plus.json",
+    "sha256": "5e489015bd1f0655cd5e43609890bcf07e08aae06712aff5f3f385bd66f3784f",
+    "size": 14401
+  },
+  "E33": {
+    "mode": "0o400",
+    "mtime_ns": 1792759641698542200,
+    "path": "/data/liupan/codex-plus-build/release048/native-arm-v4/attempts/0.163.0-plus.0.4.8-aarch64-c39462ff6eb13e93/evidence/frontend-detail.json",
+    "sha256": "397c1c0aaf374b0027b76b42c9a1c2fef6efb2b3005c47ab32eb3de97631f40e",
+    "size": 10766
+  },
+  "E34": {
+    "mode": "0o400",
+    "mtime_ns": 1792764734536395604,
+    "path": "/data/liupan/codex-plus-build/release048/native-arm-v5/attempts/0.163.0-plus.0.4.8-aarch64-f321897466a339cb/evidence/frontend-detail.json",
+    "sha256": "d78d9baafed7ab3add5ecf7c63a136dee7d27e73a7aaf4cd0e7a5a173bed26f8",
+    "size": 10760
+  },
+  "E35": {
+    "mode": "0o400",
+    "mtime_ns": 1792761742598899969,
+    "path": "/data/liupan/codex-plus-build/release048/native-arm-v4/attempts/0.163.0-plus.0.4.8-aarch64-c39462ff6eb13e93/evidence/native-tests-detail.json",
+    "sha256": "579ca9b3ae10674b1c9a7221a21f54e496e4f7c2a6548b1e79d6f7bdfa76c599",
+    "size": 79980
+  },
+  "E36": {
+    "mode": "0o400",
+    "mtime_ns": 1792766696098413095,
+    "path": "/data/liupan/codex-plus-build/release048/native-arm-v5/attempts/0.163.0-plus.0.4.8-aarch64-f321897466a339cb/evidence/native-tests-detail.json",
+    "sha256": "3203a89991700d368fa4c8f7a0f977c761aba7cb42dc17d1eae4f31b1173db31",
+    "size": 79972
+  },
+  "E37": {
+    "mode": "0o600",
+    "mtime_ns": 1792762675765385157,
+    "path": "/data/liupan/codex-plus-build/release048/preparation-v5/arm-local-evidence/readiness-receipt.json",
+    "sha256": "70ce06eb3167c104dc7f0d639e28fcdd825a07c7a464961b2337d6f4e396f398",
+    "size": 6397
+  },
+  "E38": {
+    "mode": "0o600",
+    "mtime_ns": 1792769219496834478,
+    "path": "/data/liupan/codex-plus-build/release048/preparation-v5/arm-compat-launch-01/full-closure-review.json",
+    "sha256": "f6a81676b650e4d99b14ea16df3bc718c175a55366e813d079fb175fe890b17a",
+    "size": 97809
+  },
+  "E39": {
+    "mode": "0o600",
+    "mtime_ns": 1792770056167198659,
+    "path": "/data/liupan/codex-plus-build/release048/preparation-v5/arm-compat-return-01/identity-absence.json",
+    "sha256": "d60d2e5ea5b7ee2104f93fee3664df7337e1be0773bcad2101546c899654fc11",
+    "size": 2968
+  },
+  "E40": {
+    "mode": "0o600",
+    "mtime_ns": 1792770103156360309,
+    "path": "/data/liupan/codex-plus-build/release048/preparation-v5/arm-compat-return-01/managed-result-comparison.json",
+    "sha256": "077309d503a75c4bd08589613a575ed8102bdbdb0d9de720fbea4bf1671330a5",
+    "size": 278
+  },
+  "E41": {
+    "mode": "0o600",
+    "mtime_ns": 1792770186365675934,
+    "path": "/data/liupan/codex-plus-build/release048/preparation-v5/arm-compat-return-01/final-preservation.json",
+    "sha256": "6c41ee4aa4858a5a3b7460e863b476ca22ca4e49d8d6a9e6119ba92bb0e576c7",
+    "size": 154
+  },
+  "E42": {
+    "mode": "0o600",
+    "mtime_ns": 1792762020252269625,
+    "path": "/data/liupan/codex-plus-build/release048/preparation-v4/arm-native-return-01/native-verification-receipt.json",
+    "sha256": "5755b4ee211a2d5d94501b6a3d5c5fe8414a07630f119a2b27b29289443ab2c8",
+    "size": 8386
+  },
+  "E43": {
+    "mode": "0o600",
+    "mtime_ns": 1792770110230385733,
+    "path": "/data/liupan/codex-plus-build/release048/preparation-v5/arm-compat-return-01/qualified-status.json",
+    "sha256": "10153ea021931fabe4cf6a0ceaba6c35695429c2e9dd881a50665f4fd2bcc052",
+    "size": 825
+  },
+  "E44": {
+    "mode": "0o600",
+    "mtime_ns": 1792762259563607710,
+    "path": "/data/liupan/codex-plus-build/release048/tooling-v5/scripts/release_native.py",
+    "sha256": "33324b02a2e63279ba7212f3ea112a28f65009e21c48add1abf8dedcca612148",
+    "size": 50079
+  },
+  "E45": {
+    "mode": "0o600",
+    "mtime_ns": 1792756755432611390,
+    "path": "/data/liupan/codex-plus-build/release048/source-v4/tests/test_release_package.py",
+    "sha256": "1263a7fb60ae0671051efdeda3c9686e2d433fa4a0f58b0d1534555712f477b4",
+    "size": 21525
+  },
+  "E46": {
+    "mode": "0o600",
+    "mtime_ns": 1792737670311895735,
+    "path": "/data/liupan/codex-plus-build/release048/recovery-validation/evidence/build-result.json",
+    "sha256": "98c036f57218715a867c29bc61e461e2155338606f1ef673d49ee52c38612127",
+    "size": 1374
+  },
+  "E47": {
+    "mode": "0o600",
+    "mtime_ns": 1792744514630222613,
+    "path": "/data/liupan/codex-plus-build/release048/recovery-validation/optimized-01/evidence/return-summary.json",
+    "sha256": "c25201468d47e0f7088a510ffb9b4a4d686fd532b8caf5135025e62e19889a0f",
+    "size": 951
+  },
+  "E48": {
+    "mode": "0o600",
+    "mtime_ns": 1792746277164923052,
+    "path": "/data/liupan/codex-plus-build/release048/preparation-v2/arm-local-evidence/readiness-receipt.json",
+    "sha256": "be1e0e68bea009a7931daf76c435b68733c4e26024af4c11015f29c8dfc31edf",
+    "size": 5196
+  },
+  "E49": {
+    "mode": "0o600",
+    "mtime_ns": 1792749812829153024,
+    "path": "/data/liupan/codex-plus-build/release048/preparation-v3/arm-local-evidence/readiness-receipt.json",
+    "sha256": "734c4a87e59b934b526ec8baaa26c09cbea48f94cf37aa175ca03e76f0b25146",
+    "size": 5945
+  },
+  "E50": {
+    "mode": "0o600",
+    "mtime_ns": 1792756980362824879,
+    "path": "/data/liupan/codex-plus-build/release048/preparation-v4/arm-local-evidence/readiness-receipt.json",
+    "sha256": "9206d60b11b6db6242f10ae868135fc8641d96935b50bf90e125304487cc0a22",
+    "size": 5795
+  },
+  "E51": {
+    "mode": "0o600",
+    "mtime_ns": 1792770056167198659,
+    "path": "/data/liupan/codex-plus-build/release048/preparation-v5/arm-compat-return-01/independent-compat-audit.json",
+    "sha256": "54dcd0adbfe4b385215e494e5868c5a688160b1674cb57860c9c90128580861c",
+    "size": 2561
+  },
+  "E52": {
+    "mode": "0o600",
+    "mtime_ns": 1792770056167198659,
+    "path": "/data/liupan/codex-plus-build/release048/preparation-v5/arm-compat-return-01/independent-native-audit.json",
+    "sha256": "b79f17df3732c30d30929ac00eaead8a415ba0371126030224b3fdaebff60401",
+    "size": 2565
+  },
+  "E53": {
+    "mode": "0o600",
+    "mtime_ns": 1792737469631267611,
+    "path": "/data/liupan/codex-plus-build/release048/recovery-validation/logs/metadata.log",
+    "sha256": "ed7f92591b34dd63ffd0119ad84c23ea5b6e7a849f4f85670f5c2a41a575dae3",
+    "size": 129
+  },
+  "E54": {
+    "mode": "0o600",
+    "mtime_ns": 1792737469507266596,
+    "path": "/data/liupan/codex-plus-build/release048/recovery-validation/evidence/prerequisites.json",
+    "sha256": "89ce95bc3617ddfda0c38335b60cd4ae6258a312597d9ab5a2efca048f493c17",
+    "size": 2437
+  }
+}

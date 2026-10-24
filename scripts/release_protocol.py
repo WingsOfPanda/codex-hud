@@ -652,7 +652,7 @@ def recovery_results_match(saved_result, result):
         return False
     saved_finished = saved_result.get('finished_at')
     finished = result.get('finished_at')
-    # Separate JSON serialization may round the timestamp to an adjacent float.
+    # Raw/state timestamps were observed one float apart; preserve all other fields.
     return (type(saved_finished) is float and type(finished) is float and
             math.isfinite(saved_finished) and math.isfinite(finished) and
             math.nextafter(saved_finished, finished) == finished and

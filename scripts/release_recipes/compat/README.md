@@ -87,6 +87,44 @@ synthetic subprocess results; they do not establish that native gates or AP
 replay passed. A failed/unknown command retains its first start marker, receipt,
 logs and cleanup outcome; it cannot be replayed in place.
 
+### Retained-tooling AP receipt adapter
+
+Current `run-ap` calls the corrected receipt verifier; use that normal route when
+its selected recipe and AP matrix are qualified. The 0.4.8 release needed a
+separate coordinator when its frozen execution tooling embedded the old
+audit-versus-removal receipt check. For that reviewed compatibility case only,
+`scripts/release_ap_coordinator.py` provides `prepare-leaf` and `compose`:
+
+This adapter is qualified for original execution tooling `59d85b0`, 20 captures,
+23 tests (22 released plus one observer), two busy pairs, and deadline/grace
+600/90 seconds. Its current validation has those constants; a different matrix
+needs reviewed code/tests, not a claim of generic fallback support.
+
+```text
+PYTHON -B VERIFIER/scripts/release_ap_coordinator.py prepare-leaf --coordinator AP_EVIDENCE
+PYTHON -B VERIFIER/scripts/release_ap_coordinator.py compose --coordinator AP_EVIDENCE --execution EXECUTION_DIRECTORY --prepared-state PREPARED_STATE --audit INDEPENDENT_AUDIT --executor-review EXECUTOR_REVIEW
+```
+
+Preparation freezes a leaf proposal; it does not launch. Review/launch that
+proposal once with the existing managed executor and retire the unlaunched
+original proposal. The leaf calls the original pinned verification and supervised
+replay APIs. Composition requires actual successful managed records, the real
+guard journal, independently clean process/lock/group/session evidence and all AP
+outputs. It preserves raw records and writes a distinct sidecar. It neither
+repairs a failed replay nor transfers native receipts into a new plan. Keep the
+adapter's verifier commit separate from the execution-tooling commit.
+
+Freeze the verifier checkout HEAD and files from `prepare-leaf` through `compose`;
+even an unrelated documentation commit changes its provenance. Edit elsewhere.
+After actual completion, the owning root runs the original pinned
+`release_compat.py cleanup-ap --attempt AP_EVIDENCE --output NEW_AUDIT` for an
+independent read-only audit, preserving the job's first cleanup report. That root
+also records the exact executor review required by `compose`: scope, job ID,
+execution directory, state/result/audit hashes, exact identity/group/session
+absence and a free executor lock. No current CLI creates that review file; it is
+an explicit evidence-producing owner step, not inferred from exit zero. Follow
+the adapter's current schema, then use core acceptance on the generated sidecar.
+
 Compatibility short-directory deletion uses the common quarantine protocol,
 with boot, owner and inode identity recorded at allocation. Its immutable proof
 files live under compat/socket-*.json. Interrupted compatibility recovery is

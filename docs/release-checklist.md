@@ -9,7 +9,8 @@ reason. Replace placeholders with actual evidence; an unchecked item is not a pa
 - Release / user-visible change:
 - Coordinator / native x86 owner / native ARM owner / fleet peer:
 - Product commit / upstream commit / patch SHA256:
-- Tooling commit / plan digest / host profile digests:
+- Executed tooling commit / coordinator verifier commit / AP adapter revision:
+- Plan digest / host profile digests / coordinator-issued superseding-plan successor:
 - Packager and license-generator supplying commit / child-environment identity:
 - Previous and in-use versions / qualified rollback / proposed retain:
 - Config changes and defaults / exact policy block hash or unchanged:
@@ -17,6 +18,11 @@ reason. Replace placeholders with actual evidence; an unchecked item is not a pa
 - Grant scope (action/release or explicit broader scope) / recovery authorizer:
 - Selected path / pinned recipe entry point / closure / applicable acceptance:
 - New runner qualification status if selected / unresolved launch prerequisites:
+- Actual installed executor, running TUI and active recovery-policy version:
+- Independent native owner's end-to-end assignment / successful-phase successors:
+- Which reviews the native owner performs locally / final coordinator return boundary:
+- Exact escalation conditions and existing recovery/publication authority:
+- Stable readiness on both hosts / volatile baseline-to-launch interval:
 
 ## Acceptance matrix
 
@@ -31,6 +37,9 @@ architectures' evidence on the same host.
 | Packaging child environment, offline license inputs and required early check | | | |
 | Fixture sockets, permissions and package-backed helper setup | | | |
 | Resource/exclusion check and cleanup preflight | | | |
+| Future-phase inputs: canonical previous package, AP dependencies, publication destination | | | |
+| Producer-shaped status/export/import/acceptance success and failure paths | | | |
+| Changed-label inventory: old-literal hits across Rust/terminal/cursor/AP, disposition per hit | | | |
 | Managed proposal review / execution UUID / observation | | | |
 | Frontend, code-mode host and helper | | | |
 | License generation and complete archive | | | |
@@ -52,11 +61,14 @@ architectures' evidence on the same host.
 - Invalidated gates and why / next attempt identity:
 - Old/new tooling diff / retained rehearsal evidence at original identity:
 - One preventive check added before the next expensive run:
+- Notification kind / actual observer-policy authority (not candidate policy):
+- Next authorized action taken, or concrete missing evidence/decision and its owner:
+- Product, fixture/executed-tooling, read-only-verifier or orchestration error:
 
 Repeat this incident row for each problem encountered. Link the correction in the
 owning recipe/reference rather than duplicating its procedure here.
 
-| Problem and evidence | Verified cause or unresolved hypothesis | Corrective change / earliest preventive check | Check result | Time lost | Owner / follow-up |
+| Problem and evidence | Verified cause or unresolved hypothesis | Corrective change / earliest preventive check | Check result | Measured interval and source, or not measured | Owner / follow-up |
 | --- | --- | --- | --- | --- | --- |
 | | | | | | |
 
@@ -86,6 +98,8 @@ settings. Include Cargo compiled/fresh counts for reuse experiments.
 - Current blocker / owner / concrete next action:
 - Exact registered jobs if waiting:
 - Passed work that must not be repeated:
+- Local owner waiting for a necessary dependency versus an avoidable acknowledgement:
+- Unattributed gaps and overlapping intervals excluded from speed claims:
 - Release completion evidence / open follow-up issues:
 - Published / merged / installed / restarted status recorded separately:
 - Next-release improvement and measured benefit, or not yet measured:

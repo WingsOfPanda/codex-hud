@@ -5,38 +5,25 @@ runner. Check its status before preparing or launching an attempt.
 
 ## Qualification status
 
-Status checked 2026-10-23: **under qualification; candidates remain unpublished
-until the complete qualification gate passes**.
-[0.4.7](releases/0.163.0-plus.0.4.7.md) is published; fleet-config reported its
-installation on all four hosts. Its accepted artifacts remain separate from the
-new runner's experiments. There is no qualified generic fallback controller in
-this document; historical acceptance alone does not qualify a new recipe.
+The native workflow completed the published
+[0.4.8 qualification](releases/0.163.0-plus.0.4.8/qualification.json) on both
+architectures: product `05f883c228b18830ed93f691460715525b42a825`, executed
+tooling `59d85b0fe4074ecc6376dc242e06943b3d3f15b4`, and later read-only
+coordinator verifier `65585b488d927d0a86ed26149bb686401f13607b`.
+Native tests, actual package inventories, compatibility/captures, AP replay and
+the five published assets passed. Failure/interruption rehearsals are supporting
+lifecycle evidence at their original identities, not relabeled full builds.
 
-- Success rehearsals and private injected-failure/interruption recovery passed on
-  both architectures. Rehearsals exercised lifecycle and real setup, not full builds.
-- Full x86 proof at tooling `24ed9384a260b8a5254a471e9125d5a00601700c`, execution
-  `5bfcf26a-35fe-41eb-b20f-9dda549cddab`, passed preflight, frontend and helper,
-  then failed license generation because plain `rustc` was absent from its PATH.
-- The coordinator verified cleanup and used supported `job resolve` plus
-  `release_ownership.py recover`. The original workload/cleanup failure remains
-  unchanged; this is not package acceptance or permission to reuse those receipts.
-- Packaging repair and its early check are implemented in tooling change
-  `0e241f70fb7ccb804a9e6e5d4c2bcd730c5f3511`. Root acceptance passed 33 focused
-  tests and a real x86 offline preflight using the preserved 0.4.7 product. This
-  does not qualify the 0.4.8 product or the full runner. Native qualification,
-  compatibility, captures, AP replay and handoff acceptance remain pending.
-- The 0.4.8 candidate at `02ee22b` passed all five x86 native stages and cleanup.
-  Its later compatibility attempt rejected the installed previous package's
-  read-only modes. ARM built and verified its archive, then package fixtures
-  failed on hard links across `/data` and `/tmp`. These are separate retained
-  failures, not a passing release. The corrected fixtures and early reference
-  inventory check require fresh qualification under a new source/tooling plan.
+This establishes the exercised command chain, not a turnkey unattended release
+launcher or a measured end-to-end speedup. A new product or tooling revision still
+needs change-impact review and its required native gates. There is no generic
+cross-attempt receipt/artifact transplantation or automatic failed-stage retry.
 
-Working evidence is under the coordinator's main-checkout
-`.build/release-protocol/`: success in `preparation/v3/`, private failures in
-`private-failures/` and `private-failure-preparation/arm-return/`, and recovery in
-`fullproof-a1-recovery/verification.json`. These are dated local references; publish
-durable acceptance evidence with the workflow once its completion gate passes.
+For the earlier compiler discovery, fixture, recovery and evidence-consumer
+failures, use the [0.4.8 retrospective](releases/0.163.0-plus.0.4.8-retrospective.md).
+Their raw results remain failed. The [release book](release-book.md) assigns one
+continuous native-owner brief through compatibility and export; separate managed
+proposal reviews remain mandatory but do not imply missing user permission.
 
 ### Packaging preflight prerequisite
 
@@ -62,6 +49,32 @@ managed logs `e9885058-4a38-4972-8836-19ea0fd82013` (33 checks) and
 `f09c7c61-452a-4869-bdc2-a00455ed0519` (real preflight). The preflight took about
 seven seconds and left product and patched-upstream file/index seals unchanged;
 it did not compile or qualify a release package.
+
+### Cheap change checks
+
+For every changed user-visible literal, search its old text before freeze and
+record a disposition for each hit (updated assertion, intentional negative test,
+or unrelated use). Include product tests/patches, native Rust assertions, tooling
+footer/HUD/cursor predicates, compatibility recipes and AP classifier tests:
+
+```text
+rg -n -F -- OLD_LITERAL PRODUCT/tests PRODUCT/patches TOOLING/scripts/release_recipes AP_SOURCE/src AP_SOURCE/tests
+```
+
+When verifier/recipe code changed since the last accepted revision, exercise the
+existing producer-shaped corpus: the observed adjacent raw/state timestamp pair,
+failed recovery that stays failed, and audit-only false with sealed prior socket
+removal. From the selected tooling checkout run:
+
+```text
+PYTHON -B -m unittest discover -s tests -p test_release_protocol.py
+PYTHON -B -m unittest discover -s tests -p test_release_ap_coordinator.py
+PYTHON -B -m unittest discover -s tests -p test_release_compat.py
+```
+
+These cover status/export/import, preparation, AP composition/sidecar acceptance
+and negative/tampering cases without rebuilding. When unchanged, record the exact
+accepted verifier/test evidence instead of adding another gate by habit.
 
 ## Ownership and inputs
 
@@ -161,7 +174,7 @@ this review does not override them. Separate the reuse paths:
 | Existing test-only correction | The exact unchanged harness/results under [saved native results](verification.md#saved-native-results) |
 | New runner, new attempt | Cargo's normal verified cache reuse; no copying prior attempt artifacts or stage receipts into acceptance |
 
-The next proof after `5bfcf26a` is a fresh attempt. Its passed frontend/helper
+Historical `5bfcf26a` required a fresh attempt. Its passed frontend/helper
 records remain diagnostic evidence, not transferable acceptance receipts.
 
 ## Failures and recovery
@@ -195,6 +208,24 @@ receipt preserves the failed outcome; it permits forensic evidence retention,
 not successful qualification of a failed build.
 
 ## Publication and timing
+
+Use the core CLI from the selected verifier checkout, with the exact profile
+interpreter/loader. These are separate operations, not one automatic orchestrator:
+
+```text
+PYTHON -B TOOLING/scripts/release_protocol.py export --attempt ATTEMPT --output EVIDENCE
+PYTHON -B TOOLING/scripts/release_protocol.py import --bundle EVIDENCE --sha256 OWNER_DIGEST --output IMPORT
+PYTHON -B TOOLING/scripts/release_protocol.py accept --attempt IMPORT --source-root PRODUCT --archive ARCHIVE --ap-receipt AP_RECEIPT --output ACCEPTED
+PYTHON -B TOOLING/scripts/release_protocol.py handoff --plan PLAN --source-root PRODUCT --accept x86_64=X86_ACCEPTED --accept aarch64=ARM_ACCEPTED --output HANDOFF
+```
+
+The native owner exports only after its assigned gates and cleanup. The
+coordinator waits for the transfer's terminal result, verifies the independently
+received digest, and imports read-only. The actual archive is supplied separately;
+an evidence export alone cannot pass package acceptance. Use
+[compatibility/AP preparation](../scripts/release_recipes/compat/README.md) between
+import and full acceptance. Preserve separate execution-tooling and verifier
+identities when a reviewed read-only correction is needed.
 
 Publication remains a separate authorized operation. The read-only
 `scripts/release_publish.py` checker binds the tag commit, exact GitHub release
