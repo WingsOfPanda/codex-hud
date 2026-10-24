@@ -111,7 +111,18 @@ supplies the host profile and reviewed plan. These commands do not launch a job:
   [Native profile](../release/protocol-v1.md#native-profile-and-initialization).
   The native owner supplies real paths and pins; schema examples are not qualified
   host profiles. There is no universal ready-to-launch profile template.
-- `HOOK` is a JSON command for the pinned
+- A runnable native profile additionally requires `native_build`,
+  `python.fixture_sites`, exact `pyte` and `wcwidth` entries in
+  `python.fixture_imports`, and all eight `release_native.SYSTEM_TOOLS` pins:
+  `/usr/bin/git`, `/usr/bin/strip`, `/usr/bin/readelf`, `/usr/bin/ldd`,
+  `/usr/bin/getconf`, `/usr/bin/tar`, `/bin/sh`, `/usr/bin/pkg-config`.
+  Resolve each executable on that host and use its **canonical absolute path** as
+  the `system_tools` key with its SHA256; aliases such as `/bin/sh` may resolve to
+  another path. Fixture sites must exist and each import entry supplies the actual
+  `origin` and SHA256. These are mandatory for this recipe even where the generic
+  evidence schema permits omission. Verify them before allocating an attempt;
+  `init` probes fixture imports and `prepare` checks the complete tool pins.
+- `HOOK` is a path to a JSON file containing the command for the pinned
   [ownership helper](../scripts/release_ownership.py). Use this shape, replacing
   `PYTHON`, `TOOLING` and `PROFILE_PYTHON_ENV` with the exact absolute interpreter,
   tooling root and environment returned by `release_native.python_env(profile)`:
@@ -126,22 +137,78 @@ supplies the host profile and reviewed plan. These commands do not launch a job:
 }
 ```
 
+Print `PROFILE_PYTHON_ENV` from the selected tooling, using the profile interpreter
+and loader settings (the output is the hook's `env` object):
+
+```sh
+PYTHON -B -c 'import json,sys; sys.path.insert(0,sys.argv[1]+"/scripts"); import release_native as n; print(json.dumps(n.python_env(json.load(open(sys.argv[2]))),sort_keys=True))' TOOLING PROFILE
+```
+
 `{attempt}` and `{report}` are literal runner substitutions. This is data selecting
 the existing helper, not a generated cleanup script. Preparation validates and
 freezes the hook, captures the baseline, and derives final `cleanup` from `audit`.
 Use the profile's exact Python and loader environment for the commands below;
 `python3` is shorthand for that pinned interpreter, not an unverified PATH choice.
 
+### Before allocating an attempt
+
+Compose provisional JSON with all plan-bound inputs, then run these checks before
+the combined freeze. Use `release_protocol.digest(value)` for canonical JSON pins;
+plain file SHA256 is different. A profile mismatch reports the computed digest;
+update the reviewed provisional plan, not a sealed attempt.
+
+| Inputs | Owner and source of the values |
+| --- | --- |
+| Release, product/upstream commits and patch | Coordinator; actual bumped Cargo manifest/lock, product packager constants and patch bytes; `plan-check` validates them |
+| Tooling commit and both target/profile digests | Coordinator plus native owners; clean dedicated checkouts and observed host profiles, hashed with the core's canonical digest |
+| Previous tag/handoff/archive/manifest/tree and source commit | Published previous handoff plus complete canonical extracted inventory on each host; installed packages may have different modes |
+| `compat.fixture_files`, recipe and gate lists | Selected product fixture bytes and selected tooling's `RECOVERY_FIXTURES`/`GATES`; include all four required recovery fixtures |
+| Native suite names/counts/ignore reasons | Current test discovery and changed-test inventory; later actual binary list/log reconciliation is still required |
+| Official binary pins and child environment | Each native owner; actual native official binary, Python/imports, compiler and system tools, including production libcap discovery |
+| AP version/source/plugin/bundle, Node/dependencies | AP replay owner; released installed bundle/registry and matching source/dependency checkout on the replay host |
+| Rollout/policy/retention/restart fields | Coordinator and fleet-config; actual in-use matrix and reviewed policy, preserving separate action grants |
+
+On **each native host**, from its pinned tooling checkout:
+
+```text
+PYTHON -B TOOLING/scripts/release_protocol.py plan-check --plan PLAN --source-root PRODUCT
+PYTHON -B TOOLING/scripts/release_compat.py precheck --plan PLAN --profile PROFILE --old-package CANONICAL_PREVIOUS --cleanup-hook HOOK
+```
+
+On the **AP replay host**, with its own profile/interpreter:
+
+```text
+AP_PYTHON -B TOOLING/scripts/release_compat.py precheck-ap --plan PLAN --profile AP_PROFILE
+```
+
+These commands report readiness to stdout. Save their JSON outside frozen
+checkouts. They share the production validators and do not allocate an attempt,
+socket or managed record; disposable Git scratch indexes are removed. The native
+check probes production libcap even without a private override, validates the
+canonical previous package and fixture closure, and verifies the exact cleanup
+hook. AP readiness is separate: an ARM host does not need the central AP paths.
+Neither result is a qualification receipt. Read `scope` and `not_checked`: notice
+generation, new-binary counts/runtime, captures/AP replay, future cleanup and
+publication/rollout still need their actual gates. These checks do not prove cache
+completeness or replace the packaging preflight after patch application.
+
+### Initialize and prepare the reviewed run
+
+After both native readiness checks and AP readiness pass, freeze the combined
+plan and prepare near launch. Production commands omit `--rehearsal`:
+
 ```sh
-python3 -B scripts/release_native.py init --plan PLAN --profile PROFILE --rehearsal
+python3 -B scripts/release_native.py init --plan PLAN --profile PROFILE
 python3 -B scripts/release_native.py prepare --attempt ATTEMPT --cleanup-hook HOOK
 ```
 
 The returned attempt contains a normal managed job proposal. Review it and use
 the installed `codex-plus job prepare/launch` workflow. The generated command
-uses the existing executor and owned-child supervisor. Rehearsals run inexpensive
+uses the existing executor and owned-child supervisor. An explicitly selected
+lifecycle rehearsal adds `--rehearsal` to `init`. Rehearsals run inexpensive
 stage bodies, retain their real execution/cleanup records, and cannot qualify a
-shipping handoff. Remove `--rehearsal` only for a reviewed native proof run.
+shipping handoff. They are not a substitute for readiness: rehearsal preparation
+can skip system libcap discovery when no private override is supplied.
 
 The fixed build order is preflight, frontend, helper, package qualification, then
 native tests. Compatibility and cursor capture run after package approval under
@@ -233,6 +300,10 @@ ID, five uploaded assets and downloaded handoff bytes. A draft missing from a
 list is not evidence that creation failed: resolve the existing tag/node to its
 database ID before proceeding. Never create a duplicate release to resolve a
 listing delay.
+
+Use the [publication command sequence and input schemas](release-publication.md)
+to collect the exact API records, verify the draft and then the public release.
+The checker does not create/upload/publish or fetch those records itself.
 
 Use [phase timing and measurement limits](release-performance.md#measurement-limits)
 to distinguish execution, transfer and waits. Change concurrency or cache reuse

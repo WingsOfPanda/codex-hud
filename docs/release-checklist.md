@@ -23,6 +23,8 @@ reason. Replace placeholders with actual evidence; an unchecked item is not a pa
 - Which reviews the native owner performs locally / final coordinator return boundary:
 - Exact escalation conditions and existing recovery/publication authority:
 - Stable readiness on both hosts / volatile baseline-to-launch interval:
+- Native `precheck` results on both hosts / AP `precheck-ap` result and remaining gates:
+- Dedicated frozen checkout lifetime / separate mutable evidence directory:
 
 ## Acceptance matrix
 
@@ -38,6 +40,7 @@ architectures' evidence on the same host.
 | Fixture sockets, permissions and package-backed helper setup | | | |
 | Resource/exclusion check and cleanup preflight | | | |
 | Future-phase inputs: canonical previous package, AP dependencies, publication destination | | | |
+| Allocation-free native/AP readiness scopes and explicitly unchecked gates | | | |
 | Producer-shaped status/export/import/acceptance success and failure paths | | | |
 | Changed-label inventory: old-literal hits across Rust/terminal/cursor/AP, disposition per hit | | | |
 | Managed proposal review / execution UUID / observation | | | |
@@ -103,3 +106,7 @@ settings. Include Cargo compiled/fresh counts for reuse experiments.
 - Release completion evidence / open follow-up issues:
 - Published / merged / installed / restarted status recorded separately:
 - Next-release improvement and measured benefit, or not yet measured:
+- Smooth-path measurement: first production attempt reaches export/accept on each
+  architecture; no avoidable plan refreeze after init or coordinator acknowledgement
+  between native launch and export; compatibility/AP preparation and acceptance pass
+  first time. Record deviations and causes, never waive a real failure to meet this target.

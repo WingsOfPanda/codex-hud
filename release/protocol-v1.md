@@ -71,6 +71,9 @@ Optional `python.fixture_sites` lists absolute import directories, and
 `python.fixture_imports` maps module names to exact `{origin, sha256}` pins.
 Native preparation verifies actual imported origins and freezes the complete
 dependency inventory separately; a site is not a generic executable trust root.
+These fields are optional in this generic evidence schema, not in every recipe.
+The current native recipe requires the tool and fixture subset listed in
+[local preparation](../docs/release-protocol.md#local-preparation).
 A full AP replay profile uses a clean AP checkout as `source_root` and adds
 `ap_replay: {node, node_modules, installed_bundle, installed_registry}`. Node has
 an exact `system_tools` pin. The AP owner verifies repository and dependency

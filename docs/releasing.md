@@ -9,8 +9,10 @@ pinned upstream package builder and includes every core runtime executable;
 copying `.build/codex` alone is not a complete release.
 
 The [repeatable native workflow](release-protocol.md) separates product source,
-checked-in tooling, native ownership and evidence acceptance. It remains under
-composed qualification; its unit tests do not replace the native gates below.
+checked-in tooling, native ownership and evidence acceptance. Its
+[qualification status](release-protocol.md#qualification-status) records the
+completed 0.4.8 path and remaining limits; unit tests do not replace the native
+gates for a new candidate.
 
 ## Release identity
 
