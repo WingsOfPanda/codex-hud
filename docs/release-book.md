@@ -328,6 +328,21 @@ owning recipe or linked guidance with the verified cause and earliest preventive
 check. Keep unresolved hypotheses labeled as such; record lessons before closing
 the release, without changing already published artifacts.
 
+## Traps recorded by release pilots
+
+The 2026-10-24 0.4.9 pilot passed both native workloads on their first attempts,
+but exposed operator traps. See its [pilot record](releases/0.163.0-plus.0.4.9/pilot-notes.md).
+
+| Trap | Earliest preventive check |
+| --- | --- |
+| An ownership audit output outside its attempt is refused before auditing. | Keep manual audit output under `ATTEMPT/outputs`; inspect the selected CLI before launch. |
+| Compatibility completion audit was invoked before `run` created its baseline, reporting pre-existing protected processes. | Use `verify-attempt` before launch; run the completion audit only at its documented lifecycle. |
+| Private review confused the manifest envelope with its nested spec, and a boolean with a test count. | Inspect current output schemas and prepare acceptance commands before compilation; read counts from dedicated test records. |
+| A separate checklist was only materialized at qualification close. | Copy the checklist before step 1 and update it alongside the execution journal. |
+
+No older recovery or rollback guidance was removed: this pilot did not establish
+that it is obsolete for every retained version or resumed attempt.
+
 ## Recovery
 
 First identify the actual installed executor, active instructions and exact watch.
