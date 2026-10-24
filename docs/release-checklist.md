@@ -27,6 +27,8 @@ reason. Replace placeholders with actual evidence; an unchecked item is not a pa
 - Stable readiness on both hosts / volatile baseline-to-launch interval:
 - Native `precheck` results on both hosts / AP `precheck-ap` result and remaining gates:
 - Dedicated frozen checkout lifetime / separate mutable evidence directory:
+- Completion/acceptance and next-proposal review commands prepared before launch,
+  using inspected checked-in interfaces/schemas ([procedure](release-protocol.md#initialize-and-prepare-the-reviewed-run)):
 
 ## Acceptance matrix
 
@@ -93,6 +95,8 @@ owning recipe/reference rather than duplicating its procedure here.
 
 Record actual start/end and wall duration per phase. Separate compilation,
 test-harness construction, test execution, transfer, recovery and approval wait;
+account for owner review, command preparation and operator corrections separately
+from user approval wait in completion-to-next-launch intervals;
 mark concurrent phases. Record cold/warm/helper-only conditions and CPU/thread
 settings. Include Cargo compiled/fresh counts for reuse experiments.
 
