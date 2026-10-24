@@ -8,6 +8,8 @@ reason. Replace placeholders with actual evidence; an unchecked item is not a pa
 
 - Release / user-visible change:
 - Coordinator / native x86 owner / native ARM owner / fleet peer:
+- New-release sync: each owner's normal checkout / local and remote main SHAs /
+  clean status / release-book revision (resume keeps existing frozen pins):
 - Product commit / upstream commit / patch SHA256:
 - Executed tooling commit / coordinator verifier commit / AP adapter revision:
 - Plan digest / host profile digests / coordinator-issued superseding-plan successor:
