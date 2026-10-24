@@ -51,8 +51,9 @@ when changing this workflow; it separates observed failures from proposed fixes.
 
 ## Before a new release: sync normal checkouts
 
-Each participating host's owner updates its ordinary `main` checkout before step 1.
-This is a prerequisite of new release preparation, not a timer or background sync.
+Run this sync only on an explicit sync request or as part of authorized new release
+preparation. Each participating host's owner updates its ordinary `main` checkout
+before step 1. This is not a timer or background sync.
 For a status question, compare HEAD with remote `main` read-only and report any lag.
 For a resume, preserve the existing plan's source/tooling pins and reconcile its
 jobs first; a newer book does not refreeze an active release.
@@ -88,6 +89,7 @@ When remote access fails, continue local reads/preparation but mark sync unverif
 **Exit check:** each owner records the normal checkout path, matching full local
 and remote commits, clean status and the release-book revision read. The coordinator
 then names the exact product/tooling revisions for dedicated release worktrees.
+Those frozen revisions are selected independently and need not equal synced `main`.
 Unmerged improvements are not supplied by syncing `main`: merge them through their
 reviewed PR first, or explicitly select and transfer their reviewed commit as
 tooling. Both owners must acknowledge the same selected book/tooling revision.
