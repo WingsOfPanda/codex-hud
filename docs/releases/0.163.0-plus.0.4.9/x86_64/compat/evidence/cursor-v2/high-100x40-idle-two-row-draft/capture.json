@@ -1,0 +1,46 @@
+{
+  "name": "high-100x40-idle-two-row-draft",
+  "at": "2026-10-24T05:25:08.247565+00:00",
+  "expected": "unknown",
+  "cursor_y": 30,
+  "cursor_x": 21,
+  "pane_height": 40,
+  "cursor_flag": 1,
+  "pane_width": 100,
+  "composer_row": 29,
+  "checks": {
+    "coherent_cursor_dimensions": true,
+    "expected_busy_marker": true,
+    "expected_idle_has_no_busy_marker": true,
+    "positive_idle_cursor": true,
+    "ultra_prompt": true,
+    "no_status_or_HUD_prompt_at_or_above_cursor": true
+  },
+  "impostor_rows": [],
+  "cursor_within_visible_grid": true,
+  "capture_argv": [
+    "/usr/bin/tmux",
+    "-S",
+    "/tmp/cn/f-9wlm711c/t.sock",
+    "-f",
+    "/dev/null",
+    "capture-pane",
+    "-p",
+    "-t",
+    "%0"
+  ],
+  "look_argv": [
+    "/usr/bin/tmux",
+    "-S",
+    "/tmp/cn/f-9wlm711c/t.sock",
+    "-f",
+    "/dev/null",
+    "display-message",
+    "-p",
+    "-t",
+    "%0",
+    "#{cursor_y} #{cursor_x} #{pane_height} #{pane_width} #{cursor_flag}"
+  ],
+  "screen_sha256": "9ba78ffacb685cf499a7a379ea39016144a05bfc7a68d5862be3e550e0f09931",
+  "look_sha256": "6f04d3bc3cc430d776065a8d50a05af2ecc9c79d9b54ab4726bcc67e6a7cf5ac"
+}

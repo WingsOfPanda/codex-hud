@@ -147,6 +147,9 @@ PYTHON -B -c 'import json,sys; sys.path.insert(0,sys.argv[1]+"/scripts"); import
 `{attempt}` and `{report}` are literal runner substitutions. This is data selecting
 the existing helper, not a generated cleanup script. Preparation validates and
 freezes the hook, captures the baseline, and derives final `cleanup` from `audit`.
+For a manual `release_ownership.py audit`, keep `--output` inside `ATTEMPT`,
+for example `ATTEMPT/outputs/prelaunch-audit.json`. An external output path is
+refused before auditing; preserve that failure and correct the path.
 Use the profile's exact Python and loader environment for the commands below;
 `python3` is shorthand for that pinned interpreter, not an unverified PATH choice.
 
@@ -193,6 +196,13 @@ publication/rollout still need their actual gates. These checks do not prove cac
 completeness or replace the packaging preflight after patch application.
 
 ### Initialize and prepare the reviewed run
+
+Before the expensive launch, prepare the commands for completion review, local
+package approval, compatibility proposal review and final acceptance. Use the
+selected checked-in interfaces and inspect their current input/output schemas;
+leave only values produced by the run to fill in after completion. Record these
+commands with the owner brief so mechanical preparation does not delay the next
+authorized phase. This adds no new gate or automation.
 
 After both native readiness checks and AP readiness pass, freeze the combined
 plan and prepare near launch. Production commands omit `--rehearsal`:

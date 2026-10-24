@@ -1,0 +1,1742 @@
+[
+  {
+    "id": "initialize",
+    "method": "initialize",
+    "params": {
+      "clientInfo": {
+        "name": "codex-tui",
+        "title": null,
+        "version": "0.163.0"
+      },
+      "capabilities": {
+        "experimentalApi": true,
+        "requestAttestation": false,
+        "optOutNotificationMethods": null
+      }
+    }
+  },
+  {
+    "method": "initialized"
+  },
+  {
+    "id": "initialize",
+    "method": "initialize",
+    "params": {
+      "clientInfo": {
+        "name": "codex-tui",
+        "title": null,
+        "version": "0.163.0"
+      },
+      "capabilities": {
+        "experimentalApi": true,
+        "requestAttestation": false,
+        "optOutNotificationMethods": null
+      }
+    }
+  },
+  {
+    "method": "initialized"
+  },
+  {
+    "id": 1,
+    "method": "account/read",
+    "params": {}
+  },
+  {
+    "id": "tui-project-trust-read-6989dae7-479a-4fd5-8dd5-b9df4b6031b9",
+    "method": "config/read",
+    "params": {
+      "includeLayers": true,
+      "cwd": "/tmp/vz/f-739xmok8/w"
+    }
+  },
+  {
+    "id": "hooks-list-5abad881-2a5a-4943-b32c-1ff42841c0f5",
+    "method": "hooks/list",
+    "params": {
+      "cwds": [
+        "/tmp/vz/f-739xmok8/w"
+      ]
+    }
+  },
+  {
+    "id": "1d93c4af-10a0-4e3c-bfe3-22edafadfd6c",
+    "method": "account/bedrock/checkGovCloudRequirements",
+    "params": {}
+  },
+  {
+    "id": "tui-config-read-5ed6609f-bb36-47af-a29d-efd570893c8a",
+    "method": "config/read",
+    "params": {
+      "includeLayers": true,
+      "cwd": "/tmp/vz/f-739xmok8/w"
+    }
+  },
+  {
+    "id": 2,
+    "method": "account/read",
+    "params": {}
+  },
+  {
+    "id": 3,
+    "method": "model/list",
+    "params": {
+      "cursor": null,
+      "limit": null,
+      "includeHidden": true
+    }
+  },
+  {
+    "id": 4,
+    "method": "configRequirements/read"
+  },
+  {
+    "id": "collaboration-mode-list-144bc5a3-edc1-4eed-8dba-2fba1e5cf820",
+    "method": "collaborationMode/list",
+    "params": {}
+  },
+  {
+    "id": "tui-daybreak-forwarding",
+    "method": "config/read",
+    "params": {
+      "cwd": "/tmp/vz/f-739xmok8/w"
+    }
+  },
+  {
+    "id": "d317e916-6d8f-4cc2-9af4-5e6178a394b6",
+    "method": "thread/attachment/list",
+    "params": {
+      "threadId": "c1d913d5-4dbe-4e61-980e-4f49d3c7c82d",
+      "cursor": null,
+      "limit": 1
+    }
+  },
+  {
+    "id": "startup-thread-start-2153e855-37f1-406e-9b00-81157bdf5b7c",
+    "method": "thread/start",
+    "params": {
+      "model": null,
+      "modelProvider": null,
+      "cwd": "/tmp/vz/f-739xmok8/w",
+      "runtimeWorkspaceRoots": [
+        "/tmp/vz/f-739xmok8/w"
+      ],
+      "approvalPolicy": "never",
+      "approvalsReviewer": "user",
+      "sandbox": "danger-full-access",
+      "permissions": null,
+      "config": {
+        "mcp_servers.codex_tui": {
+          "url": "http://127.0.0.1:40935/mcp",
+          "http_headers": {
+            "Authorization": "Bearer ffde0c81-60ed-425a-9a82-7e3e7110bb95"
+          },
+          "default_tools_approval_mode": "approve",
+          "tools": {
+            "create_thread": {
+              "approval_mode": "prompt"
+            },
+            "send_message_to_thread": {
+              "approval_mode": "prompt"
+            },
+            "fork_thread": {
+              "approval_mode": "prompt"
+            },
+            "create_worktree": {
+              "approval_mode": "approve"
+            }
+          }
+        },
+        "features": {
+          "goals": false
+        }
+      },
+      "serviceName": null,
+      "baseInstructions": null,
+      "developerInstructions": "\n\nCodex Plus owns /goal. Native goal tools do not control Plus goals. At the start of each turn, inspect `codex-plus goal status --thread $CODEX_THREAD_ID --json` when a Plus goal exists. Follow its instructions for exact goal ID, revision, input epoch and admitted turn. Before ending a goal turn, stage an explicit checkpoint using `codex-plus goal checkpoint`: continue with next action and evidence references, wait on exact registered jobs, request input, or complete with verification evidence. Read the status instructions for the JSON schema and current binding. Ordinary user input has priority; a goal does not expand permissions. Paused, changed, uncertain or stale goal bindings never authorize continuation. Preserve these instructions through compaction.\n\nCodex Plus Ultracode is a root-session workflow setting, independent of reasoning effort. At the start of every root turn and after compaction, read `codex-plus ultracode status --thread $CODEX_THREAD_ID --json`. Use only the effective snapshot bound to this exact admitted turn and daemon generation; requested or pending state does not activate the mode. When effective on, follow the complete policy returned by status. When off or unavailable, follow ordinary user and repository instructions. Native children follow their parent's bounded brief instead of calling this command. Mode changes apply to future unadmitted turns; steering keeps the current turn's snapshot. Existing goal checkpoints, report-only recovery and newer user direction retain priority. Ultracode never expands permission to publish, merge, install or change shared configuration.\n",
+      "personality": null,
+      "multiAgentMode": null,
+      "ephemeral": false,
+      "historyMode": "paginated",
+      "sessionStartSource": null,
+      "threadSource": "user",
+      "projectId": null,
+      "daybreakEnabled": null,
+      "environments": null,
+      "dynamicTools": null,
+      "selectedCapabilityRoots": null,
+      "mockExperimentalField": null
+    }
+  },
+  {
+    "id": "4070758e-e964-4ab7-85ed-826862396a09",
+    "method": "thread/list",
+    "params": {
+      "cursor": null,
+      "limit": 100,
+      "excludedThreadIds": null,
+      "sortKey": "section_position",
+      "sortDirection": null,
+      "modelProviders": [],
+      "sourceKinds": [],
+      "originators": null,
+      "archived": false,
+      "sectionId": "01984de2-8f74-7c91-a3b2-5c5e937cf318",
+      "cwd": null,
+      "useStateDbOnly": true,
+      "searchTerm": null,
+      "parentThreadId": null,
+      "ancestorThreadId": null
+    }
+  },
+  {
+    "id": "c20766e3-d031-4e3b-b35b-ebe5f0924c98",
+    "method": "thread/list",
+    "params": {
+      "cursor": null,
+      "limit": 100,
+      "excludedThreadIds": null,
+      "sortKey": "section_position",
+      "sortDirection": null,
+      "modelProviders": [],
+      "sourceKinds": [
+        "exec",
+        "appServer"
+      ],
+      "originators": null,
+      "archived": false,
+      "sectionId": "01984de2-8f74-7c91-a3b2-5c5e937cf318",
+      "cwd": null,
+      "useStateDbOnly": true,
+      "searchTerm": null,
+      "parentThreadId": null,
+      "ancestorThreadId": null
+    }
+  },
+  {
+    "id": "38f1f769-fdd3-4d3c-b401-ae4f6ce15637",
+    "method": "thread/loaded/list",
+    "params": {
+      "cursor": null,
+      "limit": null
+    }
+  },
+  {
+    "id": "9c6126c4-8398-4e8e-ba62-38e6ac272615",
+    "method": "thread/list",
+    "params": {
+      "cursor": null,
+      "limit": 10,
+      "excludedThreadIds": null,
+      "sortKey": "recency_at",
+      "sortDirection": null,
+      "modelProviders": [],
+      "sourceKinds": [],
+      "originators": null,
+      "archived": false,
+      "cwd": null,
+      "useStateDbOnly": true,
+      "searchTerm": null,
+      "parentThreadId": null,
+      "ancestorThreadId": null
+    }
+  },
+  {
+    "id": "47d1b862-0622-496d-ae52-3b4a85e76379",
+    "method": "thread/list",
+    "params": {
+      "cursor": null,
+      "limit": 10,
+      "excludedThreadIds": null,
+      "sortKey": "recency_at",
+      "sortDirection": null,
+      "modelProviders": [],
+      "sourceKinds": [
+        "exec",
+        "appServer"
+      ],
+      "originators": null,
+      "archived": false,
+      "cwd": null,
+      "useStateDbOnly": true,
+      "searchTerm": null,
+      "parentThreadId": null,
+      "ancestorThreadId": null
+    }
+  },
+  {
+    "id": "startup-skills-list-bc99a682-7ec4-45f0-936b-e1e568254f6a",
+    "method": "skills/list",
+    "params": {
+      "cwds": [
+        "/tmp/vz/f-739xmok8/w"
+      ],
+      "forceReload": true
+    }
+  },
+  {
+    "id": 5,
+    "method": "skills/list",
+    "params": {
+      "cwds": [
+        "/tmp/vz/f-739xmok8/w"
+      ],
+      "forceReload": true
+    }
+  },
+  {
+    "id": "336ee4ef-837e-44cb-aa2e-d8dfe69a6222",
+    "method": "thread/backgroundTerminals/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000009",
+      "cursor": null,
+      "limit": 100
+    }
+  },
+  {
+    "id": "85480bff-6fb4-4581-9cd5-db7749b03f11",
+    "method": "thread/list",
+    "params": {
+      "cursor": null,
+      "limit": 100,
+      "excludedThreadIds": null,
+      "sortKey": null,
+      "sortDirection": "asc",
+      "modelProviders": [],
+      "sourceKinds": [
+        "subAgentThreadSpawn"
+      ],
+      "originators": null,
+      "archived": false,
+      "cwd": null,
+      "useStateDbOnly": true,
+      "searchTerm": null,
+      "parentThreadId": "00000000-0000-0000-0000-000000000009",
+      "ancestorThreadId": null
+    }
+  },
+  {
+    "id": "1c790425-ae11-4e5b-8b59-2a699ad7d922",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000002",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "8ef14537-490e-4f73-9ce3-726c4d6589c9",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000003",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "6c84fc0a-399c-4aa6-8605-12329756b077",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000004",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "4c806525-256a-4c88-9e7a-f35d7c05e9c1",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000005",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "a6833d86-3e79-4da2-9a3b-2f80734e33f8",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000006",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "533dea34-b507-45d0-8413-40973710c81d",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000007",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "68b4fecb-d7cc-407e-b09f-9fc34bbc0281",
+    "method": "thread/backgroundTerminals/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000009",
+      "cursor": null,
+      "limit": 100
+    }
+  },
+  {
+    "id": "4ad33c5b-7527-45fd-ab80-2c6e41bbcafc",
+    "method": "thread/list",
+    "params": {
+      "cursor": null,
+      "limit": 100,
+      "excludedThreadIds": null,
+      "sortKey": null,
+      "sortDirection": "asc",
+      "modelProviders": [],
+      "sourceKinds": [
+        "subAgentThreadSpawn"
+      ],
+      "originators": null,
+      "archived": false,
+      "cwd": null,
+      "useStateDbOnly": true,
+      "searchTerm": null,
+      "parentThreadId": "00000000-0000-0000-0000-000000000009",
+      "ancestorThreadId": null
+    }
+  },
+  {
+    "id": "c75c6b32-d18d-4115-8457-7759ca4ebf96",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000002",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "f4a8d89d-a9dd-46bc-b266-e8e6463dc5a1",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000003",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "1467efb0-c84a-4d9a-b622-e4e81dc61bb5",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000004",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "1f7f6395-97c3-44f7-bd1a-d805dff7bae5",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000005",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "c7345c01-15ac-4035-8d77-f974db3f3685",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000006",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "6f7d6073-2b18-4e60-b71d-c55a7ef873b9",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000007",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "2a3d32d2-74f0-430e-bcc0-a8ed2b2503c9",
+    "method": "thread/backgroundTerminals/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000009",
+      "cursor": null,
+      "limit": 100
+    }
+  },
+  {
+    "id": "0a9375ed-2349-4928-905d-01b857d3e8d6",
+    "method": "thread/list",
+    "params": {
+      "cursor": null,
+      "limit": 100,
+      "excludedThreadIds": null,
+      "sortKey": null,
+      "sortDirection": "asc",
+      "modelProviders": [],
+      "sourceKinds": [
+        "subAgentThreadSpawn"
+      ],
+      "originators": null,
+      "archived": false,
+      "cwd": null,
+      "useStateDbOnly": true,
+      "searchTerm": null,
+      "parentThreadId": "00000000-0000-0000-0000-000000000009",
+      "ancestorThreadId": null
+    }
+  },
+  {
+    "id": "22262fff-a78b-44ad-8a26-26902b5d12cb",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000002",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "9f11bcde-4d39-4c66-9ad1-2b2dd1cf56a6",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000003",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "c176d4e9-b4f6-4ee0-844c-11c25cdf9604",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000004",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "a73f1e48-a2a5-4f9e-a813-1e904ea9a173",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000005",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "47516ee2-b8e1-47dc-81a9-4a4646afdf93",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000006",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "1a37edfd-67f4-4687-b429-06f1b5aa17ad",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000007",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "d6343baa-02e2-42df-97b8-a4a0194fc662",
+    "method": "thread/backgroundTerminals/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000009",
+      "cursor": null,
+      "limit": 100
+    }
+  },
+  {
+    "id": "9b6ec61e-773c-403e-ac61-2296da07de3c",
+    "method": "thread/list",
+    "params": {
+      "cursor": null,
+      "limit": 100,
+      "excludedThreadIds": null,
+      "sortKey": null,
+      "sortDirection": "asc",
+      "modelProviders": [],
+      "sourceKinds": [
+        "subAgentThreadSpawn"
+      ],
+      "originators": null,
+      "archived": false,
+      "cwd": null,
+      "useStateDbOnly": true,
+      "searchTerm": null,
+      "parentThreadId": "00000000-0000-0000-0000-000000000009",
+      "ancestorThreadId": null
+    }
+  },
+  {
+    "id": "d489210e-1166-4efc-83ca-605f0cf3b0a8",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000002",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "573bc292-c9ee-4735-b517-c4a0a6843fd7",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000003",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "d4b1715e-6633-47be-bc9f-08844a64c08d",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000004",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "b35808bf-a652-483b-86e6-66be07397463",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000005",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "d03f303d-e0cb-4a26-b617-085802ab52ab",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000006",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "4b2b1f90-bba7-4b9f-bca9-3d3e7e6f385e",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000007",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "c930db88-6a25-4acd-975c-7aa682744920",
+    "method": "thread/backgroundTerminals/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000009",
+      "cursor": null,
+      "limit": 100
+    }
+  },
+  {
+    "id": "0a5ed74b-fb60-4134-a946-c3c37b00f008",
+    "method": "thread/list",
+    "params": {
+      "cursor": null,
+      "limit": 100,
+      "excludedThreadIds": null,
+      "sortKey": null,
+      "sortDirection": "asc",
+      "modelProviders": [],
+      "sourceKinds": [
+        "subAgentThreadSpawn"
+      ],
+      "originators": null,
+      "archived": false,
+      "cwd": null,
+      "useStateDbOnly": true,
+      "searchTerm": null,
+      "parentThreadId": "00000000-0000-0000-0000-000000000009",
+      "ancestorThreadId": null
+    }
+  },
+  {
+    "id": "56b312fa-ff70-4492-af5b-cbbe76ca2050",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000002",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "b95b9f7b-4c28-4c56-a8da-eaee44456629",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000003",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "6de62328-659a-4fd5-981d-e8180a08126f",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000004",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "25da0669-6bb5-41d0-819a-554d2f4eeec9",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000005",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "89862221-3ce4-4660-a831-e300f4ba4804",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000006",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "ed56796d-94d8-4d17-89a9-f381a50da4fa",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000007",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "36b69254-9f05-4ce5-8916-78fc895b2836",
+    "method": "thread/backgroundTerminals/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000009",
+      "cursor": null,
+      "limit": 100
+    }
+  },
+  {
+    "id": "315d358c-df40-48e7-8d06-ab416c66896a",
+    "method": "thread/list",
+    "params": {
+      "cursor": null,
+      "limit": 100,
+      "excludedThreadIds": null,
+      "sortKey": null,
+      "sortDirection": "asc",
+      "modelProviders": [],
+      "sourceKinds": [
+        "subAgentThreadSpawn"
+      ],
+      "originators": null,
+      "archived": false,
+      "cwd": null,
+      "useStateDbOnly": true,
+      "searchTerm": null,
+      "parentThreadId": "00000000-0000-0000-0000-000000000009",
+      "ancestorThreadId": null
+    }
+  },
+  {
+    "id": "5da1700c-5ea0-4e5e-9792-ccd02ead8800",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000002",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "c075fd01-a284-437f-9746-b24582dd1a52",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000003",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "8411e325-836b-4e6f-b732-d2b5f942dc97",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000004",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "a081fbbc-0e80-4b3e-b0a8-817db15d9ee2",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000005",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "6bfae106-a197-4ba4-8b4f-5fcd749e1489",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000006",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "00286a70-8434-4676-823a-f9f8a4216614",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000007",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "e517ae74-65d7-4658-a1ef-e644ba8c8b4e",
+    "method": "thread/backgroundTerminals/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000009",
+      "cursor": null,
+      "limit": 100
+    }
+  },
+  {
+    "id": "b0c07ae7-fda9-4575-bb10-f8dda7d18d66",
+    "method": "thread/list",
+    "params": {
+      "cursor": null,
+      "limit": 100,
+      "excludedThreadIds": null,
+      "sortKey": null,
+      "sortDirection": "asc",
+      "modelProviders": [],
+      "sourceKinds": [
+        "subAgentThreadSpawn"
+      ],
+      "originators": null,
+      "archived": false,
+      "cwd": null,
+      "useStateDbOnly": true,
+      "searchTerm": null,
+      "parentThreadId": "00000000-0000-0000-0000-000000000009",
+      "ancestorThreadId": null
+    }
+  },
+  {
+    "id": "89e279ca-dc16-4d75-a117-5fb475595737",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000002",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "7ddfc494-e07e-457e-ace6-dbfdb521962a",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000003",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "75198b69-b2de-4782-983e-cba3386d1927",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000004",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "32eac1eb-e357-4576-88b3-d4a10e381df1",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000005",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "70d26f54-e3a3-498b-9be4-06a06e80eccd",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000006",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "657dea9b-316f-4653-93eb-a2d7fd808048",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000007",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "44875ff5-33bc-4abb-ae06-1a63f6af1739",
+    "method": "thread/backgroundTerminals/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000009",
+      "cursor": null,
+      "limit": 100
+    }
+  },
+  {
+    "id": "a8d08411-25df-45d0-b0f2-328058bc89be",
+    "method": "thread/list",
+    "params": {
+      "cursor": null,
+      "limit": 100,
+      "excludedThreadIds": null,
+      "sortKey": null,
+      "sortDirection": "asc",
+      "modelProviders": [],
+      "sourceKinds": [
+        "subAgentThreadSpawn"
+      ],
+      "originators": null,
+      "archived": false,
+      "cwd": null,
+      "useStateDbOnly": true,
+      "searchTerm": null,
+      "parentThreadId": "00000000-0000-0000-0000-000000000009",
+      "ancestorThreadId": null
+    }
+  },
+  {
+    "id": "7225cf7a-01e2-496e-84d1-b3643e16e7ec",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000002",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "03e768fa-816e-418c-ba4d-6dc6aaca87a9",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000003",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "f4cdc317-0194-4a0e-94d7-cbd37aac7448",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000004",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "8ad24b99-3bf7-4960-b1f8-893dc0e41174",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000005",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "16c78a3b-8924-46f7-868b-0512a64d1766",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000006",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "34e75cc4-8a62-4159-8908-4c3812a4f7dc",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000007",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "0778924c-c844-4ea0-bbb4-1988dcb8154a",
+    "method": "thread/backgroundTerminals/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000009",
+      "cursor": null,
+      "limit": 100
+    }
+  },
+  {
+    "id": "29681d2a-050c-4c64-b98a-a8b7cfa9e1ae",
+    "method": "thread/list",
+    "params": {
+      "cursor": null,
+      "limit": 100,
+      "excludedThreadIds": null,
+      "sortKey": null,
+      "sortDirection": "asc",
+      "modelProviders": [],
+      "sourceKinds": [
+        "subAgentThreadSpawn"
+      ],
+      "originators": null,
+      "archived": false,
+      "cwd": null,
+      "useStateDbOnly": true,
+      "searchTerm": null,
+      "parentThreadId": "00000000-0000-0000-0000-000000000009",
+      "ancestorThreadId": null
+    }
+  },
+  {
+    "id": "218972d2-e851-4e9c-b5b2-cea26bdc6ff5",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000002",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "1f8add7e-4571-43ae-add8-4626dcda8bf3",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000003",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "461b39f7-7622-4b64-bc7d-b69ba11a3ae9",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000004",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "5defe020-4cb5-42f0-be53-09f053d39f8b",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000005",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "f98e815b-73b2-4435-954c-cdd646a9507e",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000006",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "ac8ca9b8-dfb6-4d2d-a41f-b96cb608a7ad",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000007",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "8dc22162-729a-434d-9242-5b171db37fb4",
+    "method": "thread/backgroundTerminals/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000009",
+      "cursor": null,
+      "limit": 100
+    }
+  },
+  {
+    "id": "212a3dcd-65a4-4c8d-8a60-af779309c34b",
+    "method": "thread/list",
+    "params": {
+      "cursor": null,
+      "limit": 100,
+      "excludedThreadIds": null,
+      "sortKey": null,
+      "sortDirection": "asc",
+      "modelProviders": [],
+      "sourceKinds": [
+        "subAgentThreadSpawn"
+      ],
+      "originators": null,
+      "archived": false,
+      "cwd": null,
+      "useStateDbOnly": true,
+      "searchTerm": null,
+      "parentThreadId": "00000000-0000-0000-0000-000000000009",
+      "ancestorThreadId": null
+    }
+  },
+  {
+    "id": "7894c5e9-7244-4326-a5a0-d13a8afeb7c7",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000002",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "cfd761e3-18c8-4aa1-97fb-f749f10b6f08",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000003",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "416b6b2a-4d96-4fff-a953-8797f4a23a40",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000004",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "e939dddf-1d41-4635-aaa8-64e9705ff179",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000005",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "88da1e9e-c237-4ee0-aaad-3af130b80aba",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000006",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "b092aa11-5533-4e5b-b49b-29d46ab8003e",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000007",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "9811417f-ab6a-4292-9656-c42158375336",
+    "method": "thread/backgroundTerminals/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000009",
+      "cursor": null,
+      "limit": 100
+    }
+  },
+  {
+    "id": "40317fd9-2112-4e2b-bf26-24987cb163bc",
+    "method": "thread/list",
+    "params": {
+      "cursor": null,
+      "limit": 100,
+      "excludedThreadIds": null,
+      "sortKey": null,
+      "sortDirection": "asc",
+      "modelProviders": [],
+      "sourceKinds": [
+        "subAgentThreadSpawn"
+      ],
+      "originators": null,
+      "archived": false,
+      "cwd": null,
+      "useStateDbOnly": true,
+      "searchTerm": null,
+      "parentThreadId": "00000000-0000-0000-0000-000000000009",
+      "ancestorThreadId": null
+    }
+  },
+  {
+    "id": "176dad96-8b04-48c0-ad43-5b746073f030",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000002",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "3440042e-65bb-4feb-a806-9165ce7cc8d4",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000003",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "eb2f857c-5940-4c9e-a0ab-74a3ef7b2a01",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000004",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "ded459fe-473f-4d05-bb4e-35367d48e01a",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000005",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "0f62fc96-f94c-40c8-a62f-626deb381ca5",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000006",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "256574f8-e44a-45f8-8c97-51f5dc509779",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000007",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "630b6142-2747-4999-99a5-8548c3b42b37",
+    "method": "thread/backgroundTerminals/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000009",
+      "cursor": null,
+      "limit": 100
+    }
+  },
+  {
+    "id": "005c3779-d36b-4fec-9b6a-a8e7f5ce9ece",
+    "method": "thread/list",
+    "params": {
+      "cursor": null,
+      "limit": 100,
+      "excludedThreadIds": null,
+      "sortKey": null,
+      "sortDirection": "asc",
+      "modelProviders": [],
+      "sourceKinds": [
+        "subAgentThreadSpawn"
+      ],
+      "originators": null,
+      "archived": false,
+      "cwd": null,
+      "useStateDbOnly": true,
+      "searchTerm": null,
+      "parentThreadId": "00000000-0000-0000-0000-000000000009",
+      "ancestorThreadId": null
+    }
+  },
+  {
+    "id": "8530491f-2b09-4bec-af99-f43b1a681fc4",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000002",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "17b9505d-a415-40fe-be63-753bfb32cdc9",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000003",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "7f797641-4d4c-4e05-a368-8ec91a30f65e",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000004",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "41801821-1fd1-4f82-a99d-bc27e579bfda",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000005",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "ba97fba6-ec1b-40d9-8361-e7a63357ec37",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000006",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "d65fa2fd-d56b-429e-b039-11cf4692849e",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000007",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "99c27fde-c8ed-49df-aa99-764dc99e2a67",
+    "method": "thread/backgroundTerminals/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000009",
+      "cursor": null,
+      "limit": 100
+    }
+  },
+  {
+    "id": "127aa818-1b9c-4261-bd60-43228deec078",
+    "method": "thread/list",
+    "params": {
+      "cursor": null,
+      "limit": 100,
+      "excludedThreadIds": null,
+      "sortKey": null,
+      "sortDirection": "asc",
+      "modelProviders": [],
+      "sourceKinds": [
+        "subAgentThreadSpawn"
+      ],
+      "originators": null,
+      "archived": false,
+      "cwd": null,
+      "useStateDbOnly": true,
+      "searchTerm": null,
+      "parentThreadId": "00000000-0000-0000-0000-000000000009",
+      "ancestorThreadId": null
+    }
+  },
+  {
+    "id": "7fe588cb-7f9a-4f4b-96e8-c193a2187d38",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000002",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "aab440be-4f75-401a-99c3-d841543c1846",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000003",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "b86185ae-cd34-4d8e-931c-1a6e7709669d",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000004",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "02035aa7-f454-4b01-a683-3684bbf06630",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000005",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "66088b64-daf2-4d50-850f-7d0b883376a5",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000006",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "baf9aa2a-9be3-4754-a5bd-fa78295ec0c9",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000007",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "9b7b7c88-524e-4502-b4e8-0fc9b00b8450",
+    "method": "thread/backgroundTerminals/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000009",
+      "cursor": null,
+      "limit": 100
+    }
+  },
+  {
+    "id": "84cc2d7d-90c2-4440-b71f-29312d724fe5",
+    "method": "thread/list",
+    "params": {
+      "cursor": null,
+      "limit": 100,
+      "excludedThreadIds": null,
+      "sortKey": null,
+      "sortDirection": "asc",
+      "modelProviders": [],
+      "sourceKinds": [
+        "subAgentThreadSpawn"
+      ],
+      "originators": null,
+      "archived": false,
+      "cwd": null,
+      "useStateDbOnly": true,
+      "searchTerm": null,
+      "parentThreadId": "00000000-0000-0000-0000-000000000009",
+      "ancestorThreadId": null
+    }
+  },
+  {
+    "id": "d727a1df-89f1-4dc4-8b61-7daa8afd671a",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000002",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "f4b83132-5983-4a84-a3da-7df17a42f1d1",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000003",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "62e89ad8-ca9b-4e45-a5fe-54880282602e",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000004",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "67396f7f-f5e9-4202-8091-124c3772529a",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000005",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "fab0f621-1cc6-48f6-8790-cf5013f5328d",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000006",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "89fb1f19-ac85-4bd1-8c0b-166152d59c59",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000007",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "0235ebad-78a0-45dc-b5e9-11cb1a22c1d5",
+    "method": "thread/backgroundTerminals/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000009",
+      "cursor": null,
+      "limit": 100
+    }
+  },
+  {
+    "id": "a3cc62b8-0c11-42f8-89f4-b0108c30f056",
+    "method": "thread/list",
+    "params": {
+      "cursor": null,
+      "limit": 100,
+      "excludedThreadIds": null,
+      "sortKey": null,
+      "sortDirection": "asc",
+      "modelProviders": [],
+      "sourceKinds": [
+        "subAgentThreadSpawn"
+      ],
+      "originators": null,
+      "archived": false,
+      "cwd": null,
+      "useStateDbOnly": true,
+      "searchTerm": null,
+      "parentThreadId": "00000000-0000-0000-0000-000000000009",
+      "ancestorThreadId": null
+    }
+  },
+  {
+    "id": "8d314087-d0fd-4d33-b86e-207eb8be7356",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000002",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "949540ad-57f6-4671-b7da-61a794d7f71a",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000003",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "3522232d-c112-47db-883e-e03af2e3cb12",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000004",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "33a947cf-1fc5-43c5-8489-97bc1d76363b",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000005",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "c61ccab7-5e21-4a1d-bf01-379f3025b776",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000006",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "e072c67f-e64a-4f5d-bd7b-1a4287fbd221",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000007",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  }
+]

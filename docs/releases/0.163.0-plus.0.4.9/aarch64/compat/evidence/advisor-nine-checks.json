@@ -1,0 +1,32 @@
+{
+  "passed": true,
+  "checks": [
+    "test_status_models_are_bidirectionally_readable",
+    "test_invalid_status_versions_are_preserved_by_both",
+    "test_shared_lock_blocks_both_helpers",
+    "test_new_worker_rejects_source_mismatch_before_provider",
+    "test_adjacent_callers_workers_succeed_bidirectionally",
+    "test_model_mismatch_logs_returned_metadata",
+    "test_same_release_ssh_mismatch_diagnostics",
+    "test_caller_sigkill_closes_worker_lifeline_and_reaps_descendants",
+    "test_cancel_reaps_detached_descendants_and_excludes_second_call"
+  ],
+  "tests_run": 9,
+  "failures": 0,
+  "errors": 0,
+  "source": "/data/liupan/codex-plus-build/release049/product-651a1eb",
+  "source_commit": "651a1eb03a08d69af0fd1cc69252bdff2c8f4b27",
+  "runtimes": {
+    "old": {
+      "path": "/data/liupan/codex-plus-build/release049/previous-048-canonical/codex-plus-0.163.0-plus.0.4.8-aarch64-unknown-linux-gnu/bin/codex-plus-runtime",
+      "sha256": "c02c56f55f726aa88c0ae0ccbff6826e9c3ecfa1a19c64a87351b82bb1b33b9e"
+    },
+    "new": {
+      "path": "/data/liupan/codex-plus-build/release049/native-arm/attempts/0.163.0-plus.0.4.9-aarch64-ece9d635dcfd9792/extracted/codex-plus-0.163.0-plus.0.4.9-aarch64-unknown-linux-gnu/bin/codex-plus-runtime",
+      "sha256": "6f6312de20d48c06ddf2fed8bd7567d66bb7be64eb8f3cf9c80f5a81bfb77c1e"
+    }
+  },
+  "provider": "stub only",
+  "transport": "local worker and stub SSH; no remote hosts",
+  "qualification": "final package helper bytes; package qualification is bound by the native combined runner"
+}

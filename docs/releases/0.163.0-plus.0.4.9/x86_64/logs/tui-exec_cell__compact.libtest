@@ -1,0 +1,5 @@
+ok exec_cell::compact::tests::command_display_exploration_folds_group_without_losing_calls
+ok exec_cell::compact::tests::command_display_headers_clip_unicode_without_output_placeholders
+ok exec_cell::compact::tests::command_display_failure_shows_one_factual_sanitized_excerpt
+ok exec_cell::compact::tests::command_display_success_and_live_output_stay_folded
+ok exec_cell::compact::tests::morandi_command_success_matches_context_and_keeps_failure_attention_distinct

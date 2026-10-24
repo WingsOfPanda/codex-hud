@@ -1,0 +1,40 @@
+
+  >_ OpenAI Codex (v0.163.0)
+     /tmp/vz/f-739xmok8/w
+  permissions: YOLO mode
+
+
+
+
+  Keyboard shortcuts
+
+  Compose                       Session
+  /        Commands             tab            Send message
+  @        Mention files        shift+tab      Change mode
+  !        Shell command        alt+,          Less reasoning
+  ^j       New line             alt+.          More reasoning
+  ^v       Paste image          ←              Agents (empty prompt)
+  ^g       External editor      alt+← / alt+→  Subagents (empty prompt)
+  ^r       Search history       f4             Inspect activity
+  esc esc  Edit last message    ^c             Quit
+
+                                Transcript (open first)
+                                ^t                         Open transcript
+                                f3                         Find text
+                                pgup / pgdn                Scroll
+                                ^space                     Start selection
+                                ^home / ^end               Top / latest
+  … resize to see all
+  /keymap customize
+
+› Ask Codex to do anything
+
+  gpt-6.1-sol high · /tmp/vz/f-739xmok8/w · compact
+  Context 100% left
+  ? / esc close
+  Advisor · GPT-6-Astra (xhigh) · 1 call · last 0:05
+  GPT-6.1-Sol (high) [general] · worker 1 · 0:13 · ? tok
+  GPT-6-Astra (medium) [general] · worker 2 · 0:13 · ? tok
+  Background · cursor-native-shell · seen 0:00
+  Background · cursor-detached-0 · needs review · ?
+  +5 more

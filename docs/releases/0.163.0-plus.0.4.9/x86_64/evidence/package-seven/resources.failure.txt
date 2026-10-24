@@ -1,0 +1,16 @@
+Traceback (most recent call last):
+  File "/home/liupan/Aerius/codex-plus/.build/release049-pilot/candidate/tests/test_release_package.py", line 384, in main
+    report['checks'][name] = {'passed': True, 'result': check(root)}
+                                                        ^^^^^^^^^^^
+  File "/home/liupan/Aerius/codex-plus/.build/release049-pilot/candidate/tests/test_release_package.py", line 372, in <lambda>
+    ('resources', lambda root: resources_check(package, root, evidence)),
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/liupan/Aerius/codex-plus/.build/release049-pilot/candidate/tests/test_release_package.py", line 216, in resources_check
+    command([package / 'codex-resources/bwrap', '--ro-bind', '/', '/', '--unshare-pid', '--as-pid-1',
+  File "/home/liupan/Aerius/codex-plus/.build/release049-pilot/candidate/tests/test_release_package.py", line 39, in command
+    assert result.returncode == expected, f'{args}: exit={result.returncode}\n{result.stdout}\n{result.stderr}'
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: [PosixPath('/home/liupan/Aerius/codex-plus/.build/release049-pilot/native-x86/attempts/0.163.0-plus.0.4.9-x86_64-da063065aba042fe/extracted/codex-plus-0.163.0-plus.0.4.9-x86_64-unknown-linux-gnu/codex-resources/bwrap'), '--ro-bind', '/', '/', '--unshare-pid', '--as-pid-1', '--proc', '/proc', '--dev', '/dev', '--', '/bin/sh', '-c', 'test $$ = 1 && printf PACKAGE_BWRAP']: exit=1
+
+bwrap: setting up uid map: Permission denied
+

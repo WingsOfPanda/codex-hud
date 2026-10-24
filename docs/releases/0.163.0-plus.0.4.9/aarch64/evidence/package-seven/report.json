@@ -1,0 +1,104 @@
+{
+  "package": "/data/liupan/codex-plus-build/release049/native-arm/attempts/0.163.0-plus.0.4.9-aarch64-ece9d635dcfd9792/extracted/codex-plus-0.163.0-plus.0.4.9-aarch64-unknown-linux-gnu",
+  "native_host": "aarch64",
+  "checks": {
+    "manifest": {
+      "passed": true,
+      "result": {
+        "files": 70,
+        "tree_sha256": "66e3062f9a5b01a6c8c458fc7572bc772984a2f3d8301507206a99d3b3073ff1",
+        "target": "aarch64-unknown-linux-gnu",
+        "voice": false
+      }
+    },
+    "public_commands": {
+      "passed": true,
+      "result": {
+        "native_version": "codex-cli 0.163.0",
+        "plus_version": "codex-plus 0.163.0-plus.0.4.9 (Plus 651a1eb03a08; upstream 0.163.0)",
+        "outside_cwd_symlink": true,
+        "helper_log": "PACKAGE_RUN\n"
+      }
+    },
+    "wrapper": {
+      "passed": true,
+      "result": {
+        "native_path_args_stdout_exit_preserved": true,
+        "runner_uses_home_local_bin_codex_wrapper": true,
+        "daemon_update_test_used_only_stubs": true
+      }
+    },
+    "resources": {
+      "passed": true,
+      "result": {
+        "bin/codex": {
+          "sha256": "4fb45d88aa617f4b41a3be985a9a46293c5137e20ea81f37371991be2f1f5512",
+          "ldd": "\tlinux-vdso.so.1 (0x0000ecec24ab0000)\n\tliblzma.so.5 => /lib/aarch64-linux-gnu/liblzma.so.5 (0x0000ecec24a30000)\n\tlibssl.so.3 => /lib/aarch64-linux-gnu/libssl.so.3 (0x0000ecec15730000)\n\tlibcrypto.so.3 => /lib/aarch64-linux-gnu/libcrypto.so.3 (0x0000ecec15200000)\n\tlibgcc_s.so.1 => /lib/aarch64-linux-gnu/libgcc_s.so.1 (0x0000ecec249f0000)\n\tlibm.so.6 => /lib/aarch64-linux-gnu/libm.so.6 (0x0000ecec15150000)\n\tlibc.so.6 => /lib/aarch64-linux-gnu/libc.so.6 (0x0000ecec14f90000)\n\t/lib/ld-linux-aarch64.so.1 (0x0000ecec24a73000)\n"
+        },
+        "bin/codex-plus-runtime": {
+          "sha256": "6f6312de20d48c06ddf2fed8bd7567d66bb7be64eb8f3cf9c80f5a81bfb77c1e",
+          "ldd": "\tlinux-vdso.so.1 (0x0000e4d939c28000)\n\tlibgcc_s.so.1 => /lib/aarch64-linux-gnu/libgcc_s.so.1 (0x0000e4d939bb0000)\n\tlibm.so.6 => /lib/aarch64-linux-gnu/libm.so.6 (0x0000e4d939550000)\n\tlibc.so.6 => /lib/aarch64-linux-gnu/libc.so.6 (0x0000e4d939390000)\n\t/lib/ld-linux-aarch64.so.1 (0x0000e4d939beb000)\n"
+        },
+        "bin/codex-code-mode-host": {
+          "sha256": "187db682ed200ec009504ba2deaef312e9c7f7323132debe27a664a1c3063186",
+          "ldd": "\tlinux-vdso.so.1 (0x0000feab3133c000)\n\tlibssl.so.3 => /lib/aarch64-linux-gnu/libssl.so.3 (0x0000feab31230000)\n\tlibcrypto.so.3 => /lib/aarch64-linux-gnu/libcrypto.so.3 (0x0000feab2ce00000)\n\tlibgcc_s.so.1 => /lib/aarch64-linux-gnu/libgcc_s.so.1 (0x0000feab311f0000)\n\tlibm.so.6 => /lib/aarch64-linux-gnu/libm.so.6 (0x0000feab2d350000)\n\tlibc.so.6 => /lib/aarch64-linux-gnu/libc.so.6 (0x0000feab2cc40000)\n\t/lib/ld-linux-aarch64.so.1 (0x0000feab312ff000)\n"
+        },
+        "codex-path/rg": {
+          "sha256": "e36d0eb52e70696bdf1781392722e05a21bb91d3b7b762ef5ec20e5df2ec687b",
+          "ldd": "\tlinux-vdso.so.1 (0x0000e14d786e7000)\n\tlibgcc_s.so.1 => /lib/aarch64-linux-gnu/libgcc_s.so.1 (0x0000e14d78670000)\n\tlibpthread.so.0 => /lib/aarch64-linux-gnu/libpthread.so.0 (0x0000e14d781d0000)\n\tlibdl.so.2 => /lib/aarch64-linux-gnu/libdl.so.2 (0x0000e14d781a0000)\n\tlibc.so.6 => /lib/aarch64-linux-gnu/libc.so.6 (0x0000e14d77fe0000)\n\t/lib/ld-linux-aarch64.so.1 (0x0000e14d786aa000)\n"
+        },
+        "codex-resources/bwrap": {
+          "sha256": "5e4b87ced71b415b8877beea6cdd0cf94935d8ade974fe9c56d1b745efad3369",
+          "ldd": "\tlinux-vdso.so.1 (0x0000e255d4dc2000)\n\tlibcap.so.2 => /lib/aarch64-linux-gnu/libcap.so.2 (0x0000e255d4ce0000)\n\tlibgcc_s.so.1 => /lib/aarch64-linux-gnu/libgcc_s.so.1 (0x0000e255d4ca0000)\n\tlibc.so.6 => /lib/aarch64-linux-gnu/libc.so.6 (0x0000e255d4ae0000)\n\t/lib/ld-linux-aarch64.so.1 (0x0000e255d4d85000)\n"
+        }
+      }
+    },
+    "exec": {
+      "passed": true,
+      "result": {
+        "finite_exec": true,
+        "loopback_requests": 1
+      }
+    },
+    "stdio_code_mode": {
+      "passed": true,
+      "result": {
+        "initialize": {
+          "userAgent": "release_package/0.163.0 (Ubuntu 24.4.0; aarch64) unknown (release_package; 1)",
+          "codexHome": "/tmp/rl/stdio_code_mode/isolated/home",
+          "platformFamily": "unix",
+          "platformOs": "linux"
+        },
+        "typed_thread_turn": true,
+        "code_mode_host": [
+          "/tmp/rl/stdio_code_mode/package/bin/codex-code-mode-host"
+        ],
+        "execution": {
+          "chunk_id": "c9d8b0",
+          "wall_time_seconds": 6.556e-05,
+          "exit_code": 0,
+          "original_token_count": 45,
+          "output": "/tmp/rl/stdio_code_mode/package/codex-path/rg\nripgrep 15.2.0 (rev e89fff89ac)\n\nfeatures:+pcre2\nsimd(compile):+NEON\nsimd(runtime):+NEON\n\nPCRE2 10.45 is available (JIT is available)\n"
+        }
+      }
+    },
+    "manifest_after_runtime": {
+      "passed": true,
+      "result": {
+        "files": 70,
+        "tree_sha256": "66e3062f9a5b01a6c8c458fc7572bc772984a2f3d8301507206a99d3b3073ff1",
+        "target": "aarch64-unknown-linux-gnu",
+        "voice": false
+      }
+    }
+  },
+  "official_cli": "/data/liupan/codex-plus-build/plus020/official/bin/codex",
+  "remote_model_requests": 0,
+  "official_cli_unchanged": true,
+  "official_cli_sha256": "8a96f66d059d653e68bfd5f3c79337e6f1d7d170d80bf705eb7d0249b34c0ece",
+  "skipped": [
+    "terminal suites",
+    "official daemon helper park"
+  ],
+  "passed": true
+}

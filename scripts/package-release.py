@@ -30,15 +30,17 @@ from urllib.request import urlopen
 ROOT = Path(__file__).resolve().parents[1]
 UPSTREAM_COMMIT = '83086188ae0614bd882818ff1aa23f3194962012'
 UPSTREAM_VERSION = '0.163.0'
-PLUS_VERSION = '0.4.8'
+PLUS_VERSION = '0.4.9'
 RELEASE = f'{UPSTREAM_VERSION}-plus.{PLUS_VERSION}'
 COORDINATOR_PROTOCOL = 5
 EXECUTION_RECORD_FORMAT = 1
 PATCH = 'patches/codex-0.163.0-worker-hud.patch'
 TARGETS = {'x86_64-unknown-linux-gnu': 62, 'aarch64-unknown-linux-gnu': 183}
 DOCS = ('README.md', 'GLOSSARY.md', 'docs/background-work.md',
+        'docs/releases/0.163.0-plus.0.4.9.md',
         'docs/releases/0.163.0-plus.0.4.8.md',
         'docs/release-book.md', 'docs/release-checklist.md',
+        'docs/release-publication.md',
         'docs/release-protocol.md', 'release/protocol-v1.md',
         'docs/recovery.md', 'docs/proposals/recovery-agents-block.md',
         'docs/themes.md', 'docs/evidence/morandi-theme.json',

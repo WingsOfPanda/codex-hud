@@ -1,0 +1,23 @@
+{
+  "id": 472,
+  "method": "mcpServer/elicitation/request",
+  "params": {
+    "threadId": "00000000-0000-0000-0000-000000000009",
+    "turnId": null,
+    "serverName": "cursor-fixture",
+    "mode": "form",
+    "message": "Native MCP text elicitation fixture",
+    "requestedSchema": {
+      "type": "object",
+      "properties": {
+        "answer": {
+          "type": "string",
+          "title": "Fixture answer"
+        }
+      },
+      "required": [
+        "answer"
+      ]
+    }
+  }
+}

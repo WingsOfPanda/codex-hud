@@ -1,0 +1,10 @@
+warning: `--logfile` is deprecated
+running 5 tests
+test exec_cell::compact::tests::command_display_headers_clip_unicode_without_output_placeholders ... ok
+test exec_cell::compact::tests::command_display_exploration_folds_group_without_losing_calls ... ok
+test exec_cell::compact::tests::command_display_failure_shows_one_factual_sanitized_excerpt ... ok
+test exec_cell::compact::tests::command_display_success_and_live_output_stay_folded ... ok
+test exec_cell::compact::tests::morandi_command_success_matches_context_and_keeps_failure_attention_distinct ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 5924 filtered out; finished in 0.30s
+

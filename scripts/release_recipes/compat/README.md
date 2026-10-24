@@ -48,6 +48,7 @@ socket cleanup is sealed, run with the profile's exact Python and loader:
 
 ```
 python scripts/release_compat.py prepare-attempt --attempt ATTEMPT --old-package PREVIOUS_PACKAGE
+python scripts/release_compat.py verify-attempt --attempt ATTEMPT
 ```
 
 This derives package-only approval through release_protocol.approve_package;
@@ -58,6 +59,14 @@ and captures receipts through the core receipt writer, including exact old/new
 package execution provenance, the managed job identity and independent cleanup.
 The native attempt's final socket stays removed; compatibility owns its separate
 short allocation and removes it only after exact-identity ownership audit.
+
+Use `verify-attempt` before managed prepare/launch. Compatibility's
+`workflow.audit_scope` is a completion audit: `run` creates `short-state.json`
+and `unreadable-baseline.json` before setup and gates. Immediately after
+`prepare-attempt`, those records do not yet exist; auditing then uses an empty
+baseline and can report pre-existing protected processes. Keep audit/cleanup at
+their completion lifecycle, preserve any premature failed audit, and use the
+committed verifier for prelaunch checks. Ownership checks remain unchanged.
 
 After importing native evidence on the coordinator, provide a replay profile
 whose source_root is an existing clean AP checkout at the plan's source pin:

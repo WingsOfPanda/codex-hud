@@ -1,0 +1,481 @@
+[
+  {
+    "id": "initialize",
+    "method": "initialize",
+    "params": {
+      "clientInfo": {
+        "name": "codex-tui",
+        "title": null,
+        "version": "0.163.0"
+      },
+      "capabilities": {
+        "experimentalApi": true,
+        "requestAttestation": false,
+        "optOutNotificationMethods": null
+      }
+    }
+  },
+  {
+    "method": "initialized"
+  },
+  {
+    "id": "initialize",
+    "method": "initialize",
+    "params": {
+      "clientInfo": {
+        "name": "codex-tui",
+        "title": null,
+        "version": "0.163.0"
+      },
+      "capabilities": {
+        "experimentalApi": true,
+        "requestAttestation": false,
+        "optOutNotificationMethods": null
+      }
+    }
+  },
+  {
+    "method": "initialized"
+  },
+  {
+    "id": 1,
+    "method": "account/read",
+    "params": {}
+  },
+  {
+    "id": "tui-project-trust-read-bc51deef-e49c-4604-a571-a2b32745cdb8",
+    "method": "config/read",
+    "params": {
+      "includeLayers": true,
+      "cwd": "/tmp/cn/f-i9_v3_pl/w"
+    }
+  },
+  {
+    "id": "hooks-list-d4caedc0-6636-4b2f-bae5-214f0e1c661f",
+    "method": "hooks/list",
+    "params": {
+      "cwds": [
+        "/tmp/cn/f-i9_v3_pl/w"
+      ]
+    }
+  },
+  {
+    "id": "8035a570-8852-429a-9d0b-243a7ee9d9f7",
+    "method": "account/bedrock/checkGovCloudRequirements",
+    "params": {}
+  },
+  {
+    "id": "tui-config-read-e541f8e9-18ad-4200-aeaa-5f631095c323",
+    "method": "config/read",
+    "params": {
+      "includeLayers": true,
+      "cwd": "/tmp/cn/f-i9_v3_pl/w"
+    }
+  },
+  {
+    "id": 2,
+    "method": "account/read",
+    "params": {}
+  },
+  {
+    "id": 3,
+    "method": "model/list",
+    "params": {
+      "cursor": null,
+      "limit": null,
+      "includeHidden": true
+    }
+  },
+  {
+    "id": 4,
+    "method": "configRequirements/read"
+  },
+  {
+    "id": "collaboration-mode-list-7d9027cf-5da1-448f-947e-024f790ef9a8",
+    "method": "collaborationMode/list",
+    "params": {}
+  },
+  {
+    "id": "tui-daybreak-forwarding",
+    "method": "config/read",
+    "params": {
+      "cwd": "/tmp/cn/f-i9_v3_pl/w"
+    }
+  },
+  {
+    "id": "e168dc45-4c5e-465f-8cc8-79b88c1966bd",
+    "method": "thread/attachment/list",
+    "params": {
+      "threadId": "c25e7d59-bb12-434b-b4ec-994f643b6d65",
+      "cursor": null,
+      "limit": 1
+    }
+  },
+  {
+    "id": "startup-thread-start-c65c3ceb-5413-44a7-9ace-f61d8a67e987",
+    "method": "thread/start",
+    "params": {
+      "model": null,
+      "modelProvider": null,
+      "cwd": "/tmp/cn/f-i9_v3_pl/w",
+      "runtimeWorkspaceRoots": [
+        "/tmp/cn/f-i9_v3_pl/w"
+      ],
+      "approvalPolicy": "never",
+      "approvalsReviewer": "user",
+      "sandbox": "danger-full-access",
+      "permissions": null,
+      "config": {
+        "features": {
+          "goals": false
+        },
+        "mcp_servers.codex_tui": {
+          "url": "http://127.0.0.1:38461/mcp",
+          "http_headers": {
+            "Authorization": "Bearer 4edbb2db-ee68-4859-ab9f-15c33a044082"
+          },
+          "default_tools_approval_mode": "approve",
+          "tools": {
+            "create_thread": {
+              "approval_mode": "prompt"
+            },
+            "send_message_to_thread": {
+              "approval_mode": "prompt"
+            },
+            "fork_thread": {
+              "approval_mode": "prompt"
+            },
+            "create_worktree": {
+              "approval_mode": "approve"
+            }
+          }
+        }
+      },
+      "serviceName": null,
+      "baseInstructions": null,
+      "developerInstructions": "\n\nCodex Plus owns /goal. Native goal tools do not control Plus goals. At the start of each turn, inspect `codex-plus goal status --thread $CODEX_THREAD_ID --json` when a Plus goal exists. Follow its instructions for exact goal ID, revision, input epoch and admitted turn. Before ending a goal turn, stage an explicit checkpoint using `codex-plus goal checkpoint`: continue with next action and evidence references, wait on exact registered jobs, request input, or complete with verification evidence. Read the status instructions for the JSON schema and current binding. Ordinary user input has priority; a goal does not expand permissions. Paused, changed, uncertain or stale goal bindings never authorize continuation. Preserve these instructions through compaction.\n\nCodex Plus Ultracode is a root-session workflow setting, independent of reasoning effort. At the start of every root turn and after compaction, read `codex-plus ultracode status --thread $CODEX_THREAD_ID --json`. Use only the effective snapshot bound to this exact admitted turn and daemon generation; requested or pending state does not activate the mode. When effective on, follow the complete policy returned by status. When off or unavailable, follow ordinary user and repository instructions. Native children follow their parent's bounded brief instead of calling this command. Mode changes apply to future unadmitted turns; steering keeps the current turn's snapshot. Existing goal checkpoints, report-only recovery and newer user direction retain priority. Ultracode never expands permission to publish, merge, install or change shared configuration.\n",
+      "personality": null,
+      "multiAgentMode": null,
+      "ephemeral": false,
+      "historyMode": "paginated",
+      "sessionStartSource": null,
+      "threadSource": "user",
+      "projectId": null,
+      "daybreakEnabled": null,
+      "environments": null,
+      "dynamicTools": null,
+      "selectedCapabilityRoots": null,
+      "mockExperimentalField": null
+    }
+  },
+  {
+    "id": "f2063dec-6a0f-4162-8f80-2937c5fd89d9",
+    "method": "thread/list",
+    "params": {
+      "cursor": null,
+      "limit": 100,
+      "excludedThreadIds": null,
+      "sortKey": "section_position",
+      "sortDirection": null,
+      "modelProviders": [],
+      "sourceKinds": [],
+      "originators": null,
+      "archived": false,
+      "sectionId": "01984de2-8f74-7c91-a3b2-5c5e937cf318",
+      "cwd": null,
+      "useStateDbOnly": true,
+      "searchTerm": null,
+      "parentThreadId": null,
+      "ancestorThreadId": null
+    }
+  },
+  {
+    "id": "7119a9ed-603c-4bf4-b666-485375d70ee3",
+    "method": "thread/list",
+    "params": {
+      "cursor": null,
+      "limit": 100,
+      "excludedThreadIds": null,
+      "sortKey": "section_position",
+      "sortDirection": null,
+      "modelProviders": [],
+      "sourceKinds": [
+        "exec",
+        "appServer"
+      ],
+      "originators": null,
+      "archived": false,
+      "sectionId": "01984de2-8f74-7c91-a3b2-5c5e937cf318",
+      "cwd": null,
+      "useStateDbOnly": true,
+      "searchTerm": null,
+      "parentThreadId": null,
+      "ancestorThreadId": null
+    }
+  },
+  {
+    "id": "d8bb1038-6e70-420c-9d52-a6853d70fe3f",
+    "method": "thread/loaded/list",
+    "params": {
+      "cursor": null,
+      "limit": null
+    }
+  },
+  {
+    "id": "93f41169-2328-4de3-ac29-ad73291ef9f1",
+    "method": "thread/list",
+    "params": {
+      "cursor": null,
+      "limit": 10,
+      "excludedThreadIds": null,
+      "sortKey": "recency_at",
+      "sortDirection": null,
+      "modelProviders": [],
+      "sourceKinds": [],
+      "originators": null,
+      "archived": false,
+      "cwd": null,
+      "useStateDbOnly": true,
+      "searchTerm": null,
+      "parentThreadId": null,
+      "ancestorThreadId": null
+    }
+  },
+  {
+    "id": "de8449b3-b4b0-4364-8b65-95c32f1bb7e6",
+    "method": "thread/list",
+    "params": {
+      "cursor": null,
+      "limit": 10,
+      "excludedThreadIds": null,
+      "sortKey": "recency_at",
+      "sortDirection": null,
+      "modelProviders": [],
+      "sourceKinds": [
+        "exec",
+        "appServer"
+      ],
+      "originators": null,
+      "archived": false,
+      "cwd": null,
+      "useStateDbOnly": true,
+      "searchTerm": null,
+      "parentThreadId": null,
+      "ancestorThreadId": null
+    }
+  },
+  {
+    "id": "startup-skills-list-f1b836fc-47d8-44e5-8ced-2484395a8ace",
+    "method": "skills/list",
+    "params": {
+      "cwds": [
+        "/tmp/cn/f-i9_v3_pl/w"
+      ],
+      "forceReload": true
+    }
+  },
+  {
+    "id": 5,
+    "method": "skills/list",
+    "params": {
+      "cwds": [
+        "/tmp/cn/f-i9_v3_pl/w"
+      ],
+      "forceReload": true
+    }
+  },
+  {
+    "id": "ba878c86-440a-42e6-a9ff-29ac45ccb713",
+    "method": "thread/backgroundTerminals/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000009",
+      "cursor": null,
+      "limit": 100
+    }
+  },
+  {
+    "id": "c1532e43-e9ba-48f7-a283-6e0dc6c4ea4f",
+    "method": "thread/list",
+    "params": {
+      "cursor": null,
+      "limit": 100,
+      "excludedThreadIds": null,
+      "sortKey": null,
+      "sortDirection": "asc",
+      "modelProviders": [],
+      "sourceKinds": [
+        "subAgentThreadSpawn"
+      ],
+      "originators": null,
+      "archived": false,
+      "cwd": null,
+      "useStateDbOnly": true,
+      "searchTerm": null,
+      "parentThreadId": "00000000-0000-0000-0000-000000000009",
+      "ancestorThreadId": null
+    }
+  },
+  {
+    "id": "2dde9da9-c469-4413-b785-316767b1cf62",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000002",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "cbb755c6-cf83-4215-a39c-026c51ea9659",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000003",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "5bfda9c5-db7c-4912-9e03-8a70461d4cd5",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000004",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "3376e53a-b8fc-4db7-8cc7-6ac080c18fb0",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000005",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "f9786e13-6d2a-4c29-bcee-9417d0b11774",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000006",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "cbc35568-58e6-490d-9547-406583a3f5bd",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000007",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "efe127e4-0617-459a-b8e3-1e52d3d03943",
+    "method": "thread/backgroundTerminals/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000009",
+      "cursor": null,
+      "limit": 100
+    }
+  },
+  {
+    "id": "8231b21a-0ad1-459a-b620-c2c26b83fc7d",
+    "method": "thread/list",
+    "params": {
+      "cursor": null,
+      "limit": 100,
+      "excludedThreadIds": null,
+      "sortKey": null,
+      "sortDirection": "asc",
+      "modelProviders": [],
+      "sourceKinds": [
+        "subAgentThreadSpawn"
+      ],
+      "originators": null,
+      "archived": false,
+      "cwd": null,
+      "useStateDbOnly": true,
+      "searchTerm": null,
+      "parentThreadId": "00000000-0000-0000-0000-000000000009",
+      "ancestorThreadId": null
+    }
+  },
+  {
+    "id": "efbb1daa-b235-42c0-a1ea-66055d97f849",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000002",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "4884ddea-6e3d-436d-9f8b-3dc3142b7695",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000003",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "9f1ce78b-c03e-4220-9d05-ab8aa5492e04",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000004",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "26092e16-629e-46c7-885d-e62377a082c7",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000005",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "5e292d30-8381-40c6-9e26-a34e1573d3ec",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000006",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  },
+  {
+    "id": "f2b48f7b-1225-4df6-8f73-01b65f25e8f9",
+    "method": "thread/turns/list",
+    "params": {
+      "threadId": "00000000-0000-0000-0000-000000000007",
+      "cursor": null,
+      "limit": 1,
+      "sortDirection": "desc",
+      "itemsView": "notLoaded"
+    }
+  }
+]

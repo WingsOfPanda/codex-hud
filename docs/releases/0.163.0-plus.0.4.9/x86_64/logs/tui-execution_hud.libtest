@@ -1,0 +1,6 @@
+ok bottom_pane::worker_hud::execution_tests::execution_hud_review_row_preserves_unknown_duration_without_adding_rows
+ok bottom_pane::worker_hud::execution_tests::execution_hud_shares_worker_advisor_native_warning_and_overflow_budget
+ok app::execution_hud::tests::execution_hud_rejects_symlink_directories_files_and_fifo
+ok bottom_pane::worker_hud::execution_tests::execution_hud_shares_six_rows_and_preserves_native_shells
+ok app::execution_hud::tests::execution_hud_unknown_keeps_review_state_and_only_reports_known_duration
+ok app::execution_hud::tests::execution_hud_bounds_and_validates_each_published_record
