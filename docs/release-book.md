@@ -30,6 +30,14 @@ Resolve local package approval in that brief: either delegate the committed
 named coordinator gate. Never fabricate a “root accepted” flag to avoid a handoff.
 Final shipping acceptance remains coordinator-owned in either case.
 
+For an ordinary revision, delegate local package-native approval by default.
+`prepare-attempt` performs that validation and writes
+`outputs/compat-package-approval.json`; review and record its hash before launch.
+Its generated `root_accepted_final_package: true` is a legacy label for that local
+package/native-tests prerequisite, not independent coordinator shipping acceptance.
+Do not hand-edit it. Reserving a coordinator gate must name a real decision and
+acknowledge the additional transfer/review dependency.
+
 Include a **plan superseded** successor. For a correction inside the requested
 behavior and existing grant, the coordinator reviews its dependency impact and
 issues the replacement plan/commit digests. The native owner verifies that update,
@@ -107,8 +115,8 @@ Select a path before scheduling work:
 | Case | Read and record |
 | --- | --- |
 | Full frontend/product build | [Native package requirements](releasing.md#native-binaries), plus the recipe entry point, tooling commit, input closure and applicable acceptance evidence |
-| Helper-only revision | [Qualified binary reuse](releasing.md#native-binaries); record original compile provenance and all matching identities |
-| Test-only correction | [Saved native results](verification.md#saved-native-results); identify the unchanged executable and affected checks |
+| Helper-only revision | [Qualified binary reuse](releasing.md#native-binaries) only through a separately qualified path with its own accepted handoff producer; this native runner does not compose reused cross-attempt receipts. Otherwise select the full native path |
+| Test-only diagnosis | [Saved native results](verification.md#saved-native-results) can verify a correction on the exact unchanged harness; that diagnostic does not qualify a new native-runner plan |
 | New native runner | [Qualification status](release-protocol.md#qualification-status), then [local preparation](release-protocol.md#local-preparation); use only the operations its status permits |
 
 A prior release's green result is evidence, not a launch recipe. The current
@@ -127,6 +135,13 @@ unrelated dirty work. Use a scratch Git index when real index metadata is sealed
 Even a status check can refresh the real index: compare its bytes and metadata
 through the scratch-index helper, and preserve any discrepancy instead of
 rewriting the seal or claiming unchanged qualification.
+Keep dedicated product and executed-tooling checkouts untouched from native
+preparation through compatibility; keep AP source/tooling untouched from AP
+preparation through replay/composition. Do not edit or commit in them, copy the
+working checklist into them, or let an IDE/shell prompt refresh their real indexes.
+Keep checklists, notes, provisional inputs and later documentation commits in a
+separate coordinator evidence directory or worktree. Retain those checkout paths
+until every dependent job and verification has finished.
 Use the supported `release_native.py verify --attempt ATTEMPT` for frozen native
 attempts and `release_compat.py verify-ap --attempt AP_EVIDENCE` for prepared AP
 contexts; both call the disposable-index implementation. Before freezing, use
@@ -165,6 +180,11 @@ later checks against the actual candidate binaries and captures.
 Use the existing [preflight checks](release-performance.md#run-the-preflight);
 there is no single command that currently covers this entire table. Mark checks
 that require new artifacts as explicit later gates. Missing checks are not passes.
+Use the [field sources and allocation-free checks](release-protocol.md#before-allocating-an-attempt)
+to compose all plan-bound inputs and check each native host plus the AP replay
+host before the combined freeze. Save the returned scope and unchecked gates;
+`ready: true` is prerequisite readiness, not release acceptance. A short lifecycle
+rehearsal is optional and does not replace the production prerequisite check.
 When UI/version predicates or evidence consumers change, run the concrete
 [label inventory and producer-corpus checks](release-protocol.md#cheap-change-checks).
 They need no full native rebuild. When unchanged, record the exact previously
@@ -223,7 +243,8 @@ five stages; use the existing controller, not manual stage launches.
 **Exit check:** required build/package stages passed and output identities match
 the frozen inputs; cleanup is independently verified. Any failed/unknown stage
 takes the recovery branch before dependent work. Reuse only through the helper-only
-or test-only paths in the change-impact rules; new-runner receipts and artifacts
+or test-only paths when their separate producer is qualified; the current native
+composer does not accept their reused receipts. New-runner receipts and artifacts
 never transfer between attempts. Cleanup resolution alone does not pass a gate.
 
 ## 4. Qualify the extracted packages
@@ -243,6 +264,9 @@ as specified in [result handling](release-performance.md#cleanup-and-result-hand
 The native owner returns after all assigned gates and cleanup, with one evidence
 export and the archive transferred separately. Wait for the exact transfer's
 completion before hashing or importing it; a growing file is not package corruption.
+Use the same export/import route for local x86 evidence, without a network copy;
+this gives AP replay and final acceptance an immutable imported context on both
+architectures. Do not recreate native receipts in the coordinator directory.
 Use supported core `accept` and `handoff` commands with the profile interpreter
 and declared paths, rather than per-release scripts calling guessed private APIs.
 See the [command sequence](release-protocol.md#publication-and-timing).
@@ -274,6 +298,8 @@ handoff. Verify all five GitHub asset digests and downloaded handoff bytes. Reso
 a draft's tag/node to its exact database ID and continue with that release; never
 create a second release to work around listing delay. After public verification,
 send fleet-config the tag plus the digest-verification reference.
+Use the [publication commands and record schemas](release-publication.md) rather
+than reconstructing a release-local finalizer.
 
 **Exit check:** the public release ID, tag and five assets match accepted evidence;
 fleet-config has the verification reference. Record main merge separately.
@@ -352,3 +378,7 @@ CLIs are not a turnkey unattended publisher. Failed/interrupted/sealed native
 attempts cannot transfer receipts/artifacts to a new attempt under the current
 runner; normal verified Cargo cache reuse remains available. New cross-attempt
 reuse needs implementation and qualification, not softer wording in this book.
+This also applies to failed/interrupted compatibility: diagnose and verify cleanup,
+then use a corrected, fresh reviewed native attempt; there is no supported
+in-place compatibility retry. Budget for that cost, and exercise changed fixture
+setup cheaply before launching native work.

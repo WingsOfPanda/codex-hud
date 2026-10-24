@@ -61,21 +61,64 @@ def proposal(root, profile, command, inputs, *, topic):
         'expected_duration_seconds': 900, 'deadline_seconds': 1500, 'cancel_grace_seconds': 90}
 
 
-def prepare_attempt(root, old_package):
-    root = Path(root).resolve(strict=True)
-    metadata, plan, profile = protocol.require_native_attempt(root)
-    native.verify(root)
+def previous_package(plan, profile, old_package):
     old = Path(old_package).resolve(strict=True)
     old_manifest = protocol.load(old / 'codex-plus.json')
-    pin = plan['previous_release']['targets'][metadata['architecture']]['manifest_sha256']
-    protocol.require(native.sha(old / 'codex-plus.json') == pin and
+    previous = plan['previous_release']['targets'][profile['architecture']]
+    protocol.require(native.sha(old / 'codex-plus.json') == previous['manifest_sha256'] and
         old_manifest['release'] == plan['previous_release']['tag'] and
         old_manifest['plus_commit'] == plan['compat']['previous_source_commit'] and
         old_manifest['target'] == profile['triple'], 'Previous package identity mismatch')
     verifier = native.module(SCRIPTS / 'package-release.py')
     old_files = verifier.tree_files(old)
     protocol.require(old_files == old_manifest['files'] and
-        verifier.tree_sha256(old_files) == old_manifest['tree_sha256'], 'Previous package inventory mismatch')
+        verifier.tree_sha256(old_files) == old_manifest['tree_sha256'] == previous['tree_sha256'],
+        'Previous package inventory mismatch')
+    protocol.require(old_manifest['upstream'] == plan['upstream'] and
+        old_manifest['coordinator_protocol'] == 5 and old_manifest['execution_record_format'] == 1,
+        'Unsupported previous package protocol/upstream')
+    return old
+
+
+def precheck(plan, profile, old_package, cleanup):
+    """Read-only prerequisites; disposable Git scratch indexes are cleaned up."""
+    protocol.validate_plan(plan, profile['source_root'])
+    protocol.validate_profile(profile, profile['architecture'])
+    profile_sha256 = protocol.digest(profile)
+    protocol.require(profile_sha256 == plan['targets'][profile['architecture']]['profile_sha256'],
+                     'Profile digest mismatch; computed profile_sha256=' + profile_sha256)
+    native.build_inputs(plan, profile)
+    observed, _ = native.observe(profile)
+    protocol.validate_profile(profile, profile['architecture'], observed)
+    for name in ('tooling_commit', 'plus_source_commit'):
+        protocol.require(observed[name] == plan[name], 'Checkout identity mismatch: ' + name)
+    native.pkg_config_probe(profile)
+    native.cleanup_hook(cleanup, profile)
+    files = native.input_closure(profile)
+    for name in cleanup['argv']:
+        if Path(name).is_absolute() and Path(name).is_file():
+            files[str(Path(name).resolve())] = protocol.file_record(Path(name).resolve())
+    protocol._executed(profile, list(files))
+    compat.fixture_inputs(plan, profile)
+    previous_package(plan, profile, old_package)
+    protocol.require(profile['native_build']['official_sha256'] ==
+        plan['compat']['stock_binary_sha256'][profile['architecture']], 'Compatibility official binary pin mismatch')
+    return {'ready': True, 'scope': 'native-prerequisites', 'plan_sha256': protocol.digest(plan),
+        'profile_sha256': protocol.digest(profile),
+        'checks': ['plan-profile-host-pins', 'native-inputs-imports', 'production-libcap',
+                   'common-cleanup-hook', 'execution-closure', 'compatibility-fixtures-gates', 'canonical-previous-package'],
+        'not_checked': ['packaging-notices', 'new-binary-test-counts', 'actual-runtime',
+                        'captures', 'ap-replay', 'future-liveness-cleanup', 'publication', 'rollout-approval'],
+        'read_only': 'No input, build, short allocation or managed record writes; disposable Git scratch indexes only.'}
+
+
+def prepare_attempt(root, old_package):
+    root = Path(root).resolve(strict=True)
+    metadata, plan, profile = protocol.require_native_attempt(root)
+    native.verify(root)
+    old = previous_package(plan, profile, old_package)
+    pin = plan['previous_release']['targets'][metadata['architecture']]['manifest_sha256']
+    compat.fixture_inputs(plan, profile)
     approval = protocol.approve_package(root, source_root=profile['source_root'])
     approval_path = root / 'outputs/compat-package-approval.json'
     protocol.write_once(approval_path, approval)
@@ -328,6 +371,29 @@ def ap_profile(profile, plan, *, preparation=False):
                                **protocol.file_record(Path(_json.__file__).resolve())}}}
 
 
+def ap_inputs(profile, seals):
+    files = closure(profile) | dependency_files(profile['ap_replay']['node_modules'])
+    source = Path(profile['source_root'])
+    files.update({str((source / name).resolve()): protocol.file_record(source / name)
+                  for name, row in seals['source']['files'].items() if 'link' not in row})
+    for name in ('node', 'installed_bundle', 'installed_registry'):
+        path = Path(profile['ap_replay'][name]).resolve(strict=True)
+        files[str(path)] = protocol.file_record(path)
+    return files
+
+
+def precheck_ap(plan, profile):
+    seals = ap_profile(profile, plan, preparation=True)
+    files = ap_inputs(profile, seals)
+    return {'ready': True, 'scope': 'ap-prerequisites-only', 'plan_sha256': protocol.digest(plan),
+        'profile_sha256': protocol.digest(profile),
+        'checks': ['replay-host-source-tooling-python', 'released-ap-bundle-registry-node', 'dependency-execution-closure'],
+        'closure_files': len(files),
+        'not_checked': ['product-plan-native-qualification', 'capture-binding', 'ap-replay',
+                        'future-liveness-cleanup', 'rollout-approval'],
+        'read_only': 'No input, build, short allocation or managed record writes; disposable Git scratch indexes only.'}
+
+
 def prepare_ap(native_root, coordinator, profile):
     native_root = Path(native_root).resolve(strict=True)
     coordinator = Path(coordinator).resolve()
@@ -351,13 +417,7 @@ def prepare_ap(native_root, coordinator, profile):
                      binding['archive_sha256'] == capture_report['package_sha256'] and
                      binding['capture_manifest_sha256'] == native.sha(capture / 'manifest.json') and
                      binding['integrity_sha256'] == native.sha(capture / 'integrity.json'), 'Native AP package/capture binding differs')
-    files = closure(profile) | dependency_files(profile['ap_replay']['node_modules'])
-    source = Path(profile['source_root'])
-    files.update({str((source / name).resolve()): protocol.file_record(source / name)
-                  for name, row in seals['source']['files'].items() if 'link' not in row})
-    for name in ('node', 'installed_bundle', 'installed_registry'):
-        path = Path(profile['ap_replay'][name]).resolve(strict=True)
-        files[str(path)] = protocol.file_record(path)
+    files = ap_inputs(profile, seals)
     coordinator.mkdir(mode=0o700)
     protocol.write_once(coordinator / 'ap-profile.json', profile)
     protocol.write_once(coordinator / 'native-plan.json', plan)

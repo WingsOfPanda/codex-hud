@@ -222,17 +222,12 @@ def input_closure(profile):
     return {str(path.resolve()): protocol.file_record(path.resolve()) for path in paths}
 
 
-def prepare(root, cleanup, *, rehearsal_failure=None):
-    """Freeze local inputs and emit a proposal. This does not prepare/launch a job."""
-    root = Path(root).resolve()
-    protocol.require_native_attempt(root)
-    metadata, plan, profile = protocol.read_attempt(root)
+def build_inputs(plan, profile):
+    """Validate stable native prerequisites without allocating an attempt."""
     protocol.require(plan['upstream']['version'] == '0.163.0', 'Upstream recipe needs qualification')
     protocol.require(profile['toolchain']['version'] == '1.99.1', 'Compiler recipe needs qualification')
     protocol.require(Path(profile['tooling_root']).resolve() == Path(__file__).resolve().parents[1],
                      'Run from the pinned tooling checkout')
-    protocol.require(rehearsal_failure is None or metadata['rehearsal'] and rehearsal_failure in STAGES,
-                     'Failure injection is rehearsal-only')
     build = profile['native_build']
     protocol.keys(build, NATIVE_KEYS, ('pkg_config',))
     for name in ('upstream_repository', 'cargo_home', 'cargo_target_dir', 'v8_cache',
@@ -245,13 +240,31 @@ def prepare(root, cleanup, *, rehearsal_failure=None):
         protocol.require(profile.get('system_tools', {}).get(canonical) == sha(canonical),
                          f'System tool needs an explicit hash pin: {canonical}')
     protocol.require(sha(build['official_binary']) == build['official_sha256'], 'Official binary mismatch')
+
+
+def cleanup_hook(cleanup, profile, *, rehearsal=False):
+    _hook(cleanup, '{attempt}', '{report}')
+    ownership_path = str((Path(profile['tooling_root']) / 'scripts/release_ownership.py').resolve())
+    common_hook = (cleanup['argv'] == [profile['python']['path'], '-B', ownership_path, 'audit',
+                                      '--attempt', '{attempt}', '--output', '{report}'] and
+                   cleanup['cwd'] == profile['tooling_root'] and cleanup['env'] == python_env(profile))
+    protocol.require(common_hook or rehearsal, 'Production requires the pinned common ownership audit')
+    return ownership_path
+
+
+def prepare(root, cleanup, *, rehearsal_failure=None):
+    """Freeze local inputs and emit a proposal. This does not prepare/launch a job."""
+    root = Path(root).resolve()
+    protocol.require_native_attempt(root)
+    metadata, plan, profile = protocol.read_attempt(root)
+    protocol.require(rehearsal_failure is None or metadata['rehearsal'] and rehearsal_failure in STAGES,
+                     'Failure injection is rehearsal-only')
+    build_inputs(plan, profile)
+    build = profile['native_build']
     observed, python = observe(profile)
     protocol.require(observed == metadata['native'], 'Native identity changed since init')
     pkg_config = pkg_config_probe(profile) if not metadata['rehearsal'] or 'pkg_config' in build else None
-    _hook(cleanup, root, root / 'outputs/job-cleanup.json')
-    ownership_path = str((Path(profile['tooling_root']) / 'scripts/release_ownership.py').resolve())
-    common_hook = ownership_path in cleanup['argv'] and 'audit' in cleanup['argv']
-    protocol.require(common_hook or metadata['rehearsal'], 'Production requires the pinned common ownership audit')
+    ownership_path = cleanup_hook(cleanup, profile, rehearsal=metadata['rehearsal'])
     final_cleanup = dict(cleanup, argv=[value if value != 'audit' else 'cleanup' for value in cleanup['argv']])
     ownership = module(ownership_path)
     baseline = ownership.capture_baseline([root, Path(metadata['socket_root'])], scope=root)
