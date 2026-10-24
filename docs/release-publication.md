@@ -7,8 +7,9 @@ it is not an automatic publisher or authority to install/merge.
 
 ## Bind inputs before any network mutation
 
-Record `RELEASE_REPO`, `RELEASE_TAG`, the full expected companion commit,
-`RELEASE_PYTHON`, `RELEASE_TOOLING` and a private `RELEASE_DIR` for API receipts.
+Record `RELEASE_REPO`, `RELEASE_TAG`, `RELEASE_CHECKOUT` (the separate companion
+worktree), the full expected `RELEASE_COMPANION_COMMIT`, `RELEASE_PYTHON`,
+`RELEASE_TOOLING` and a private `RELEASE_DIR` for API receipts.
 The repository and tag must match the accepted handoff. Product source in the
 handoff and companion/tag commit are distinct identities. Keep receipt outputs
 outside frozen source/tooling and never update sealed acceptance files in place.
@@ -25,8 +26,41 @@ two spaces, the archive **basename**, and a newline. Hash the completed files;
 Populate all five actual rows, including checksum files and handoff; `size` is an
 integer byte count. Extra local metadata such as `path` is permitted by the checker.
 Each archive name/digest must equal its handoff target. Verify the companion commit
-contains the note and portable qualification evidence, then push its reviewed tag
-under the existing grant. Do not replace an existing tag with another commit.
+contains the note and portable qualification evidence before publishing its tag.
+Do not replace an existing tag with another commit.
+
+## Reconcile and publish the tag
+
+Use the companion note as the release body: the archive's source note was frozen
+before qualification and is not rewritten afterward. Convert its relative links
+to URLs bound to `RELEASE_TAG` before supplying `NOTE_FILE` below.
+
+Check the release by tag and the remote tag before creation:
+
+```sh
+gh auth status
+gh api "repos/$RELEASE_REPO/releases/tags/$RELEASE_TAG"
+git -C "$RELEASE_CHECKOUT" ls-remote origin \
+  "refs/tags/$RELEASE_TAG" "refs/tags/$RELEASE_TAG^{}"
+```
+
+An authenticated HTTP 404 establishes release absence; authentication, network
+or other errors leave it unknown. An existing release resumes through its identity
+and verification steps below. Resolve an existing tag to its commit as described
+under [draft verification](#verify-the-draft-before-publication); a different
+commit is a conflict, not permission to move the tag.
+
+For an absent remote tag, verify that `origin` is `RELEASE_REPO` and the companion
+commit contains the reviewed note/evidence. Inspect a pre-existing local tag too;
+create it only when absent, otherwise require its resolved commit to match:
+
+```sh
+git -C "$RELEASE_CHECKOUT" tag "$RELEASE_TAG" "$RELEASE_COMPANION_COMMIT"
+git -C "$RELEASE_CHECKOUT" push origin "refs/tags/$RELEASE_TAG"
+```
+
+After a push error, read the remote tag before deciding what remains. Continue
+only when its resolved commit equals `RELEASE_COMPANION_COMMIT`.
 
 ## Create once, then identify the exact draft
 
@@ -42,9 +76,7 @@ gh release view "$RELEASE_TAG" --repo "$RELEASE_REPO" \
 ```
 
 `ASSET_PATHS` and `NOTE_FILE` are placeholders for explicit arguments, not literal
-defaults. Wait for upload completion before checking digests. Release-note links
-must resolve on GitHub; convert repository-relative document links to tag-bound
-URLs when using the source note as the release body.
+defaults. Wait for upload completion before checking digests.
 
 Take `RELEASE_NODE` from `view.json.id`, then collect its database ID:
 
@@ -105,11 +137,28 @@ gh api "repos/$RELEASE_REPO/releases/assets/$RELEASE_HANDOFF_ASSET_ID" \
   -H 'Accept: application/octet-stream' > "$RELEASE_DIR/downloaded-public-handoff.json"
 ```
 
-Run the identical `verify` command with the public record/download paths and
-**without `--draft`**, saving a separate public verification receipt. It requires
+Refresh the remote tag resolution, then verify public state with a separate receipt:
+
+```sh
+gh api "repos/$RELEASE_REPO/git/ref/tags/$RELEASE_TAG" > "$RELEASE_DIR/public-tag-ref.json"
+```
+
+Resolve this new response to `RELEASE_TAG_COMMIT` using the same commit/annotated-tag
+rule above, then run:
+
+```sh
+"$RELEASE_PYTHON" -B "$RELEASE_TOOLING/scripts/release_publish.py" verify \
+  --handoff HANDOFF_FILE --assets "$RELEASE_DIR/assets.json" \
+  --release "$RELEASE_DIR/public-release.json" \
+  --downloaded-handoff "$RELEASE_DIR/downloaded-public-handoff.json" \
+  --release-id "$RELEASE_ID" --tag-commit "$RELEASE_TAG_COMMIT" \
+  --expected-commit "$RELEASE_COMPANION_COMMIT" \
+  > "$RELEASE_DIR/public-verification.json"
+```
+
+This check omits `--draft` and requires
 `draft: false` and a nonempty `published_at` in addition to the identity/digest
-checks. Refresh the remote tag resolution too; do not reuse only the draft-time
-tag response as proof of the final public tag. If a network mutation's outcome is
+checks. If a network mutation's outcome is
 uncertain, read this same release ID
 and reconcile preserved receipts before another mutation; never restart creation.
 
