@@ -141,6 +141,19 @@ def accepted_package(config):
     require(manifest['coordinator_protocol'] == 5 and manifest['execution_record_format'] == 1 and manifest['upstream'] == UPSTREAM, 'Unsupported package protocol')
 
 
+def fixture_inputs(plan, profile):
+    """Check compatibility's stable fixture and gate contract before allocation."""
+    require(plan['upstream'] == UPSTREAM and plan['compat']['recipe_revision'] == 1,
+            'Unsupported compatibility recipe/upstream')
+    fixtures = plan['compat']['fixture_files']
+    require(set(RECOVERY_FIXTURES) <= fixtures.keys(), 'Recovery fixture closure missing')
+    for name, sha in fixtures.items():
+        require(digest(Path(profile['source_root']) / name) == sha, 'Wrong fixture bytes: ' + name)
+    gates = plan['gates'][profile['architecture']]
+    require(tuple(gates['compat']['checks']) == GATES and
+            gates['captures']['checks'] == ['native-cursor-states'], 'Unsupported compatibility checks')
+
+
 def prepare(plan, profile, attempt, *, config, helper_binding):
     """Bind accepted packages and committed recipes; return the local launch data."""
     attempt = Path(attempt).resolve(strict=True)
@@ -166,10 +179,7 @@ def prepare(plan, profile, attempt, *, config, helper_binding):
     source = Path(values['source'])
     require(subprocess.check_output(['git', '-C', str(source), 'rev-parse', 'HEAD'], text=True).strip() == values['source_commit'], 'Wrong source checkout')
     require(digest(source / values['patch_path']) == values['frontend_patch_sha256'], 'Wrong frontend patch')
-    for name, sha in values['fixture_files'].items():
-        require(digest(source / name) == sha, 'Wrong fixture bytes: ' + name)
-    require(tuple(values['gate_checks']['compat']['checks']) == GATES and
-            values['gate_checks']['captures']['checks'] == ['native-cursor-states'], 'Unsupported compatibility checks')
+    fixture_inputs(plan, profile)
     require(digest(helper_binding['helper']) == helper_binding['sha256'], 'Owned supervisor binding mismatch')
     scope = Path(values['scope'])
     scope.mkdir(mode=0o700)
@@ -282,8 +292,10 @@ def run(scope, *, setup_only=False):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=('run', 'prepare-attempt', 'verify-attempt', 'run-attempt', 'cleanup-attempt',
+    parser.add_argument('command', choices=('precheck', 'precheck-ap', 'run', 'prepare-attempt', 'verify-attempt', 'run-attempt', 'cleanup-attempt',
         'prepare-ap', 'verify-ap', 'replay-ap', 'run-ap', 'cleanup-ap'))
+    parser.add_argument('--plan', type=Path)
+    parser.add_argument('--cleanup-hook', type=Path)
     parser.add_argument('--scope', type=Path)
     parser.add_argument('--attempt', type=Path)
     parser.add_argument('--old-package', type=Path)
@@ -293,14 +305,26 @@ def main():
     parser.add_argument('--coordinator', type=Path)
     parser.add_argument('--setup-only', action='store_true')
     args = parser.parse_args()
+    if args.command in ('precheck', 'precheck-ap'):
+        sys.dont_write_bytecode = True
     if args.command == 'run':
         require(args.scope is not None, '--scope is required')
         result = run(args.scope, setup_only=args.setup_only)
     else:
-        require(args.attempt is not None, '--attempt is required')
         sys.path.insert(0, str(RECIPE))
         import workflow
-        if args.command == 'prepare-attempt':
+        if args.command in ('precheck', 'precheck-ap'):
+            require(args.plan is not None and args.profile is not None, '--plan and --profile are required')
+            plan, profile = (json.loads(path.read_text()) for path in (args.plan, args.profile))
+            if args.command == 'precheck':
+                require(args.old_package is not None and args.cleanup_hook is not None,
+                        '--old-package and --cleanup-hook are required')
+                result = workflow.precheck(plan, profile, args.old_package, json.loads(args.cleanup_hook.read_text()))
+            else:
+                result = workflow.precheck_ap(plan, profile)
+        elif args.attempt is None:
+            raise ValueError('--attempt is required')
+        elif args.command == 'prepare-attempt':
             require(args.old_package is not None, '--old-package is required')
             result = workflow.prepare_attempt(args.attempt, args.old_package)
         elif args.command == 'verify-attempt':
