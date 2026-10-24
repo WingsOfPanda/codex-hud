@@ -49,6 +49,49 @@ they hand expensive/hardware/service launches to their root under the
 Read the [0.4.8 retrospective](releases/0.163.0-plus.0.4.8-retrospective.md)
 when changing this workflow; it separates observed failures from proposed fixes.
 
+## Before a new release: sync normal checkouts
+
+Each participating host's owner updates its ordinary `main` checkout before step 1.
+This is a prerequisite of new release preparation, not a timer or background sync.
+For a status question, compare HEAD with remote `main` read-only and report any lag.
+For a resume, preserve the existing plan's source/tooling pins and reconcile its
+jobs first; a newer book does not refreeze an active release.
+
+Confirm the checkout is owned by this task, is on `main`, is clean, and has no
+active job or frozen evidence depending on its identity. Frozen product/tooling
+worktrees stay untouched; fetch only from the normal checkout or a separate
+unsealed clone. Then run from that normal checkout:
+
+```sh
+set -e
+export GIT_OPTIONAL_LOCKS=0
+test "$(git symbolic-ref --quiet --short HEAD)" = main
+release_main_status=$(git -c core.fsmonitor=false status --porcelain=v1 --untracked-files=normal)
+test -z "$release_main_status"
+timeout 60 git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
+git merge-base --is-ancestor HEAD refs/remotes/origin/main
+git -c core.fsmonitor=false merge --ff-only refs/remotes/origin/main
+release_main_status=$(git -c core.fsmonitor=false status --porcelain=v1 --untracked-files=normal)
+test -z "$release_main_status"
+release_main_remote=$(timeout 60 git ls-remote --exit-code origin refs/heads/main)
+test "$(git rev-parse HEAD)" = "${release_main_remote%%[[:space:]]*}"
+git rev-parse HEAD
+```
+
+A dirty, diverged, detached, wrong-branch or in-use checkout is preserved: report
+the concrete condition and use an agreed clean checkout if preparation can
+continue there. Never reset, stash, switch branches or force-update to make this
+check pass. If remote `main` moves during comparison, recheck ownership and local
+state before a bounded refresh; report a continuing mismatch instead of looping.
+When remote access fails, continue local reads/preparation but mark sync unverified.
+
+**Exit check:** each owner records the normal checkout path, matching full local
+and remote commits, clean status and the release-book revision read. The coordinator
+then names the exact product/tooling revisions for dedicated release worktrees.
+Unmerged improvements are not supplied by syncing `main`: merge them through their
+reviewed PR first, or explicitly select and transfer their reviewed commit as
+tooling. Both owners must acknowledge the same selected book/tooling revision.
+
 ## 1. Select the path and freeze inputs
 
 Record the version, user-visible changes, owners and existing authorization for
