@@ -3,6 +3,7 @@ import copy
 import hashlib
 import importlib.util
 import json
+import math
 from pathlib import Path
 import sys
 import unittest
@@ -220,6 +221,58 @@ class Coordinator(unittest.TestCase):
         self.assertEqual(sidecar['evidence'], 'leaf-ap-report.json')
         self.assertIn('leaf-provenance.json', sidecar['outputs'])
         self.assertTrue(p.accept_attempt(self.native, source_root=SCRIPTS.parent, ap_receipt=self.root / 'ap-receipt.json')['accepted'])
+
+    def test_validate_job_accepts_exact_and_adjacent_result_timestamps(self):
+        self.finish()
+        lower = 1792751962.6755495
+        upper = math.nextafter(lower, math.inf)
+        for saved, separate in ((lower, lower), (lower, upper), (upper, lower)):
+            with self.subTest(saved=saved, separate=separate):
+                self.state['result'] = dict(self.result, finished_at=saved)
+                self.result['finished_at'] = separate
+                self.save_job()
+                before = {name: (self.directory / name).read_bytes() for name in ('state.json', 'result.json')}
+                state, records = adapter.validate_job(self.directory, self.prepared_path, self.proposal, self.profile)
+                self.assertEqual(state['result']['finished_at'], saved)
+                self.assertEqual(records['result.json']['finished_at'], separate)
+                self.assertEqual(before, {name: (self.directory / name).read_bytes() for name in before})
+
+    def test_validate_job_rejects_result_drift_outside_adjacent_timestamps(self):
+        self.finish()
+        original = copy.deepcopy(self.result)
+        lower = 1792751962.6755495
+        upper = math.nextafter(lower, math.inf)
+        cases = [(lower, math.nextafter(upper, math.inf)),
+                 (lower, math.nextafter(math.nextafter(lower, -math.inf), -math.inf))]
+        for invalid in (math.nan, math.inf, -math.inf, True, False):
+            cases.extend(((lower, invalid), (invalid, lower)))
+        for saved, separate in cases + [(lower, upper)]:
+            with self.subTest(saved=saved, separate=separate):
+                self.state['result'] = dict(original, finished_at=saved)
+                self.result = dict(original, finished_at=separate)
+                if (saved, separate) == (lower, upper):
+                    self.result['extra'] = True
+                self.save_job()
+                before = {name: (self.directory / name).read_bytes() for name in ('state.json', 'result.json')}
+                with self.assertRaisesRegex(ValueError, 'Managed workload did not complete successfully'):
+                    adapter.validate_job(self.directory, self.prepared_path, self.proposal, self.profile)
+                self.assertEqual(before, {name: (self.directory / name).read_bytes() for name in before})
+
+    def test_composition_preserves_distinct_adjacent_result_snapshots(self):
+        self.finish()
+        self.state['result'] = dict(self.result, finished_at=1792751962.6755495)
+        self.result['finished_at'] = math.nextafter(self.state['result']['finished_at'], math.inf)
+        self.save_job()
+        self.save_review()
+        names = ('state.json', 'result.json', 'manifest.json', 'stdout.log', 'cleanup.log')
+        before = {name: (self.directory / name).read_bytes() for name in names}
+        self.assertNotEqual(p.load(self.directory / 'state.json')['result'], p.load(self.directory / 'result.json'))
+        self.compose()
+        for name, data in before.items():
+            self.assertEqual((self.directory / name).read_bytes(), data)
+            self.assertEqual((self.root / 'leaf-records' / name).read_bytes(), data)
+        self.assertTrue(p.accept_attempt(self.native, source_root=SCRIPTS.parent,
+            ap_receipt=self.root / 'ap-receipt.json')['accepted'])
 
     def test_wrong_job_runtime_commands_outcomes_and_input_refused(self):
         self.finish()

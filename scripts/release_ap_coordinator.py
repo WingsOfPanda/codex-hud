@@ -140,7 +140,8 @@ def validate_job(directory, prepared_path, proposal, profile):
     protocol.require(state['package'] == profile['executor_package_root'] and state['runtime'] ==
         {'path': str(helper), 'dev': info.st_dev, 'ino': info.st_ino, 'size': info.st_size, 'sha256': native.sha(helper)},
         'Managed executor package/runtime mismatch')
-    protocol.require(state['result'] == result and state['state'] == result['state'] == 'completed' and
+    protocol.require(protocol.recovery_results_match(state['result'], result) and
+        state['state'] == result['state'] == 'completed' and
         state['log_complete'] is True and state['output_closed'] is True and state['error'] is None and
         state['resolution'] is None and result['workload_attempted'] is True and result['exit_code'] == 0 and
         result['signal'] is None and result['termination'] is None and result['error'] is None and
