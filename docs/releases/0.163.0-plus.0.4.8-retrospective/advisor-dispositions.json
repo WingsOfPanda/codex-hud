@@ -1,0 +1,111 @@
+{
+  "advisor_model": "claude-opus-5-5",
+  "effort": "xhigh",
+  "draft_verdict": "revise",
+  "advisor_response_sha256": "117fee9cfd05896cd1b7a7a67d9e25f5d155a93f91d3455730937187af44ea2d",
+  "final_decision": "Root addressed draft findings; no second Advisor approval is claimed.",
+  "findings": [
+    {
+      "id": 1,
+      "topic": "plan superseded",
+      "disposition": "Coordinator refreezes in-scope corrections; owner verifies replacement digests and continues without a new brief/go. Product contract is distinct from source identity."
+    },
+    {
+      "id": 2,
+      "topic": "unmeasured causal ranking",
+      "disposition": "Retrospective ranks recorded failure classes, not elapsed delay shares; user-added recovery scope and unallocated gaps are explicit."
+    },
+    {
+      "id": 3,
+      "topic": "stale recovery status",
+      "disposition": "Removed stale final paragraph; published rollback proof and operator-reported block installation referenced; only coordinator TUI restart independently verified."
+    },
+    {
+      "id": 4,
+      "topic": "AP adapter scope",
+      "disposition": "Normal run-ap uses corrected verifier; old59 adapter is scoped to its fixed048 matrix/budgets; audit and executor-review producers and manual boundary named."
+    },
+    {
+      "id": 5,
+      "topic": "AP chain regression",
+      "disposition": "Root inspected regression and downstream consumers; full prepare/compose/sidecar/accept test preserves distinct raw records.12adapter+39protocol passed; postpublication fix separately identified."
+    },
+    {
+      "id": 6,
+      "topic": "frozen verifier HEAD",
+      "disposition": "Book and compat README require unchanged verifier HEAD/files through composition; unrelated docs work goes in another worktree."
+    },
+    {
+      "id": 7,
+      "topic": "x86 first",
+      "disposition": "Optional cost dependency triggered by native recipe/fixture diff, with named receipt/hash/sender and bounded wait; otherwise host launches after local review."
+    },
+    {
+      "id": 8,
+      "topic": "label migration",
+      "disposition": "Old-literal search spans product tests/patches, Rust and footer/HUD/cursor/compat/AP predicates; per-hit disposition required before freeze."
+    },
+    {
+      "id": 9,
+      "topic": "producer corpus",
+      "disposition": "Existing protocol/AP/compat test commands and real-shaped timestamp/socket/failure corpus named; unchanged revision references prior accepted evidence."
+    },
+    {
+      "id": 10,
+      "topic": "Git inspection interface",
+      "disposition": "Existing native verify/AP verify CLIs named; guarded Git inspection tested on disposable fixture with positive mutation control."
+    },
+    {
+      "id": 11,
+      "topic": "reuse ambiguity",
+      "disposition": "Historical artifact sentence replaced by explicit supported helper/test-only reuse; no new-runner cross-attempt receipt/artifact transfer."
+    },
+    {
+      "id": 12,
+      "topic": "causal citations",
+      "disposition": "f09 preflight success distinguished; initial index-drift cause unestablished; linker share unmeasured; readiness table described as owner procedure, not single automated command."
+    },
+    {
+      "id": 13,
+      "topic": "ARM owner report",
+      "disposition": "Verified supplied report/bundle hashes, incorporated additional incidents/boundaries and reread four managed start/finish pairs on ARM."
+    },
+    {
+      "id": 14,
+      "topic": "timestamp mechanism",
+      "disposition": "Describe observed adjacent-double copies; producing mechanism not established. Shared matcher comment corrected without changing semantics."
+    },
+    {
+      "id": 15,
+      "topic": "checklist fields",
+      "disposition": "Separate executed tooling/verifier/adapter fields and measured interval/source column replace ambiguous time-lost field."
+    },
+    {
+      "id": 16,
+      "topic": "freeze order",
+      "disposition": "Step1 records candidate identities; final combined freeze follows stable readiness."
+    },
+    {
+      "id": 17,
+      "topic": "AP readiness and private paths",
+      "disposition": "AP install prerequisites moved early; private working-evidence locators distinguished from published final proof."
+    }
+  ],
+  "root_verification": {
+    "adapter_tests": 12,
+    "protocol_tests": 39,
+    "compatibility_tests": 25,
+    "total": 76,
+    "AP_protocol_log": "6f523a52-5575-4d67-8c26-c3c390394d56",
+    "compat_log": "8fd17697-feb4-4f0a-9bbe-a66f7c7045cf",
+    "git_guard_log": "60e06e1a-4e15-4278-a800-304e3b3aac2b",
+    "ARM_timing_log": "d6676ec6-9fdb-4dc1-89fb-77129b19be6d"
+  },
+  "limits": [
+    "No fresh native build, live AP replay or uninterrupted end-to-end rehearsal.",
+    "No controlled CPU/cache experiment or speedup claim.",
+    "No published tag, installed package, global config or main branch changed.",
+    "Cross-attempt reuse, structured failed-stage diagnostics and terminal-failure-versus-missing-journal reporting remain separate qualified follow-ups.",
+    "Exact-invalid equal timestamp values retain the pre-existing shared matcher semantics; this fix is not broad schema hardening."
+  ]
+}

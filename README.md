@@ -89,7 +89,9 @@ directory. Historical 0.162.1 measurements showed the executable shrinking from
 for `--version` and 29.2 to 12.1 ms for `--help` (21 samples each). These do not
 measure 0.163.0, UI, or model-response speed.
 
-For complete distributable packages, follow [release building](docs/releasing.md).
+For a release, start with the [release book](docs/release-book.md) and its
+[checklist](docs/release-checklist.md). Complete package details are in
+[release building](docs/releasing.md).
 The packager stages native x86_64 and ARM64 outputs with upstream runtime resources,
 the native Rust helper, workflow docs, license notices, and integrity manifests. This
 is separate from the developer binary above. Codex voice is intentionally omitted;
@@ -105,10 +107,23 @@ The one-time Python-to-Rust rollout needs a
 
 ## Display behavior
 
+Agent shell commands use a one-line command preview with output folded behind
+the existing activity disclosure controls. Failed commands keep their exit code
+and one short output excerpt visible. Expansion retains the command and output,
+including live updates, without changing the results supplied to the model.
+See [command display](docs/command-display.md) for scope and grouped explanations.
+The optional **Compact display** item in `/statusline` shows a cool gray-teal `compact`
+indicator on the first row; its visibility does not toggle command folding.
+
+Select **morandi** in `/theme` for the **Morandi Cool** palette. It applies muted
+colors to syntax, Markdown, menus, prompts, status items, activity rows and
+transcript output. Live preview and Escape work as with the existing themes;
+confirmation saves `tui.theme = "morandi"`. See [theme behavior](docs/themes.md).
+
 The status footer puts model, Ultracode, working directory and active agent on
 the first row. Selected **Context remaining**, **Weekly limit** and **Weekly reset**
 items appear on a second row, retaining their configured order and styling.
-When status line colors are enabled, model and Ultracode use cyan, directory
+With other themes and status line colors enabled, model and Ultracode use cyan, directory
 blue, branch peach, context green, weekly remaining yellow, weekly reset purple, and PR number
 red. Active agent and separators stay neutral. Colors adapt to terminal contrast
 and supported depth; other selected items retain theme accents.
@@ -220,19 +235,20 @@ belong to the existing batch. Each member name remains unique.
 These names produce one row:
 
 ```text
-GPT-6.1-Sol (high) [worker] · hud styling (3 agents) · 1:20 · 250K tok
+GPT-6.1-Sol (high) [worker] · hud styling · 3 running · longest 1:20 · 250K tok
 ```
 
 The count includes only active/waiting members: 3 becomes 2, then 1, and the group
-disappears at zero. Group rows retain their batch scope: tokens include lifetime
-usage from all members of that explicit batch, including finished members, and
-elapsed time starts at the earliest member's creation. Their counters use the local
-backend's existing SQLite metadata through a read-only connection, respecting its
-configured SQLite directory; forked group members remain unknown because their
-lifetime totals can include inherited usage. Use a fresh batch for a new dispatch.
-Standalone rows pair latest-turn elapsed time with that same turn's usage. Missing metrics remain
-unknown. Model and effort come
-from the remaining active/waiting members; differing known settings show `mixed`.
+disappears at zero. The `running` count includes workers waiting for approval or
+input; those waits remain labeled. Group elapsed time is the longest current
+assignment among those members, and tokens sum only their current assignments.
+The latest stock-daemon turn defines an assignment: follow-ups reset elapsed
+time and usage instead of inheriting a long-lived thread's totals. Usage is read
+from exact thread/turn records in local rollout files; inherited parent records,
+missing records and remote metrics remain unknown. Finished members contribute
+neither elapsed time nor tokens. Standalone workers use the same assignment
+boundary. Model and effort come from the remaining active/waiting members;
+differing known settings show `mixed`.
 The role prefix also uses only active/waiting members: matching roles share their
 name, differing known roles show `[mixed]`, and any missing or empty role shows
 `[general]`. Finished members do not change the role prefix.

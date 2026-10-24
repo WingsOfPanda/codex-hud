@@ -55,7 +55,8 @@ stream_max_retries=0
 
 def rollout(home):
     return [json.loads(line) for path in (home / 'sessions').glob('**/*.jsonl')
-            for line in path.read_text().splitlines() if line]
+            # A live writer may have appended only part of the final JSON/UTF-8 record.
+            for line in path.read_bytes().split(b'\n')[:-1] if line]
 
 
 def turns(home):
@@ -95,6 +96,41 @@ def start_terminal(binary, home, workspace, provider, name):
     wait([terminal], lambda: 'Execute the finite fixture command.' in terminal.text, 'prompt did not render')
     os.write(terminal.master, b'\r')
     return terminal
+
+
+def completion_rows(text, exit_code=0):
+    title = rf'Failed \(exit {exit_code}\)' if exit_code else 'Ran'
+    return re.findall(rf'^\s*[•◦]?\s*{title}\s+[^\n]+', text, re.MULTILINE)
+
+
+def assert_compact_completion(text, exit_code=0):
+    assert len(completion_rows(text, exit_code)) == 1, text
+    assert 'Show details' in text or re.search(r'^\s*\+ \d+ lines?\b', text, re.MULTILINE), text
+    assert 'POLICY_STARTED' not in text and 'POLICY_COMPLETE' not in text, text
+    failures = re.findall(r'FAIL_LINE_\d+', text)
+    assert failures == (['FAIL_LINE_039'] if exit_code else []), text
+
+
+def check_shell_details(terminal, log, failed, evidence):
+    rows, columns = terminal.screen.lines, terminal.screen.columns
+    draft = 'policy-editable-draft' in terminal.text
+    replies = terminal.resize(72, 120)
+    wait([terminal], lambda: terminal.resized_frame(replies), 'expanded shell geometry did not finish')
+    os.write(terminal.master, b'\x1bOS\x1b[C')
+    expected = ['POLICY_STARTED'] + ([f'FAIL_LINE_{index:03}' for index in range(40)]
+                                      if failed else ['POLICY_COMPLETE'])
+    wait([terminal], lambda: 'Show less' in terminal.text and all(line in terminal.text for line in expected)
+         and str(log) in ''.join(terminal.text.split()), 'expanded shell lost retained log or output')
+    assert 'codex-plus log:' in terminal.text, terminal.text
+    assert not draft or 'policy-editable-draft' in terminal.text, terminal.text
+    evidence.write_text(terminal.text + '\n')
+    # Keep focus on this activity while collapsing, then return input to the composer.
+    os.write(terminal.master, b'\x1b[D\x1b[27u')
+    wait([terminal], lambda: 'Show less' not in terminal.text, 'shell details did not collapse')
+    replies = terminal.resize(rows, columns)
+    wait([terminal], lambda: terminal.resized_frame(replies), 'collapsed shell geometry did not finish')
+    assert_compact_completion(terminal.text, 17 if failed else 0)
+    assert not draft or 'policy-editable-draft' in terminal.text, terminal.text
 
 
 def run_tui_case(binary, root, evidence, case):
@@ -137,7 +173,7 @@ def run_tui_case(binary, root, evidence, case):
                 os.write(terminal.master, b'policy-editable-draft')
                 wait([terminal], lambda: 'policy-editable-draft' in terminal.text and 'Background ·' in terminal.text,
                      'quiet shell prevented composer edits')
-                assert advisor_rows(terminal.text) == ['Advisor · GPT-6-Astra (xhigh) · ready · 0 calls'], terminal.text
+                assert advisor_rows(terminal.text) == ['Advisor · ready · 0 calls'], terminal.text
                 assert_compact_hud(terminal.text, rows=2, idle=False)
                 (evidence / f'{case}-running-screen.txt').write_text(terminal.text + '\n')
             (workspace / 'release').touch()
@@ -149,20 +185,10 @@ def run_tui_case(binary, root, evidence, case):
             assert len(logs) == 1, logs
             log = logs[0]
         expected_exit = 17 if failed else 0
-        compact = marker == 'background' or case in ('auto_long', 'auto_polling')
-        if compact:
-            outcome = 'failed' if failed else 'completed'
-            # A yielded process can complete after the assistant's turn has ended.
-            wait([terminal], lambda: f'Shell {outcome} (exit {expected_exit})' in terminal.text,
-                 'canonical shell completion did not produce its compact result', 5)
-            assert 'Log:' in terminal.text and str(log) in terminal.text.replace('\n', '').replace(' ', ''), terminal.text
-            assert 'POLICY_STARTED' not in terminal.text and 'POLICY_COMPLETE' not in terminal.text, terminal.text
-            if failed:
-                assert 'FAIL_LINE_039' in terminal.text and 'FAIL_LINE_000' not in terminal.text, terminal.text
-                assert len(re.findall(r'FAIL_LINE_\d+', terminal.text)) <= 5, terminal.text
-        else:
-            assert 'Ran ' in terminal.text and 'POLICY_COMPLETE' in terminal.text, terminal.text
-            assert 'Shell completed' not in terminal.text, terminal.text
+        # A yielded process can complete after the assistant's turn has ended.
+        wait([terminal], lambda: completion_rows(terminal.text, expected_exit),
+             'canonical shell completion did not produce its command row', 5)
+        assert_compact_completion(terminal.text, expected_exit)
         completed_at = time.monotonic()
         if 'Background ·' in terminal.text:
             (evidence / f'{case}-pending-refresh-screen.txt').write_text(terminal.text + '\n')
@@ -175,18 +201,19 @@ def run_tui_case(binary, root, evidence, case):
         assert provider.count == expected_requests, provider.requests
         (evidence / f'{case}-complete-screen.txt').write_text(terminal.text + '\n')
         shutil.copy2(log, evidence / f'{case}-command.log')
-        if compact:
-            (evidence / f'{case}-terminal.ansi').write_bytes(terminal.output)
-            terminal.close()
-            terminal = None
-            replay = Terminal(binary, home, workspace, parent=parent_id(home))
-            wait([replay], lambda: f'Shell {outcome} (exit {expected_exit})' in replay.text and 'fixture-finished' in replay.text,
-                 'resume did not reproduce compact shell record', 30)
-            assert 'POLICY_STARTED' not in replay.text and 'POLICY_COMPLETE' not in replay.text, replay.text
-            assert 'FAIL_LINE_000' not in replay.text, replay.text
-            assert provider.count == expected_requests and turns(home) == 1, 'replay called a model or created a turn'
-            (evidence / f'{case}-replay-screen.txt').write_text(replay.text + '\n')
-        return {'case': case, 'exit': expected_exit, 'compact': compact,
+        check_shell_details(terminal, log, failed, evidence / f'{case}-expanded-screen.txt')
+        assert provider.count == expected_requests, 'local disclosure called a model'
+        (evidence / f'{case}-terminal.ansi').write_bytes(terminal.output)
+        terminal.close()
+        terminal = None
+        replay = Terminal(binary, home, workspace, parent=parent_id(home))
+        wait([replay], lambda: completion_rows(replay.text, expected_exit) and 'fixture-finished' in replay.text,
+             'resume did not reproduce compact command row', 30)
+        assert_compact_completion(replay.text, expected_exit)
+        assert 'Show less' not in replay.text, 'resume retained manual shell expansion'
+        assert provider.count == expected_requests and turns(home) == 1, 'replay called a model or created a turn'
+        (evidence / f'{case}-replay-screen.txt').write_text(replay.text + '\n')
+        return {'case': case, 'exit': expected_exit, 'compact': True,
                 'completion_hud_clear_ms': hud_clear_ms, 'loopback_requests': provider.count}
     finally:
         (workspace / 'release').touch()
@@ -203,9 +230,10 @@ def run_tui_case(binary, root, evidence, case):
         provider.close()
 
 
-def run_stock_park(binary, root, evidence):
+def run_stock_park(binary, root, evidence, launcher=None):
     home, workspace = root / 'stock-home', root / 'stock-workspace'
-    command = command_for(workspace, 'background', held=True)
+    launcher = launcher or REPO / 'bin/codex-plus'
+    command = command_for(workspace, 'background', held=True, launcher=launcher)
     provider = ShellPolicyProvider(command, yield_time_ms=1000)
     configure(home, workspace, provider)
     env = {key: value for key, value in os.environ.items()
@@ -228,7 +256,7 @@ def run_stock_park(binary, root, evidence):
             processes = rpc.call('thread/backgroundTerminals/list', {'threadId': parent})['data']
             assert len(processes) == 1, processes
             process = processes[0]['processId']
-            parked = subprocess.run([str(REPO / 'bin/codex-plus'), 'park', '--parent', parent, '--process', process,
+            parked = subprocess.run([str(launcher), 'park', '--parent', parent, '--process', process,
                 '--reason', 'isolated helper shell-policy acceptance'], cwd=REPO, env=env,
                 capture_output=True, text=True, timeout=15)
             assert parked.returncode == 0, parked.stderr
@@ -256,7 +284,7 @@ def run_stock_park(binary, root, evidence):
             assert len(logs) == 1 and 'POLICY_COMPLETE' in logs[0].read_text(), logs
             shutil.copy2(logs[0], evidence / 'stock-command.log')
             (evidence / 'stock-ledger.json').write_text(json.dumps(state, indent=2) + '\n')
-            return {'official_daemon': str(binary), 'queueIdempotency': False,
+            return {'official_daemon': str(binary), 'launcher': str(launcher), 'queueIdempotency': False,
                     'loopback_requests': 3, 'callbacks': 1, 'turns': 2, 'passed': True}
         finally:
             (workspace / 'release').touch()
@@ -292,18 +320,26 @@ def run_parallel_roots(binary, root, evidence):
             os.write(terminal.master, f'parallel-draft-{index}'.encode())
         wait(terminals, lambda: all(f'parallel-draft-{index}' in terminal.text
              for index, terminal in enumerate(terminals)), 'parallel policy roots blocked composers')
-        assert advisor_rows(background.text) == ['Advisor · GPT-6-Astra (xhigh) · ready · 0 calls'], background.text
+        assert advisor_rows(background.text) == ['Advisor · ready · 0 calls'], background.text
         assert_compact_hud(background.text, rows=2, idle=False)
         (fixtures[0][1] / 'release').touch()
         fixtures[0][2].final_gate.set()
-        wait(terminals, lambda: 'Shell completed (exit 0)' in background.text and 'Background ·' not in background.text,
+        wait(terminals, lambda: completion_rows(background.text) and 'Background ·' not in background.text,
              'background completion did not compact independently')
+        assert_compact_completion(background.text)
         assert not (fixtures[1][1] / 'release').exists() and turns(fixtures[1][0]) == 0
-        assert 'Shell completed' not in foreground.text and 'parallel-draft-1' in foreground.text, foreground.text
+        assert not completion_rows(foreground.text) and 'parallel-draft-1' in foreground.text, foreground.text
+        background_log = next((fixtures[0][0] / 'codex-plus/logs').glob('*'))
+        check_shell_details(background, background_log, False, evidence / 'parallel-background-expanded-screen.txt')
+        assert 'parallel-draft-0' in background.text and 'parallel-draft-1' in foreground.text
         (fixtures[1][1] / 'release').touch()
         fixtures[1][2].final_gate.set()
-        wait(terminals, lambda: 'Ran ' in foreground.text and 'POLICY_COMPLETE' in foreground.text and
+        wait(terminals, lambda: completion_rows(foreground.text) and
              all(turns(home) == 1 for home, _, _ in fixtures), 'foreground peer did not finish normally')
+        assert_compact_completion(foreground.text)
+        foreground_log = next((fixtures[1][0] / 'codex-plus/logs').glob('*'))
+        check_shell_details(foreground, foreground_log, False, evidence / 'parallel-foreground-expanded-screen.txt')
+        assert 'parallel-draft-0' in background.text and 'parallel-draft-1' in foreground.text
         assert all(provider.count == 2 for _, _, provider in fixtures), 'isolation added model calls'
         return {'parallel_roots': 2, 'isolated_policies': True, 'editable_composers': True}
     finally:
@@ -374,7 +410,7 @@ def run_native_cancellation(binary, root, evidence):
         provider.close()
 
 
-def run(binary, evidence, cases=CASES, stock_daemon=None):
+def run(binary, evidence, cases=CASES, stock_daemon=None, stock_launcher=None):
     evidence.mkdir(parents=True, exist_ok=True)
     (evidence / 'report.json').unlink(missing_ok=True)
     report = {'binary': str(binary), 'remote_model_requests': 0, 'cases': []}
@@ -386,7 +422,7 @@ def run(binary, evidence, cases=CASES, stock_daemon=None):
             report['parallel'] = run_parallel_roots(binary, root, evidence)
             report['cancellation'] = run_native_cancellation(binary, root, evidence)
         if stock_daemon:
-            report['stock_park'] = run_stock_park(stock_daemon, root, evidence)
+            report['stock_park'] = run_stock_park(stock_daemon, root, evidence, stock_launcher)
     report['passed'] = True
     (evidence / 'report.json').write_text(json.dumps(report, indent=2) + '\n')
     print(json.dumps(report, indent=2))
@@ -398,6 +434,9 @@ if __name__ == '__main__':
     parser.add_argument('--evidence', type=Path, default=REPO / '.build/shell-policy/acceptance')
     parser.add_argument('--case', choices=CASES, action='append')
     parser.add_argument('--stock-daemon', type=Path)
+    parser.add_argument('--stock-launcher', type=Path,
+                        help='Qualified Plus package launcher for the isolated stock park check')
     args = parser.parse_args()
     run(args.binary.resolve(), args.evidence.resolve(), args.case or CASES,
-        args.stock_daemon.resolve() if args.stock_daemon else None)
+        args.stock_daemon.resolve() if args.stock_daemon else None,
+        args.stock_launcher.resolve() if args.stock_launcher else None)

@@ -144,7 +144,7 @@ def composer_ready(text):
 def worker_rows(text):
     return [line.strip() for line in text.splitlines()
             if re.fullmatch(r'[^·›>]+ \([^()·›>]*\)(?: \[[^\]·›>]*\])? · '
-                            r'.+ · (?:\d+:\d{2}|\?)(?: · (?:\?|[\d,.]+[kKmMbBtT]?)'
+                            r'.+ · (?:longest )?(?:\d+:\d{2}|\?)(?: · (?:\?|[\d,.]+[kKmMbBtT]?)'
                             r'(?: (?:t|to|tok))?)?(?: ·)?', line.strip())]
 
 
@@ -421,7 +421,8 @@ stream_max_retries=0
         wait([terminal], lambda: provider.count == 2, 'real local command did not yield to loopback final response', 30)
         assert not finished.exists(), 'finite shell completed before its release'
         provider.final_gate.set()
-        wait([terminal], lambda: completed_turns() == 1 and shell_rows(terminal.text) and 'seen ' in terminal.text,
+        wait([terminal], lambda: completed_turns() == 1 and shell_rows(terminal.text) and 'seen ' in terminal.text
+             and advisor_rows(terminal.text) == ['Advisor · ready · 0 calls'],
              'real idle local root did not show its still-running background shell', 30)
         assert_no_park_records(home)
         if task_topic:
@@ -429,7 +430,8 @@ stream_max_retries=0
                        for row in shell_rows(terminal.text)), terminal.text
         assert provider.count == 2, f'expected two fixture model calls, got {provider.count}; see local-shell-provider-requests.json'
         assert not finished.exists(), 'command stopped before editable idle interval'
-        assert_compact_hud(terminal.text, rows=1)
+        assert advisor_rows(terminal.text) == ['Advisor · ready · 0 calls'], terminal.text
+        assert_compact_hud(terminal.text, rows=2)
         os.write(terminal.master, b'local-shell-idle-draft')
         wait([terminal], lambda: 'local-shell-idle-draft' in terminal.text and shell_rows(terminal.text),
              'idle real-shell HUD blocked draft editing')
@@ -518,6 +520,7 @@ stream_max_retries=0
         terminals = [Terminal(binary, home, workspace, parent=parent) for parent in parents]
         first, second = terminals
         wait(terminals, lambda: all(composer_ready(t.text) for t in terminals) and
+             all(advisor_rows(t.text) == ['Advisor · ready · 0 calls'] for t in terminals) and
              'Watcher' not in first.text and 'Workers' not in first.text and 'Watcher' not in second.text,
              'healthy nonempty waiting health did not remain hidden', 30)
         assert 'Workers' not in first.text and 'Watcher' not in second.text, '\n'.join(t.text for t in terminals)
@@ -525,19 +528,19 @@ stream_max_retries=0
             os.write(terminal.master, f'health-draft-{index}'.encode())
         wait(terminals, lambda: all(f'health-draft-{index}' in terminal.text
              for index, terminal in enumerate(terminals)), 'local health blocked draft editing')
-        assert_compact_hud(first.text, rows=0)
+        assert_compact_hud(first.text, rows=1)
         (evidence / 'health-waiting-screen.txt').write_text(first.text + '\n')
         write_health(home, parents[0], 'waiting', jobs=0)
         wait(terminals, lambda: 'Wake pending' in first.text, 'waiting zero lost its pending distinction')
-        assert_compact_hud(first.text, rows=1)
+        assert_compact_hud(first.text, rows=2)
         (evidence / 'health-pending-zero-screen.txt').write_text(first.text + '\n')
         write_health(home, parents[0], 'waiting', jobs=1)
         wait(terminals, lambda: 'Wake pending' not in first.text and 'Watcher' not in first.text,
              'healthy waiting failed to hide the pending-zero warning')
-        assert_compact_hud(first.text, rows=0)
+        assert_compact_hud(first.text, rows=1)
         write_health(home, parents[0], 'waiting', jobs=1, age=20)
         wait(terminals, lambda: 'Watcher unavailable' in first.text, 'old heartbeat was not shown as unavailable')
-        assert_compact_hud(first.text, rows=1)
+        assert_compact_hud(first.text, rows=2)
         assert 'Watcher' not in second.text, second.text
         (evidence / 'health-stale-screen.txt').write_text(first.text + '\n')
         write_health(home, parents[0], 'uncertain', uncertain=1)
@@ -548,13 +551,13 @@ stream_max_retries=0
              'narrow terminal lost health warning or draft')
         os.write(first.master, b'-narrow')
         wait(terminals, lambda: 'health-draft-0-narrow' in first.text, 'health warning blocked narrow draft editing')
-        assert_compact_hud(first.text, rows=1)
+        assert_compact_hud(first.text, rows=2)
         (evidence / 'health-uncertain-narrow-screen.txt').write_text(first.text + '\n')
         first.resize(32, 120)
         write_health(home, parents[0], 'report', reports=1)
         wait(terminals, lambda: 'Restart report ready' in first.text and
              'health-draft-0-narrow' in first.text, 'restart report did not replace uncertain warning')
-        assert_compact_hud(first.text, rows=1)
+        assert_compact_hud(first.text, rows=2)
         assert 'Watcher' not in second.text and 'Wake delivery' not in second.text and 'Restart report' not in second.text, second.text
         (evidence / 'health-report-screen.txt').write_text(first.text + '\n')
         write_health(home, parents[0], 'idle')
@@ -994,7 +997,7 @@ def tmux_smoke(binary, root, evidence):
 
 
 def worker_history_smoke(binary, root, evidence):
-    """Local current-turn tokens and retained group history need no model calls."""
+    """Local current-assignment metrics exclude worker lifetime and completed members."""
     home, workspace = root / 'history-home', root / 'history-workspace'
     home.mkdir(mode=0o700)
     workspace.mkdir()
@@ -1057,7 +1060,8 @@ def worker_history_smoke(binary, root, evidence):
         assert '343M tok' not in line, line
         age = re.search(r' · (\d+):(\d{2}) · ', line)
         assert 108 <= int(age[1]) * 60 + int(age[2]) < 130, line
-        assert_compact_hud(terminal.text, rows=1)
+        assert advisor_rows(terminal.text) == ['Advisor · ready · 0 calls'], terminal.text
+        assert_compact_hud(terminal.text, rows=2)
         (evidence / 'history-current-turn-screen.txt').write_text(terminal.text + '\n')
         turn.update(id='followup-turn', startedAt=int(time.time()))
         wait([terminal], lambda: '? tok' in active_line(), 'new turn inherited prior or lifetime tokens')
@@ -1072,21 +1076,22 @@ def worker_history_smoke(binary, root, evidence):
         wait([terminal], lambda: '1.23K tok' in active_line(), 'restart lost reported current-turn usage', 30)
         os.write(terminal.master, b'token-draft')
         wait([terminal], lambda: 'token-draft' in terminal.text, 'token refresh blocked composer')
-        assert_compact_hud(terminal.text, rows=1)
+        assert advisor_rows(terminal.text) == ['Advisor · ready · 0 calls'], terminal.text
+        assert_compact_hud(terminal.text, rows=2)
         (evidence / 'history-restarted-turn-screen.txt').write_text(terminal.text + '\n')
-        # Keep inactive members in an active group, including its oldest creation time.
+        # Inactive members must not contribute lifetime age or usage to the active group.
         for index, member in enumerate(('finished', 'error', 'active')):
             worker = server.workers[index]
             worker['source']['subAgent']['thread_spawn']['agent_path'] = f'/root/history__b1__{member}'
         server.workers[1]['status'] = {'type': 'systemError'}
         server.workers[3]['status'] = {'type': 'notLoaded'}
-        wait([terminal], lambda: 'history (1 agent)' in terminal.text and '345M tok' in terminal.text,
-             'mixed history group lost inactive members or lifetime tokens')
+        wait([terminal], lambda: 'history · 1 running' in terminal.text and '1.23K tok' in terminal.text,
+             'history group lost current assignment usage')
         sample('one active among history', {active['id']: 1})
-        line = next(line for line in worker_rows(terminal.text) if 'history (1 agent)' in line)
-        age = re.search(r' · (\d+):(\d{2}) · ', line)
-        assert int(age[1]) * 60 + int(age[2]) >= 120, line
-        assert line.endswith('345M tok'), line
+        line = next(line for line in worker_rows(terminal.text) if 'history · 1 running' in line)
+        age = re.search(r' · longest (\d+):(\d{2}) · ', line)
+        assert int(age[1]) * 60 + int(age[2]) < 120, line
+        assert line.endswith('1.23K tok'), line
         for flag, label in [('waitingOnApproval', 'wait approval'), ('waitingOnUserInput', 'wait input')]:
             active['status']['activeFlags'] = [flag]
             wait([terminal], lambda: label in terminal.text, f'{label}: active flag disappeared')
@@ -1100,7 +1105,7 @@ def worker_history_smoke(binary, root, evidence):
         with sqlite3.connect(f'file:{home / "state_5.sqlite"}?mode=ro', uri=True) as database:
             assert database.execute('SELECT * FROM threads ORDER BY id').fetchall() == database_rows, 'token counters changed'
         assert rollout.read_bytes() == rollout_before, 'HUD wrote worker rollout'
-        return ['33 local historical children: zero inactive turn reads; reused worker shows 679K current-turn tokens at 1:48 instead of 343M lifetime; follow-up resets to unknown then 1.23K and survives TUI restart; inactive group members retain 345M lifetime tokens and oldest age; active-to-idle collapse; editable last-six composer; read-only database and zero model calls']
+        return ['33 local historical children: zero inactive turn reads; reused worker shows 679K current-turn tokens at 1:48 instead of 343M lifetime; follow-up resets to unknown then 1.23K and survives TUI restart; inactive group members excluded from current assignment metrics; active-to-idle collapse; editable last-six composer; read-only database and zero model calls']
     finally:
         if terminal is not None:
             (evidence / 'history-screen.txt').write_text(terminal.text + '\n')
@@ -1222,31 +1227,30 @@ def run(binary, evidence):
             worker['source']['subAgent']['thread_spawn']['agent_path'] = f'/root/hud_styling__b1__{member}'
 
         def group_line():
-            return next((line.strip() for line in grouped_terminal.screen.display if 'hud styling (' in line), '')
+            return next((line.strip() for line in grouped_terminal.screen.display if 'hud styling · ' in line), '')
 
-        wait(terminals, lambda: '(3 agents)' in group_line() and '+2 more' in grouped_terminal.text, 'explicit cohort did not replace three individual rows')
+        wait(terminals, lambda: '· 3 running' in group_line() and '+2 more' in grouped_terminal.text, 'explicit cohort did not replace three individual rows')
         assert group_line().startswith('mixed (mixed) [general] ·') and '? tok' in group_line(), group_line()
         assert_compact_hud(grouped_terminal.text, rows=6)
         assert 'worker 1 ·' not in grouped_terminal.text and 'worker 2 ·' not in grouped_terminal.text and 'worker 3 ·' not in grouped_terminal.text, grouped_terminal.text
-        initial_age = re.search(r' · (\d+):(\d{2}) · ', group_line())
+        initial_age = re.search(r' · longest (\d+):(\d{2}) · ', group_line())
         initial_age = int(initial_age[1]) * 60 + int(initial_age[2])
-        assert initial_age >= 120, group_line()
+        assert initial_age < 120, group_line()
         (evidence / 'group-three-screen.txt').write_text(grouped_terminal.text + '\n')
         replies_before_resize = grouped_terminal.resize(24, 80)
-        wait(terminals, lambda: grouped_terminal.resized_frame(replies_before_resize) and '(3 agents)' in group_line() and 'draft-1-quiet' in grouped_terminal.text, 'group resize lost count or draft')
+        wait(terminals, lambda: grouped_terminal.resized_frame(replies_before_resize) and '· 3 running' in group_line() and 'draft-1-quiet' in grouped_terminal.text, 'group resize lost count or draft')
         os.write(grouped_terminal.master, b'-group')
         wait(terminals, lambda: 'draft-1-quiet-group' in grouped_terminal.text, 'group HUD blocked composer')
         replies_before_resize = grouped_terminal.resize(32, 120)
-        wait(terminals, lambda: grouped_terminal.resized_frame(replies_before_resize) and '(3 agents)' in group_line(), 'normal resize lost group')
+        wait(terminals, lambda: grouped_terminal.resized_frame(replies_before_resize) and '· 3 running' in group_line(), 'normal resize lost group')
         for index, remaining in enumerate((2, 1, 0)):
             worker = grouped_server.workers[index]
             worker['status'] = {'type': 'idle'}
             grouped_server.turns[worker['id']][0].update(status='completed', completedAt=int(time.time()))
-            suffix = '' if remaining == 1 else 's'
-            wait(terminals, lambda: (f'({remaining} agent{suffix})' in group_line() if remaining else not group_line()), f'group completion failed to show {remaining} remaining members')
+            wait(terminals, lambda: (f'· {remaining} running' in group_line() if remaining else not group_line()), f'group completion failed to show {remaining} remaining members')
             if remaining:
-                assert sum('hud styling (' in line for line in grouped_terminal.screen.display) == 1, grouped_terminal.text
-                age = re.search(r' · (\d+):(\d{2}) · ', group_line())
+                assert sum('hud styling · ' in line for line in grouped_terminal.screen.display) == 1, grouped_terminal.text
+                age = re.search(r' · longest (\d+):(\d{2}) · ', group_line())
                 assert int(age[1]) * 60 + int(age[2]) >= initial_age, group_line()
                 assert '? tok' in group_line(), group_line()
             else:
@@ -1256,11 +1260,11 @@ def run(binary, evidence):
             worker['status'] = {'type': 'idle'}
             grouped_server.turns[worker['id']][0].update(status='completed', completedAt=int(time.time()))
         wait(terminals, lambda: not worker_rows(grouped_terminal.text) and '+2 more' not in grouped_terminal.text and 'draft-1-quiet-group' in grouped_terminal.text, 'group and independent cohort did not collapse after completion')
-        stages.append('explicit three-member cohort reduces 3→2→1→hidden without duplicate rows or shrinking dispatch elapsed; independent cohort stays separate, group resize/input preserve draft, final strip collapses')
+        stages.append('explicit three-member cohort reduces 3→2→1→hidden without duplicate rows or lifetime metrics; independent cohort stays separate, group resize/input preserve draft, final strip collapses')
         for worker in grouped_server.workers:
             worker['status'] = {'type': 'active', 'activeFlags': []}
             grouped_server.turns[worker['id']][0].update(status='inProgress', startedAt=int(time.time()), completedAt=None)
-        wait(terminals, lambda: '(3 agents)' in group_line() and '+2 more' in grouped_terminal.text, 'group reactivation did not restore strip')
+        wait(terminals, lambda: '· 3 running' in group_line() and '+2 more' in grouped_terminal.text, 'group reactivation did not restore strip')
         grouped_server.workers[-1]['status']['activeFlags'] = ['waitingOnApproval']
         wait(terminals, lambda: any('worker 9 · wait approval' in line for line in worker_rows(grouped_terminal.text)),
              'explicit approval wait did not remain visible')
@@ -1272,7 +1276,7 @@ def run(binary, evidence):
         (evidence / 'worker-wait-alert-overflow-screen.txt').write_text(grouped_terminal.text + '\n')
         grouped_server.reject_turn_metadata = False
         grouped_server.workers[-1]['status']['activeFlags'] = []
-        wait(terminals, lambda: 'Workers stale' not in grouped_terminal.text and '(3 agents)' in group_line() and '+2 more' in grouped_terminal.text,
+        wait(terminals, lambda: 'Workers stale' not in grouped_terminal.text and '· 3 running' in group_line() and '+2 more' in grouped_terminal.text,
              'worker wait and stale state failed to recover')
         stages.append('explicit approval wait survives alert plus overflow in six total rows, with editable composer within the expanded footer budget')
 
@@ -1301,7 +1305,7 @@ def run(binary, evidence):
         os.write(terminals[0].master, b'-offline')
         wait(terminals, lambda: 'draft-0-refresh-small-offline' in terminals[0].text, 'disconnect blocked draft editing')
         assert_compact_hud(terminals[0].text, rows=3)
-        assert '(3 agents)' in group_line() and '+2 more' in terminals[1].text and 'draft-1-quiet' in terminals[1].text, terminals[1].text
+        assert '· 3 running' in group_line() and '+2 more' in terminals[1].text and 'draft-1-quiet' in terminals[1].text, terminals[1].text
         (evidence / 'stale-screen.txt').write_text(terminals[0].text + '\n')
         servers[0].available.set()
         wait(terminals, lambda: len(worker_rows(terminals[0].text)) == 2 and 'Workers stale' not in terminals[0].text and 'draft-0-refresh-small-offline' in terminals[0].text, 'reconnect failed to recover HUD and draft', 30)

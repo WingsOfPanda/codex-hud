@@ -1,0 +1,35 @@
+# Proposed conditional end-to-end native-owner brief
+
+This template is for the coordinator to fill, review and issue for the **next** release. It authorizes no work by itself. Do not silently inherit0.4.8 paths, counts or approvals.
+
+## Fill the immutable handoff
+
+Name: release; native owner/thread/host; product commit/root; tooling commit/root; final read-only verifier commit/root; plan/profile/hook file and canonical hashes; pinned executor/interpreter/toolchain/imports; official daemon hash; canonical previous archive/package and full manifest/tree pins; build/cache/short-root paths; exclusive resources, jobs/threads; durations/deadlines/cleanup grace; every gate and expected named counts; exact native and compatibility proposal/input-closure rules; export destination.
+
+Record the user authorization that covers this release's execution, conditional compatibility and bounded cleanup. Retain separate owners for coordinator final acceptance/publication, AP replay and fleet installation/config. Do not conflate release authority with rollout authority.
+
+**Resolve this decision before dispatch:** coordinator either explicitly delegates committed local package-native approval for the compat prerequisite, or reserves it and names one concrete review gate. If delegated, bind it to the exact archive/manifest and complete native+cleanup proof; final shipping acceptance remains coordinator-owned. Do not fabricate a root-accepted flag.
+
+## Authorized sequence, with exact conditions
+
+1. **Read-only readiness first.** Verify every supplied digest, native platform, tools/import origins, resources and exclusive ownership. Use disposable Git indexes for sealed roots. Before a real attempt allocates a socket, run existing profile/environment, native-target offline metadata, libcap PC/header/linker and packaging child compiler/license checks. Required HOME must be present in the child contract. Use a standard release-profile helper for timed integration. Stage previous release privately from its digest-pinned safe archive; verify complete files/modes/tree. Run reviewed diagnostic copy/topology and changed fixture contract checks; diagnostics are not candidate qualification.
+
+2. **Prepare exactly once.** Import only verified objects without moving main refs/index; create only the reviewed detached worktrees and fresh private attempt. Run committed non-rehearsal init/prepare/verify and strict audit. Preserve every old attempt/socket. Return readiness/proposal for the single both-host preparation review if it has not already been accepted. No build until that explicit gate has passed.
+
+3. **Conditional native launch, no second acknowledgment round trip.** Once both-host proposals are accepted, recheck live pins/resources/strict ownership. Perform normal managed prepare once, inspecting any returned UUID rather than repeating prepare. Compare exact frozen argv/cwd/env/deadlines/cleanup/resources, each ordered proposal input's source-to-snapshot bytes, full external closure and execution substitution. On exact match, launch that UUID once with its returned review digest, confirm one armed observer, send one launch receipt and end the turn. A receipt acknowledgment is not needed. A changed field or uncertainty is a blocker, not permission to substitute.
+
+4. **Completion → real verification.** Inspect actual managed result and final cleanup, every native stage and named test list/result/ignored disposition, archive safety and complete package manifest/modes/tree, source/index and input seals, exact PID/start/boot identities plus groups/sessions, executor lock and socket/quarantine removal seals. Use the pinned read-only comparator/verifier; preserve raw adjacent timestamps, never normalize records. Report a failed stage as failed even if its archive exists or cleanup is later resolved.
+
+5. **Conditional compatibility, already authorized.** If native acceptance/cleanup passed and the delegated local package approval (or the one reserved root decision) is complete, prepare/verify committed compat against the actual candidate and canonical previous archive. Independently review its exact generated proposal, child env, full closure, ordered frozen snapshots, durations and resources; launch once and arm one observer without requesting an additional routine permission. No old-plan receipts, installed read-only reference or unreviewed fixture adapter. After completion verify all five gates, nine Advisor checks, actual old-TUI result,20 fresh captures and14 recovery cases—or the newly reviewed release matrix's explicit replacements.
+
+6. **Export and return.** With the separately pinned read-only final verifier, check status and the original hash-bound native removal seal plus compat cleanup. An audit-only socket flagfalse is admissible only under that verifier's exact prior-removal proof, not a generic waiver. Export once outside the attempt, verify transport inventory and all capture/case coverage, and return one hashed receipt/export/archive handoff for coordinator acceptance and AP. Do not run AP, publish, install, merge main or change shared settings.
+
+## Recovery and stop conditions
+
+- A real workload/test failure is preserved. Do not rerun its UUID, weaken assertions/deadlines, or move old receipt bytes into a fresh attempt. Diagnose from exact evidence. Any new retry is a separately reviewed execution with its changed inputs and invalidated gates declared.
+- Under a current explicit bounded recovery grant, inspect exact journal pairs, all recorded identities/groups/sessions, lock, baseline and seals before supported resolution or inode/quarantine cleanup. Mutate only identities/files/records proven owned by this attempt. Retain failed results and claims until release is proven. No foreign signal, callback resend, record rewrite, global cleanup or install.
+- A new unreadable host identity before any workload does not belong to this job. Preserve the refused attempt. Fresh baseline/attempt transformation is allowed only if the brief already enumerates that **exact** proven identity and allowed path substitution; use committed baseline capture and compare all old/new entries. Otherwise return the concrete identity decision required.
+- A legacy REPORT ONLY barrier still needs explicit renewed user direction for affected work. A newer stop/pause/maintenance hold overrides this brief. RECOVERY REQUIRED permits only recovery already within established authority. Unknown ownership, daemon/admission uncertainty, changed frozen inputs or unqualified tooling are genuine stops.
+- Keep independent authorized work moving when a separate phase is blocked. Return a specific blocker and the exact missing fact/decision; do not ask “may I continue?” when all stated conditions already hold.
+
+Only registered finite work remains → end the turn and let its observer wake it. On an already-completed notification, review immediately and advance the authorized phase. Do not add a second watcher or periodic status-only model wake. Stale relay snapshots are checked against the exact existing UUID; they never create a new execution.

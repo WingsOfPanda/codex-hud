@@ -1,0 +1,157 @@
+{
+  "accepted": true,
+  "architectures": {
+    "aarch64": {
+      "accepted": true,
+      "advisor_checks": 9,
+      "ap_tests": 23,
+      "busy_pairs": 2,
+      "cleanup": "clean",
+      "compatibility_gates": 5,
+      "cursor_states": 20,
+      "focused_frontend_tests": 213,
+      "helper_tests": 205,
+      "native_tests": 418,
+      "receipts": {
+        "ap": "ac0f5266572bd842aa298b763ed821843b52c1094c8f3dfa9234bb32adfbe47d",
+        "captures": "4ab6c0fa97d47a8adfce89fcc249f88a00631e48a79c5ce15b7d9e57ff692476",
+        "compat": "e607104b3f8cce50be26c49e6ed06a2c64aa4e6aa6cc5ea54bef63b491bffd41",
+        "frontend": "059473dfae65a8c78910ee50605730c0ed13313513b85b09a07708ff80e3180c",
+        "native-tests": "5db73cd8639c02cffdb0851517546d91f8e4d9dc220e354ec247127eb1dc1210",
+        "package": "1aed165843ca950c003a81ebbb888dc6ac0ec424bf24d0740b8aa36db1181c02",
+        "preflight": "fbb27f97b9824f72f2770f3452a10fd2cb443c2da283061956b31be635c539a6",
+        "runtime": "eb868327c5851313520ebc0e03e861da18a67027927144badad0dedf7d95d56b"
+      },
+      "recovery_cases": 14,
+      "target": {
+        "asset": "codex-plus-0.163.0-plus.0.4.8-aarch64-unknown-linux-gnu.tar.gz",
+        "manifest_sha256": "5e489015bd1f0655cd5e43609890bcf07e08aae06712aff5f3f385bd66f3784f",
+        "sha256": "b0b91a747a73490e749d7e791e138010759ccc0ad04f1a37de0e30a7dfe0df08",
+        "tree_sha256": "b4f9c84d2d85524189055df21fb55cbdd3d95905af8dce394236358b1e9617eb",
+        "triple": "aarch64-unknown-linux-gnu"
+      }
+    },
+    "x86_64": {
+      "accepted": true,
+      "advisor_checks": 9,
+      "ap_tests": 23,
+      "busy_pairs": 2,
+      "cleanup": "clean",
+      "compatibility_gates": 5,
+      "cursor_states": 20,
+      "focused_frontend_tests": 213,
+      "helper_tests": 205,
+      "native_tests": 418,
+      "receipts": {
+        "ap": "5106dff3c9a0da359a3bbec808a499df56ada061fd4b661f13b6ec22058b11a5",
+        "captures": "f54230824de0e7ef22e186c2ac931291e96ca6b19ed786c6f52986a0766a5018",
+        "compat": "d8eeb3794a86d73427a3d36fd7a49a4058bebe128ea8d2972e6ae4390c63a75b",
+        "frontend": "00ed5f83d95d160514506173e2bb70c98e9a7197b06f3da2e6c93b23e42985d0",
+        "native-tests": "57873d95bb6bd4d8d337bae988dac0db873562e72942a331309f5fc48bd2ee01",
+        "package": "38c238a0ac3b98a89f349b2232f8330153b7fdda2cb2ce881dee8dfd1fe4e3e1",
+        "preflight": "b125fffb06fef06cfe2a5f0760b5e917a65678a4cb8a98d9f9bdd46b33f5b658",
+        "runtime": "e32ad757d020504801dc841374966c912f27223118f3069e9a983e2f3de55632"
+      },
+      "recovery_cases": 14,
+      "target": {
+        "asset": "codex-plus-0.163.0-plus.0.4.8-x86_64-unknown-linux-gnu.tar.gz",
+        "manifest_sha256": "5c13b1bf3cc4a37480fe8fdb8b2a3cf5683eba1188d6086c8327a14572b6973a",
+        "sha256": "a50cf866ae828c9c40a0ab926b7b9d9f8b6a8b98af083d44e2dae17eb02b9a6f",
+        "tree_sha256": "524de42872d3d22bf5434dbd1233fa87cc96cda8711a3a40e7226b84abd70bf3",
+        "triple": "x86_64-unknown-linux-gnu"
+      }
+    }
+  },
+  "coordinator_commit": "65585b488d927d0a86ed26149bb686401f13607b",
+  "execution_tooling_commit": "59d85b0fe4074ecc6376dc242e06943b3d3f15b4",
+  "failed_attempts": "Preserved privately at original identities; final acceptance uses fresh v5 executions.",
+  "frontend_patch_sha256": "4955f39559483ea63db01a0bce39245ed72915999b6449f165e8be1b9190f4ab",
+  "limits": [
+    "AP replay ran on x86 over both native capture bundles; no live nudge.",
+    "Advisor compatibility used private loopback/stub providers; no paid calls or fresh cross-host consultation.",
+    "Advisor source is unchanged from 0.4.7.",
+    "Warm-cache native timings do not measure end-to-end release duration.",
+    "Publication, main merge, fleet installation and session restart are separate states.",
+    "x86 raw bwrap resource probe failed identically for official and Plus UID-map checks; both CLI read-only sandbox checks passed. Raw failure retained with explicit host-limitation qualification."
+  ],
+  "plan_sha256": "733e32bb466e1a78ecca72666f9ff9b5d1bbd8cc28ac934002719f12326ef12d",
+  "postqualification_index_incident": {
+    "cause": "AP preparation worker directly ran git status without a disposable index",
+    "changes": {
+      "ap_source": {
+        "changes": {
+          "/git_metadata//home/liupan/Aerius/codex-plus/.build/release-protocol/full-proof-preparation/ap/source-at-5b821743/.git/index/inode": {
+            "after": 22797626,
+            "before": 22769564
+          },
+          "/git_metadata//home/liupan/Aerius/codex-plus/.build/release-protocol/full-proof-preparation/ap/source-at-5b821743/.git/index/mtime_ns": {
+            "after": 1792766327733486023,
+            "before": 1792677898166658438
+          },
+          "/index_mtime_ns": {
+            "after": 1792766327733486023,
+            "before": 1792677898166658438
+          }
+        },
+        "files_unchanged": 662,
+        "index_bytes_unchanged": true
+      },
+      "product": {
+        "changes": {
+          "/git_metadata//home/liupan/Aerius/codex-plus/.git/worktrees/source-v4/index/inode": {
+            "after": 23302836,
+            "before": 23288654
+          },
+          "/git_metadata//home/liupan/Aerius/codex-plus/.git/worktrees/source-v4/index/mode": {
+            "after": "0600",
+            "before": "0664"
+          },
+          "/git_metadata//home/liupan/Aerius/codex-plus/.git/worktrees/source-v4/index/mtime_ns": {
+            "after": 1792766327786487467,
+            "before": 1792756532680634514
+          },
+          "/index_mtime_ns": {
+            "after": 1792766327786487467,
+            "before": 1792756532680634514
+          }
+        },
+        "files_unchanged": 561,
+        "index_bytes_unchanged": true
+      },
+      "tooling": {
+        "changes": {
+          "/git_metadata//home/liupan/Aerius/codex-plus/.git/worktrees/tooling-v5/index/inode": {
+            "after": 23317922,
+            "before": 23302836
+          },
+          "/git_metadata//home/liupan/Aerius/codex-plus/.git/worktrees/tooling-v5/index/mode": {
+            "after": "0600",
+            "before": "0664"
+          },
+          "/git_metadata//home/liupan/Aerius/codex-plus/.git/worktrees/tooling-v5/index/mtime_ns": {
+            "after": 1792766327760486758,
+            "before": 1792760803552054909
+          },
+          "/index_mtime_ns": {
+            "after": 1792766327760486758,
+            "before": 1792760803552054909
+          }
+        },
+        "files_unchanged": 561,
+        "index_bytes_unchanged": true
+      }
+    },
+    "index_restoration_performed": false,
+    "native_receipts_preserved": true,
+    "next_action": "Fresh AP-only preparation; preserve original native evidence and retired AP context",
+    "original_ap_context_retired": "/home/liupan/Aerius/codex-plus/.build/release048/ap-replay-v5/x86",
+    "worker_log": "f4348218-83ee-4e32-abc6-41702b93d9c1"
+  },
+  "product_commit": "05f883c228b18830ed93f691460715525b42a825",
+  "release": "0.163.0-plus.0.4.8",
+  "upstream": {
+    "commit": "83086188ae0614bd882818ff1aa23f3194962012",
+    "tag": "rust-v0.163.0",
+    "version": "0.163.0"
+  }
+}

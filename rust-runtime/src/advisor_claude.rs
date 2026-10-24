@@ -264,7 +264,7 @@ pub(super) fn spawn(
     Ok((child, writer, binding))
 }
 
-fn parse_cli(value: Value) -> Result<Value> {
+fn parse_cli(value: &Value) -> Result<Value> {
     if value["type"] != "result" || value["subtype"] != "success" || value["is_error"] != false {
         bail!("claude_failed");
     }
@@ -292,6 +292,54 @@ fn parse_cli(value: Value) -> Result<Value> {
             .cloned()
             .ok_or_else(|| anyhow::anyhow!("invalid_result"))?,
     )
+}
+
+fn metadata_type(value: Option<&Value>) -> &'static str {
+    match value {
+        None => "missing",
+        Some(Value::Null) => "null",
+        Some(Value::Bool(_)) => "boolean",
+        Some(Value::Number(_)) => "number",
+        Some(Value::String(_)) => "string",
+        Some(Value::Array(_)) => "array",
+        Some(Value::Object(_)) => "object",
+    }
+}
+
+fn metadata_string(value: Option<&Value>) -> Option<String> {
+    value.and_then(Value::as_str).map(bounded_model_name)
+}
+
+fn bounded_model_name(value: &str) -> String {
+    value.chars().take(256).collect()
+}
+
+fn parse_cli_with_diagnostics(value: Value, diagnostic: &mut impl Write) -> Result<Value> {
+    let result = parse_cli(&value);
+    if result
+        .as_ref()
+        .is_err_and(|error| error.to_string() == "model_mismatch")
+    {
+        let usage = value.get("modelUsage");
+        let models: Vec<Value> = usage
+            .and_then(Value::as_object)
+            .into_iter()
+            .flat_map(|models| models.iter().take(8))
+            .map(|(model, usage)| {
+                json!({"model":bounded_model_name(model),"usage_type":metadata_type(Some(usage)),
+                    "canonical_model":metadata_string(usage.get("canonicalModel")),
+                    "canonical_model_type":metadata_type(usage.get("canonicalModel"))})
+            })
+            .collect();
+        let metadata = json!({"expected_model":MODEL,
+            "model_usage_type":metadata_type(usage),
+            "model_count":usage.and_then(Value::as_object).map(|models| models.len()),
+            "models":models,
+            "canonical_model":metadata_string(value.get("canonicalModel")),
+            "canonical_model_type":metadata_type(value.get("canonicalModel"))});
+        let _ = writeln!(diagnostic, "advisor model metadata: {metadata}");
+    }
+    result
 }
 
 pub(super) fn validate_envelope(value: Value, binding: &Binding) -> Result<Value> {
@@ -429,8 +477,9 @@ fn run_worker(request: &Value) -> Result<Value> {
             if bytes.len() > MAX_RESULT {
                 bail!("invalid_result");
             }
-            return parse_cli(
+            return parse_cli_with_diagnostics(
                 serde_json::from_slice(&bytes).map_err(|_| anyhow::anyhow!("invalid_result"))?,
+                &mut std::io::stderr(),
             );
         }
         if started.elapsed() >= TIMEOUT {
@@ -523,21 +572,193 @@ mod tests {
         payload["worker"] = json!("old");
         assert!(validate_request(&payload).is_err());
         let mut cli = json!({"type":"result","subtype":"success","is_error":false,"modelUsage":{MODEL:{}},"structured_output":result()});
-        assert_eq!(parse_cli(cli.clone()).unwrap(), result());
+        assert_eq!(parse_cli(&cli).unwrap(), result());
         cli["modelUsage"][MODEL]["canonicalModel"] = json!(MODEL);
-        assert_eq!(parse_cli(cli.clone()).unwrap(), result());
+        assert_eq!(parse_cli(&cli).unwrap(), result());
         cli["modelUsage"][MODEL]["canonicalModel"] = json!("claude-sonnet-4-6");
-        assert_eq!(
-            parse_cli(cli.clone()).unwrap_err().to_string(),
-            "model_mismatch"
-        );
+        assert_eq!(parse_cli(&cli).unwrap_err().to_string(), "model_mismatch");
         cli["modelUsage"] = json!({"claude-sonnet-4-6":{}});
+        assert_eq!(parse_cli(&cli).unwrap_err().to_string(), "model_mismatch");
+        cli["is_error"] = json!(true);
+        assert_eq!(parse_cli(&cli).unwrap_err().to_string(), "claude_failed");
+    }
+
+    fn cli_result() -> Value {
+        json!({"type":"result","subtype":"success","is_error":false,
+            "modelUsage":{MODEL:{}},"structured_output":result()})
+    }
+
+    fn mismatch_metadata(cli: Value) -> (String, Value) {
+        let mut output = Vec::new();
         assert_eq!(
-            parse_cli(cli.clone()).unwrap_err().to_string(),
+            parse_cli_with_diagnostics(cli, &mut output)
+                .unwrap_err()
+                .to_string(),
             "model_mismatch"
         );
+        let line = String::from_utf8(output).unwrap();
+        assert_eq!(line.lines().count(), 1);
+        let metadata = serde_json::from_str(
+            line.trim_end()
+                .strip_prefix("advisor model metadata: ")
+                .unwrap(),
+        )
+        .unwrap();
+        (line, metadata)
+    }
+
+    #[test]
+    fn mismatch_diagnostics_explain_wrong_multiple_missing_and_malformed_usage() {
+        let mut cli = cli_result();
+        cli["modelUsage"] = json!({"wrong-model":{"canonicalModel":"returned-model"}});
+        let (_, metadata) = mismatch_metadata(cli.clone());
+        assert_eq!(metadata["expected_model"], MODEL);
+        assert_eq!(metadata["model_usage_type"], "object");
+        assert_eq!(metadata["model_count"], 1);
+        assert_eq!(metadata["models"][0]["model"], "wrong-model");
+        assert_eq!(metadata["models"][0]["canonical_model"], "returned-model");
+        cli["modelUsage"][MODEL] = json!({});
+        let (_, metadata) = mismatch_metadata(cli.clone());
+        assert_eq!(metadata["model_count"], 2);
+        assert_eq!(metadata["models"].as_array().unwrap().len(), 2);
+        cli.as_object_mut().unwrap().remove("modelUsage");
+        let (_, metadata) = mismatch_metadata(cli.clone());
+        assert_eq!(metadata["model_usage_type"], "missing");
+        assert!(metadata["model_count"].is_null());
+        assert_eq!(metadata["models"], json!([]));
+        for (value, kind) in [
+            (Value::Null, "null"),
+            (json!([]), "array"),
+            (json!(true), "boolean"),
+            (json!(42), "number"),
+            (json!("secret"), "string"),
+        ] {
+            cli["modelUsage"] = value;
+            let (line, metadata) = mismatch_metadata(cli.clone());
+            assert_eq!(metadata["model_usage_type"], kind);
+            assert!(!line.contains("secret"));
+        }
+    }
+
+    #[test]
+    fn mismatch_diagnostics_preserve_canonical_field_types_without_disclosing_objects() {
+        for field_at_top in [true, false] {
+            for (canonical, kind, expected) in [
+                (json!("wrong-model"), "string", json!("wrong-model")),
+                (json!({"private":"secret"}), "object", Value::Null),
+                (Value::Null, "null", Value::Null),
+            ] {
+                let mut cli = cli_result();
+                if field_at_top {
+                    cli["canonicalModel"] = canonical;
+                } else {
+                    cli["modelUsage"][MODEL]["canonicalModel"] = canonical;
+                }
+                let (line, metadata) = mismatch_metadata(cli);
+                let metadata = if field_at_top {
+                    &metadata
+                } else {
+                    &metadata["models"][0]
+                };
+                assert_eq!(metadata["canonical_model"], expected);
+                assert_eq!(metadata["canonical_model_type"], kind);
+                assert!(!line.contains("private"));
+                assert!(!line.contains("secret"));
+            }
+        }
+        let mut cli = cli_result();
+        cli["modelUsage"] = json!({"wrong-model":["private"]});
+        let (_, metadata) = mismatch_metadata(cli);
+        assert_eq!(metadata["models"][0]["usage_type"], "array");
+        assert_eq!(metadata["models"][0]["canonical_model_type"], "missing");
+        assert_eq!(metadata["canonical_model_type"], "missing");
+    }
+
+    #[test]
+    fn mismatch_diagnostics_are_bounded_escaped_and_exclude_result_and_usage() {
+        let mut cli = cli_result();
+        let long_name = format!("\n\r\t\u{1b}{}", "汉".repeat(300));
+        cli["canonicalModel"] = json!(long_name);
+        cli["modelUsage"] = Value::Object(
+            (0..20)
+                .map(|index| {
+                    (
+                        format!("{index:02}{long_name}"),
+                        json!({"canonicalModel":long_name,"inputTokens":"PRIVATE_USAGE"}),
+                    )
+                })
+                .collect(),
+        );
+        cli["structured_output"] = json!({"summary":"PRIVATE_RESULT"});
+        cli["result"] = json!("PRIVATE_RESULT");
+        cli["prompt"] = json!("PRIVATE_PROMPT");
+        let (line, metadata) = mismatch_metadata(cli);
+        assert_eq!(metadata["model_count"], 20);
+        assert_eq!(metadata["models"].as_array().unwrap().len(), 8);
+        assert_eq!(
+            metadata["canonical_model"]
+                .as_str()
+                .unwrap()
+                .chars()
+                .count(),
+            256
+        );
+        for model in metadata["models"].as_array().unwrap() {
+            assert_eq!(model["model"].as_str().unwrap().chars().count(), 256);
+            assert_eq!(
+                model["canonical_model"].as_str().unwrap().chars().count(),
+                256
+            );
+        }
+        assert!(!line.contains("PRIVATE"));
+        assert!(!line.contains("inputTokens"));
+        assert!(!line[..line.len() - 1].chars().any(char::is_control));
+        assert!(line.len() < 16000);
+    }
+
+    #[test]
+    fn diagnostics_do_not_change_results_or_errors_even_if_writer_fails() {
+        struct BrokenWriter;
+        impl Write for BrokenWriter {
+            fn write(&mut self, _: &[u8]) -> std::io::Result<usize> {
+                Err(std::io::Error::other("broken diagnostic sink"))
+            }
+            fn flush(&mut self) -> std::io::Result<()> {
+                Ok(())
+            }
+        }
+        let mut output = Vec::new();
+        assert_eq!(
+            parse_cli_with_diagnostics(cli_result(), &mut output).unwrap(),
+            result()
+        );
+        assert!(output.is_empty());
+        let mut cli = cli_result();
         cli["is_error"] = json!(true);
-        assert_eq!(parse_cli(cli).unwrap_err().to_string(), "claude_failed");
+        assert_eq!(
+            parse_cli_with_diagnostics(cli, &mut output)
+                .unwrap_err()
+                .to_string(),
+            "claude_failed"
+        );
+        assert!(output.is_empty());
+        let mut cli = cli_result();
+        cli["structured_output"] = Value::Null;
+        assert_eq!(
+            parse_cli_with_diagnostics(cli, &mut output)
+                .unwrap_err()
+                .to_string(),
+            "invalid_result"
+        );
+        assert!(output.is_empty());
+        let mut cli = cli_result();
+        cli.as_object_mut().unwrap().remove("modelUsage");
+        assert_eq!(
+            parse_cli_with_diagnostics(cli, &mut BrokenWriter)
+                .unwrap_err()
+                .to_string(),
+            "model_mismatch"
+        );
     }
 
     #[test]

@@ -10,7 +10,7 @@ import time
 import uuid
 
 from fixtures.native_server import AppServer
-from native_smoke import Terminal, assert_compact_hud, composer_ready, wait
+from native_smoke import Terminal, advisor_rows, assert_compact_hud, composer_ready, wait
 
 
 def run(binary, evidence):
@@ -38,15 +38,18 @@ def run(binary, evidence):
         path = directory / f'{identity}.json'
         started = time.time() - 125
 
-        def publish(state='running', stage=None, age=0, error=None):
+        def publish(state='running', stage=None, age=0, error=None, finished=None):
             value = dict(schema=1, id=identity, root=root, topic='compile 模型', state=state,
                          started_at=started, updated_at=time.time() - age, stage=stage, error=error)
+            if finished is not None:
+                value["finished_at"] = finished
             temporary = path.with_suffix('.tmp')
             temporary.write_text(json.dumps(value))
             os.replace(temporary, path)
 
         def capture(label):
             assert 'Background status unavailable' not in terminals[0].text
+            assert advisor_rows(terminals[0].text) == ['Advisor · ready · 0 calls'], terminals[0].text
             (evidence / f'{label}.txt').write_text(terminals[0].text + '\n')
 
         try:
@@ -57,7 +60,7 @@ def run(binary, evidence):
                  'Background · compile 模型 · link · 2:' in terminal.text and
                  'Workers stale' not in terminal.text and 'Shells stale' not in terminal.text,
                  'detached execution absent or durable elapsed lost', 30)
-            assert_compact_hud(terminal.text, rows=1)
+            assert_compact_hud(terminal.text, rows=2)
             assert 'seen' not in terminal.text
             capture('active')
             os.write(terminal.master, b'detached-draft')
@@ -66,16 +69,23 @@ def run(binary, evidence):
             wait(terminals, lambda: 'Background · compile 模型 · 2:' in terminal.text and
                  ' · link · ' not in terminal.text, 'optional stage was inferred or retained')
             publish(state='unknown')
-            wait(terminals, lambda: 'compile 模型 · unknown' in terminal.text, 'unknown outcome hidden')
-            assert_compact_hud(terminal.text, rows=1)
+            wait(terminals, lambda: 'compile 模型 · needs review · ?' in terminal.text, 'unknown duration presented as running')
+            assert_compact_hud(terminal.text, rows=2)
             capture('unknown')
+            publish(state='unknown', age=20, finished=started + 65)
+            wait(terminals, lambda: 'compile 模型 · needs review · 1:05' in terminal.text,
+                 'ended unknown job grew elapsed or turned stale')
+            frozen = path.read_bytes()
+            capture('ended-needs-review')
+            assert path.read_bytes() == frozen, 'HUD rewrote unresolved outcome'
+
             publish(age=20)
             wait(terminals, lambda: 'compile 模型 · stale' in terminal.text, 'stale heartbeat hidden')
             replies = terminal.resize(12, 65)
             wait(terminals, lambda: terminal.resized_frame(replies) and
                  'detached-draft' in terminal.text and 'compile 模型 · stale' in terminal.text,
                  'narrow status lost input or warning')
-            assert_compact_hud(terminal.text, rows=1)
+            assert_compact_hud(terminal.text, rows=2)
             capture('stale-narrow')
             replies = terminal.resize(32, 120)
             publish(error='monitoring unavailable')
@@ -86,7 +96,7 @@ def run(binary, evidence):
             # Unrelated native jobs remain native rows; all activity shares one cap.
             server.shells = [server.shell(42, 'unrelated-native-job')]
             wait(terminals, lambda: 'unrelated-native-job' in terminal.text, 'native job hidden by detached identity')
-            assert_compact_hud(terminal.text, rows=2)
+            assert_compact_hud(terminal.text, rows=3)
             capture('mixed')
             published = path.read_text()
             path.write_text('{')
@@ -132,7 +142,7 @@ def run(binary, evidence):
             for current in servers:
                 assert not current.errors, current.errors
                 assert not [request for request in current.requests if request['method'] in ('turn/start', 'turn/steer')]
-            report.update(passed=True, display_model_requests=0, stages=['active', 'unknown', 'stale-narrow',
+            report.update(passed=True, display_model_requests=0, stages=['active', 'unknown', 'ended-needs-review', 'stale-narrow',
                           'projection-error', 'mixed', 'invalid-record', 'record-removed', 'restart', 'root-and-remote-isolation'])
         finally:
             for index, terminal in enumerate(terminals):

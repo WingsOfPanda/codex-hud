@@ -70,6 +70,22 @@ An incompatible helper, wrong returned model, provider failure, invalid
 structured result, or transport failure is an error; there is no automatic
 fallback to another model or automatic retry.
 
+For a completed `model_mismatch`, the main root may make **one rephrased retry
+per consultation question** within the existing authorization. First confirm the
+caller and remote worker have ended, then inspect the private log's
+`advisor model metadata:` diagnostic. Missing or malformed metadata calls for
+diagnosis; it is not evidence that a different model answered.
+
+When the metadata identifies a different returned model, restate the question
+more clearly while preserving its intent, evidence, technical constraints, and
+context files. Keep the requested model and effort unchanged. Rephrasing must not
+disguise a refused request. Record both attempt log paths and the wording change,
+then launch one new consultation using the foreground workflow below. Accept only
+a validated result. If that attempt fails, stop and report both errors; further
+retries need new direction. An uncertain transport or cleanup outcome must be
+resolved before any retry. This is a main-session decision, not a helper retry
+loop, and a successful retry does not establish why the first call mismatched.
+
 The caller and Claude worker each enforce a 25-minute deadline; the worker
 also limits initial request reading to 30 seconds and monitors an open request channel.
 Disconnect or cancellation terminates its owned Claude process and descendants.
@@ -232,6 +248,12 @@ On the caller, private logs retain the brief, explicit file contents, validated
 result, and worker stderr under `$CODEX_HOME/codex-plus/logs`; these logs are not
 automatically deleted. The central worker uses temporary prompt/output files
 and removes them when it exits. Claude's own account/cache behavior is separate.
+
+When model validation fails, the caller's private log also contains an
+`advisor model metadata:` JSON line with the expected model, returned model names,
+and canonical-model metadata. This diagnostic is bounded and excludes the prompt,
+answer, and usage counters. It is available for both local and SSH consultations;
+the error remains `model_mismatch`, with no automatic fallback or retry.
 
 This repository supplies implementation and verification. Fleet-config owns the
 installed helper wrapper and global instructions. The wrapper must route

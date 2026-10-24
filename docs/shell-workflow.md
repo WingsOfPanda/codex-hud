@@ -97,9 +97,12 @@ result line does not establish success.
   appropriate terminal/input support instead.
 
 Background progress and empty polling entries stay out of the conversation.
-Completion keeps a compact command/outcome record, a log reference when available,
-and a short failure excerpt. Completed background commands stay compact on resume;
-unknown timing remains visible unless the command explicitly chose `background`.
+In the main transcript, agent command previews occupy one visual line and
+successful output is folded, including quick checks and background completions.
+Existing activity disclosure reveals the retained command and output; failures
+keep their exit code and a short excerpt visible. Explain related commands as a
+group, with one purpose before execution and one reviewed outcome afterward.
+See [command display](command-display.md) for the scope and interactive exceptions.
 Detailed results are retained. Existing cancellation semantics are unchanged:
 cancelling a park disarms callbacks; stopping the actual job is a separate action.
 In the stock TUI, Ctrl-C interrupts the turn and can leave background commands

@@ -28,6 +28,14 @@ to the reviewed inputs require a new review.
 An execution's exclusive claim on a declared resource among participating jobs.
 Unresolved execution or cleanup does not release the claim.
 
+**Cleanup resolution**:
+An evidence-backed record that an execution's cleanup obligations are settled.
+It is distinct from the command's outcome.
+
+**Recovery pass**:
+A bounded investigation and reconciliation of a particular execution's outcome,
+cleanup obligations and continuation authority.
+
 **Maintenance hold**:
 A pause in new launches and automated follow-up admission while existing
 executions continue, used to coordinate a qualified upgrade.

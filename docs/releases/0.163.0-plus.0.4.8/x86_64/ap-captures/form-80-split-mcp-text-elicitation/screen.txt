@@ -1,0 +1,40 @@
+
+  >_ OpenAI Codex (v0.163.0)
+     /tmp/an/f-59lgugvq/w
+  permissions: YOLO mode
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  Field 1/1 (1 required unanswered)
+  Native MCP text elicitation fixture
+
+  Fixture answer
+
+  › Type your answer
+
+  enter to submit | esc to cancel
+

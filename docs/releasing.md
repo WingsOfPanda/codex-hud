@@ -1,8 +1,16 @@
 # Building complete release packages
 
+Start with the [release book](release-book.md) for the sequence, ownership,
+preflight and recovery decisions, and copy its [checklist](release-checklist.md).
+This document defines the package and handoff details.
+
 Release packaging is separate from the developer-only CLI build. It uses the
 pinned upstream package builder and includes every core runtime executable;
 copying `.build/codex` alone is not a complete release.
+
+The [repeatable native workflow](release-protocol.md) separates product source,
+checked-in tooling, native ownership and evidence acceptance. It remains under
+composed qualification; its unit tests do not replace the native gates below.
 
 ## Release identity
 
@@ -13,7 +21,36 @@ updates; increment its patch component for Plus fixes and its minor component
 for Plus features. Every new combination still needs qualified target packages.
 Existing published `plus.N` releases retain their original identities.
 
-The current advisor revision is `0.163.0-plus.0.4.4`: coordinator protocol 5 and
+Published revision `0.163.0-plus.0.4.7` is historical evidence, not pending work.
+Its [note](releases/0.163.0-plus.0.4.7.md) and
+[qualification](releases/0.163.0-plus.0.4.7/qualification.json) record the accepted
+source, gates, limits and rollback floor. The older revision instructions below
+describe their historical requirements; select the next release's gates from its
+actual changes rather than rerunning a published release.
+
+The preceding revision is `0.163.0-plus.0.4.6`: compact command display, the Morandi
+theme, and advisor model diagnostics. Build the changed frontend and helper
+natively on both architectures. Reuse verified caches and unchanged-stage
+receipts only with exact source identity; do not reuse the previous frontend
+binaries. Qualify quiet rollback to 0.4.5, both-direction holds, old-TUI/new-helper
+operation, package-backed UI/AP captures and same-version cross-host advisor
+success and caller-death cleanup. Mixed advisor helper versions must refuse the
+changed worker identity. Drain consultations before switching, install central
+host first, and finish the caller rollout before consulting. Use protocol 5,
+execution format 1, no daemon restart, quiet checkpoint, drained executions,
+session restart required and `agents_md: null`. The proposed retention floor is
+0.4.5, subject to executed native qualification.
+
+The preceding revision is `0.163.0-plus.0.4.5`, a timed release of build tooling
+and documentation with a version-only helper rebuild. Use the unchanged
+qualified 0.4.4 frontend only after verifying its exact binaries and compile
+origin. Run fresh native package, helper and compatibility checks on both
+targets; record retained frontend evidence separately. The source companion is
+[0.4.5](releases/0.163.0-plus.0.4.5.md). Once qualified, propose 0.4.4 as the
+rollback floor, no daemon restart, quiet checkpoint, drained executions and
+`agents_md: null`. No global instruction change is part of this revision.
+
+The preceding advisor revision is `0.163.0-plus.0.4.4`: coordinator protocol 5 and
 package `execution_record_format: 1`, with the same pinned official 0.163.0 daemon.
 The execution format describes durable executor records separately from
 coordinator/upstream compatibility. These identities do not establish package
@@ -39,6 +76,11 @@ screen/cursor captures against AP's classifier; development captures alone do
 not satisfy that final gate.
 
 ## Native binaries
+
+Before expensive work, follow the [release preflight](release-performance.md#run-the-preflight)
+with the exact interpreter, staged inputs and raw socket paths selected by the
+qualification plan. Run it again on the remote host after staging. A passing
+preflight checks setup only; it does not replace native qualification.
 
 Build natively on each target with Rust 1.99.1, the pinned upstream source and only
 the frontend patch. Use `--locked`, `--release`, and an explicit GNU target.
@@ -69,6 +111,11 @@ matching hashes, then repackage the new helper and qualify each complete archive
 on its native host. Reuse does not establish compatibility with a different
 upstream version or patch.
 
+Keep the verified upstream checkout and Cargo target directory stable across
+retries. Preserve source, toolchain, target, feature, lockfile and build-environment
+identities with each binary. For test-only retries, use the already-built test
+executable when those inputs are unchanged; see [saved native results](verification.md#saved-native-results).
+
 The existing native build needs a C toolchain, pkg-config, OpenSSL development
 headers and libcap development headers for bwrap. The normal V8 path uses pinned
 prebuilt archive/bindings; a source-build fallback has different prerequisites.
@@ -81,6 +128,12 @@ Assemble and qualify each archive on its native build host using the same clean
 Plus commit. This avoids transferring ARM binaries away and then returning the
 archive for testing. Central assembly remains supported; it copies each target's
 binaries and fetches pinned runtime resources without running foreign binaries.
+Transfer reports, logs, captures and dedicated result files separately from the
+shipping archive. Do not include source clones, Cargo output or extracted package
+duplicates in routine evidence bundles. Fetch each accepted archive once and
+verify its digest. Preserve passed stage receipts with their original identities;
+rerun only stages whose inputs or required behavior changed, with that selection
+reviewed explicitly. A failed run remains failed even when later work succeeds.
 The native directory must contain `codex`, `codex-plus-runtime`,
 `codex-code-mode-host`, and `bwrap`.
 
@@ -275,9 +328,10 @@ a quiet rollback, beyond ordinary `previous` cleanup. No shared-daemon restart
 is needed when both releases use upstream 0.163.0. See
 [the cutover contract](background-work.md#cooperative-package-upgrades).
 
-Once the release and its handoff asset are verified, message fleet-config only
-the tag. Fleet-config runs `stage.py pin` to validate the asset digests and stage
-`pins.next.json`, then `stage.py test` in throwaway homes on x86 and ARM. It owns
+Once the public release and its handoff asset are verified, send fleet-config the
+tag plus the digest-verification reference. Fleet-config runs `stage.py pin` to
+validate the asset digests and stage `pins.next.json`, then `stage.py test` in
+throwaway homes on x86 and ARM. It owns
 the rollout approval, deployment, AP/PATH checks, official-daemon maintenance,
 and rollback. Build, publish, and merge retain their separate user gates. Do not
 retrofit this asset into already published releases as part of this procedure.

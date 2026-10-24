@@ -1,0 +1,61 @@
+warning: `--logfile` is deprecated
+running 56 tests
+test app::worker_hud::tests::worker_hud_carries_and_normalizes_reported_agent_roles ... ok
+test app::worker_hud::tests::worker_hud_groups_only_explicit_topic_batch_tags_before_shortening ... ok
+test app::worker_hud::tests::worker_hud_isolates_clients_and_rejects_previous_primary_replies ... ok
+test app::worker_hud::tests::worker_hud_group_metrics_follow_current_turn_even_for_reused_forks ... ok
+test app::worker_hud::tests::worker_hud_missing_or_invalid_database_keeps_runtime_rows ... ok
+test app::worker_hud::tests::worker_hud_runtime_activity_overrides_old_completion_and_elapsed ... ok
+test app::worker_hud::tests::worker_hud_shell_identity_removal_stale_and_root_isolation ... ok
+test app::worker_hud::tests::worker_hud_shortens_paths_and_falls_back_to_names_without_controls ... ok
+test app::worker_hud::tests::worker_hud_shell_pagination_is_complete_bounded_and_fails_atomically ... ok
+test app::worker_hud::tests::worker_hud_standalone_tokens_match_the_elapsed_turn ... ok
+test app::worker_hud::tests::worker_hud_turn_usage_rejects_symlinks_and_pipes_without_blocking ... ok
+test app::worker_hud::tests::worker_hud_turn_usage_uses_latest_exact_record_without_summing_checkpoints ... ok
+test app::worker_hud::tests::worker_hud_waiting_requires_explicit_runtime_flag ... ok
+test app::worker_hud::tests::worker_hud_watcher_missing_and_idle_are_hidden_without_creating_files ... ok
+test app::worker_hud::tests::worker_hud_watcher_only_waiting_requires_fresh_heartbeat ... ok
+[?25l[?1049h[>4;0m[>7u[?1007l[?1000h[?1002h[?1003h[?1006h[?25l[1;1H[J[?2026htest app::worker_hud::tests::worker_hud_execution_refresh_uses_local_root_and_cached_watcher_tick ... ok
+[?25l[15;1H[1m›[15;3H[22mdraft[15;9Hstays[15;15Hhere[17;3HGPT-5.6-Sol[17;15Hdefault[17;23H·[17;25H/tmp/project[18;56H⚠[18;58H1[18;60Hwarning[18;68H·[18;70H[1mf2[18;73H[22mto[18;76Hview[19;3HWake[19;8Hdelivery[19;17Huncertain[19;27H·[19;29H1[20;1H[2m  Background · hud-job-0 · seen 0:03[21;1H  Background · hud-job-1 · seen 0:03[22;1H  Background · hud-job-2 · seen 0:03[23;1H  Background · hud-job-3 · seen 0:03[24;1H  +4 more[39m[49m[0m[1;1H[0 q[1;1H [39m[49m[0m[15;19H[?25h[?2026ltest app::worker_hud::tests::worker_hud_watcher_refresh_is_independent_of_offline_worker_request ... ok
+test app::worker_hud::tests::worker_hud_watcher_rejects_malformed_oversized_and_non_file_status ... ok
+test app::worker_hud::tests::worker_hud_watcher_rejects_previous_session_and_request_replies ... ok
+test app::worker_hud::tests::worker_hud_watcher_rejects_unreadable_symlinks_and_pipes_without_waiting ... ok
+[?2026h[39m[49m[0m[15;19H[?25h[?2026ltest app::worker_hud::tests::worker_hud_watcher_validates_schema_and_parent_without_showing_raw_text ... ok
+[?2026h[?25l[13;53H[2mSelecting text · esc cancel[39m[49m[0m[15;19H[?25h[?2026l[?2026h[?25l[18;56H[7m⚠ 1 warning[39m[49m[0m[15;19H[?25h[?2026l[?2026h[?25l[13;29H[0m[49m[K[23;2H[0m[49m[K[12;3H[1mConfiguration[13;3H[22m[2m[2mChanges save automatically[15;1H[22m [15;3H[1m[4m Appearance [22m[24m [2m Notifications [15;32H Input [15;40H Sessions [15;51H Text selection [17;1H[22m[7m[1m› Theme                   [22mAutomatic ›          Choose a syntax color palette wi…test bottom_pane::tests::worker_hud_keeps_idle_and_running_composer_editable_on_resize ... ok[18
+;3H[27mEffects[18;27H[2mConfigure ›          Configure animations and compose…[19;3H[22mTips[19;8H        [19;17H         [19;27H[2m[x] On               Show helpful shortcuts and sugge…[20;1H[22m  Status line colors      [2m[x] On               Use distinct item colors and the…[21;1H[22m  Status line display     [2mConfigure ›          Choose and reorder the informati…[22;1H[22m  Terminal title display  [2mConfigure ›          Choose and reorder the informati…[23;1H[22m [24;1H  [1mleft/right[24;14H[22mgroup[24;20H·[24;22H[1m/[24;24H[22msearch[24;31H·[24;33H[1menter[24;39H[22mopen[24;44H·[24;46H[1mesc[24;50H[22mclear[24;56Hsearch/close[2m             [39m[49m[0m[?2026l[?2026h[12;2H[0m[49m[K[13;2H[0m[49m[K[15;19H[0m[49m[K[17;37H[0m[49m[K[18;80H[0m[49m[K[19;27H[0m[49m[K[20;37H[0m[49m[K[21;37H[0m[49m[K[22;37H[0m[49m[K[24;10H[0m[49m[K[15;1H[1m›[15;3H[22mdraft stays here[17;1H  GPT-5.6-Sol default · /tmp/project[18;3H       [18;27H                             ⚠ 1 warning · [1mf2[22m to view[19;3HRestart[19;11Hreport[19;18Hready[19;24H·[19;26H1[20;1H[2m  Background · hud-job-0 · seen 0:03[21;1H  Background · hud-job-1 · seen 0:03[22;1H  Background · hud-job-2 · seen 0:03[23;1H  Background · hud-job-3 · seen 0:03[24;1H  +4 more[39m[49m[0m[15;19H[?25h[?2026l[?1006l[?1015l[?1003l[?1002l[?1000l[<1u[?1007l[?1049l[0 qtest app::owned_transcript::tests::worker_hud_footer_selection_and_config_panel_preserve_the_draft ... ok
+test app::worker_hud::tests::worker_hud_watcher_remote_and_no_root_suppress_local_status ... ok
+test bottom_pane::worker_hud::execution_tests::execution_hud_review_row_preserves_unknown_duration_without_adding_rows ... ok
+test app::worker_hud::tests::worker_hud_turn_usage_bounds_tail_and_record_work ... ok
+test bottom_pane::tests::worker_hud_six_rows_preserve_status_hints_and_editable_input ... ok
+test bottom_pane::worker_hud::execution_tests::execution_hud_shares_worker_advisor_native_warning_and_overflow_budget ... ok
+test bottom_pane::worker_hud::execution_tests::execution_hud_shares_six_rows_and_preserves_native_shells ... ok
+test bottom_pane::worker_hud::tests::advisor_ready_is_neutral_and_claude_rows_report_actual_model ... ok
+test bottom_pane::worker_hud::tests::actual_effort_distinguishes_missing_none_and_custom_values ... ok
+test bottom_pane::worker_hud::tests::advisor_topics_accept_supported_options_and_reject_invalid_invocations ... ok
+test bottom_pane::worker_hud::tests::healthy_empty_hud_is_hidden_but_stale_hud_warns ... ok
+test bottom_pane::worker_hud::tests::long_unicode_task_keeps_metrics_visible ... ok
+test bottom_pane::worker_hud::tests::narrow_rows_keep_worker_identity_first ... ok
+test bottom_pane::worker_hud::tests::only_active_and_waiting_workers_are_shown ... ok
+test bottom_pane::worker_hud::tests::shell_task_topics_compact_the_reported_long_commands ... ok
+test bottom_pane::worker_hud::tests::shell_task_topics_use_only_the_explicit_hud_label ... ok
+test bottom_pane::worker_hud::tests::advisor_coalesces_only_canonical_exact_invocations_while_running ... ok
+test bottom_pane::worker_hud::tests::worker_hud_caps_current_rows_and_is_safe_when_resized ... ok
+test bottom_pane::worker_hud::tests::worker_hud_compact_rows_match_the_agreed_examples ... ok
+test bottom_pane::worker_hud::tests::worker_hud_caps_display_groups_and_keeps_counts_after_long_topics ... ok
+test bottom_pane::worker_hud::tests::worker_hud_full_model_labels_preserve_versions_suffixes_and_unknown_ids ... ok
+test bottom_pane::worker_hud::tests::worker_hud_group_metrics_exclude_finished_assignments_and_use_longest_active ... ok
+test bottom_pane::worker_hud::tests::worker_hud_group_role_uses_only_active_and_waiting_members ... ok
+test bottom_pane::worker_hud::tests::worker_hud_groups_preserve_unknowns_mixed_labels_and_stale_suppression ... ok
+test bottom_pane::worker_hud::tests::worker_hud_role_prefix_preserves_custom_roles_and_narrow_task_metrics ... ok
+test bottom_pane::worker_hud::tests::worker_hud_shell_labels_are_bounded_control_safe_and_command_first ... ok
+test bottom_pane::worker_hud::tests::worker_hud_shell_staleness_is_independent ... ok
+test bottom_pane::tests::worker_hud_watcher_warning_keeps_draft_and_cursor_on_resize ... ok
+test bottom_pane::worker_hud::tests::worker_hud_two_rows_show_one_worker_and_the_correct_overflow ... ok
+test bottom_pane::worker_hud::tests::worker_hud_watcher_health_without_workers_is_compact_and_independent ... ok
+test bottom_pane::worker_hud::tests::zero_tokens_and_missing_values_are_distinct ... ok
+test bottom_pane::worker_hud::tests::advisor_rows_keep_warnings_priority_and_six_total_rows ... ok
+test bottom_pane::worker_hud::tests::worker_hud_dynamic_budget_preserves_priority_rows_and_hidden_counts ... ok
+test bottom_pane::worker_hud::tests::worker_hud_total_budget_includes_alerts_overflow_and_both_activity_kinds ... ok
+
+test result: ok. 56 passed; 0 failed; 0 ignored; 0 measured; 5873 filtered out; finished in 1.45s
+

@@ -20,7 +20,11 @@ parser.add_argument('--color-level', choices=['0', '1', '2', '3'], default='3')
 parser.add_argument('--colors', choices=['on', 'off', 'observe'])
 parser.add_argument('--no-color', action='store_true', help='Exercise NO_COLOR without FORCE_COLOR')
 parser.add_argument('--case', choices=['all', 'mixed', 'stats-only', 'identity-only', 'branch', 'empty'], default='all')
+parser.add_argument('--compact', action='store_true', help='Check optional compact indicator after branch')
+parser.add_argument('--theme', choices=['morandi'], help='Exercise the selected app palette')
 args = parser.parse_args()
+if args.compact and args.case != 'branch':
+    parser.error('--compact requires --case branch')
 if args.colors is not None:
     os.environ.pop('NO_COLOR', None)
     os.environ['FORCE_COLOR'] = args.color_level
@@ -32,7 +36,7 @@ if args.no_color:
 source = args.source.resolve(strict=True)
 sys.path.insert(0, str(source / 'tests'))
 from fixtures.native_server import AppServer, frame
-from native_smoke import Terminal, composer_ready, wait, worker_rows, assert_compact_hud
+from native_smoke import Terminal, advisor_rows, composer_ready, wait, worker_rows, assert_compact_hud
 from test_ultracode_tui import helper_script, calls, project_effective
 
 
@@ -73,6 +77,8 @@ class StatusServer(AppServer):
         if method == 'config/read':
             result['result']['config'].update(model='gpt-6-astra', model_reasoning_effort='high',
                 tui={'status_line': self.selection, 'status_line_use_colors': args.colors != 'off'})
+            if args.theme:
+                result['result']['config']['tui']['theme'] = args.theme
         if method in ('thread/start', 'thread/resume'):
             result['result'].update(model='gpt-6-astra', reasoningEffort='high')
         if method == 'thread/list' and params.get('ancestorThreadId') == ROOT:
@@ -95,8 +101,9 @@ def footer_rows(terminal):
     display = terminal.screen.display
     composer = max(i for i, line in enumerate(display) if line.lstrip().startswith('›'))
     workers = worker_rows(terminal.text)
+    advisors = advisor_rows(terminal.text)
     return [(i, line.strip()) for i, line in enumerate(display) if i > composer
-            and line.strip() and line.strip() not in workers]
+            and line.strip() and line.strip() not in workers + advisors]
 
 
 
@@ -105,6 +112,8 @@ def item_colors(terminal, rows, branch=False):
               'Context 75% left', 'weekly 45% left', 'resets in 5d 20h']
     if branch:
         labels.append('main')
+    if args.compact:
+        labels.append('compact')
     found = {}
     for label in labels:
         matches = [(row, terminal.screen.display[row].index(label))
@@ -138,6 +147,8 @@ def run_case(binary, directory, evidence, name):
                            'weekly-limit', 'weekly-reset'], 'stats-only': STATS,
                  'identity-only': ['model-with-reasoning', 'current-dir'],
                  'branch': ['model-with-reasoning', 'current-dir', 'git-branch', *STATS], 'empty': []}[name]
+    if args.compact:
+        selection.insert(selection.index('git-branch') + 1, 'compact-display')
     # No badge/agent exists in stats-only: a blank identity row would be a regression.
     workers = 2 if name in ('mixed', 'branch') else 0
     config = ('model="gpt-6-astra"\nmodel_reasoning_effort="high"\n'
@@ -145,13 +156,15 @@ def run_case(binary, directory, evidence, name):
         'suppress_unstable_features_warning=true\nanalytics.enabled=false\n'
         'features.daemon_auto_start=false\nfeatures.plugins=false\n'
         f'[tui]\nstatus_line={json.dumps(selection)}\n'
+        + (f'theme={json.dumps(args.theme)}\n' if args.theme else '')
+        + ('fullscreen_transcript=true\nalternate_screen="always"\n' if args.compact else '')
         + (f'status_line_use_colors={str(args.colors != "off").lower()}\n' if args.colors else ''))
     (home / 'config.toml').write_text(config)
     (home / 'auth.json').write_text('{"OPENAI_API_KEY":"isolated-fixture-only"}')
     server = StatusServer(home, work, selection, workers)
     terminal = None
     report = dict(case=name, selection=selection, colors_mode=args.colors, color_level=args.color_level,
-                  no_color=args.no_color, passed=False, stages=[])
+                  no_color=args.no_color, theme=args.theme, passed=False, stages=[])
     try:
         terminal = Terminal(binary, home, work)
         wait([terminal], lambda: composer_ready(terminal.text)
@@ -200,6 +213,8 @@ def run_case(binary, directory, evidence, name):
         rows = footer_rows(terminal)
         (evidence / 'wide.txt').write_text(terminal.text + '\n')
         report['wide_footer_rows'] = rows
+        if args.compact:
+            assert rows and ' · main · compact · Main [default]' in rows[0][1], rows
         if name in ('mixed', 'branch'):
             assert len(rows) == 2, f'expected two physical footer rows, got {rows}'
             first, second = rows
@@ -207,6 +222,9 @@ def run_case(binary, directory, evidence, name):
             assert all(value in first[1].lower() for value in ('gpt-6-astra high ultracode', 'workspace', 'main [default]')), rows
             if name == 'branch':
                 assert ' · main' in first[1], rows
+            if args.compact:
+                assert ' · main · compact · Main [default]' in first[1], rows
+                assert 'compact' not in second[1], rows
             assert not any(value in first[1] for value in ('Context ', 'weekly ', 'resets ')), rows
             assert second[1] == 'Context 75% left · weekly 45% left · resets in 5d 20h', rows
         elif name == 'stats-only':
@@ -220,7 +238,7 @@ def run_case(binary, directory, evidence, name):
         if name in ('mixed', 'branch') and args.colors:
             report['colors'] = item_colors(terminal, rows, branch=name == 'branch')
             (evidence / 'colors.json').write_text(json.dumps(report['colors'], indent=2) + '\n')
-        assert_compact_hud(terminal.text, rows=workers)
+        assert_compact_hud(terminal.text, rows=workers + len(advisor_rows(terminal.text)))
         if workers:
             worker_indices = [i for i, line in enumerate(terminal.screen.display)
                               if line.strip() in worker_rows(terminal.text)]
@@ -234,7 +252,7 @@ def run_case(binary, directory, evidence, name):
         assert len(narrow) == len(rows), f'narrow resize changed row count: {narrow}'
         if name in ('mixed', 'branch'):
             assert 'Context 75% left' in narrow[1][1] and 'Context ' not in narrow[0][1], narrow
-        assert_compact_hud(terminal.text, rows=workers)
+        assert_compact_hud(terminal.text, rows=workers + len(advisor_rows(terminal.text)))
         (evidence / 'narrow.txt').write_text(terminal.text + '\n')
         report['stages'].append('narrow-editable-input')
         if name in ('mixed', 'branch'):
@@ -252,6 +270,8 @@ def run_case(binary, directory, evidence, name):
         assert not [request for request in server.requests if request.get('method') in forbidden]
         saved = tomllib.loads((home / 'config.toml').read_text())
         assert saved['tui']['status_line'] == selection, 'display rewrote status-line selection'
+        if args.theme:
+            assert saved['tui']['theme'] == args.theme, 'display rewrote selected theme'
         report.update(display_model_requests=0, config_preserved=True)
         if name in ('mixed', 'branch') and args.colors == 'on' and args.color_level != '0' and not args.no_color:
             assert report['colors']['pairwise_distinct'], report['colors']
@@ -263,6 +283,21 @@ def run_case(binary, directory, evidence, name):
                 else:
                     # Two near-blue RGB values are distinct numbers but still look alike.
                     assert int(foreground[:2], 16) > int(foreground[4:], 16) + 40, report['colors']
+            if args.compact:
+                foreground = report['colors']['items']['compact']['foreground']
+                if args.color_level == '1':
+                    assert foreground == '00ffff', report['colors']
+                else:
+                    red, green, blue = (int(foreground[i:i+2], 16) for i in (0, 2, 4))
+                    assert green > red and blue > red, report['colors']
+            if args.theme == 'morandi' and args.color_level in ('2', '3'):
+                foreground = report['colors']['items']['Context 75% left']['foreground']
+                red, green, blue = (int(foreground[i:i+2], 16) for i in (0, 2, 4))
+                assert green > red and green > blue, 'Context must remain visibly green'
+                if args.color_level == '3':
+                    assert foreground == 'a8c9ad', report['colors']
+                    if args.compact:
+                        assert report['colors']['items']['compact']['foreground'] == 'a2c6be', report['colors']
         if name in ('mixed', 'branch') and (args.colors == 'off' or args.color_level == '0' or args.no_color):
             foregrounds = {value['foreground'] for value in report['colors']['items'].values()}
             assert len(foregrounds) == 1, report['colors']

@@ -138,10 +138,14 @@ uncertain. Recovery also blocks model goal mutations before a report is prepared
 only a positively accepted ordinary input at the current epoch or an explicit
 host goal action can authorize renewed direction.
 
-Unknown ownership, job outcome, isolation or delivery becomes `Goal needs input`
-with a reason. Temporary transport errors retry locally. Preserve the ledger;
-inspect goal and park status, reconcile positive evidence and ask for direction
-before uncertain resends or reruns. No model polling is used as a health check.
+With valid live authority, an unresolved execution outcome or cleanup can produce
+a [recovery completion](recovery.md) without forcing `Goal needs input`. Use normal
+continue/wait checkpoints for bounded investigation; retain claims and the original
+result. A missing decision or required authority becomes `needs_input` with the
+specific blocker. Isolation, admission and delivery uncertainty retain their
+existing barriers; temporary transport errors retry locally. Preserve the ledger
+and reconcile positive evidence before resends or reruns. No model polling is used
+as a health check.
 
 ## Stock-daemon isolation and rollout contract
 

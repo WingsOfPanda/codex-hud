@@ -4,6 +4,45 @@ Target: Codex 0.163.0, commit
 `83086188ae0614bd882818ff1aa23f3194962012`, Linux x86_64 and ARM64,
 Rust 1.99.1. Keep the ordinary installed Codex and global configuration intact.
 
+## Saved native results
+
+Build the selected Rust test executable once in a stable checkout with the
+required toolchain, profile, target and features. Capture Cargo's
+`--message-format=json` output from `cargo test --no-run`, select the intended
+`compiler-artifact` with `profile.test` and a non-null `executable`, and record
+its absolute path, digest and build inputs. Do not guess the hashed filename or
+select a binary from another target. Preserve it before another build can
+replace it. Run each filter's list and tests from that same executable and
+environment, recording the native command's actual exit status:
+
+```sh
+"$TEST_BINARY" "$FILTER" --list > "$EVIDENCE/list.txt" || exit 1
+if "$TEST_BINARY" "$FILTER" --test-threads=8 --color never \
+  --logfile "$EVIDENCE/results.libtest" > "$EVIDENCE/stdout.txt" 2>&1; then
+  native_exit=0
+else
+  native_exit=$?
+fi
+# Perform and record owned-process cleanup independently of test/parser success.
+python3 scripts/native-results.py --name "$FILTER" \
+  --list "$EVIDENCE/list.txt" --logfile "$EVIDENCE/results.libtest" \
+  --stdout "$EVIDENCE/stdout.txt" --exit-code "$native_exit"
+```
+
+Use a new evidence directory for each execution. The controller must handle a
+nonzero command explicitly, including when using shell `set -e`; never skip
+cleanup on failure. List failure aborts execution. Apply the same test-selection
+flags to both invocations. Ignored tests require `--ignored-reasons FILE`, a
+reviewed JSON object mapping exact test names to exact libtest reason strings
+(an empty string for an ignored test without a reason). No ignored tests or
+baseline failures are accepted implicitly.
+
+The validator compares the independent list, dedicated result file, exit status
+and stdout summary. It ignores terminal-rendered test rows because UI output can
+join or obscure them. Keep raw inputs and command receipts: parser-only fixes can
+be replayed offline without recompiling or executing tests. Such a replay proves
+the recorded execution, not a new execution or a changed source tree.
+
 ## Expanded footer candidate gate
 
 The prepared footer change raises the activity budget to six rows independently
@@ -32,6 +71,66 @@ Source preparation and old-version red evidence do not establish candidate
 acceptance. The release evidence below retains the limits verified at that time.
 
 ## Current release acceptance
+
+### Morandi theme (development)
+
+[Accepted development evidence](evidence/morandi-theme.json) binds the palette,
+client binary, final patch, test-only corrections and native/terminal results.
+
+Run `tests/test_morandi_tui.py --binary CANDIDATE --expect present --evidence
+NEW_DIRECTORY` with the private native-smoke interpreter. It checks the actual
+selected theme, live preview, cancellation, persistence, restart and zero
+display-driven model requests. The prechange client must fail the present check.
+
+Native `morandi`, `theme_picker`, `render::highlight`, `custom_terminal`,
+`insert_history`, `style::contrast` and status-line style checks cover theme
+resolution, both paint paths, preview invalidation, contrast, color capabilities,
+selection, modifiers and unchanged behavior under the other themes. Preserve
+exact test lists and libtest results. Test the compact command contract with
+`tests/test_command_display_tui.py --theme morandi` as well: changing colors must
+not change command execution, retained results, disclosure or model requests.
+
+The palette is described in [theme behavior](themes.md). Native x86 development
+verification does not establish ARM package qualification or fleet activation.
+
+For the brighter palette, run `tests/test_morandi_command_colors_tui.py --binary
+CANDIDATE --launcher MATCHING_HELPER --evidence NEW_DIRECTORY --color-level 2`
+and repeat with level `3`. It executes the existing private success/failure
+fixtures and checks actual command-dot colors against the Context item while
+retaining the folding and raw-output checks. The previous palette must fail the
+shared-green assertion. The candidate must have its matching `codex-plus-runtime`
+adjacent to the client: `--launcher` selects the shell runner but does not change
+the client's goal/advisor helper lookup. Add `--theme morandi` to the status-line PTY checks to
+exercise the actual selected theme, including ANSI256/TrueColor, ANSI16 and
+disabled-color cases; unthemed runs do not establish Morandi acceptance.
+
+### Compact command display (development)
+
+[Development evidence](evidence/compact-command-display.json) records the exact
+candidate and patch identity, passing checks, reviewed fixture corrections, and
+platform limits. Fleet installation and release qualification are separate.
+
+Use `tests/test_command_display_tui.py BINARY --launcher MATCHING_HELPER
+--evidence NEW_DIRECTORY` in the private smoke-test Python environment. Its nine
+cases cover quick, unmarked, background, failed, exploring and running commands;
+local expansion, narrow input, completion and restart; and equality of stored
+tool results with model-visible results. The display must add no model requests.
+Initial bytes that the stock backend does not stream remain available in the
+final aggregate; live checks use a marker emitted after the activity is visible.
+
+Check the optional status item with `tests/test_status_lines_tui.py --binary
+BINARY --source PLUS_SOURCE --evidence NEW_DIRECTORY --case branch --compact
+--colors on --color-level 3`, repeated for color levels 2 and 1, colors off,
+and NO_COLOR. The first row must place `compact` after the branch, use a distinct
+color when enabled, and keep statistics on the second row.
+
+Native checks include `command_display`, `compact_display`, `shell_policy`,
+`chatwidget::tests::exec_flow`, `exec_cell`, `transcript_view`, `native_history`,
+and status-line picker/style/preview filters. Preserve the existing shell-policy,
+native smoke, shell-topic and detached-HUD regression gates. Record exact test
+lists and dedicated libtest results; snapshot updates require review against
+the approved display contract. These development checks do not install or
+qualify release packages on the fleet.
 
 ### Short background topics
 
@@ -187,7 +286,7 @@ their own native qualification before release; these source checks are not that.
 
 ### Worker time and token scopes
 
-Standalone rows pair the latest turn's elapsed time with that exact turn's
+Standalone and grouped rows pair the latest turn's elapsed time with that exact turn's
 reported usage. Regression fixtures reuse a worker with 342,740,535 lifetime
 tokens and 679,013 current-turn tokens: the row must show `679K`, then reset
 when its turn ID changes. Reloading the TUI must recover the same reported turn
@@ -197,10 +296,20 @@ Cached input remains included in input rather than being added again.
 Local reads are bounded, read-only, and match both thread and turn identity.
 Check incomplete/malformed records, oversized tails, zero/negative values,
 forks, and unavailable files. Remote fixtures include local rollout and SQLite
-decoys and must still show unknown usage. Explicit groups keep their batch
-elapsed time and all-member lifetime totals, including finished members.
-The terminal smoke also checks editable input, the three-row budget and zero
-model calls while these metrics refresh.
+decoys and must still show unknown usage. Explicit groups show active/waiting
+member counts, the longest current assignment and summed current-assignment
+usage. Finished members contribute nothing; reusing a worker for a new turn
+resets its metrics. Run `test_worker_roles_tui.py` against the candidate for old
+thread/new turn, inherited-record rejection and completed-member regressions.
+The terminal smoke also checks editable input, the six-activity-row budget and
+zero model calls while these metrics refresh.
+
+For detached work, run `test_detached_execution_hud_tui.py` and native
+`execution_hud` checks: unknown outcomes keep `needs review` even after heartbeat
+expiry. A valid optional `finished_at` freezes duration; missing/null end time
+shows `?`. Live jobs retain ordinary running/stale handling. Runtime projection
+checks require verified resolved-Unknown activity removal while retaining the
+durable outcome, resource-conflict behavior and report-only barriers.
 
 ### Audit regression checks
 
@@ -221,7 +330,7 @@ bounded multilingual results, and Cargo's actual artifact locations. Coordinator
 and upgrade suites include batching/cancellation on real Rust connections,
 legacy stranded callbacks, bounded-history uncertainty, transport failure, and
 relative homes across packaged startup and upgrade. The terminal smoke checks
-zero inactive-worker turn reads while retaining completed group metrics.
+zero inactive-worker turn reads while excluding completed group metrics.
 See [the audit fix record](audit-fixes.md) for executed checks and remaining
 release checks. [Notice resolution](notice-resolution.md) records the subsequent
 40 packaging tests, complete x86/ARM production graphs, source bindings and
@@ -637,6 +746,7 @@ the stock daemon, with private homes and loopback providers:
 ```sh
 .venv/bin/python tests/test_shell_policy_integration.py .build/codex \
   --stock-daemon /path/to/official/codex \
+  --stock-launcher /path/to/qualified-plus-package/bin/codex-plus \
   --evidence .build/shell-policy/acceptance
 ```
 

@@ -1,0 +1,151 @@
+{
+  "schema": 1,
+  "accepted": true,
+  "feature": "Brighter existing Morandi theme and shared success/Context green",
+  "base": "b59c3f8c534ae72357ae7ae7f6545a9173bfb51b",
+  "upstream": "83086188ae0614bd882818ff1aa23f3194962012",
+  "frontend_patch_sha256": "0fddca41265c39d7c2fe7f590dcc98fe59dfba43d2ef0389d646687f92ef6ad3",
+  "candidate": {
+    "codex": "96fd795598e41521a6eae84d56e7d53d4b106ee4590dffb783b32c4f4e709ace",
+    "codex-code-mode-host": "dcfa35170e41231e363f84cf43908c6033521386c96ec2d30c60b085df900f70"
+  },
+  "native_tests": {
+    "unique": 137,
+    "ignored": 0,
+    "failures": 0
+  },
+  "terminal": {
+    "picker_stages": 6,
+    "status_modes": [
+      {
+        "case": "truecolor",
+        "exit_code": 0
+      },
+      {
+        "case": "ansi256",
+        "exit_code": 0
+      },
+      {
+        "case": "ansi16",
+        "exit_code": 0
+      },
+      {
+        "case": "disabled",
+        "exit_code": 0
+      },
+      {
+        "case": "force-zero",
+        "exit_code": 0
+      },
+      {
+        "case": "no-color",
+        "exit_code": 0
+      },
+      {
+        "case": "default-theme",
+        "exit_code": 0
+      }
+    ],
+    "command_cases": [
+      "unmarked_success",
+      "auto_quick",
+      "background_success",
+      "unmarked_failure",
+      "background_failure",
+      "explored",
+      "running",
+      "auto_running",
+      "background_running"
+    ],
+    "command_colors": {
+      "ansi256": {
+        "unmarked_success": {
+          "dot": "afd7af",
+          "context": "afd7af"
+        },
+        "unmarked_failure": {
+          "dot": "d7afaf",
+          "context": "afd7af"
+        }
+      },
+      "truecolor": {
+        "unmarked_success": {
+          "dot": "a8c9ad",
+          "context": "a8c9ad"
+        },
+        "unmarked_failure": {
+          "dot": "d09a8c",
+          "context": "a8c9ad"
+        }
+      }
+    },
+    "native_smoke_stages": 23,
+    "extra_display_model_requests": 0
+  },
+  "preserved_failures": [
+    "Old palette fails actual success-dot/Context equality and approved brightness",
+    "Bright palette on white ANSI256 collapsed hues; rejected TrueColor-first experiment retained",
+    "Initial command fixtures lacked adjacent unchanged runtime helper; corrected candidate dependency without rebuilding",
+    "Live JSONL fixture read hit partial trailing record; parser now ignores only incomplete final record and still rejects malformed complete records"
+  ],
+  "fixture_parser_selftests": 4,
+  "scope": {
+    "daemon_changed": false,
+    "other_themes_changed": false,
+    "new_settings": false,
+    "running_animation_changed": false,
+    "installed": false,
+    "published": false,
+    "arm_qualified": false
+  },
+  "evidence": [
+    {
+      "path": "/home/liupan/Aerius/codex-plus/.build/morandi-bright/root-native-acceptance.json",
+      "sha256": "a3318bd12563d7c75ab64b7f358dbf0fe9ad42567a1d295a4ca481b1f1a83b3c"
+    },
+    {
+      "path": "/home/liupan/Aerius/codex-plus/.build/morandi-bright/native-acceptance/report.json",
+      "sha256": "7cc77b12088994b83ea2464e4b9fe4393049dd72cc8f23abbfef2d9c889a405d"
+    },
+    {
+      "path": "/home/liupan/Aerius/codex-plus/.build/morandi-bright/candidate-helper-binding.json",
+      "sha256": "bdf153303c75f674b68f87738dd3b3f0551363eec68e4dc1775a7267ca6446f2"
+    },
+    {
+      "path": "/home/liupan/Aerius/codex-plus/.build/morandi-bright/acceptance/status-modes.json",
+      "sha256": "3ab1cae1baf99464d305a60143694dfdbb5f701097ef0ef2cfd42e5dd5d36dc5"
+    },
+    {
+      "path": "/home/liupan/Aerius/codex-plus/.build/morandi-bright/acceptance/picker/report.json",
+      "sha256": "4ec85dab21e65a02e6a03849df48087d4f90f4ec3f9e1e0f7e12e5de8d789289"
+    },
+    {
+      "path": "/home/liupan/Aerius/codex-plus/.build/morandi-bright/acceptance/native-smoke/report.json",
+      "sha256": "2b0f4d6810e25934b78903d78ba17344fd004cb51c196d713e4c417d9cad76fb"
+    },
+    {
+      "path": "/home/liupan/Aerius/codex-plus/.build/morandi-bright/acceptance/command-regressions-v2/report.json",
+      "sha256": "b40d50cc4fc5ebd886dd80eccac7bb19ba8d79b8f662451c4bdb527723393925"
+    },
+    {
+      "path": "/home/liupan/Aerius/codex-plus/.build/morandi-bright/acceptance/command-regressions-tail/report.json",
+      "sha256": "0f14621caf5a16390c1572542bf4baebb4462ebd03c04609bc41c2903ec77595"
+    },
+    {
+      "path": "/home/liupan/Aerius/codex-plus/.build/morandi-bright/acceptance/command-ansi256-v2/report.json",
+      "sha256": "f34afb153c0d4cbc9e79c3f71444102cb9002792301ba70612c3ab3757745a9f"
+    },
+    {
+      "path": "/home/liupan/Aerius/codex-plus/.build/morandi-bright/acceptance/command-truecolor-v2/report.json",
+      "sha256": "1ab4cef1b0e08c3420ebea72fdc08eb1b2aaf55af0b180ed0500ae10b50214da"
+    },
+    {
+      "path": "/home/liupan/Aerius/codex-plus/.build/morandi-bright/baseline.json",
+      "sha256": "e98456408bfaa402b3831ed15a2fbf38479e9c424aea1fcb57427e33f00e8e7e"
+    },
+    {
+      "path": "/home/liupan/Aerius/codex-plus/.build/morandi-bright/baseline-command-colors/report.json",
+      "sha256": "7a014d43e7316083947d7f993dcab7c5902bde852681d9ca6822a3e19f3ff377"
+    }
+  ]
+}

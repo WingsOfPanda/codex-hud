@@ -1,0 +1,19 @@
+warning: `--logfile` is deprecated
+running 14 tests
+test bottom_pane::status_line_style::tests::light_status_line_corrects_pale_custom_theme_colors ... ok
+test bottom_pane::status_line_style::tests::pull_request_number_uses_link_style ... ok
+test bottom_pane::status_line_style::tests::semantic_status_line_palette_is_distinct_on_light_and_dark_terminals ... ok
+test bottom_pane::status_line_style::tests::status_line_segments_can_disable_theme_colors ... ok
+test bottom_pane::status_line_style::tests::status_line_segments_preserve_order_and_plain_text ... ok
+test bottom_pane::status_line_style::tests::status_line_segments_return_none_when_empty ... ok
+test bottom_pane::status_line_style::tests::status_line_segments_soften_rgb_theme_styles_without_dimming_text ... ok
+test bottom_pane::status_line_style::tests::status_line_segments_use_secondary_separators_and_theme_styles_first ... ok
+test bottom_pane::status_line_style::tests::morandi_status_line_palette_is_distinct_on_light_and_dark_terminals ... ok
+test bottom_pane::status_line_style::tests::other_themes_keep_legacy_status_colors_and_cool_compact ... ok
+test bottom_pane::status_line_style::tests::thread_usage_items_share_an_accent_and_secondary_separator ... ok
+test bottom_pane::status_line_style::tests::status_line_unmodified_items_keep_theme_colors_at_limited_depths ... ok
+test bottom_pane::status_line_style::tests::status_line_theme_colors_at_limited_color_depths ... ok
+test bottom_pane::status_line_style::tests::morandi_status_line_palette_at_supported_color_depths ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 5915 filtered out; finished in 0.25s
+

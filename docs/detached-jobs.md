@@ -173,6 +173,12 @@ pause/revision/input-epoch checks and report-only recovery barriers. A result
 alone does not renew permission to continue old actions. Failed or uncertain
 executions do not rerun automatically; a retry is a new reviewed execution.
 
+Under a positively live watch, unresolved execution cleanup or outcome produces
+`RECOVERY REQUIRED` for [bounded recovery](recovery.md). Retain known exit receipts;
+investigate within current authority and keep affected resource claims until
+verified cleanup. Existing explicit `job watch`, observer-gap and legacy report
+barriers remain conservative. Recovery acknowledgement is not cleanup resolution.
+
 The local HUD reuses `Background · topic · elapsed`, with an optional stage
 explicitly reported by the execution. Prepared workers disappear when they
 finish, and executions appear after launch. Detached UUIDs remain distinct from
