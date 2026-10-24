@@ -293,13 +293,23 @@ with the release note; retain original logs privately where appropriate. Local
 Keep sealed acceptance/readiness files immutable; write later publication state
 to a separate output. A mode-0400 evidence record is not a mutable status file.
 
-Within publication authorization, upload the two archives, two checksum files and
-handoff. Verify all five GitHub asset digests and downloaded handoff bytes. Resolve
-a draft's tag/node to its exact database ID and continue with that release; never
-create a second release to work around listing delay. After public verification,
-send fleet-config the tag plus the digest-verification reference.
-Use the [publication commands and record schemas](release-publication.md) rather
-than reconstructing a release-local finalizer.
+Follow the [publication commands and record schemas](release-publication.md) for
+both a new publication and an interrupted one. Complete this sequence within the
+existing publication grant:
+
+1. Bind the accepted product, companion commit, handoff and five files: two
+   archives, two checksum files and `handoff.json`. Prepare the companion release
+   body with tag-bound links; the packaged source note stays frozen.
+2. Reconcile the remote tag and release. Create/push a missing tag at the reviewed
+   companion commit; preserve any existing tag and resume the same release ID.
+3. Upload a draft and resolve its tag/node to the exact database ID. A listing
+   delay does not justify creating another release.
+4. Verify the draft's remote tag commit, all five asset digests/sizes and the
+   byte-identical downloaded handoff with the checked-in publication checker.
+5. Publish that verified database ID. Read back public state, the tag and handoff;
+   run the checker again without `--draft`.
+6. Send fleet-config the public tag, URL and verification reference. Record main
+   merge separately, then proceed to rollout and actual-session verification.
 
 **Exit check:** the public release ID, tag and five assets match accepted evidence;
 fleet-config has the verification reference. Record main merge separately.
