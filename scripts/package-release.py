@@ -37,8 +37,10 @@ EXECUTION_RECORD_FORMAT = 1
 PATCH = 'patches/codex-0.163.0-worker-hud.patch'
 TARGETS = {'x86_64-unknown-linux-gnu': 62, 'aarch64-unknown-linux-gnu': 183}
 DOCS = ('README.md', 'GLOSSARY.md', 'docs/background-work.md',
+        'docs/releases/0.163.0-plus.0.4.9.md',
         'docs/releases/0.163.0-plus.0.4.8.md',
         'docs/release-book.md', 'docs/release-checklist.md',
+        'docs/release-publication.md',
         'docs/release-protocol.md', 'release/protocol-v1.md',
         'docs/recovery.md', 'docs/proposals/recovery-agents-block.md',
         'docs/themes.md', 'docs/evidence/morandi-theme.json',
