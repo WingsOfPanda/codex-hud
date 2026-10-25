@@ -96,11 +96,21 @@ When remote access fails, continue local reads/preparation but mark sync unverif
 
 **Exit check:** each owner records the normal checkout path, matching full local
 and remote commits, clean status and the release-book revision read. The coordinator
-then names the exact product/tooling revisions for dedicated release worktrees.
+compares the x86 and native ARM owners' receipts: both must report the same full
+`main` commit and release-book revision before selecting/freezing release inputs.
+If the reports differ, reconcile the ordinary clones with the bounded sync above;
+matching branch names or separate claims of being up to date are insufficient.
+
+The coordinator then names the exact product/tooling revisions for dedicated
+release worktrees.
 Those frozen revisions are selected independently and need not equal synced `main`.
 Unmerged improvements are not supplied by syncing `main`: merge them through their
 reviewed PR first, or explicitly select and transfer their reviewed commit as
-tooling. Both owners must acknowledge the same selected book/tooling revision.
+tooling. Before native launch, each owner's existing readiness receipt verifies
+the shared plan's product, tooling, upstream and patch identities. Host paths,
+architecture and profile digests may differ; the selected code revisions must
+match. Include this in the existing owner handoff, without another per-phase
+acknowledgement. Resumes continue with their original frozen pins.
 
 ## 1. Select the path and freeze inputs
 

@@ -10,6 +10,9 @@ reason. Replace placeholders with actual evidence; an unchecked item is not a pa
 - Coordinator / native x86 owner / native ARM owner / fleet peer:
 - New-release sync: each owner's normal checkout / local and remote main SHAs /
   clean status / release-book revision (resume keeps existing frozen pins):
+- Cross-host comparison: coordinator/x86 and native ARM receipts agree on one full
+  main SHA and book revision; both readiness receipts bind the selected plan's
+  product/tooling/upstream/patch identities:
 - Product commit / upstream commit / patch SHA256:
 - Executed tooling commit / coordinator verifier commit / AP adapter revision:
 - Plan digest / host profile digests / coordinator-issued superseding-plan successor:
