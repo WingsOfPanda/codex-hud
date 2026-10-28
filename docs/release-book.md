@@ -7,6 +7,43 @@ evidence directory. For an interrupted release, first reconcile that
 checklist with actual jobs and artifacts, then take the applicable
 [recovery branch](#recovery). Continue from the earliest unmet exit check.
 
+## Automation endpoint
+
+The target for a routine release is one checked-in command taking a validated
+release plan, running the authorized pipeline, and returning its result and
+evidence. This is an implementation goal, not an available command today:
+individual stages are automated, but cross-host orchestration and some reviews
+still require coordinator work. Until that entry point is implemented and
+qualified, follow the existing steps below; do not invent a replacement command.
+
+The completed pipeline must:
+
+1. Separate upstream adaptation from release execution. Finish API, frontend,
+   dependency and fixture corrections and qualify the selected recipe before
+   entering routine release qualification. Do not bypass a recipe's version guard.
+2. Check cheap prerequisites and exact command/report interfaces before expensive
+   work. Freeze the plan, source, tooling, host profiles and acceptance checks.
+3. Drive both native hosts through their declared stage dependencies, local
+   supervision, evidence export and coordinator acceptance without intermediate
+   acknowledgement gates. Retain one execution owner and observer per job.
+4. Persist resumable progress. On interruption, reconcile actual results and
+   cleanup before selecting the next unmet check. Preserve failed outcomes and
+   reuse passed evidence only under the existing change-impact rules; never replay
+   an uncertain execution or repeat accepted work merely to recreate its report.
+5. Reconcile duplicate or delayed notifications against execution and resolution
+   records. Show meaningful progress or a concrete unresolved blocker, rather
+   than presenting an already-resolved failure as new work. A failure pauses its
+   dependent stages; independent authorized work continues.
+6. Publish the accepted artifact bytes when publication is authorized, then verify
+   destination hashes and send the fleet handoff. Report published, merged,
+   installed and restarted separately; existing ownership and grants still apply.
+
+**Completion evidence:** demonstrate an ordinary release through the entry point,
+an interrupted resume without duplicate outward effects, and a failed-stage
+recovery that preserves evidence and does not rerun unaffected accepted stages.
+Record commands, outcomes and remaining manual decisions in the pilot record.
+One command does not promise bug-free software or waive a failed acceptance check.
+
 ## Owners
 
 | Owner | Owns | Returns |
