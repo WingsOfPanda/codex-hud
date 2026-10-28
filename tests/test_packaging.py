@@ -64,6 +64,21 @@ class ReleaseIdentityTests(unittest.TestCase):
                          package_release.LICENSE_DOWNLOADS['rusty-v8-LICENSE'][1])
         self.assertIn('v8@150.4.0', sources)
 
+    def test_0165_icu_data_uses_its_updated_component_notices(self):
+        sources = json.loads((ROOT / 'scripts/native-license-sources.json').read_text())
+        old, current = (sources['deno_core_icudata@' + version] for version in ('0.77.0', '0.78.0'))
+        blob = current['source_evidence']['src/icudtl.dat']
+        self.assertEqual(current['checksum'], 'b963d2d79672b4c379e4511acccd27bb35b4c1b32a93f596d52ff14a064293bc')
+        self.assertEqual(blob['sha256'], '9f48c7f9c7c94d516a14870707e910ab94d75ae640ff6842c4af53276cd26ebe')
+        self.assertNotEqual(blob['sha256'], old['source_evidence']['src/icudtl.dat']['sha256'])
+        self.assertEqual(blob['matching_component_source']['sha256'], blob['sha256'])
+        notices = next(entry for entry in current['files'] if entry['kind'] == 'component-notices')
+        self.assertEqual(notices['revision'], 'd578f2e8b7bd5938e21cfb6bf15c079e0aa5b738')
+        self.assertEqual(notices['sha256'], 'e55522d81edc687a341a4411e0776e54ca654e90147f354a90458aaced4116af')
+        self.assertEqual(notices['source_bindings'], ['src/icudtl.dat'])
+        self.assertEqual(sources['flatbuffers@25.12.19']['files'][0]['revision'],
+                         '7e163021e59cca4f8e1e35a7c828b5c6b7915953')
+
 
 class QualificationCopyTests(unittest.TestCase):
     def check_copy(self, check_name):
@@ -534,6 +549,38 @@ class RuntimeNoticeTests(unittest.TestCase):
         (directory / 'LICENSE').unlink()
         with self.assertRaisesRegex(ValueError, 'Missing applicable license text for dependency 1.0.0'):
             self.collect()
+
+    def test_complete_bzip2_package_license_is_retained_with_provenance(self):
+        data = (ROOT / 'tests/fixtures/licenses/libbz2-rs-sys-0.2.5-LICENSE').read_bytes()
+        self.assertEqual(hashlib.sha256(data).hexdigest(),
+                         '54e1fd7bd53273e601c9599eb162a004dacddee031ae297ee7109a7beb93b1c2')
+        self.packages[1]['license'] = 'bzip2-1.0.6'
+        directory = Path(self.packages[1]['manifest_path']).parent
+        (directory / 'LICENSE').write_bytes(data)
+        bundle, provenance = self.collect()
+        self.assertIn(data, bundle)
+        record = next(p for p in provenance['packages'] if p['name'] == 'dependency')
+        self.assertEqual(record['license'], 'bzip2-1.0.6')
+        self.assertEqual(record['license_files']['LICENSE'], hashlib.sha256(data).hexdigest())
+        self.assertTrue(runtime_notices.license_covered('bzip2-1.0.6', [data.decode().replace('\n', ' ')]))
+        self.assertFalse(runtime_notices.license_covered('Apache-2.0', [data.decode()]))
+
+    def test_bzip2_license_rejects_missing_truncated_wrong_or_incomplete_terms(self):
+        text = (ROOT / 'tests/fixtures/licenses/libbz2-rs-sys-0.2.5-LICENSE').read_text()
+        self.packages[1]['license'] = 'bzip2-1.0.6'
+        path = Path(self.packages[1]['manifest_path']).parent / 'LICENSE'
+        for defect, content in (
+                ('missing', None), ('truncated', text[:900]),
+                ('wrong-license', (ROOT / 'LICENSE').read_text()),
+                ('missing-condition', text.replace('3. Altered source versions', 'Missing condition')),
+                ('missing-disclaimer', text.replace('WARRANTIES OF MERCHANTABILITY', 'Missing warranty'))):
+            with self.subTest(defect=defect):
+                if content is None:
+                    path.unlink(missing_ok=True)
+                else:
+                    path.write_text(content)
+                with self.assertRaisesRegex(ValueError, 'Missing applicable license text for dependency 1.0.0'):
+                    self.collect()
 
     def test_relative_license_pointer_needs_unique_selected_same_source_text(self):
         directory = Path(self.packages[1]['manifest_path']).parent
