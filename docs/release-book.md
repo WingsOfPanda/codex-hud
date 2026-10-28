@@ -7,6 +7,43 @@ evidence directory. For an interrupted release, first reconcile that
 checklist with actual jobs and artifacts, then take the applicable
 [recovery branch](#recovery). Continue from the earliest unmet exit check.
 
+## Automation endpoint
+
+The target for a routine release is one checked-in command taking a validated
+release plan, running the authorized pipeline, and returning its result and
+evidence. This is an implementation goal, not an available command today:
+individual stages are automated, but cross-host orchestration and some reviews
+still require coordinator work. Until that entry point is implemented and
+qualified, follow the existing steps below; do not invent a replacement command.
+
+The completed pipeline must:
+
+1. Separate upstream adaptation from release execution. Finish API, frontend,
+   dependency and fixture corrections and qualify the selected recipe before
+   entering routine release qualification. Do not bypass a recipe's version guard.
+2. Check cheap prerequisites and exact command/report interfaces before expensive
+   work. Freeze the plan, source, tooling, host profiles and acceptance checks.
+3. Drive both native hosts through their declared stage dependencies, local
+   supervision, evidence export and coordinator acceptance without intermediate
+   acknowledgement gates. Retain one execution owner and observer per job.
+4. Persist resumable progress. On interruption, reconcile actual results and
+   cleanup before selecting the next unmet check. Preserve failed outcomes and
+   reuse passed evidence only under the existing change-impact rules; never replay
+   an uncertain execution or repeat accepted work merely to recreate its report.
+5. Reconcile duplicate or delayed notifications against execution and resolution
+   records. Show meaningful progress or a concrete unresolved blocker, rather
+   than presenting an already-resolved failure as new work. A failure pauses its
+   dependent stages; independent authorized work continues.
+6. Publish the accepted artifact bytes when publication is authorized, then verify
+   destination hashes and send the fleet handoff. Report published, merged,
+   installed and restarted separately; existing ownership and grants still apply.
+
+**Completion evidence:** demonstrate an ordinary release through the entry point,
+an interrupted resume without duplicate outward effects, and a failed-stage
+recovery that preserves evidence and does not rerun unaffected accepted stages.
+Record commands, outcomes and remaining manual decisions in the pilot record.
+One command does not promise bug-free software or waive a failed acceptance check.
+
 ## Owners
 
 | Owner | Owns | Returns |
@@ -362,6 +399,18 @@ but exposed operator traps. See its [pilot record](releases/0.163.0-plus.0.4.9/p
 
 No older recovery or rollback guidance was removed: this pilot did not establish
 that it is obsolete for every retained version or resumed attempt.
+
+The 2026-10-28 [0.165 development port](upstream-0.165.0-assessment.md) exposed
+these additional traps before release qualification:
+
+| Trap | Earliest preventive check |
+| --- | --- |
+| Direct Cargo invocation let dependency directories select another Rust toolchain, despite the top-level Cargo being pinned. | Pin absolute `RUSTC`/`RUSTDOC` and `RUSTUP_TOOLCHAIN` for direct-Cargo jobs; check the compiler from a dependency directory before launch. The existing `cargo +VERSION` developer path already selects its toolchain. |
+| Clean patch application missed a new API field and changed compact failure styling; older tests also simulated only part of the turn lifecycle and expected one disclosure label. | Compile the affected target and test harness, then run actual compact/display checks before freezing packages. Check source semantics before changing an assertion. |
+| Native Cargo resolution passed while three new dependency notices were missing or unrecognized. | Run actual target-filtered notice generation; verify embedded component provenance and complete license text before package builds. Metadata resolution alone is insufficient. |
+| Current product fixtures moved to 0.165 while the retained production recipe still intentionally accepted only 0.163. | Give retained-recipe tests an explicit pinned legacy source fixture; keep current-product tests and new-upstream refusal checks. Never widen a guard just to fix fixture drift. |
+| Full-history reads immediately after the first `turn/start` failed with `list_turns is not supported yet`; the original private DB had already been removed. | Wait for the exact completed-turn notification using metadata reads, then retain strict full-history assertions and fatal RPC errors. Completion is not a durability guarantee. Preserve private diagnostic DB evidence on recurrence before teardown; do not infer its cause from the error alone. |
+| The no-color status fixture omitted `--colors on`, so the report lacked the field its assertion required. | Validate each matrix command against its actual CLI and report-producing options before launch; keep `NO_COLOR` set while enabling color observation. Correct the invocation in a new reviewed case without repeating accepted cases. |
 
 ## Recovery
 

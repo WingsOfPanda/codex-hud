@@ -28,6 +28,28 @@ SPDX_LICENSES = {
 }
 
 
+BZIP2_TERMS = (
+    'redistribution and use in source and binary forms, with or without modification, are '
+    'permitted provided that the following conditions are met: 1. redistributions of source '
+    'code must retain the above copyright notice, this list of conditions and the following '
+    'disclaimer. 2. the origin of this software must not be misrepresented; you must not '
+    'claim that you wrote the original software. if you use this software in a product, an '
+    'acknowledgment in the product documentation would be appreciated but is not required. 3. '
+    'altered source versions must be plainly marked as such, and must not be misrepresented '
+    'as being the original software. 4. the name of the author may not be used to endorse or '
+    'promote products derived from this software without specific prior written permission. '
+    "this software is provided by the author ``as is'' and any express or implied warranties, "
+    'including, but not limited to, the implied warranties of merchantability and fitness for '
+    'a particular purpose are disclaimed. in no event shall the author be liable for any '
+    'direct, indirect, incidental, special, exemplary, or consequential damages (including, '
+    'but not limited to, procurement of substitute goods or services; loss of use, data, or '
+    'profits; or business interruption) however caused and on any theory of liability, '
+    'whether in contract, strict liability, or tort (including negligence or otherwise) '
+    'arising in any way out of the use of this software, even if advised of the possibility '
+    'of such damage.'
+)
+
+
 def digest(data):
     return hashlib.sha256(data).hexdigest()
 
@@ -51,6 +73,7 @@ def license_covered(expression, contents):
         'Unicode-3.0': 'unicode license v3' in text,
         'Unlicense': 'free and unencumbered software released into the public domain' in text,
         'Zlib': 'origin of this software' in text and 'freely' in text,
+        'bzip2-1.0.6': BZIP2_TERMS in text,
         'LLVM-exception': 'llvm exception' in text,
     }
     return expression_covered(expression, present)

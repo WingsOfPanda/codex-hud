@@ -81,14 +81,12 @@ def stop_rust_observers(home):
 
 def run(runtime, binary, evidence, scenario):
     assert runtime.is_file() and os.access(runtime, os.X_OK), runtime
-    version = subprocess.check_output([str(binary), '--version'], text=True).strip()
-    assert version == 'codex-cli 0.163.0', f'expected official 0.163.0 stock daemon, got {version}'
+    version, digest = advisor.official_stock_identity(binary)
     evidence.mkdir(parents=True, exist_ok=True)
     identity = {'runtime': str(runtime), 'runtime_sha256': hashlib.sha256(runtime.read_bytes()).hexdigest(),
                 'stock_binary': str(binary), 'stock_version': version,
-                'stock_sha256': hashlib.sha256(binary.read_bytes()).hexdigest(),
+                'stock_sha256': digest,
                 'scenario': scenario, 'remote_model_requests': 0}
-    assert identity['stock_sha256'] == advisor.OFFICIAL_SHA256, 'expected the pinned official stock binary'
     (evidence / 'runtime-identity.json').write_text(json.dumps(identity, indent=2))
     if scenario == 'background':
         old_process, old_stop = background.subprocess, background.stop_observers

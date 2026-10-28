@@ -42,10 +42,42 @@ class ReleaseIdentityTests(unittest.TestCase):
         lock = tomllib.loads((ROOT / 'rust-runtime/Cargo.lock').read_text())
         runtime = next(package for package in lock['package']
                        if package['name'] == 'codex-plus-runtime')
-        self.assertEqual(package_release.RELEASE, '0.163.0-plus.0.4.9')
+        self.assertEqual(package_release.RELEASE, '0.165.0-plus.0.4.9')
         self.assertEqual(manifest['package']['version'], package_release.PLUS_VERSION)
         self.assertEqual(runtime['version'], package_release.PLUS_VERSION)
-        self.assertIn(f'docs/releases/{package_release.RELEASE}.md', package_release.DOCS)
+        self.assertTrue(all((ROOT / name).is_file() for name in package_release.DOCS))
+
+    def test_native_builder_and_license_pins_match_0165(self):
+        builder = (ROOT / 'scripts/build-native.sh').read_text()
+        self.assertIn('commit=' + package_release.UPSTREAM_COMMIT, builder)
+        self.assertIn('rust-v' + package_release.UPSTREAM_VERSION, builder)
+        self.assertIn(package_release.PATCH, builder)
+        self.assertEqual(package_release.UPSTREAM_COMMIT, '360319d8dee62d87e2d59fc0c21805d79519cfed')
+        self.assertEqual(package_release.LICENSE_DOWNLOADS['rusty-v8-LICENSE'][0],
+                         'denoland/rusty_v8/v152.2.0/LICENSE')
+        self.assertEqual(package_release.LICENSE_DOWNLOADS['v8-LICENSE'][0],
+                         'v8/v8/15.2.124.1/LICENSE')
+        sources = json.loads((ROOT / 'scripts/native-license-sources.json').read_text())
+        self.assertEqual(sources['v8@152.2.0']['checksum'],
+                         'a10fe1a92da5c32c7c7f838ce36c0ccfcfd5edf0865b58bdde820aa64cea9888')
+        self.assertEqual(sources['v8@152.2.0']['files'][0]['sha256'],
+                         package_release.LICENSE_DOWNLOADS['rusty-v8-LICENSE'][1])
+        self.assertIn('v8@150.4.0', sources)
+
+    def test_0165_icu_data_uses_its_updated_component_notices(self):
+        sources = json.loads((ROOT / 'scripts/native-license-sources.json').read_text())
+        old, current = (sources['deno_core_icudata@' + version] for version in ('0.77.0', '0.78.0'))
+        blob = current['source_evidence']['src/icudtl.dat']
+        self.assertEqual(current['checksum'], 'b963d2d79672b4c379e4511acccd27bb35b4c1b32a93f596d52ff14a064293bc')
+        self.assertEqual(blob['sha256'], '9f48c7f9c7c94d516a14870707e910ab94d75ae640ff6842c4af53276cd26ebe')
+        self.assertNotEqual(blob['sha256'], old['source_evidence']['src/icudtl.dat']['sha256'])
+        self.assertEqual(blob['matching_component_source']['sha256'], blob['sha256'])
+        notices = next(entry for entry in current['files'] if entry['kind'] == 'component-notices')
+        self.assertEqual(notices['revision'], 'd578f2e8b7bd5938e21cfb6bf15c079e0aa5b738')
+        self.assertEqual(notices['sha256'], 'e55522d81edc687a341a4411e0776e54ca654e90147f354a90458aaced4116af')
+        self.assertEqual(notices['source_bindings'], ['src/icudtl.dat'])
+        self.assertEqual(sources['flatbuffers@25.12.19']['files'][0]['revision'],
+                         '7e163021e59cca4f8e1e35a7c828b5c6b7915953')
 
 
 class QualificationCopyTests(unittest.TestCase):
@@ -91,7 +123,9 @@ class QualificationCopyTests(unittest.TestCase):
 
 
 class PackageIntegrityTests(unittest.TestCase):
-    def setUp(self):
+    def setUp(self, *, packager=package_release):
+        self.packager = packager
+        package_release = packager
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.package = Path(self.temp.name) / 'codex-plus-fixture'
@@ -109,7 +143,7 @@ class PackageIntegrityTests(unittest.TestCase):
             path.chmod(0o755)
         bwrap_hash = hashlib.sha256(elf(62)).hexdigest().encode()
         (self.package / 'bin/codex').write_bytes(elf(62) + bwrap_hash)
-        metadata = {'layoutVersion': 1, 'version': '0.163.0',
+        metadata = {'layoutVersion': 1, 'version': package_release.UPSTREAM_VERSION,
                     'target': 'x86_64-unknown-linux-gnu', 'variant': 'codex',
                     'entrypoint': 'bin/codex', 'resourcesDir': 'codex-resources',
                     'pathDir': 'codex-path'}
@@ -136,7 +170,8 @@ class PackageIntegrityTests(unittest.TestCase):
             'coordinator_protocol': package_release.COORDINATOR_PROTOCOL,
             'execution_record_format': package_release.EXECUTION_RECORD_FORMAT,
             'frontend_patch_sha256': 'b' * 64, 'target': 'x86_64-unknown-linux-gnu',
-            'upstream': {'version': '0.163.0', 'tag': 'rust-v0.163.0',
+            'upstream': {'version': package_release.UPSTREAM_VERSION,
+                         'tag': 'rust-v' + package_release.UPSTREAM_VERSION,
                          'commit': package_release.UPSTREAM_COMMIT},
             'build': {'glibc': '2.39', 'rust': '1.99.1', 'cargo_profile': 'release'},
             'voice': False,
@@ -144,6 +179,7 @@ class PackageIntegrityTests(unittest.TestCase):
         self.seal()
 
     def seal(self):
+        package_release = self.packager
         if all((self.package / name).is_file() for name in
                ('bin/codex-plus-runtime',) + package_release.RUNTIME_LICENSE_FILES):
             self.manifest['runtime'] = package_release.runtime_provenance(
@@ -161,13 +197,24 @@ class PackageIntegrityTests(unittest.TestCase):
         (self.package / 'codex-plus.json').write_text(json.dumps(self.manifest))
 
     def verify(self):
-        return package_release.verify_package(self.package)
+        return self.packager.verify_package(self.package)
 
     def test_valid_package_and_declared_hash_recipe(self):
         self.assertEqual(package_release.COORDINATOR_PROTOCOL, 5)
         self.assertEqual(package_release.EXECUTION_RECORD_FORMAT, 1)
         self.assertFalse((self.package / 'codex-resources/zsh').exists())
         self.assertEqual(self.verify()['tree_sha256'], self.manifest['tree_sha256'])
+
+    def test_wrong_upstream_version_tag_or_revision_rejected(self):
+        for field, value in (('version', '0.163.0'), ('tag', 'rust-v0.163.0'),
+                             ('commit', '83086188ae0614bd882818ff1aa23f3194962012')):
+            with self.subTest(field=field):
+                original = self.manifest['upstream'][field]
+                self.manifest['upstream'][field] = value
+                self.save_manifest()
+                with self.assertRaisesRegex(ValueError, 'Invalid release identity'):
+                    self.verify()
+                self.manifest['upstream'][field] = original
 
     def test_coordinator_protocol_must_be_explicit_and_supported(self):
         for value in (None, True, 0, 1, 2, 3, 4, '5'):
@@ -506,6 +553,38 @@ class RuntimeNoticeTests(unittest.TestCase):
         (directory / 'LICENSE').unlink()
         with self.assertRaisesRegex(ValueError, 'Missing applicable license text for dependency 1.0.0'):
             self.collect()
+
+    def test_complete_bzip2_package_license_is_retained_with_provenance(self):
+        data = (ROOT / 'tests/fixtures/licenses/libbz2-rs-sys-0.2.5-LICENSE').read_bytes()
+        self.assertEqual(hashlib.sha256(data).hexdigest(),
+                         '54e1fd7bd53273e601c9599eb162a004dacddee031ae297ee7109a7beb93b1c2')
+        self.packages[1]['license'] = 'bzip2-1.0.6'
+        directory = Path(self.packages[1]['manifest_path']).parent
+        (directory / 'LICENSE').write_bytes(data)
+        bundle, provenance = self.collect()
+        self.assertIn(data, bundle)
+        record = next(p for p in provenance['packages'] if p['name'] == 'dependency')
+        self.assertEqual(record['license'], 'bzip2-1.0.6')
+        self.assertEqual(record['license_files']['LICENSE'], hashlib.sha256(data).hexdigest())
+        self.assertTrue(runtime_notices.license_covered('bzip2-1.0.6', [data.decode().replace('\n', ' ')]))
+        self.assertFalse(runtime_notices.license_covered('Apache-2.0', [data.decode()]))
+
+    def test_bzip2_license_rejects_missing_truncated_wrong_or_incomplete_terms(self):
+        text = (ROOT / 'tests/fixtures/licenses/libbz2-rs-sys-0.2.5-LICENSE').read_text()
+        self.packages[1]['license'] = 'bzip2-1.0.6'
+        path = Path(self.packages[1]['manifest_path']).parent / 'LICENSE'
+        for defect, content in (
+                ('missing', None), ('truncated', text[:900]),
+                ('wrong-license', (ROOT / 'LICENSE').read_text()),
+                ('missing-condition', text.replace('3. Altered source versions', 'Missing condition')),
+                ('missing-disclaimer', text.replace('WARRANTIES OF MERCHANTABILITY', 'Missing warranty'))):
+            with self.subTest(defect=defect):
+                if content is None:
+                    path.unlink(missing_ok=True)
+                else:
+                    path.write_text(content)
+                with self.assertRaisesRegex(ValueError, 'Missing applicable license text for dependency 1.0.0'):
+                    self.collect()
 
     def test_relative_license_pointer_needs_unique_selected_same_source_text(self):
         directory = Path(self.packages[1]['manifest_path']).parent

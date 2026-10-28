@@ -29,8 +29,10 @@ on each architecture.
 The initial protocol-3 to protocol-5 fleet cutover requires quiet coordination
 and a TUI restart, preserving the stock daemon and disabled native goals.
 
-The patch targets **Codex 0.163.0**, upstream commit
-`83086188ae0614bd882818ff1aa23f3194962012`.
+The development patch targets **Codex 0.165.0**, upstream commit
+`360319d8dee62d87e2d59fc0c21805d79519cfed`.
+See the [adaptation status](docs/upstream-0.165.0-assessment.md) before using the
+release workflow: the existing production recipes remain qualified for 0.163.0.
 
 ## Run
 
@@ -59,14 +61,14 @@ rustup toolchain install 1.99.1
 ```
 
 The script fetches the pinned upstream source into `.build/source`, applies
-`patches/codex-0.163.0-worker-hud.patch`, and builds `.build/codex`, the matching
+`patches/codex-0.165.0-worker-hud.patch`, and builds `.build/codex`, the matching
 `.build/codex-code-mode-host` beside it, and `.build/codex-plus-runtime`. Code Mode
 requires that adjacent host. It uses upstream's pinned, checksum-verified V8
 archive/bindings resolver and download cache. It refuses an
 unexpected source revision or a checkout that differs from the exact release
 patch, including old daemon modifications. The patch also reconciles the
 release tag's workspace versions in `Cargo.lock`; external dependency versions
-match the 0.163.0 tag. The first build downloads and compiles Codex's dependencies.
+match the 0.165.0 tag. The first build downloads and compiles Codex's dependencies.
 Preserve or move aside an existing checkout at another upstream revision before
 building; the script refuses to overwrite it.
 

@@ -14,6 +14,7 @@ import unittest
 from unittest.mock import patch
 
 import test_packaging as packaging
+from release_fixture_source import legacy_source
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -23,26 +24,31 @@ spec.loader.exec_module(protocol)
 
 
 class ReleaseProtocolTests(unittest.TestCase):
-    def setUp(self):
+    def setUp(self, *, legacy=False):
         self.temp = tempfile.TemporaryDirectory(prefix='cp-protocol-')
         self.addCleanup(self.temp.cleanup)
         self.base = Path(self.temp.name)
+        self.source = legacy_source(self.base / 'source-0163') if legacy else ROOT
+        self.packager = protocol._module(self.source / 'scripts/package-release.py')
         self.profile = {'schema_version': 1, 'host_id': 'fixture-host', 'hostname': 'fixture',
             'architecture': 'x86_64', 'triple': protocol.TARGETS['x86_64'],
             'build_root': str(self.base / 'build'), 'short_root': str(self.base / 's'),
-            'tooling_root': str(ROOT), 'source_root': str(ROOT),
+            'tooling_root': str(ROOT), 'source_root': str(self.source),
             'toolchain': {'rustc': '/fixture/bin/rustc', 'cargo': '/fixture/bin/cargo', 'version': '1.99.1'},
             'python': {'path': '/fixture/bin/python', 'version': '3.13.7', 'libpython': None},
             'executor_package_root': '/fixture/executor'}
         previous = protocol.load(ROOT / 'docs/releases/0.163.0-plus.0.4.6/handoff.json')
         gates = {gate: {'checks': [gate + '-check']} for gate in protocol.GATES}
         gates['native-tests'] = {'suites': {'hud': {'passed': 1, 'allowed_ignored': {}}}}
-        self.plan = {'schema_version': 1, 'release': packaging.package_release.RELEASE,
-            'plus_version': packaging.package_release.PLUS_VERSION,
-            'upstream': previous['upstream'], 'plus_source_commit': 'a' * 40,
+        self.plan = {'schema_version': 1, 'release': self.packager.RELEASE,
+            'plus_version': self.packager.PLUS_VERSION,
+            'upstream': {'version': self.packager.UPSTREAM_VERSION,
+                         'tag': 'rust-v' + self.packager.UPSTREAM_VERSION,
+                         'commit': self.packager.UPSTREAM_COMMIT},
+            'plus_source_commit': 'a' * 40,
             'tooling_commit': 'b' * 40,
-            'patch': {'path': packaging.package_release.PATCH,
-                      'sha256': protocol.file_record(ROOT / packaging.package_release.PATCH)['sha256']},
+            'patch': {'path': self.packager.PATCH,
+                      'sha256': protocol.file_record(self.source / self.packager.PATCH)['sha256']},
             'previous_release': {'tag': previous['release'],
                 'handoff_sha256': protocol.file_record(ROOT / 'docs/releases/0.163.0-plus.0.4.6/handoff.json')['sha256'],
                 'targets': {arch: {key: value for key, value in row.items() if key != 'triple'}
@@ -63,7 +69,7 @@ class ReleaseProtocolTests(unittest.TestCase):
         self.observed.update(plus_source_commit=self.plan['plus_source_commit'], tooling_commit=self.plan['tooling_commit'])
 
     def attempt(self, **kwargs):
-        return protocol.init_attempt(self.plan, self.profile, ROOT, observed=self.observed, **kwargs)
+        return protocol.init_attempt(self.plan, self.profile, self.source, observed=self.observed, **kwargs)
 
     def put(self, root, name, value):
         path = root / name
@@ -149,7 +155,7 @@ class ReleaseProtocolTests(unittest.TestCase):
                   filtered=0, package_only=False, finalize=True):
         root = self.attempt(rehearsal=rehearsal)
         fixture = packaging.PackageIntegrityTests('test_valid_package_and_declared_hash_recipe')
-        fixture.setUp()
+        fixture.setUp(packager=self.packager)
         self.addCleanup(fixture.doCleanups)
         fixture.manifest['frontend_patch_sha256'] = self.plan['patch']['sha256']
         fixture.seal()

@@ -23,7 +23,7 @@ spec.loader.exec_module(native)
 class NativeTests(unittest.TestCase):
     def setUp(self):
         fixture = core_tests.ReleaseProtocolTests()
-        fixture.setUp()
+        fixture.setUp(legacy=True)
         self.addCleanup(fixture.doCleanups)
         self.fixture = fixture
         self.base, self.profile, self.plan = fixture.base, fixture.profile, fixture.plan
@@ -57,7 +57,30 @@ class NativeTests(unittest.TestCase):
             'cwd': str(ROOT), 'env': {}, 'deadline_seconds': 10}
 
     def attempt(self):
-        return protocol.init_attempt(self.plan, self.profile, ROOT, observed=self.observed, rehearsal=True)
+        return protocol.init_attempt(self.plan, self.profile, self.fixture.source,
+                                     observed=self.observed, rehearsal=True)
+
+    def test_recipe_source_is_pinned_0163_and_product_default_is_0165(self):
+        self.assertEqual(self.plan['upstream'], {
+            'version': '0.163.0', 'tag': 'rust-v0.163.0',
+            'commit': '83086188ae0614bd882818ff1aa23f3194962012'})
+        protocol.validate_plan(self.plan, self.fixture.source)
+        product = core_tests.ReleaseProtocolTests()
+        product.setUp()
+        self.addCleanup(product.doCleanups)
+        self.assertEqual(product.plan['upstream']['version'], '0.165.0')
+        protocol.validate_plan(product.plan, product.source)
+        with self.assertRaisesRegex(ValueError, 'Upstream recipe needs qualification'):
+            native.build_inputs(product.plan, self.profile)
+
+    def test_missing_legacy_source_object_fails_without_fetch_or_skip(self):
+        import release_fixture_source as source
+        error = subprocess.CalledProcessError(128, ['git', 'archive'], stderr=b'not a valid object name')
+        with patch.object(source.subprocess, 'check_output', side_effect=error) as git:
+            with self.assertRaisesRegex(RuntimeError, 'Pinned 0.163 fixture ' + source.LEGACY_COMMIT):
+                source.legacy_archive.__wrapped__()
+        self.assertEqual(git.call_count, 1)
+        self.assertEqual(git.call_args.args[0][3:5], ['archive', source.LEGACY_COMMIT])
 
     def setup_runner(self, root):
         context = {'closure': {str(ROOT / 'scripts/release_native.py'):
@@ -248,7 +271,7 @@ class NativeTests(unittest.TestCase):
         c = native.Context(self.attempt(), 'frontend')
         c.UPSTREAM.mkdir()
         for name in ('LICENSE', 'NOTICE', 'codex-rs/vendor/bubblewrap/COPYING',
-                     'third_party/v8/rusty_v8_150_4_0_release_manifests.sha256'):
+                     'third_party/v8/rusty_v8_152_2_0_release_manifests.sha256'):
             path = c.UPSTREAM / name
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes((ROOT / 'LICENSE').read_bytes())
@@ -731,6 +754,18 @@ else:
                                  {name: 'a' * 64 for name in installed})
                 self.assertNotIn('fresh_frontend', c.REPORT)
                 self.assertNotIn('frontend_rebuilt', c.REPORT)
+
+
+class UpstreamQualificationTests(unittest.TestCase):
+    def test_0165_package_support_does_not_qualify_production_recipe(self):
+        plan = {'upstream': {'version': '0.165.0'}}
+        with self.assertRaisesRegex(ValueError, 'Upstream recipe needs qualification'):
+            native.build_inputs(plan, {})
+
+    def test_qualified_0163_still_checks_native_prerequisites(self):
+        plan = {'upstream': {'version': '0.163.0'}}
+        with self.assertRaisesRegex(ValueError, 'Compiler recipe needs qualification'):
+            native.build_inputs(plan, {'toolchain': {'version': '1.99.0'}})
 
 
 if __name__ == '__main__':
