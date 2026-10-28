@@ -61,17 +61,18 @@ def native_elf(path):
     assert machine == {"x86_64": 62, "aarch64": 183}[platform.machine()], (path, machine)
 
 
-def package_identity(package, version, commit, manifest_sha256):
+def package_identity(package, version, commit, manifest_sha256, role="new"):
+    upstream = CONFIG.get("previous_upstream", UPSTREAM) if role == "old" else UPSTREAM
     manifest_path = package / "codex-plus.json"
     assert digest(manifest_path) == manifest_sha256, (package, "unqualified manifest SHA")
     manifest = json.loads(manifest_path.read_text())
     assert manifest["schema_version"] == 1
-    assert manifest["release"] == f"{UPSTREAM['version']}-plus.{version}", manifest["release"]
+    assert manifest["release"] == f"{upstream['version']}-plus.{version}", manifest["release"]
     assert manifest["plus_commit"] == commit, (package, "source commit mismatch")
     assert type(manifest["coordinator_protocol"]) is int and manifest["coordinator_protocol"] == 5
     assert type(manifest["execution_record_format"]) is int and manifest["execution_record_format"] == 1
     assert manifest["target"] == f"{platform.machine()}-unknown-linux-gnu"
-    assert manifest["upstream"] == UPSTREAM
+    assert manifest["upstream"] == upstream
     actual = {}
     for path in sorted(package.rglob("*")):
         assert not path.is_symlink() and (path.is_file() or path.is_dir()), path
@@ -92,7 +93,13 @@ def package_identity(package, version, commit, manifest_sha256):
 
 
 def distinct_packages(identities):
-    assert identities["old"]["helper_sha256"] != identities["new"]["helper_sha256"], "same helper cannot prove two-version compatibility"
+    if CONFIG["recipe_revision"] == 1:
+        assert identities["old"]["helper_sha256"] != identities["new"]["helper_sha256"], "same helper cannot prove two-version compatibility"
+    else:
+        assert identities["old"]["manifest"]["release"] == CONFIG["previous_release"]
+        assert identities["new"]["manifest"]["release"] == CONFIG["release"]
+        assert identities["old"]["manifest"]["upstream"] == CONFIG["previous_upstream"]
+        assert identities["new"]["manifest"]["upstream"] == UPSTREAM
     assert identities["old"]["manifest_sha256"] != identities["new"]["manifest_sha256"], "same manifest cannot prove two-version compatibility"
 
 
@@ -235,7 +242,7 @@ def run(args):
                          ("new", args.new_package, args.expected_new_version, source_commit,
                           args.new_manifest_sha256))
         for label, package, version, commit, manifest_sha256 in qualification:
-            identities[label] = package_identity(package.resolve(strict=True), version, commit, manifest_sha256)
+            identities[label] = package_identity(package.resolve(strict=True), version, commit, manifest_sha256, role=label)
         report["packages"] = identities
         distinct_packages(identities)
         policies = {label: (Path(identities[label]["path"]) / "docs/ultracode-policy.md").read_text()
@@ -252,7 +259,7 @@ def run(args):
         stock_sha = digest(binary)
         assert stock_sha == STOCK_SHAS[platform.machine()], "official daemon SHA differs from qualified native 0.163.0 distribution"
         version = subprocess.check_output([str(binary), "--version"], text=True, timeout=10).strip()
-        assert version == "codex-cli 0.163.0", version
+        assert version == "codex-cli " + UPSTREAM["version"], version
         report["stock"] = {"path": str(binary), "sha256": stock_sha, "version": version}
         check("real native package identities, inventory hashes, protocol 5 and execution format 1")
 
@@ -490,7 +497,7 @@ def run(args):
         check("bidirectional maintenance hold identity/leave, schema/rows/result preserved and no replay/provider calls")
         assert digest(binary) == stock_sha
         for label, package, version, commit, manifest_sha256 in qualification:
-            assert package_identity(Path(identities[label]["path"]), version, commit, manifest_sha256) == identities[label]
+            assert package_identity(Path(identities[label]["path"]), version, commit, manifest_sha256, role=label) == identities[label]
         assert source_identity(source, args.source_commit) == source_commit
         assert fixture_identity(fixture_source) == {key:value for key,value in report['fixture_source'].items() if key != 'files'}
         assert {name:digest(fixture_source/name) for name in fixture_files} == report['fixture_source']['files']

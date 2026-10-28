@@ -36,6 +36,8 @@ def run(evidence):
     report = dict(schema=1, passed=False, source_commit=CONFIG['source_commit'],
         runtime_sha256=digest(runtime), old_runtime_sha256=digest(old_runtime),
         stock_sha256=digest(binary), cases=[])
+    if CONFIG['recipe_revision'] == 2:
+        report.update(stock_role='candidate', stock_upstream=CONFIG['upstream'])
     try:
         for suite, scenarios in RECOVERY_CASES.items():
             module, constructor = suites[suite]
@@ -45,10 +47,12 @@ def run(evidence):
                 current.old_runtime = old_runtime
                 current.report.update(scenario=scenario, old_runtime_sha256=digest(old_runtime),
                                       private_home=str(current.home))
+                if CONFIG['recipe_revision'] == 2:
+                    current.report.update(stock_role='candidate', stock_upstream=CONFIG['upstream'])
                 passed = False
                 try:
                     assert current.home.is_relative_to(short)
-                    assert current.report['stock_version'] == 'codex-cli 0.163.0'
+                    assert current.report['stock_version'] == 'codex-cli ' + CONFIG['upstream']['version']
                     module.SCENARIOS[scenario](current)
                     passed = True
                 except BaseException:

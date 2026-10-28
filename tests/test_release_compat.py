@@ -104,6 +104,77 @@ class Compatibility(unittest.TestCase):
         return compat.prepare(plan, profile, attempt, config=config,
                               helper_binding={'helper': str(self.helper), 'sha256': compat.digest(self.helper)})
 
+    def paired_inputs(self):
+        plan, profile, config = self.inputs('0.4.9')
+        plan.update(upstream=compat.UPSTREAM_165, release='0.165.0-plus.0.4.9')
+        plan['previous_release'].update(tag='0.163.0-plus.0.4.9', upstream=compat.UPSTREAM)
+        plan['compat'].update(recipe_revision=2,
+            stock_binary_sha256={'x86_64': compat.digest(self.stock), 'aarch64': '6' * 64})
+        old_stock = self.root / 'old-stock'
+        old_stock.write_bytes(b'previous official stock')
+        plan['compat']['previous_stock_binary_sha256'] = {'x86_64': compat.digest(old_stock), 'aarch64': '7' * 64}
+        path = self.source / compat.PAIRED_FIXTURE
+        path.write_text('paired fixture')
+        self.git('add', '.')
+        self.git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', 'paired fixture')
+        self.commit = self.git('rev-parse', 'HEAD').strip()
+        plan['plus_source_commit'] = self.commit
+        plan['compat']['fixture_files'][compat.PAIRED_FIXTURE] = compat.digest(path)
+        profile['native_build'] = dict(previous_official_binary=str(old_stock), previous_official_sha256=compat.digest(old_stock))
+        plan['gates']['x86_64']['compat']['checks'] = list(compat.gate_names(2))
+        manifest = self.package / 'codex-plus.json'
+        value = json.loads(manifest.read_text())
+        value.update(upstream=plan['upstream'], release=plan['release'], plus_commit=self.commit)
+        manifest.write_text(json.dumps(value))
+        config['new_manifest_sha256'] = compat.digest(manifest)
+        approval = Path(config['qualification_evidence'])
+        value = json.loads(approval.read_text())
+        value.update(source=self.commit, manifest_sha256=config['new_manifest_sha256'])
+        approval.write_text(json.dumps(value))
+        config['qualification_evidence_sha256'] = compat.digest(approval)
+        return plan, profile, config
+
+    def test_paired_recipe_freezes_old_stock_and_equal_plus_versions_by_full_release(self):
+        plan, profile, config = self.paired_inputs()
+        prepared = self.prepare(plan, profile, config)
+        bound = json.loads((Path(prepared['scope']) / 'native.config.json').read_text())
+        self.assertEqual(bound['previous_upstream'], compat.UPSTREAM)
+        self.assertEqual(bound['previous_stock_binary'], profile['native_build']['previous_official_binary'])
+        self.assertEqual(bound['previous_stock_binary_sha256'], plan['compat']['previous_stock_binary_sha256'])
+        self.assertEqual(prepared['gates'], list(compat.GATES) + ['paired-stock-transition'])
+        code = """import importlib.util,pathlib
+from recipe_context import CONFIG, OLD_VERSION, NEW_VERSION
+p=pathlib.Path(__import__('sys').argv[1])
+spec=importlib.util.spec_from_file_location('gate',p/'verify-mixes.py')
+gate=importlib.util.module_from_spec(spec);spec.loader.exec_module(gate)
+assert OLD_VERSION == NEW_VERSION == '0.4.9'
+identities={role:dict(helper_sha256='equal',manifest_sha256=role,manifest=dict(
+    release=CONFIG['previous_release'] if role=='old' else CONFIG['release'],
+    upstream=CONFIG['previous_upstream'] if role=='old' else CONFIG['upstream'])) for role in ('old','new')}
+gate.distinct_packages(identities)
+identities['old']['manifest']['upstream']=CONFIG['upstream']
+try: gate.distinct_packages(identities)
+except AssertionError: pass
+else: raise AssertionError('old role accepted candidate upstream')
+"""
+        result = subprocess.run([sys.executable, '-c', code, str(compat.RECIPE)],
+            env=dict(os.environ, CODEX_PLUS_COMPAT_SCOPE=prepared['scope'], PYTHONPATH=str(compat.RECIPE),
+                PYTHONDONTWRITEBYTECODE='1'), capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_paired_recipe_rejects_old_stock_tamper_and_missing_gate_before_allocation(self):
+        plan, profile, config = self.paired_inputs()
+        old_stock = Path(profile['native_build']['previous_official_binary'])
+        old_stock.write_bytes(b'changed stock')
+        with self.assertRaisesRegex(ValueError, 'Previous stock binary digest mismatch'):
+            self.prepare(plan, profile, config, 'tampered')
+        self.assertFalse((self.root / 'tampered/compat').exists())
+        old_stock.write_bytes(b'previous official stock')
+        plan['gates']['x86_64']['compat']['checks'] = list(compat.GATES)
+        with self.assertRaisesRegex(ValueError, 'Unsupported compatibility checks'):
+            self.prepare(plan, profile, config, 'missing-gate')
+        self.assertFalse((self.root / 'missing-gate/compat').exists())
+
     def test_next_revision_changes_data_only_and_loads_actual_validators(self):
         hashes = {path.name: compat.digest(path) for path in compat.RECIPE.iterdir() if path.is_file()}
         for version in ('0.4.7', '0.4.8'):
@@ -207,8 +278,8 @@ with unittest.TestCase().assertRaisesRegex(AssertionError,'0.165.0-plus.'):
                                 env=env, capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
 
-    def native_evidence(self, name='attempt'):
-        plan, profile, config = self.inputs()
+    def native_evidence(self, name='attempt', paired=False):
+        plan, profile, config = self.paired_inputs() if paired else self.inputs()
         prepared = self.prepare(plan, profile, config, name)
         scope = Path(prepared['scope'])
         bound = json.loads((scope / 'native.config.json').read_text())
@@ -227,7 +298,7 @@ with unittest.TestCase().assertRaisesRegex(AssertionError,'0.165.0-plus.'):
             configuration_sha256=compat.digest(scope / 'native.config.json'), gate_sha256=bound['recipe_hashes']['verify-mixes.py'],
             archive={'archive_sha256': config['new_archive_sha256']}, packages={'new': {'manifest_sha256': config['new_manifest_sha256']}},
             evidence_sha256={str(path.relative_to(evidence)): compat.digest(path) for path in evidence.rglob('*.json') if not path.is_relative_to(captures)},
-            stages=[dict(name=name, passed=True, exit_code=0) for name in compat.GATES])
+            stages=[dict(name=name, passed=True, exit_code=0) for name in compat.gate_names(bound['recipe_revision'])])
         cases = []
         new_sha = compat.digest(self.package / 'bin/codex-plus-runtime')
         old_sha = compat.digest(self.root / 'old/bin/codex-plus-runtime')
@@ -241,11 +312,13 @@ with unittest.TestCase().assertRaisesRegex(AssertionError,'0.165.0-plus.'):
                 path = evidence / 'recovery-policy' / suite / scenario / 'report.json'
                 path.parent.mkdir(parents=True)
                 case = dict(passed=True, scenario=scenario, runtime_sha256=new_sha,
-                    stock_sha256=compat.digest(self.stock), stock_version='codex-cli 0.163.0',
+                    stock_sha256=compat.digest(self.stock), stock_version='codex-cli ' + bound['upstream']['version'],
                     remote_model_requests=0, private_home_removed=True,
                     private_home=str(self.short / 'aa' / scenario / 'home'))
                 if scenario.endswith('old-reader'):
                     case['old_runtime_sha256'] = old_sha
+                if paired:
+                    case.update(stock_role='candidate', stock_upstream=bound['upstream'])
                 if scenario.startswith('cleanup-recovery'):
                     case['recovery_policy'] = dict(exit_code=0 if scenario.endswith('success') else 7,
                         old_reader=scenario.endswith('old-reader'),
@@ -262,15 +335,119 @@ with unittest.TestCase().assertRaisesRegex(AssertionError,'0.165.0-plus.'):
                 cases.append(dict(suite=suite, scenario=scenario,
                     report=str(path.relative_to(evidence / 'recovery-policy')), sha256=compat.digest(path)))
         recovery = evidence / 'recovery-policy/report.json'
-        recovery.write_text(json.dumps(dict(schema=1, passed=True, source_commit=self.commit,
+        recovery_value = dict(schema=1, passed=True, source_commit=self.commit,
             runtime_sha256=new_sha, old_runtime_sha256=old_sha,
-            stock_sha256=compat.digest(self.stock), cases=cases)))
+            stock_sha256=compat.digest(self.stock), cases=cases)
+        if paired:
+            recovery_value.update(stock_role='candidate', stock_upstream=bound['upstream'])
+        recovery.write_text(json.dumps(recovery_value))
         raw['packages']['new']['helper_sha256'] = new_sha
         raw['packages']['old'] = {'helper_sha256': old_sha}
         raw['evidence_sha256'].update({str(path.relative_to(evidence)): compat.digest(path)
             for path in (recovery, *(evidence / 'recovery-policy' / row['report'] for row in cases))})
+        if paired:
+            self.paired_report(scope, bound)
+            path = evidence / 'paired-stock-transition/report.json'
+            raw['evidence_sha256']['paired-stock-transition/report.json'] = compat.digest(path)
         (evidence / 'report.json').write_text(json.dumps(raw))
         return scope, raw
+
+    def paired_report(self, scope, bound):
+        path = scope / 'evidence/paired-stock-transition/report.json'
+        fixture_path = path.parent / 'fixture/report.json'
+        fixture_path.parent.mkdir(parents=True)
+        parent, execution = '1' * 36, '2' * 36
+        fixture = dict(passed=True, remote_model_requests=0, parent=parent,
+            stock_sha256=bound['previous_stock_binary_sha256']['x86_64'], stock_version='codex-cli 0.163.0',
+            runtime_sha256=compat.digest(self.root / 'old/bin/codex-plus-runtime'),
+            provider_requests=[dict(thread=parent, body=dict(reasoning=dict(effort=effort))) for effort in ('xhigh', 'high')])
+        fixture_path.write_text(json.dumps(fixture))
+        report = {key: bound[key] for key in
+            ('source_commit', 'release', 'previous_release', 'upstream', 'previous_upstream', 'architecture')}
+        report.update(schema=1, passed=True, old_stock_readable=True, old_stock_resumed_inference=True,
+            original_result_preserved=True, rows_unchanged=True, private_home_removed=True,
+            snapshot_restore=False, remote_model_requests=0, provider_requests_from_reads_holds_restart=0,
+            workload_runs=1, callbacks=1, owned_survivors_after_cleanup=[],
+            private_home=str(self.short / 'aa/home'), configuration_sha256=compat.digest(scope / 'native.config.json'),
+            new_manifest_sha256=bound['new_manifest_sha256'], old_manifest_sha256=bound['previous_identity']['manifests']['x86_64'],
+            fixture_report_sha256=compat.digest(fixture_path), new_turn='candidate-turn', rollback_turn='rollback-turn', execution_id=execution)
+        report['phases'] = [dict(name=name, generation=str(index),
+            stock_sha256=bound['previous_stock_binary_sha256' if old else 'stock_binary_sha256']['x86_64'],
+            stock_version='codex-cli ' + bound['previous_upstream' if old else 'upstream']['version'],
+            runtime_sha256=compat.digest(self.root / 'old/bin/codex-plus-runtime' if old else self.package / 'bin/codex-plus-runtime'))
+            for index, (name, old) in enumerate((('old-before', True), ('candidate', False), ('old-rollback', True)))]
+        report['ledger_before'] = report['ledger_after'] = {'tables': {name: [{'id': 'original'}] for name in
+            ('jobs', 'callbacks', 'goals', 'ultracode_turns', 'ultracode_submissions')}}
+        for label, directory, clock in (('before', path.parent / 'fixture/execution-baseline', 1),
+                ('after', path.parent / 'fixture/executions/v1' / parent / execution, 2)):
+            directory.mkdir(parents=True)
+            for name in ('manifest.json', 'state.json', 'result.json', 'observation.json'):
+                (directory / name).write_text('{"updated_at":' + str(clock) + ',"state":"completed"}' if name == 'state.json' else '{}')
+            report['execution_' + label + '_sha256'] = {item.name: compat.digest(item) for item in directory.iterdir()}
+            report['execution_state_' + label] = dict(clock=clock,
+                bytes_sha256=__import__('hashlib').sha256(b'{"updated_at":<updated_at>,"state":"completed"}').hexdigest())
+        workload = path.parent / 'fixture/work/job/runs'
+        workload.parent.mkdir(parents=True)
+        workload.write_text('run\n')
+        report['holds'] = [dict(entered=dict(id=ident, held=True, admission_quiet=True, execution_quiet=True),
+            observed=dict(id=ident, held=True, admission_quiet=True, execution_quiet=True), left=dict(id=ident, held=False))
+            for ident in ('old-entered', 'new-entered')]
+        path.write_text(json.dumps(report))
+        return path, report
+
+    def test_paired_export_requires_complete_hashed_role_bound_transition_proof(self):
+        scope, raw = self.native_evidence(paired=True)
+        result = compat.export_reports(scope)
+        exported = json.loads(Path(result['compat']).read_text())
+        self.assertEqual(set(exported['checks']), set(compat.gate_names(2)))
+        self.assertIn('compat/evidence/paired-stock-transition/report.json',
+            exported['checks']['paired-stock-transition']['evidence'])
+        bound = json.loads((scope / 'native.config.json').read_text())
+        path = scope / 'evidence/paired-stock-transition/report.json'
+        original = json.loads(path.read_text())
+        mutations = {
+            'wrong-old-stock': lambda r: r['phases'][2].update(stock_sha256=bound['stock_binary_sha256']['x86_64']),
+            'wrong-helper': lambda r: r['phases'][0].update(runtime_sha256='0' * 64),
+            'missing-phase': lambda r: r['phases'].pop(),
+            'same-generation': lambda r: r['phases'][2].update(generation=r['phases'][0]['generation']),
+            'no-inference': lambda r: r.update(old_stock_resumed_inference=False),
+            'snapshot-fallback': lambda r: r.update(snapshot_restore=True),
+            'changed-rows': lambda r: r['ledger_after']['tables']['callbacks'].append({'id': 'duplicate'}),
+            'changed-record': lambda r: r['execution_after_sha256'].update(result_json='3' * 64),
+            'changed-state': lambda r: r['execution_state_after'].update(bytes_sha256='3' * 64),
+            'hold-not-quiet': lambda r: r['holds'][0]['observed'].update(execution_quiet=False),
+            'wrong-fixture-hash': lambda r: r.update(fixture_report_sha256='0' * 64),
+        }
+        for name, mutate in mutations.items():
+            with self.subTest(name=name):
+                report = copy.deepcopy(original)
+                mutate(report)
+                path.write_text(json.dumps(report))
+                with self.assertRaises(ValueError):
+                    compat.validate_paired_report(path, bound)
+        path.write_text(json.dumps(original))
+        raw['evidence_sha256'].pop('paired-stock-transition/report.json')
+        (scope / 'evidence/report.json').write_text(json.dumps(raw))
+        with self.assertRaisesRegex(ValueError, 'Paired dedicated report missing'):
+            compat.export_reports(scope)
+
+    def test_paired_recovery_cases_bind_candidate_daemon_even_for_old_reader(self):
+        scope, unused = self.native_evidence(paired=True)
+        config = json.loads((scope / 'native.config.json').read_text())
+        evidence = scope / 'evidence/recovery-policy'
+        compat.validate_recovery_reports(evidence, config)
+        report = json.loads((evidence / 'report.json').read_text())
+        row = next(row for row in report['cases'] if row['scenario'] == 'cleanup-recovery-old-reader')
+        case_path = evidence / row['report']
+        original = json.loads(case_path.read_text())
+        for patch_value in ({'stock_role': 'previous'}, {'stock_upstream': compat.UPSTREAM},
+                {'stock_version': 'codex-cli 0.163.0'}, {'old_runtime_sha256': '0' * 64}):
+            with self.subTest(patch=patch_value):
+                case_path.write_text(json.dumps(dict(original, **patch_value)))
+                row['sha256'] = compat.digest(case_path)
+                (evidence / 'report.json').write_text(json.dumps(report))
+                with self.assertRaises(ValueError):
+                    compat.validate_recovery_reports(evidence, config)
 
     def test_coordinator_reports_bind_dedicated_results_and_native_capture_bytes(self):
         scope, raw = self.native_evidence()

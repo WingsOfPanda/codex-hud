@@ -12,6 +12,53 @@ validated plan/profile and accepted package inputs. Recipe revision 1 explicitly
 refuses a different upstream or package protocol. The historical operator probe
 path remains a fixed fixture API, independent of the candidate release.
 
+Recipe revision 2 admits only the exact upstream pair
+`0.163.0 / rust-v0.163.0 / 83086188ae0614bd882818ff1aa23f3194962012`
+to `0.165.0 / rust-v0.165.0 / 360319d8dee62d87e2d59fc0c21805d79519cfed`.
+Revision 1 retains its exact 0.163 recipe and five gates. Revision 2 keeps those
+five gates on the candidate daemon and appends `paired-stock-transition`.
+The advisor nine checks remain stub checks; recovery's fourteen cases keep their
+original observer ownership-gap and recovery/report-only meanings. Every recovery
+case binds the candidate daemon role explicitly, including the two old-helper
+reader cases. They remain applicable when helper source/version/bytes are equal.
+
+The plan binds `previous_release.upstream` and distinct, complete architecture maps
+in `compat.stock_binary_sha256` and `compat.previous_stock_binary_sha256`.
+The native profile binds `native_build.previous_official_binary` and
+`previous_official_sha256`; preparation verifies that path against both pins before
+allocating compatibility state. Both binaries belong in the managed input closure.
+Add `tests/fixtures/paired_stock_transition.py` to the plan's fixture closure.
+Full package releases distinguish `0.163.0-plus.0.4.9` and
+`0.165.0-plus.0.4.9`; revision 2 permits equal helper hashes while checking each
+package's exact release, upstream, source, manifest and inventory independently.
+
+The additional gate uses one private home and actual pinned official binaries:
+
+1. Stock 163 and the previous package create a real managed execution, delivered
+   callback, paused goal, admitted Ultracode snapshot and stock history, then hold.
+2. Stock 165 and the candidate read the original rows/results, observe and release
+   the old hold, complete a scripted loopback `xhigh` effort-changing turn, then hold.
+3. Stock 163 and the previous package observe and release the new hold, read the
+   candidate-written history and complete an actual resumed loopback inference.
+
+The gate compares every Plus table and schema, original immutable execution JSON,
+result, callback count and one workload run across the switches. Only the existing
+finite monotonic root `state.updated_at` allowance applies during maintenance.
+Reads, holds, restarts and resume make zero provider requests; the two deliberate
+inference turns each make exactly one scripted loopback request. No snapshot is
+restored. Phase daemon/helper hashes, generations, full package identities, both
+holds, wire proof, raw fixture report hash and verified private cleanup are checked
+again by canonical export. This gate does not establish running-executor transfer,
+all upstream memory-v2/default feature behavior, paid-provider cache behavior, or
+production rollout policy. The existing old-TUI gate separately tests its actual
+window; a frontend re-exec guard is not a blanket refusal of helper commands.
+
+The focused development rehearsal CLI is
+`tests/test_paired_stock_transition.py --diagnostic --old-runtime ... --new-runtime ... --old-stock ... --new-stock ... --evidence ...`.
+It runs actual binaries in a private home and always labels the report diagnostic,
+never shipping acceptance. Qualification requires the native packaged revision-2
+gate on both architectures plus the normal captures, AP and cleanup acceptance.
+
 Run setup with the returned argv plus --setup-only under the existing managed
 executor. A full launch always repeats constructor/import/socket setup before
 the five gates; a failed setup starts no gate. Neither mode removes evidence or

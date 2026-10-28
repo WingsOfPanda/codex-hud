@@ -84,7 +84,7 @@ def run(args):
     old, new = args.old_package.resolve(strict=True), args.new_package.resolve(strict=True)
     architecture = __import__('platform').machine()
     pin = gate.OLD_IDENTITIES[OLD_VERSION]
-    identities = dict(old=gate.package_identity(old, OLD_VERSION, pin['commit'], pin['manifests'][architecture]),
+    identities = dict(old=gate.package_identity(old, OLD_VERSION, pin['commit'], pin['manifests'][architecture], role='old'),
                       new=gate.package_identity(new, NEW_VERSION, FROZEN, args.new_manifest_sha256))
     gate.distinct_packages(identities)
     stock = args.stock_binary.resolve(strict=True)
