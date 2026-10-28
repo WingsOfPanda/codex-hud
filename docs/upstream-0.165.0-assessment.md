@@ -52,8 +52,10 @@ actual server-side cache hits. No feature-enable override or paid provider is us
 Private x86 stock background/advisor/foreground checks and 19 lifecycle,
 custom-goal and Ultracode cases passed. The development identity fixture pins
 official 0.163 and 0.165 binaries for x86 and ARM; a version string alone is
-insufficient. ARM reports 35 of 39 private matrix cases passed with clean cleanup;
-final acceptance remains pending the four affected case rechecks below.
+insufficient. ARM development acceptance passed all 39 logical private cases:
+35 original passes, one corrected no-color invocation, and three cases using the
+reviewed completion-wait fixture. These required 43 case processes in total;
+the four original failed outcomes remain preserved. All case cleanup passed.
 
 The ARM matrix exposed one omitted `--colors on` fixture argument and three
 first-history-read failures (`list_turns is not supported yet`). The latter
@@ -63,8 +65,10 @@ completed-turn notification through metadata reads before asserting full history
 It does not suppress RPC errors or claim that completion guarantees persistence.
 Root verification passed five regression tests and seven injected-error scenarios:
 the original callers fail before completion, corrected callers pass, and persistent
-Unsupported or other errors still fail. ARM rechecks use separate fixture inputs
-and preserve the original outcomes and 35 passed cases; product binaries are unchanged.
+Unsupported or other errors still fail. The three ARM rechecks passed with separate
+fixture inputs and unchanged product binaries. Strict effort history/update/cache-key
+checks and both old-TUI idle transitions passed; original evidence remains unchanged.
+This closes development acceptance, not the release boundary below.
 
 Private x86 diagnostics also passed old 0.163 reads and cold resume of tested
 0.165 history, including effort-update items. Actual old 0.4.8 and 0.4.9 TUIs
