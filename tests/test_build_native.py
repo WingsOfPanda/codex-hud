@@ -10,7 +10,7 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PIN = '83086188ae0614bd882818ff1aa23f3194962012'
+PIN = '360319d8dee62d87e2d59fc0c21805d79519cfed'
 
 
 class BuildNativeSourceGuardTests(unittest.TestCase):
@@ -55,7 +55,7 @@ class BuildNativeSourceGuardTests(unittest.TestCase):
         (scripts / 'build-native.sh').write_text(script.replace(
             self.git('rev-parse', 'HEAD~').stdout.strip(), commit))
         (self.root / 'patches').mkdir()
-        self.patch = self.root / 'patches/codex-0.163.0-worker-hud.patch'
+        self.patch = self.root / 'patches/codex-0.165.0-worker-hud.patch'
         (self.source / 'codex-rs/tui/hud.rs').write_text('// frontend HUD\n')
         (self.source / 'codex-rs/tui/new_hud.rs').write_text('// new HUD module\n')
         self.git('add', '--intent-to-add', 'codex-rs/tui/new_hud.rs')
@@ -110,6 +110,14 @@ class BuildNativeSourceGuardTests(unittest.TestCase):
         self.apply_frontend()
         (self.source / 'codex-rs/core/backend.rs').write_text('// daemon receipts\n')
         self.assert_rejected()
+
+    def test_wrong_upstream_revision_rejected_before_patch_or_build(self):
+        self.git('commit', '--allow-empty', '-qm', 'different upstream')
+        result = self.build()
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn('Unexpected source revision', result.stderr)
+        self.assertFalse(self.cargo_called.exists())
+        self.assertEqual((self.source / 'codex-rs/tui/hud.rs').read_text(), '// upstream\n')
 
     def test_unrelated_tracked_edit_rejected(self):
         (self.source / 'codex-rs/core/backend.rs').write_text('// unrelated edit\n')

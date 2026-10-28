@@ -42,10 +42,27 @@ class ReleaseIdentityTests(unittest.TestCase):
         lock = tomllib.loads((ROOT / 'rust-runtime/Cargo.lock').read_text())
         runtime = next(package for package in lock['package']
                        if package['name'] == 'codex-plus-runtime')
-        self.assertEqual(package_release.RELEASE, '0.163.0-plus.0.4.9')
+        self.assertEqual(package_release.RELEASE, '0.165.0-plus.0.4.9')
         self.assertEqual(manifest['package']['version'], package_release.PLUS_VERSION)
         self.assertEqual(runtime['version'], package_release.PLUS_VERSION)
-        self.assertIn(f'docs/releases/{package_release.RELEASE}.md', package_release.DOCS)
+        self.assertTrue(all((ROOT / name).is_file() for name in package_release.DOCS))
+
+    def test_native_builder_and_license_pins_match_0165(self):
+        builder = (ROOT / 'scripts/build-native.sh').read_text()
+        self.assertIn('commit=' + package_release.UPSTREAM_COMMIT, builder)
+        self.assertIn('rust-v' + package_release.UPSTREAM_VERSION, builder)
+        self.assertIn(package_release.PATCH, builder)
+        self.assertEqual(package_release.UPSTREAM_COMMIT, '360319d8dee62d87e2d59fc0c21805d79519cfed')
+        self.assertEqual(package_release.LICENSE_DOWNLOADS['rusty-v8-LICENSE'][0],
+                         'denoland/rusty_v8/v152.2.0/LICENSE')
+        self.assertEqual(package_release.LICENSE_DOWNLOADS['v8-LICENSE'][0],
+                         'v8/v8/15.2.124.1/LICENSE')
+        sources = json.loads((ROOT / 'scripts/native-license-sources.json').read_text())
+        self.assertEqual(sources['v8@152.2.0']['checksum'],
+                         'a10fe1a92da5c32c7c7f838ce36c0ccfcfd5edf0865b58bdde820aa64cea9888')
+        self.assertEqual(sources['v8@152.2.0']['files'][0]['sha256'],
+                         package_release.LICENSE_DOWNLOADS['rusty-v8-LICENSE'][1])
+        self.assertIn('v8@150.4.0', sources)
 
 
 class QualificationCopyTests(unittest.TestCase):
@@ -109,7 +126,7 @@ class PackageIntegrityTests(unittest.TestCase):
             path.chmod(0o755)
         bwrap_hash = hashlib.sha256(elf(62)).hexdigest().encode()
         (self.package / 'bin/codex').write_bytes(elf(62) + bwrap_hash)
-        metadata = {'layoutVersion': 1, 'version': '0.163.0',
+        metadata = {'layoutVersion': 1, 'version': '0.165.0',
                     'target': 'x86_64-unknown-linux-gnu', 'variant': 'codex',
                     'entrypoint': 'bin/codex', 'resourcesDir': 'codex-resources',
                     'pathDir': 'codex-path'}
@@ -136,7 +153,7 @@ class PackageIntegrityTests(unittest.TestCase):
             'coordinator_protocol': package_release.COORDINATOR_PROTOCOL,
             'execution_record_format': package_release.EXECUTION_RECORD_FORMAT,
             'frontend_patch_sha256': 'b' * 64, 'target': 'x86_64-unknown-linux-gnu',
-            'upstream': {'version': '0.163.0', 'tag': 'rust-v0.163.0',
+            'upstream': {'version': '0.165.0', 'tag': 'rust-v0.165.0',
                          'commit': package_release.UPSTREAM_COMMIT},
             'build': {'glibc': '2.39', 'rust': '1.99.1', 'cargo_profile': 'release'},
             'voice': False,
@@ -168,6 +185,17 @@ class PackageIntegrityTests(unittest.TestCase):
         self.assertEqual(package_release.EXECUTION_RECORD_FORMAT, 1)
         self.assertFalse((self.package / 'codex-resources/zsh').exists())
         self.assertEqual(self.verify()['tree_sha256'], self.manifest['tree_sha256'])
+
+    def test_wrong_upstream_version_tag_or_revision_rejected(self):
+        for field, value in (('version', '0.163.0'), ('tag', 'rust-v0.163.0'),
+                             ('commit', '83086188ae0614bd882818ff1aa23f3194962012')):
+            with self.subTest(field=field):
+                original = self.manifest['upstream'][field]
+                self.manifest['upstream'][field] = value
+                self.save_manifest()
+                with self.assertRaisesRegex(ValueError, 'Invalid release identity'):
+                    self.verify()
+                self.manifest['upstream'][field] = original
 
     def test_coordinator_protocol_must_be_explicit_and_supported(self):
         for value in (None, True, 0, 1, 2, 3, 4, '5'):

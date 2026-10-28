@@ -2,12 +2,12 @@
 set -euo pipefail
 root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 source_dir="$root/.build/source"
-commit=83086188ae0614bd882818ff1aa23f3194962012
-patch_file="$root/patches/codex-0.163.0-worker-hud.patch"
+commit=360319d8dee62d87e2d59fc0c21805d79519cfed
+patch_file="$root/patches/codex-0.165.0-worker-hud.patch"
 
 mkdir -p "$root/.build"
 if [[ ! -d "$source_dir" ]]; then
-    git clone --depth 1 --branch rust-v0.163.0 https://github.com/openai/codex.git "$source_dir"
+    git clone --depth 1 --branch rust-v0.165.0 https://github.com/openai/codex.git "$source_dir"
 fi
 if [[ $(git -C "$source_dir" rev-parse HEAD) != "$commit" ]]; then
     echo "Unexpected source revision in $source_dir; refusing to overwrite it." >&2

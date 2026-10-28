@@ -1647,6 +1647,18 @@
     ],
     "source": "registry+https://github.com/rust-lang/crates.io-index"
   },
+  "v8@152.2.0": {
+    "checksum": "a10fe1a92da5c32c7c7f838ce36c0ccfcfd5edf0865b58bdde820aa64cea9888",
+    "files": [
+      {
+        "path": "LICENSE",
+        "revision": "2768994f664e8a6e3aba27503606c58339136e2a",
+        "sha256": "1c6356fb751d45f0c53093ebf8a7f5e580e802f51999178e19d60f3ec39e147d",
+        "url": "https://raw.githubusercontent.com/denoland/rusty_v8/2768994f664e8a6e3aba27503606c58339136e2a/LICENSE"
+      }
+    ],
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
+  },
   "vsimd@0.8.0": {
     "checksum": "5c3082ca00d5a5ef149bb8b555a72ae84c9c59f7250f013ac822ac2e49b19c64",
     "files": [

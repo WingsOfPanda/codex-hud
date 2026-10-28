@@ -39,7 +39,10 @@ class ReleaseProtocolTests(unittest.TestCase):
         gates['native-tests'] = {'suites': {'hud': {'passed': 1, 'allowed_ignored': {}}}}
         self.plan = {'schema_version': 1, 'release': packaging.package_release.RELEASE,
             'plus_version': packaging.package_release.PLUS_VERSION,
-            'upstream': previous['upstream'], 'plus_source_commit': 'a' * 40,
+            'upstream': {'version': packaging.package_release.UPSTREAM_VERSION,
+                         'tag': 'rust-v' + packaging.package_release.UPSTREAM_VERSION,
+                         'commit': packaging.package_release.UPSTREAM_COMMIT},
+            'plus_source_commit': 'a' * 40,
             'tooling_commit': 'b' * 40,
             'patch': {'path': packaging.package_release.PATCH,
                       'sha256': protocol.file_record(ROOT / packaging.package_release.PATCH)['sha256']},
