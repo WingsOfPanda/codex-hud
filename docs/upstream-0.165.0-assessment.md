@@ -54,9 +54,9 @@ official 0.163 and 0.165 binaries for x86 and ARM; a version string alone is
 insufficient. ARM execution of these checks remains pending.
 
 Private x86 diagnostics also passed old 0.163 reads and cold resume of tested
-0.165 history, including effort-update items. The actual old 0.4.9 TUI survived
-an idle private daemon replacement, preserving its draft and producing one
-controlled response without replay; a fresh old TUI on 0.165 passed separately.
+0.165 history, including effort-update items. Actual old 0.4.8 and 0.4.9 TUIs
+survived an idle private daemon replacement, preserving their drafts and producing
+one controlled response without replay; fresh old TUIs on 0.165 passed separately.
 These checks do not cover managed-daemon snapshots, active jobs, memory-v2
 lifecycle or a complete packaged rollback.
 
