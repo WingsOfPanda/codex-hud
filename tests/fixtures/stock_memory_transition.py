@@ -16,11 +16,10 @@ import traceback
 
 from fixtures.upstream_0163 import message
 from fixtures.turn_completion import wait_for_turn_completion
+from test_advisor_integration import official_stock_identity
 from test_background_integration import RecordingClient, stop, wait
 
 
-STOCK = {'0.163.0': '399ff69c431c066e40de318fba45c2b07f45a76b19939d247ee4828fc70c4215',
-         '0.165.0': 'c06a67fd8ac76508dc78bd99ce20c9f317b8d568beda59485f3f4134df9962d5'}
 MODEL = 'gpt-6.1-sol'
 TABLES = ('stage1_outputs', 'jobs', 'consolidation_progress', '_sqlx_migrations')
 
@@ -242,9 +241,7 @@ def run_lane(old, new, evidence, lane):
     report['private_home'] = str(home)
     try:
         for role, binary, stock_version in (('previous', old, '0.163.0'), ('candidate', new, '0.165.0')):
-            digest = sha(binary)
-            assert digest == STOCK[stock_version], 'Stock digest mismatch'
-            observed = subprocess.check_output([str(binary), '--version'], text=True, timeout=10).strip()
+            observed, digest = official_stock_identity(binary)
             assert observed == 'codex-cli ' + stock_version, observed
             report['stocks'][role] = dict(path=str(binary), sha256=digest, version=observed)
         if version == 'v1':
