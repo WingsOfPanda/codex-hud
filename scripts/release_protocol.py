@@ -27,6 +27,18 @@ from datetime import datetime, timezone
 GATES = ('package', 'native-tests', 'compat', 'captures', 'ap')
 STAGES = ('preflight', 'frontend', 'runtime') + GATES
 TARGETS = {'x86_64': 'x86_64-unknown-linux-gnu', 'aarch64': 'aarch64-unknown-linux-gnu'}
+TRANSITION_PREVIOUS_UPSTREAM = {'version': '0.163.0', 'tag': 'rust-v0.163.0',
+                                'commit': '83086188ae0614bd882818ff1aa23f3194962012'}
+TRANSITION_UPSTREAM = {'version': '0.165.0', 'tag': 'rust-v0.165.0',
+                      'commit': '360319d8dee62d87e2d59fc0c21805d79519cfed'}
+TRANSITION_PREVIOUS_STOCK = {
+    'x86_64': '399ff69c431c066e40de318fba45c2b07f45a76b19939d247ee4828fc70c4215',
+    'aarch64': '8a96f66d059d653e68bfd5f3c79337e6f1d7d170d80bf705eb7d0249b34c0ece'}
+TRANSITION_STOCK = {
+    'x86_64': 'c06a67fd8ac76508dc78bd99ce20c9f317b8d568beda59485f3f4134df9962d5',
+    'aarch64': 'b32ece31af06440da980b733fb8fefdd1f193439595fda84096f1caaceec543f'}
+TRANSITION_CHECKS = ('quiet-rollback', 'advisor-nine-checks', 'actual-old-tui-root-result',
+                     'packaged-cursor-v2', 'packaged-recovery-policy', 'paired-stock-transition')
 
 
 def require(condition, message):
@@ -139,7 +151,7 @@ def validate_plan(plan, source_root):
     require(plan['patch']['path'] == constants['PATCH'], 'Unsupported frontend patch')
     require(file_record(relative_file(source_root, plan['patch']['path']))['sha256'] == plan['patch']['sha256'],
             'Frontend patch mismatch')
-    keys(plan['previous_release'], ('tag', 'handoff_sha256', 'targets'))
+    keys(plan['previous_release'], ('tag', 'handoff_sha256', 'targets'), ('upstream',))
     hex_digest(plan['previous_release']['handoff_sha256'])
     require(plan['previous_release']['tag'] != plan['release'], 'Previous release equals candidate')
     require(set(plan['targets']) == set(TARGETS) == set(plan['gates']), 'Both native targets are required')
@@ -170,13 +182,32 @@ def validate_plan(plan, source_root):
                         all(isinstance(x, str) and x for x in spec['checks']) and
                         len(spec['checks']) == len(set(spec['checks'])), 'Explicit unique checks required')
     keys(plan['compat'], ('ap_version', 'fixture_ssh_destinations', 'recipe_revision',
-                          'previous_source_commit', 'stock_binary_sha256', 'fixture_files'), ('ap_replay',))
+                          'previous_source_commit', 'stock_binary_sha256', 'fixture_files'),
+         ('ap_replay', 'previous_stock_binary_sha256'))
     require(isinstance(plan['compat']['ap_version'], str) and plan['compat']['ap_version'] and
             isinstance(plan['compat']['fixture_ssh_destinations'], list) and
             all(isinstance(host, str) and host for host in plan['compat']['fixture_ssh_destinations']),
             'Invalid compatibility requirements')
-    require(type(plan['compat']['recipe_revision']) is int and plan['compat']['recipe_revision'] == 1,
+    revision = plan['compat']['recipe_revision']
+    require(type(revision) is int and revision in (1, 2),
             'Unsupported compatibility recipe')
+    previous_upstream = plan['previous_release'].get('upstream', plan['upstream'])
+    keys(previous_upstream, ('version', 'tag', 'commit'))
+    if revision == 1:
+        require(previous_upstream == plan['upstream'] and
+                plan['previous_release']['tag'].startswith(plan['upstream']['version'] + '-plus.'),
+                'Revision 1 upstream must remain unchanged')
+        require('previous_stock_binary_sha256' not in plan['compat'], 'Revision 1 has one stock binary')
+    else:
+        require(plan['upstream'] == TRANSITION_UPSTREAM and
+                plan['previous_release'].get('upstream') == TRANSITION_PREVIOUS_UPSTREAM and
+                plan['previous_release']['tag'].startswith(TRANSITION_PREVIOUS_UPSTREAM['version'] + '-plus.'),
+                'Unsupported revision 2 upstream transition')
+        require(plan['compat']['stock_binary_sha256'] == TRANSITION_STOCK and
+                plan['compat'].get('previous_stock_binary_sha256') == TRANSITION_PREVIOUS_STOCK,
+                'Revision 2 requires exact distinct candidate and previous official binary pins')
+        require(all(plan['gates'][arch]['compat']['checks'] == list(TRANSITION_CHECKS) for arch in TARGETS),
+                'Revision 2 requires the paired stock transition after existing compatibility checks')
     hex_digest(plan['compat']['previous_source_commit'], 40)
     require(set(plan['compat']['stock_binary_sha256']) == set(TARGETS), 'Missing official binary pins')
     for sha in plan['compat']['stock_binary_sha256'].values():
@@ -201,6 +232,9 @@ def validate_plan(plan, source_root):
             rollout['session_restart'] in ('none', 'optional', 'required') and
             (rollout['agents_md'] is None or isinstance(rollout['agents_md'], str)) and
             isinstance(rollout['notes'], str), 'Invalid rollout')
+    if revision == 2:
+        require(rollout['daemon_restart'] is True and rollout['session_restart'] == 'required',
+                'Revision 2 requires daemon and session restarts')
     require(isinstance(rollout['retain'], list) and plan['retention_floor'] in rollout['retain'] and
             plan['previous_release']['tag'] in rollout['retain'], 'Rollback retention missing')
     require(isinstance(plan['note'], str) and plan['note'].startswith('docs/releases/') and
@@ -243,13 +277,22 @@ def validate_profile(profile, arch, observed=None):
     if 'native_build' in profile:
         native = profile['native_build']
         paths = ('upstream_repository', 'cargo_home', 'cargo_target_dir', 'v8_cache', 'license_cache', 'official_binary')
-        keys(native, (*paths, 'cargo_jobs', 'test_threads', 'official_sha256'), ('pkg_config',))
-        for name in paths:
+        previous_paths = ('previous_official_binary',) if 'previous_official_binary' in native else ()
+        keys(native, (*paths, 'cargo_jobs', 'test_threads', 'official_sha256'),
+             ('pkg_config', 'previous_official_binary', 'previous_official_sha256'))
+        require(('previous_official_binary' in native) == ('previous_official_sha256' in native),
+                'Previous official binary needs both path and digest')
+        for name in (*paths, *previous_paths):
             require(isinstance(native[name], str) and Path(native[name]).is_absolute() and
                     '..' not in Path(native[name]).parts, f'Invalid native build path: {name}')
         for name in ('cargo_jobs', 'test_threads'):
             require(type(native[name]) is int and native[name] > 0, f'Invalid native limit: {name}')
         hex_digest(native['official_sha256'])
+        if previous_paths:
+            hex_digest(native['previous_official_sha256'])
+            require(Path(native['previous_official_binary']).resolve() != Path(native['official_binary']).resolve() and
+                    native['previous_official_sha256'] != native['official_sha256'],
+                    'Candidate and previous official binaries must differ')
         if 'pkg_config' in native:
             dependency = native['pkg_config']
             keys(dependency, ('path', 'files'))
@@ -281,10 +324,21 @@ def validate_profile(profile, arch, observed=None):
     return profile
 
 
+def _transition_profile(plan, profile):
+    if plan['compat']['recipe_revision'] == 2:
+        arch = profile['architecture']
+        native = profile.get('native_build', {})
+        require('previous_official_binary' in native and
+                native.get('official_sha256') == plan['compat']['stock_binary_sha256'][arch] and
+                native.get('previous_official_sha256') == plan['compat']['previous_stock_binary_sha256'][arch],
+                'Revision 2 native profile requires both exact official binary pins')
+
+
 def init_attempt(plan, profile, source_root, *, observed, rehearsal=False):
     validate_plan(plan, source_root)
     arch = profile['architecture']
     validate_profile(profile, arch, observed)
+    _transition_profile(plan, profile)
     require(digest(profile) == plan['targets'][arch]['profile_sha256'], 'Profile digest mismatch')
     for name in ('tooling_commit', 'plus_source_commit'):
         require(observed[name] == plan[name], f'Checkout identity mismatch: {name}')
@@ -350,6 +404,7 @@ def read_attempt(root):
             all(type(identity[name]) is int and identity[name] >= 0 for name in ('dev', 'ino', 'uid')),
             'Invalid socket directory identity')
     validate_profile(profile, metadata['architecture'], metadata['native'])
+    _transition_profile(plan, profile)
     require(digest(profile) == plan['targets'][metadata['architecture']]['profile_sha256'], 'Profile binding mismatch')
     for name in ('tooling_commit', 'plus_source_commit'):
         require(metadata['native'][name] == plan[name], 'Attempt source identity mismatch')
@@ -379,6 +434,8 @@ def _executed(profile, paths, *, root=None, prior=None, compiler_artifacts=None,
         tools.add(Path(profile['ap_replay']['installed_bundle']).resolve())
     if 'native_build' in profile:
         tools.add(Path(profile['native_build']['official_binary']).resolve())
+        if 'previous_official_binary' in profile['native_build']:
+            tools.add(Path(profile['native_build']['previous_official_binary']).resolve())
     require(bool(paths), 'Executed file closure required')
     result = {}
     previous_root, previous_files = None, {}
@@ -394,10 +451,26 @@ def _executed(profile, paths, *, root=None, prior=None, compiler_artifacts=None,
         require(previous['release'] == plan['previous_release']['tag'] and previous['target'] == profile['triple'] and
                 previous['plus_commit'] == plan['compat']['previous_source_commit'] and
                 previous['tree_sha256'] == expected['tree_sha256'], 'Previous package identity mismatch')
+        if plan['compat']['recipe_revision'] == 2:
+            require(previous.get('upstream') == plan['previous_release']['upstream'],
+                    'Previous package upstream mismatch')
         previous_files = previous['files']
     for name in paths:
         path = Path(name)
         record = file_record(path)
+        if 'native_build' in profile and path.resolve() == Path(profile['native_build']['official_binary']).resolve():
+            require(record['sha256'] == profile['native_build']['official_sha256'], 'Official binary pin mismatch')
+            if plan is not None and plan['compat']['recipe_revision'] == 2:
+                require(record['sha256'] == plan['compat']['stock_binary_sha256'][profile['architecture']],
+                        'Official binary does not match transition plan')
+        if ('previous_official_binary' in profile.get('native_build', {}) and
+                path.resolve() == Path(profile['native_build']['previous_official_binary']).resolve()):
+            require(record['sha256'] == profile['native_build']['previous_official_sha256'],
+                    'Previous official binary pin mismatch')
+            if plan is not None:
+                require(plan['compat']['recipe_revision'] == 2 and
+                        record['sha256'] == plan['compat']['previous_stock_binary_sha256'][profile['architecture']],
+                        'Previous official binary does not match transition plan')
         if previous_root is not None and path.is_relative_to(previous_root):
             relative = path.relative_to(previous_root).as_posix()
             relative_file(previous_root, relative)
@@ -455,8 +528,6 @@ def _executed(profile, paths, *, root=None, prior=None, compiler_artifacts=None,
         if 'ap_replay' in profile and path.resolve() == Path(profile['ap_replay']['installed_bundle']).resolve():
             require(plan is not None and record['sha256'] == plan['compat']['ap_replay']['bundle_sha256'],
                     'AP installed bundle pin mismatch')
-        if 'native_build' in profile and path.resolve() == Path(profile['native_build']['official_binary']).resolve():
-            require(record['sha256'] == profile['native_build']['official_sha256'], 'Official binary pin mismatch')
     return result
 
 

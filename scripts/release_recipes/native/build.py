@@ -10,6 +10,14 @@ FILTERS = ('morandi', 'theme_picker', 'render::highlight', 'custom_terminal::',
     'exec_cell::compact', 'worker_hud', 'execution_hud')
 
 
+def filters(plan):
+    if plan['upstream']['version'] == '0.165.0':
+        return FILTERS + ('plus_goal', 'ultracode', 'shell_policy', 'command_display',
+            'compact_display', 'daemon_menu', 'native_history', 'active_turn_steer',
+            'chatwidget::tests::exec_flow')
+    return FILTERS
+
+
 def compiler_artifacts(output):
     artifacts = []
     for line in output.splitlines():
@@ -94,7 +102,7 @@ def harness(c):
     (c.BASE / 'evidence/tui-harness.json').write_text(json.dumps(c.REPORT['tui_harness'], indent=2) + '\n')
     c.cargo_timing('cargo-tui-harness-build')
     c.REPORT['native_filters'] = {}
-    for name in FILTERS:
+    for name in filters(c.plan):
         label = name.replace(':', '_')
         c.run('tui-list-' + label, [saved, name, '--list'], cwd=c.UPSTREAM / 'codex-rs')
         logfile = c.BASE / 'logs' / ('tui-' + label + '.libtest')

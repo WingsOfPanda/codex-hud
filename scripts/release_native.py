@@ -1,6 +1,7 @@
 """Local native release preparation and fixed recipes; launch belongs to job launch.
 
-The qualified recipe is for upstream 0.163.0. New upstream families need review.
+The retained recipe is for 0.163.0; revision 2 selects the exact 0.165.0 transition.
+Recipe support does not replace candidate native qualification.
 Failed or interrupted stages are retained and never replayed in the same attempt.
 """
 import argparse
@@ -27,6 +28,10 @@ NATIVE_KEYS = ('upstream_repository', 'cargo_home', 'cargo_target_dir', 'v8_cach
                'license_cache', 'cargo_jobs', 'test_threads', 'official_binary', 'official_sha256')
 SYSTEM_TOOLS = ('/usr/bin/git', '/usr/bin/strip', '/usr/bin/readelf', '/usr/bin/ldd',
                 '/usr/bin/getconf', '/usr/bin/tar', '/bin/sh', '/usr/bin/pkg-config')
+UPSTREAM_163 = {'version': '0.163.0', 'tag': 'rust-v0.163.0',
+                'commit': '83086188ae0614bd882818ff1aa23f3194962012'}
+UPSTREAM_165 = {'version': '0.165.0', 'tag': 'rust-v0.165.0',
+                'commit': '360319d8dee62d87e2d59fc0c21805d79519cfed'}
 
 
 def module(path):
@@ -217,6 +222,8 @@ def input_closure(profile):
     paths += sorted((source / 'codex_plus').rglob('*.py'))
     paths += sorted((source / 'scripts').glob('*.py'))
     paths.append(Path(profile['native_build']['official_binary']))
+    if 'previous_official_binary' in profile['native_build']:
+        paths.append(Path(profile['native_build']['previous_official_binary']))
     paths += [Path(pin['origin']) for pin in profile['python'].get('fixture_imports', {}).values()]
     paths += [Path(path) for path in profile.get('system_tools', {})]
     return {str(path.resolve()): protocol.file_record(path.resolve()) for path in paths}
@@ -224,12 +231,17 @@ def input_closure(profile):
 
 def build_inputs(plan, profile):
     """Validate stable native prerequisites without allocating an attempt."""
-    protocol.require(plan['upstream']['version'] == '0.163.0', 'Upstream recipe needs qualification')
+    revision = plan.get('compat', {}).get('recipe_revision', 1)
+    paired = (revision == 2 and plan['upstream'] == UPSTREAM_165 and
+              plan.get('previous_release', {}).get('upstream') == UPSTREAM_163)
+    protocol.require((revision == 1 and plan['upstream'] == UPSTREAM_163) or paired,
+                     'Upstream recipe needs qualification')
     protocol.require(profile['toolchain']['version'] == '1.99.1', 'Compiler recipe needs qualification')
     protocol.require(Path(profile['tooling_root']).resolve() == Path(__file__).resolve().parents[1],
                      'Run from the pinned tooling checkout')
     build = profile['native_build']
-    protocol.keys(build, NATIVE_KEYS, ('pkg_config',))
+    protocol.keys(build, NATIVE_KEYS,
+                  ('pkg_config', 'previous_official_binary', 'previous_official_sha256'))
     for name in ('upstream_repository', 'cargo_home', 'cargo_target_dir', 'v8_cache',
                  'license_cache', 'official_binary'):
         protocol.require(Path(build[name]).is_absolute() and Path(build[name]).exists(), f'Missing native input: {name}')
@@ -240,6 +252,21 @@ def build_inputs(plan, profile):
         protocol.require(profile.get('system_tools', {}).get(canonical) == sha(canonical),
                          f'System tool needs an explicit hash pin: {canonical}')
     protocol.require(sha(build['official_binary']) == build['official_sha256'], 'Official binary mismatch')
+    previous_fields = {'previous_official_binary', 'previous_official_sha256'}
+    protocol.require((previous_fields <= build.keys()) if paired else not previous_fields & build.keys(),
+                     'Previous official binary requires paired recipe inputs')
+    if paired:
+        previous = Path(build['previous_official_binary'])
+        protocol.require(previous.is_absolute() and previous.is_file(), 'Missing previous official binary')
+        arch = profile['architecture']
+        protocol.require(build['official_sha256'] == plan['compat']['stock_binary_sha256'][arch] and
+                         sha(previous) == build['previous_official_sha256'] ==
+                         plan['compat']['previous_stock_binary_sha256'][arch] and
+                         build['official_sha256'] != build['previous_official_sha256'],
+                         'Paired official binary pin mismatch')
+        rustdoc = Path(profile['toolchain']['rustc']).with_name('rustdoc').resolve()
+        protocol.require(profile.get('system_tools', {}).get(str(rustdoc)) == sha(rustdoc),
+                         'Pin the selected rustdoc system tool')
 
 
 def cleanup_hook(cleanup, profile, *, rehearsal=False):
@@ -562,6 +589,9 @@ class Context:
             self.ENV['CODEX_BWRAP_SHA256'] = sha(self.NATIVE / 'bwrap')
         if 'pkg_config' in build:
             self.ENV['PKG_CONFIG_PATH'] = build['pkg_config']['path']
+        if self.plan['upstream'] == UPSTREAM_165:
+            self.ENV['RUSTDOC'] = str(Path(self.profile['toolchain']['rustc']).with_name('rustdoc'))
+            self.ENV['RUSTUP_TOOLCHAIN'] = self.profile['toolchain']['version']
         previous = self.BASE / 'evidence/frontend-detail.json'
         if previous.exists():
             self.ENV.update({key: value['path'] for key, value in protocol.load(previous).get('v8', {}).items()})
@@ -746,7 +776,7 @@ def native_tests(c, report):
     build.harness(c)
     suites = {'runtime': {'listed': 'logs/helper-unit-list.log', 'stdout': 'logs/helper-units.log',
                           'logfile': 'logs/helper-units.libtest', 'exit_code': 0}}
-    for name in build.FILTERS:
+    for name in build.filters(c.plan):
         label = name.replace(':', '_')
         suites[name] = {'listed': 'logs/tui-list-' + label + '.log', 'stdout': 'logs/tui-' + label + '.log',
                         'logfile': 'logs/tui-' + label + '.libtest', 'exit_code': 0}
