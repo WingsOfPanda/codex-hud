@@ -5,6 +5,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import subprocess
 import sys
 import tempfile
 import traceback
@@ -42,7 +43,6 @@ def run(evidence):
     try:
         for binary, upstream, pins in ((old_binary, CONFIG['previous_upstream'], CONFIG['previous_stock_binary_sha256']),
                 (new_binary, CONFIG['upstream'], CONFIG['stock_binary_sha256'])):
-            import subprocess
             oracle.native_elf(binary)
             assert digest(binary) == pins[CONFIG['architecture']]
             assert subprocess.check_output([str(binary), '--version'], text=True).strip() == 'codex-cli ' + upstream['version']

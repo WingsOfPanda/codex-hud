@@ -5,7 +5,9 @@ The caller supplies the existing strict ledger/execution byte oracle.
 """
 import fcntl
 import hashlib
+import json
 from pathlib import Path
+import subprocess
 import uuid
 
 from fixtures.upstream_0163 import message
@@ -22,8 +24,6 @@ def exercise(f, new_runtime, old_binary, new_binary, oracle):
     instructions = (Path(__file__).resolve().parents[2] / 'docs/ultracode-bootstrap.txt').read_text()
 
     def mode(action='status', *args, model=False, stdin=None):
-        import json
-        import subprocess
         env = dict(f.env)
         if model:
             env['CODEX_THREAD_ID'] = f.parent
@@ -42,7 +42,6 @@ def exercise(f, new_runtime, old_binary, new_binary, oracle):
         return value
 
     def phase(name, binary, runtime):
-        import subprocess
         report['phases'].append(dict(name=name, stock_sha256=oracle.digest(binary),
             stock_version=subprocess.check_output([str(binary), '--version'], text=True).strip(),
             runtime_sha256=oracle.digest(runtime), generation=f.rpc.generation))

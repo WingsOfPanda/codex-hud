@@ -62,6 +62,7 @@ def native_elf(path):
 
 
 def package_identity(package, version, commit, manifest_sha256, role="new"):
+    assert role in ("old", "new"), "invalid package role"
     upstream = CONFIG.get("previous_upstream", UPSTREAM) if role == "old" else UPSTREAM
     manifest_path = package / "codex-plus.json"
     assert digest(manifest_path) == manifest_sha256, (package, "unqualified manifest SHA")
@@ -257,7 +258,7 @@ def run(args):
         binary = args.stock_binary.resolve(strict=True)
         native_elf(binary)
         stock_sha = digest(binary)
-        assert stock_sha == STOCK_SHAS[platform.machine()], "official daemon SHA differs from qualified native 0.163.0 distribution"
+        assert stock_sha == STOCK_SHAS[platform.machine()], "official daemon SHA differs from qualified native distribution"
         version = subprocess.check_output([str(binary), "--version"], text=True, timeout=10).strip()
         assert version == "codex-cli " + UPSTREAM["version"], version
         report["stock"] = {"path": str(binary), "sha256": stock_sha, "version": version}

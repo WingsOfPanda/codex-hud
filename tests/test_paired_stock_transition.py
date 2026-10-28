@@ -17,13 +17,14 @@ import release_compat as compat
 class PairedContract(unittest.TestCase):
     def test_only_exact_upstream_pair_and_distinct_complete_stock_pins(self):
         config = dict(recipe_revision=2, upstream=compat.UPSTREAM_165, previous_upstream=compat.UPSTREAM,
-            stock_binary_sha256={'x86_64': '1' * 64, 'aarch64': '2' * 64},
-            previous_stock_binary_sha256={'x86_64': '3' * 64, 'aarch64': '4' * 64})
+            stock_binary_sha256=dict(compat.TRANSITION_STOCK),
+            previous_stock_binary_sha256=dict(compat.TRANSITION_PREVIOUS_STOCK))
         self.assertEqual(compat.upstreams(config), (compat.UPSTREAM, compat.UPSTREAM_165))
         self.assertEqual(compat.gate_names(2), compat.GATES + ('paired-stock-transition',))
         for key, value in (('previous_upstream', compat.UPSTREAM_165),
                 ('upstream', dict(compat.UPSTREAM_165, commit='5' * 40)),
                 ('previous_stock_binary_sha256', {'x86_64': '3' * 64}),
+                ('previous_stock_binary_sha256', {'x86_64': '3' * 64, 'aarch64': '4' * 64}),
                 ('previous_stock_binary_sha256', config['stock_binary_sha256']), ('recipe_revision', True)):
             with self.subTest(key=key, value=value), self.assertRaises(ValueError):
                 compat.upstreams(dict(config, **{key: value}))

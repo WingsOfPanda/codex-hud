@@ -15,6 +15,8 @@ import secrets
 import subprocess
 import sys
 
+from release_protocol import TRANSITION_STOCK, TRANSITION_PREVIOUS_STOCK
+
 RECIPE = Path(__file__).resolve().parent / 'release_recipes/compat'
 UPSTREAM = {'version': '0.163.0', 'tag': 'rust-v0.163.0',
             'commit': '83086188ae0614bd882818ff1aa23f3194962012'}
@@ -49,6 +51,8 @@ def upstreams(config):
                 re.fullmatch('[0-9a-f]{64}', config['stock_binary_sha256'][arch]) and
                 config['stock_binary_sha256'][arch] != '0' * 64 and value != config['stock_binary_sha256'][arch]
                 for arch, value in pins.items()), 'Missing or equal previous stock identity pin')
+        require(config['stock_binary_sha256'] == TRANSITION_STOCK and pins == TRANSITION_PREVIOUS_STOCK,
+                'Unqualified paired official binary pins')
     return previous, candidate
 
 
@@ -283,7 +287,8 @@ def accepted_package(config):
     require(manifest['release'] == config['release'] and manifest['plus_commit'] == config['source_commit'], 'Wrong package source/release')
     require(manifest['target'] == config['architecture'] + '-unknown-linux-gnu', 'Wrong package architecture')
     require(manifest['coordinator_protocol'] == 5 and manifest['execution_record_format'] == 1 and manifest['upstream'] == config['upstream'] and
-        config['upstream'] == (UPSTREAM if config['recipe_revision'] == 1 else UPSTREAM_165), 'Unsupported package protocol')
+        ((config['recipe_revision'] == 1 and config['upstream'] == UPSTREAM) or
+         (config['recipe_revision'] == 2 and config['upstream'] == UPSTREAM_165)), 'Unsupported package protocol')
 
 
 def fixture_inputs(plan, profile):

@@ -2,6 +2,7 @@
 import ast
 import importlib.util
 import copy
+import hashlib
 import json
 import os
 import platform
@@ -15,6 +16,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 SCRIPTS = Path(__file__).resolve().parents[1] / 'scripts'
+sys.path.insert(0, str(SCRIPTS))
 spec = importlib.util.spec_from_file_location('release_compat', SCRIPTS / 'release_compat.py')
 compat = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(compat)
@@ -113,6 +115,11 @@ class Compatibility(unittest.TestCase):
         old_stock = self.root / 'old-stock'
         old_stock.write_bytes(b'previous official stock')
         plan['compat']['previous_stock_binary_sha256'] = {'x86_64': compat.digest(old_stock), 'aarch64': '7' * 64}
+        for name, mapping in (('TRANSITION_STOCK', plan['compat']['stock_binary_sha256']),
+                ('TRANSITION_PREVIOUS_STOCK', plan['compat']['previous_stock_binary_sha256'])):
+            mocked = patch.object(compat, name, mapping)
+            mocked.start()
+            self.addCleanup(mocked.stop)
         path = self.source / compat.PAIRED_FIXTURE
         path.write_text('paired fixture')
         self.git('add', '.')
@@ -385,7 +392,7 @@ with unittest.TestCase().assertRaisesRegex(AssertionError,'0.165.0-plus.'):
                 (directory / name).write_text('{"updated_at":' + str(clock) + ',"state":"completed"}' if name == 'state.json' else '{}')
             report['execution_' + label + '_sha256'] = {item.name: compat.digest(item) for item in directory.iterdir()}
             report['execution_state_' + label] = dict(clock=clock,
-                bytes_sha256=__import__('hashlib').sha256(b'{"updated_at":<updated_at>,"state":"completed"}').hexdigest())
+                bytes_sha256=hashlib.sha256(b'{"updated_at":<updated_at>,"state":"completed"}').hexdigest())
         workload = path.parent / 'fixture/work/job/runs'
         workload.parent.mkdir(parents=True)
         workload.write_text('run\n')
@@ -671,14 +678,24 @@ assert 'changed frontend requires fresh package build' not in driver
         return module
 
     def test_production_composition_writes_real_core_compat_and_capture_receipts(self):
+        self.production_composition(paired=False)
+
+    def test_paired_composition_freezes_and_executes_previous_stock_with_previous_upstream(self):
+        self.production_composition(paired=True)
+
+    def production_composition(self, *, paired):
         import test_release_protocol as fixtures
         import test_packaging as packaging
         workflow = self.workflow()
         fixture = fixtures.ReleaseProtocolTests()
-        fixture.setUp(legacy=True)
+        fixture.setUp(legacy=not paired)
         self.addCleanup(fixture.doCleanups)
+        if paired:
+            fixture.plan = fixture.transition_plan()
         old = packaging.PackageIntegrityTests('test_valid_package_and_declared_hash_recipe')
-        old.setUp(packager=fixture.packager)
+        old_packager = fixture.packager if not paired else fixtures.protocol._module(
+            fixtures.legacy_source(fixture.base / 'previous-source-0163') / 'scripts/package-release.py')
+        old.setUp(packager=old_packager)
         self.addCleanup(old.doCleanups)
         old.manifest.update(release=fixture.plan['previous_release']['tag'], plus_commit=fixture.plan['compat']['previous_source_commit'])
         old.seal()
@@ -702,9 +719,16 @@ assert 'changed frontend requires fresh package build' not in driver
         fixture.profile['native_build'] = {name: str(fixture.base / name) for name in
             ('upstream_repository', 'cargo_home', 'cargo_target_dir', 'v8_cache', 'license_cache')}
         fixture.profile['native_build'].update(official_binary=str(official), official_sha256=compat.digest(official), cargo_jobs=1, test_threads=1)
+        if paired:
+            previous_stock = fixture.base / 'previous-official'
+            previous_stock.write_bytes(b'pinned previous stock')
+            fixture.profile['native_build'].update(previous_official_binary=str(previous_stock),
+                previous_official_sha256=compat.digest(previous_stock))
+            fixture.plan['compat']['previous_stock_binary_sha256']['x86_64'] = compat.digest(previous_stock)
         source = fixture.base / 'product-source'
         for name in ('scripts/package-release.py', 'scripts/native-results.py', 'rust-runtime/Cargo.toml',
-                     'rust-runtime/Cargo.lock', 'bin/codex-plus', fixture.plan['patch']['path'], *compat.RECOVERY_FIXTURES):
+                     'rust-runtime/Cargo.lock', 'bin/codex-plus', fixture.plan['patch']['path'], *compat.RECOVERY_FIXTURES,
+                     *((compat.PAIRED_FIXTURE,) if paired else ())):
             path = source / name
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes((fixture.source / name).read_bytes())
@@ -716,13 +740,22 @@ assert 'changed frontend requires fresh package build' not in driver
         fixture.observed['plus_source_commit'] = fixture.plan['plus_source_commit']
         fixture.profile['source_root'] = str(source)
         fixture.plan['compat']['stock_binary_sha256']['x86_64'] = compat.digest(official)
+        if paired:
+            for module in (fixtures.protocol, workflow.protocol, compat, workflow.compat):
+                for name, mapping in (('TRANSITION_STOCK', fixture.plan['compat']['stock_binary_sha256']),
+                        ('TRANSITION_PREVIOUS_STOCK', fixture.plan['compat']['previous_stock_binary_sha256'])):
+                    mocked = patch.object(module, name, mapping)
+                    mocked.start()
+                    self.addCleanup(mocked.stop)
         fixture.plan['compat']['fixture_files'].update({name: compat.digest(fixture.source / name)
             for name in compat.RECOVERY_FIXTURES})
+        if paired:
+            fixture.plan['compat']['fixture_files'][compat.PAIRED_FIXTURE] = compat.digest(source / compat.PAIRED_FIXTURE)
         for name in ('python', 'executor_package_root'):
             fixture.observed[name] = copy.deepcopy(fixture.profile[name])
         for arch in fixture.plan['targets']:
             fixture.plan['targets'][arch]['profile_sha256'] = fixtures.protocol.digest(fixture.profile)
-            fixture.plan['gates'][arch]['compat']['checks'] = list(compat.GATES)
+            fixture.plan['gates'][arch]['compat']['checks'] = list(compat.gate_names(2 if paired else 1))
             fixture.plan['gates'][arch]['captures']['checks'] = ['native-cursor-states']
         original_setup = packaging.PackageIntegrityTests.setUp
         def package_setup(value, **kwargs):
@@ -774,7 +807,7 @@ assert 'changed frontend requires fresh package build' not in driver
             raw = fixture.put(root, 'compat/raw.log', 'actual simulated child completion')
             evidence = {raw: fixtures.protocol.file_record(root / raw)['sha256']}
             common = dict(architecture='x86_64', plus_source_commit=fixture.plan['plus_source_commit'])
-            fixture.put(root, 'compat/compat-report.json', dict(common, checks={name: {'outcome': 'passed', 'evidence': evidence} for name in compat.GATES}))
+            fixture.put(root, 'compat/compat-report.json', dict(common, checks={name: {'outcome': 'passed', 'evidence': evidence} for name in compat.gate_names(2 if paired else 1)}))
             screen = fixture.put(root, 'compat/screen.txt', 'native geometry bytes')
             inventory = fixture.put(root, 'compat/capture-manifest.json', dict(architecture='x86_64', package_sha256=compat.digest(root / report['archive']),
                 files={screen: fixtures.protocol.file_record(root / screen)}))
@@ -799,6 +832,11 @@ assert 'changed frontend requires fresh package build' not in driver
         self.assertEqual(rows['compat']['input']['previous_package'], 'outputs/compat-previous-package.json')
         self.assertIn(str(canonical / 'bin/codex'), rows['compat']['input']['executed'])
         self.assertIn(str(SCRIPTS / 'package-release.py'), rows['compat']['input']['executed'])
+        if paired:
+            self.assertIn(str(previous_stock), rows['compat']['input']['executed'])
+            frozen = fixtures.protocol.load(root / 'compat-preparation.json')['closure']
+            self.assertEqual(frozen[str(previous_stock)]['sha256'], compat.digest(previous_stock))
+            self.assertEqual(fixtures.protocol.load(scope / 'native.config.json')['previous_stock_binary'], str(previous_stock))
         self.assertIn(str(site / 'pyte/__init__.py'), rows['compat']['input']['executed'])
         self.assertNotIn(str(site / 'pyte/escape.py'), rows['compat']['input']['executed'])
         self.assertIn(str(site / 'pyte/escape.py'), fixtures.protocol.load(root / 'compat-preparation.json')['closure'])
