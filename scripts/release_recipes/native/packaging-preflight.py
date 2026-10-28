@@ -51,9 +51,11 @@ def check(source, upstream, target, cache, output):
     inputs.update(supplemental_inputs(json.loads(notices.LICENSE_SOURCES.read_text()), cache))
     for path, expected in inputs.items():
         cached(path, expected)
+    v8_manifest = {'0.163.0': 'rusty_v8_150_4_0_release_manifests.sha256',
+                   '0.165.0': 'rusty_v8_152_2_0_release_manifests.sha256'}[packager.UPSTREAM_VERSION]
     source_licenses = [source / 'LICENSE', *[upstream / name for name in
         ('LICENSE', 'NOTICE', 'codex-rs/vendor/bubblewrap/COPYING',
-         'third_party/v8/rusty_v8_152_2_0_release_manifests.sha256')]]
+         'third_party/v8/' + v8_manifest)]]
     source_hashes = {str(path): sha(path) for path in source_licenses}
     notices.generate(source, target, output, upstream_source=upstream, license_cache=cache)
     native = json.loads((output / notices.NATIVE_DEPENDENCIES).read_text())
