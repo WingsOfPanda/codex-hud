@@ -78,6 +78,28 @@ if config['recipe_revision'] == 2:
     finally:
         fixture.close(True)
     assert not home.exists() and not gate.owned_processes(home)
+    from fixtures import stock_memory_transition as memory
+    with tempfile.TemporaryDirectory(prefix='mm-', dir=short) as temporary:
+        root = Path(temporary)
+        home, work = root / 'home', root / 'work'
+        home.mkdir(mode=0o700)
+        work.mkdir()
+        provider = memory.Provider('v2', home / 'memories_v2', 'setup-only-memory')
+        server = None
+        try:
+            memory.write_config(home, provider)
+            server = memory.StockServer(Path(config['stock_binary']), home, work,
+                BASE / 'setup-smoke/memory-constructor.log')
+            path = home / 'app-server-control/app-server-control.sock'
+            assert path.is_socket() and len(os.fsencode(path)) < 104 and not provider.requests
+            rows.append(dict(name='actual-memory-StockServer-constructor', path=str(path),
+                socket_bytes=len(os.fsencode(path)), passed=True, provider_requests=0))
+        finally:
+            if server:
+                server.close()
+            provider.close()
+        assert not gate.owned_processes(home)
+    assert not home.exists()
 
 contract = importlib.import_module('test_claude_advisor')
 with install(BASE):

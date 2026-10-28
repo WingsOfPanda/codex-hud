@@ -16,7 +16,7 @@ import subprocess
 import sys
 import tomllib
 
-from release_protocol import TRANSITION_STOCK, TRANSITION_PREVIOUS_STOCK
+from release_protocol import TRANSITION_STOCK, TRANSITION_PREVIOUS_STOCK, _module
 
 RECIPE = Path(__file__).resolve().parent / 'release_recipes/compat'
 UPSTREAM = {'version': '0.163.0', 'tag': 'rust-v0.163.0',
@@ -26,6 +26,10 @@ UPSTREAM_165 = {'version': '0.165.0', 'tag': 'rust-v0.165.0',
 GATES = ('quiet-rollback', 'advisor-nine-checks', 'actual-old-tui-root-result', 'packaged-cursor-v2', 'packaged-recovery-policy')
 PAIRED_GATE = 'paired-stock-transition'
 PAIRED_FIXTURE = 'tests/fixtures/paired_stock_transition.py'
+MEMORY_FIXTURES = ('tests/fixtures/stock_memory_transition.py', 'tests/fixtures/turn_completion.py')
+COMPAT_BUDGETS = {
+    1: dict(paired=150, native=900, owned=930, workflow=1080, managed=1500),
+    2: dict(paired=330, native=1080, owned=1110, workflow=1260, managed=1680)}
 
 
 def gate_names(revision):
@@ -167,6 +171,7 @@ def validate_config(config):
         require(Path(config['previous_stock_binary']).is_absolute() and '..' not in Path(config['previous_stock_binary']).parts,
                 'Invalid absolute path: previous_stock_binary')
         require(PAIRED_FIXTURE in config['fixture_files'], 'Paired fixture closure missing')
+        require(set(MEMORY_FIXTURES) <= config['fixture_files'].keys(), 'Memory fixture closure missing')
     require(bool(config['fixture_files']), 'Fixture closure missing')
     for name, sha in config['fixture_files'].items():
         require(not Path(name).is_absolute() and '..' not in Path(name).parts and re.fullmatch('[0-9a-f]{64}', sha), 'Unsafe fixture binding')
@@ -332,6 +337,8 @@ def validate_paired_report(path, config):
     workload = path.parent / 'fixture/work/job/runs'
     require(workload.is_file() and not workload.is_symlink() and workload.read_text() == 'run\n',
         'Paired workload replayed or original evidence missing')
+    memory = _module(RECIPE / 'memory-reports.py').validate(path.parent, config, report.get('memory_lanes', []))
+    require(report.get('memory_evidence_sha256') == memory, 'Memory dedicated evidence inventory changed')
     return report
 
 
@@ -361,6 +368,7 @@ def fixture_inputs(plan, profile):
         raise ValueError('Unsupported compatibility recipe/upstream: ' + str(exc)) from exc
     if plan['compat']['recipe_revision'] == 2:
         require(PAIRED_FIXTURE in plan['compat']['fixture_files'], 'Paired fixture closure missing')
+        require(set(MEMORY_FIXTURES) <= plan['compat']['fixture_files'].keys(), 'Memory fixture closure missing')
     fixtures = plan['compat']['fixture_files']
     require(set(RECOVERY_FIXTURES) <= fixtures.keys(), 'Recovery fixture closure missing')
     for name, sha in fixtures.items():
@@ -438,14 +446,18 @@ def export_reports(scope):
     require(all(raw['evidence_sha256'].get(name) == sha for name, sha in recovery.items()),
             'Recovery dedicated reports missing from native evidence')
     if config['recipe_revision'] == 2:
-        validate_paired_report(evidence / 'paired-stock-transition/report.json', config)
+        paired = validate_paired_report(evidence / 'paired-stock-transition/report.json', config)
         name = 'paired-stock-transition/report.json'
         require(raw['evidence_sha256'].get(name) == digest(evidence / name), 'Paired dedicated report missing')
+        memory = {'paired-stock-transition/' + name: sha for name, sha in paired['memory_evidence_sha256'].items()}
+        require(all(raw['evidence_sha256'].get(name) == sha for name, sha in memory.items()), 'Memory dedicated reports missing')
     root = scope.parent
     reports = ('report.json', 'rollback/gate.json', 'advisor-nine-checks.json', 'old-tui-root-result/report.json')
     if config['recipe_revision'] == 2:
         reports += ('paired-stock-transition/report.json',)
     raw_bindings = {str((evidence / name).relative_to(root)): digest(evidence / name) for name in reports}
+    if config['recipe_revision'] == 2:
+        raw_bindings.update({str((evidence / name).relative_to(root)): sha for name, sha in memory.items()})
     raw_bindings.update({str((evidence / name).relative_to(root)): sha for name, sha in recovery.items()})
     captures = evidence / 'cursor-v2'
     manifest = json.loads((captures / 'manifest.json').read_text())
@@ -515,7 +527,7 @@ def run(scope, *, setup_only=False):
         return {'passed': True, 'setup_only': True, 'native_gates_run': False, 'evidence': str(scope / 'preflight.json')}
     with (scope / 'native-owned.log').open('x') as log:
         result = owned_run.run([sys.executable, RECIPE / 'run-native-compat-v5.py', '--config', scope / 'native.config.json', '--evidence', scope / 'evidence'],
-                               cwd=scope, env=env, stdout=log, timeout=930)
+                               cwd=scope, env=env, stdout=log, timeout=COMPAT_BUDGETS[config['recipe_revision']]['owned'])
     require(result.returncode == 0, 'Native compatibility failed; preserve raw evidence')
     return {'passed': True, 'evidence': str(scope / 'evidence/report.json'), 'cleanup_required': True,
             'reports': export_reports(scope)}

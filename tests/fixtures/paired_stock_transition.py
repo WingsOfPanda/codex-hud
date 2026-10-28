@@ -53,7 +53,7 @@ class PairedStockServer(DetachedJobServer):
 def exercise(f, new_runtime, old_binary, new_binary, oracle):
     report = dict(phases=[], holds=[], remote_model_requests=0,
         limitations=['Private quiet paired cutover only; no running executor transfer.',
-            'Inherited fixture explicitly disables apps and memories; fleet memory-v2/default behavior remains uncovered.',
+            'Ledger/effort scenario disables apps and memories; separate memory lanes qualify only their declared corpus and defaults.',
             'Scripted loopback effort-update wire/history proof only; no production provider or cache-hit claim.'])
     old_runtime = f.runtime
     instructions = (Path(__file__).resolve().parents[2] / 'docs/ultracode-bootstrap.txt').read_text()
