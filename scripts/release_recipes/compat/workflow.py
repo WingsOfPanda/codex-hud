@@ -55,12 +55,13 @@ def executed_origins(profile, paths):
 
 def proposal(root, profile, command, inputs, *, topic):
     script = str(Path(profile['tooling_root']) / 'scripts/release_compat.py')
+    budget = compat.COMPAT_BUDGETS[protocol.load(root / 'plan.json')['compat']['recipe_revision'] if command == 'run-attempt' else 1]
     return {'schema': 1, 'topic': topic,
         'argv': [profile['python']['path'], '-B', script, command, '--attempt', str(root), '--execution', '{execution}'],
         'cwd': profile['tooling_root'], 'env': native.python_env(profile),
         'inputs': [{'source': str(root / name), 'path': name} for name in inputs],
         'exclusive_keys': ['release-compat-' + protocol.digest(str(root))[:24]],
-        'expected_duration_seconds': 900, 'deadline_seconds': 1500, 'cancel_grace_seconds': 90}
+        'expected_duration_seconds': budget['native'], 'deadline_seconds': budget['managed'], 'cancel_grace_seconds': 90}
 
 
 def previous_package(plan, profile, old_package):
@@ -270,7 +271,8 @@ def run_attempt(root, execution):
     try:
         with (root / 'logs/compat-managed.log').open('xb') as log:
             code = native.owned_run(argv, helper=Path(profile['executor_package_root']) / 'bin/codex-plus-runtime',
-                python=profile['python']['path'], cwd=root, env=env, stdout=log, timeout=1080)
+                python=profile['python']['path'], cwd=root, env=env, stdout=log,
+                timeout=compat.COMPAT_BUDGETS[plan['compat']['recipe_revision']]['workflow'])
     except Exception as exc:
         error = repr(exc)
     audit = cleanup_record(root, root / 'outputs/compat-cleanup.json',

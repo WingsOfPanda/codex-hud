@@ -120,13 +120,15 @@ class Compatibility(unittest.TestCase):
             mocked = patch.object(compat, name, mapping)
             mocked.start()
             self.addCleanup(mocked.stop)
-        path = self.source / compat.PAIRED_FIXTURE
-        path.write_text('paired fixture')
+        for name in (compat.PAIRED_FIXTURE, *compat.MEMORY_FIXTURES):
+            path = self.source / name
+            path.write_text('paired fixture')
         self.git('add', '.')
         self.git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', 'paired fixture')
         self.commit = self.git('rev-parse', 'HEAD').strip()
         plan['plus_source_commit'] = self.commit
-        plan['compat']['fixture_files'][compat.PAIRED_FIXTURE] = compat.digest(path)
+        plan['compat']['fixture_files'].update({name: compat.digest(self.source / name)
+            for name in (compat.PAIRED_FIXTURE, *compat.MEMORY_FIXTURES)})
         profile['native_build'] = dict(previous_official_binary=str(old_stock), previous_official_sha256=compat.digest(old_stock))
         plan['gates']['x86_64']['compat']['checks'] = list(compat.gate_names(2))
         manifest = self.package / 'codex-plus.json'
@@ -181,6 +183,11 @@ else: raise AssertionError('old role accepted candidate upstream')
         with self.assertRaisesRegex(ValueError, 'Unsupported compatibility checks'):
             self.prepare(plan, profile, config, 'missing-gate')
         self.assertFalse((self.root / 'missing-gate/compat').exists())
+        plan['gates']['x86_64']['compat']['checks'] = list(compat.gate_names(2))
+        plan['compat']['fixture_files'].pop(compat.MEMORY_FIXTURES[0])
+        with self.assertRaisesRegex(ValueError, 'Memory fixture closure missing'):
+            self.prepare(plan, profile, config, 'missing-memory')
+        self.assertFalse((self.root / 'missing-memory/compat').exists())
 
     def test_next_revision_changes_data_only_and_loads_actual_validators(self):
         hashes = {path.name: compat.digest(path) for path in compat.RECIPE.iterdir() if path.is_file()}
@@ -356,6 +363,9 @@ with unittest.TestCase().assertRaisesRegex(AssertionError,'0.165.0-plus.'):
             self.paired_report(scope, bound)
             path = evidence / 'paired-stock-transition/report.json'
             raw['evidence_sha256']['paired-stock-transition/report.json'] = compat.digest(path)
+            paired_report = json.loads(path.read_text())
+            raw['evidence_sha256'].update({'paired-stock-transition/' + name: sha
+                for name, sha in paired_report['memory_evidence_sha256'].items()})
         (evidence / 'report.json').write_text(json.dumps(raw))
         return scope, raw
 
@@ -425,6 +435,8 @@ with unittest.TestCase().assertRaisesRegex(AssertionError,'0.165.0-plus.'):
         report['holds'] = [dict(entered=dict(id=ident, held=True, admission_quiet=True, execution_quiet=True),
             observed=dict(id=ident, held=True, admission_quiet=True, execution_quiet=True), left=dict(id=ident, held=False))
             for ident in ('old-entered', 'new-entered')]
+        from test_release_memory_reports import memory_evidence
+        report['memory_lanes'], report['memory_evidence_sha256'] = memory_evidence(path.parent, bound)
         path.write_text(json.dumps(report))
         return path, report
 
@@ -775,7 +787,7 @@ assert 'changed frontend requires fresh package build' not in driver
         source = fixture.base / 'product-source'
         for name in ('scripts/package-release.py', 'scripts/native-results.py', 'rust-runtime/Cargo.toml',
                      'rust-runtime/Cargo.lock', 'bin/codex-plus', fixture.plan['patch']['path'], *compat.RECOVERY_FIXTURES,
-                     *((compat.PAIRED_FIXTURE,) if paired else ())):
+                     *((compat.PAIRED_FIXTURE, *compat.MEMORY_FIXTURES) if paired else ())):
             path = source / name
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes((fixture.source / name).read_bytes())
@@ -797,7 +809,8 @@ assert 'changed frontend requires fresh package build' not in driver
         fixture.plan['compat']['fixture_files'].update({name: compat.digest(fixture.source / name)
             for name in compat.RECOVERY_FIXTURES})
         if paired:
-            fixture.plan['compat']['fixture_files'][compat.PAIRED_FIXTURE] = compat.digest(source / compat.PAIRED_FIXTURE)
+            fixture.plan['compat']['fixture_files'].update({name: compat.digest(source / name)
+                for name in (compat.PAIRED_FIXTURE, *compat.MEMORY_FIXTURES)})
         for name in ('python', 'executor_package_root'):
             fixture.observed[name] = copy.deepcopy(fixture.profile[name])
         for arch in fixture.plan['targets']:
@@ -848,6 +861,7 @@ assert 'changed frontend requires fresh package build' not in driver
             proposal = workflow.prepare_attempt(root, canonical)
             workflow.verify_attempt(root)
         self.assertEqual(proposal['argv'][3], 'run-attempt')
+        self.assertEqual(proposal['deadline_seconds'], 1680 if paired else 1500)
         scope = root / 'compat'
         self.assertFalse(any(path.suffix == '.py' for path in scope.iterdir()))
         def execute(*args, **kwargs):

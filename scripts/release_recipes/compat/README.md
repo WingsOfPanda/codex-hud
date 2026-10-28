@@ -28,11 +28,14 @@ The native profile binds `native_build.previous_official_binary` and
 `previous_official_sha256`; preparation verifies that path against both pins before
 allocating compatibility state. Both binaries belong in the managed input closure.
 Add `tests/fixtures/paired_stock_transition.py` to the plan's fixture closure.
+Revision 2 also requires `tests/fixtures/stock_memory_transition.py` and
+`tests/fixtures/turn_completion.py`; the other fixture imports remain in the
+existing declared closure.
 Full package releases distinguish `0.163.0-plus.0.4.9` and
 `0.165.0-plus.0.4.9`; revision 2 permits equal helper hashes while checking each
 package's exact release, upstream, source, manifest and inventory independently.
 
-The additional gate uses one private home and actual pinned official binaries:
+The additional gate first uses one private home and actual pinned official binaries:
 
 1. Stock 163 and the previous package create a real managed execution, delivered
    callback, paused goal, admitted Ultracode snapshot and stock history, then hold.
@@ -56,10 +59,29 @@ rollout. The fixture config and model catalog prove OpenAI identity, supporting
 model metadata and the absence of a reasoning-override feature override. No
 snapshot is restored. Phase daemon/helper hashes, generations, full package
 identities, both holds, wire and persisted-history proof, raw fixture report hash
-and verified private cleanup are checked again by canonical export. This gate
-retains the inherited fixture's explicit `apps=false` and `memories=false` settings
-and reports that limit. It does not establish running-executor transfer,
-fleet memory-v2/default feature behavior, paid-provider cache behavior, or
+and verified private cleanup are checked again by canonical export. This first
+scenario retains the inherited fixture's explicit `apps=false` and
+`memories=false` settings and reports that limit.
+
+The same gate then runs `existing-v1` and `fresh-v2` memory cases, each in a fresh
+private home inside the same owned short allocation. Both enable memories, use and
+generation, with version and dual-write unset. A real stock source turn supplies
+the rollout; SQL only normalizes its source/idle/memory eligibility. The candidate
+must perform real extraction and consolidation, producing the SQLite stage rows
+and memory artifacts before stock 163 reads them. Existing V1 requires transparent
+old-stock default reading. Fresh V2 requires preservation and an explicit old-stock
+V2 reader; its old default remains V1 and must not read the V2 summary. A passing
+fresh case does not claim transparent default rollback for a fresh V2 home.
+
+Canonical validation checks both raw reports and their daemon roles/fixture hash,
+enabled config and unset selectors, extraction and consolidation requests and
+durable rows, candidate/old-reader request markers, logical stores before and
+after rollback, actual SQLite backup rows, every captured artifact byte, and owned
+home removal. Raw reports, configuration, logs, database backups and artifacts
+are separately hashed in native evidence and exported through the existing
+compatibility report. Tampered stores/artifacts, missing writer proof, disabled
+memories or a missing V1 default read refuse qualification. The gate still does
+not establish running-executor transfer, arbitrary memory corpus behavior, paid-provider cache behavior, or
 production rollout policy. The existing old-TUI gate separately tests its actual
 window; a frontend re-exec guard is not a blanket refusal of helper commands.
 
@@ -88,8 +110,11 @@ execute the pinned previous package's helper. The plan must include the four
 `RECOVERY_FIXTURES` files in `compat.fixture_files`; preparation freezes these
 and every other declared fixture file in the managed input closure. All original
 scenario deadlines and assertions remain in force. The stage has a 180-second
-budget, with enclosing native/owned/workflow budgets of 900/930/1080 seconds;
-the managed job retains its 1500-second deadline and separate cleanup.
+budget. Revision 1 retains native/owned/workflow budgets of 900/930/1080 seconds
+and its 1500-second managed deadline. Revision 2 adds the two memory writer
+90-second bounds: paired stage 330, native/owned/workflow 1080/1110/1260, and managed
+deadline 1680 seconds, with the existing separate cleanup. Setup also exercises
+the real memory server constructor and socket path without inference.
 
 The recovery checker reads and validates all fourteen hashed case reports at
 the native runner and canonical export seams. It verifies new/old helper and

@@ -16,7 +16,7 @@ import traceback
 sys.dont_write_bytecode = True
 AREA = Path(__file__).resolve().parent
 sys.path.insert(0, str(AREA.parents[1]))
-from release_compat import validate_recovery_reports, validate_paired_report
+from release_compat import validate_recovery_reports, validate_paired_report, COMPAT_BUDGETS
 SOURCE = CONFIG['source_commit']
 ORIGIN = CONFIG['source_commit']
 PATCH = CONFIG['frontend_patch_sha256']
@@ -100,9 +100,9 @@ def run(args):
         save()
 
     def timeout(signum, frame):
-        raise TimeoutError('native combined compatibility gate exceeded 900 seconds')
+        raise TimeoutError('native combined compatibility gate exceeded its recipe budget')
     signal.signal(signal.SIGALRM, timeout)
-    signal.alarm(900)
+    signal.alarm(COMPAT_BUDGETS[config['recipe_revision']]['native'])
     save()
     try:
         stage('quiet-rollback', [sys.executable, AREA/'verify-mixes.py', '--source', source,
@@ -129,8 +129,9 @@ def run(args):
         paired = {}
         if config['recipe_revision'] == 2:
             stage('paired-stock-transition', [sys.executable, AREA/'paired-stock-transition.py',
-                '--evidence', evidence/'paired-stock-transition'], 150)
-            validate_paired_report(evidence/'paired-stock-transition/report.json', config)
+                '--evidence', evidence/'paired-stock-transition'], COMPAT_BUDGETS[2]['paired'])
+            memory = validate_paired_report(evidence/'paired-stock-transition/report.json', config)['memory_evidence_sha256']
+            paired.update({'paired-stock-transition/' + name: sha for name, sha in memory.items()})
             paired['paired-stock-transition/report.json'] = gate.digest(evidence/'paired-stock-transition/report.json')
         recovery = validate_recovery_reports(evidence/'recovery-policy', config)
         rollback = json.loads((evidence/'rollback/gate.json').read_text())
