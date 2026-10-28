@@ -17,7 +17,17 @@ TUI/CLI source and workspace lock reconciliation; the stock backend and feature
 definitions are unchanged. All 1,308 external lock entries match upstream; 167
 workspace package versions are reconciled to 0.165.0. Rust remains 1.99.1.
 Build/package provenance now selects V8 crate 152.2.0 and V8 15.2.124.1.
-Native compilation and rendered terminal acceptance are separate pending gates.
+X86 development compilation passed, followed by 19 focused Rust groups covering
+324 unique tests. Native smoke (23 stages), Morandi, the footer and nine compact
+display/color/status configurations passed. ARM compiled the preceding candidate;
+its corrected frontend and native/terminal checks remain pending.
+
+The first builds exposed three distinct port issues: the new optional
+`ThreadListParams.attached_to_thread_id` needed an explicit `None`; upstream's
+neutral compact failure label needed the retained Plus red `Failed (exit N)`
+contract; and two tests needed real turn completion and the native generic
+`Hide details` disclosure label. Original failures remain in the development
+record. These fixes do not change the stock backend.
 
 ## Stock daemon and effort switching
 
@@ -38,9 +48,17 @@ then low; request-level effort stays low, configuration updates record changes,
 and the prompt-cache key stays stable. This verifies the wire contract, not
 actual server-side cache hits. No feature-enable override or paid provider is used.
 
-Run stock background/advisor/foreground, lifecycle, custom-goal and Ultracode
-checks against the verified official binary. The development identity fixture
-retains the old 0.163 pin; matching a version string alone is insufficient.
+Private x86 stock background/advisor/foreground checks and 19 lifecycle,
+custom-goal and Ultracode cases passed. The development identity fixture pins
+official 0.163 and 0.165 binaries for x86 and ARM; a version string alone is
+insufficient. ARM execution of these checks remains pending.
+
+Private x86 diagnostics also passed old 0.163 reads and cold resume of tested
+0.165 history, including effort-update items. The actual old 0.4.9 TUI survived
+an idle private daemon replacement, preserving its draft and producing one
+controlled response without replay; a fresh old TUI on 0.165 passed separately.
+These checks do not cover managed-daemon snapshots, active jobs, memory-v2
+lifecycle or a complete packaged rollback.
 
 ## Release boundary
 
@@ -57,6 +75,15 @@ version transition. Before enabling a new release path:
 4. Obtain mods' app-server compatibility review and follow the release book's
    existing publication, merge and fleet rollout scopes.
 
-The initial wider recipe test run exposed 15 expectations still tied to the
-qualified 0.163 recipe. They remain unresolved adaptation work, not waived gates.
-Keep previous release evidence and frozen checkouts unchanged.
+The initial wider recipe test run exposed 15 expectations tied to the qualified
+0.163 recipe. Explicit legacy fixtures now use 14 files pinned to commit
+`236d0438547e3c104c25118070321aa32384ddac`; current package/protocol tests retain
+0.165 inputs. All 164 related checks passed, including explicit refusal of 0.165
+at unqualified recipe boundaries. Production guards were not widened or mocked.
+
+Fleet-config's existing contract requires evidence that the old stock daemon
+reads newer state; it does not authorize a snapshot fallback. Its existing
+handoff fields can express the paired switch and required session restart.
+Retained stock identities currently require explicit operator notes, not an
+invented handoff field. Do not claim a retained pair qualified from the diagnostic
+checks above. Keep prior release evidence and frozen checkouts unchanged.

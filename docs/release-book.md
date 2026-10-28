@@ -363,6 +363,16 @@ but exposed operator traps. See its [pilot record](releases/0.163.0-plus.0.4.9/p
 No older recovery or rollback guidance was removed: this pilot did not establish
 that it is obsolete for every retained version or resumed attempt.
 
+The 2026-10-28 [0.165 development port](upstream-0.165.0-assessment.md) exposed
+these additional traps before release qualification:
+
+| Trap | Earliest preventive check |
+| --- | --- |
+| Direct Cargo invocation let dependency directories select another Rust toolchain, despite the top-level Cargo being pinned. | Pin absolute `RUSTC`/`RUSTDOC` and `RUSTUP_TOOLCHAIN` for direct-Cargo jobs; check the compiler from a dependency directory before launch. The existing `cargo +VERSION` developer path already selects its toolchain. |
+| Clean patch application missed a new API field and changed compact failure styling; older tests also simulated only part of the turn lifecycle and expected one disclosure label. | Compile the affected target and test harness, then run actual compact/display checks before freezing packages. Check source semantics before changing an assertion. |
+| Native Cargo resolution passed while three new dependency notices were missing or unrecognized. | Run actual target-filtered notice generation; verify embedded component provenance and complete license text before package builds. Metadata resolution alone is insufficient. |
+| Current product fixtures moved to 0.165 while the retained production recipe still intentionally accepted only 0.163. | Give retained-recipe tests an explicit pinned legacy source fixture; keep current-product tests and new-upstream refusal checks. Never widen a guard just to fix fixture drift. |
+
 ## Recovery
 
 First identify the actual installed executor, active instructions and exact watch.
