@@ -22,6 +22,17 @@ spec = importlib.util.spec_from_file_location('release_protocol', ROOT / 'script
 protocol = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(protocol)
 
+PREVIOUS_UPSTREAM = {'version': '0.163.0', 'tag': 'rust-v0.163.0',
+                     'commit': '83086188ae0614bd882818ff1aa23f3194962012'}
+CANDIDATE_UPSTREAM = {'version': '0.165.0', 'tag': 'rust-v0.165.0',
+                      'commit': '360319d8dee62d87e2d59fc0c21805d79519cfed'}
+PREVIOUS_STOCK = {'x86_64': '399ff69c431c066e40de318fba45c2b07f45a76b19939d247ee4828fc70c4215',
+                  'aarch64': '8a96f66d059d653e68bfd5f3c79337e6f1d7d170d80bf705eb7d0249b34c0ece'}
+CANDIDATE_STOCK = {'x86_64': 'c06a67fd8ac76508dc78bd99ce20c9f317b8d568beda59485f3f4134df9962d5',
+                   'aarch64': 'b32ece31af06440da980b733fb8fefdd1f193439595fda84096f1caaceec543f'}
+TRANSITION_CHECKS = ['quiet-rollback', 'advisor-nine-checks', 'actual-old-tui-root-result',
+                     'packaged-cursor-v2', 'packaged-recovery-policy', 'paired-stock-transition']
+
 
 class ReleaseProtocolTests(unittest.TestCase):
     def setUp(self, *, legacy=False):
@@ -64,6 +75,10 @@ class ReleaseProtocolTests(unittest.TestCase):
                         'session_restart': 'required', 'agents_md': None, 'retain': [previous['release']],
                         'notes': 'Fixture only'},
             'retention_floor': previous['release'], 'note': 'docs/releases/fixture.md'}
+        previous_tag = self.plan['upstream']['version'] + '-plus.' + previous['release'].split('-plus.')[1]
+        self.plan['previous_release']['tag'] = previous_tag
+        self.plan['rollout']['retain'] = [previous_tag]
+        self.plan['retention_floor'] = previous_tag
         self.observed = {name: copy.deepcopy(self.profile[name]) for name in
                          ('hostname', 'architecture', 'toolchain', 'python', 'executor_package_root')}
         self.observed.update(plus_source_commit=self.plan['plus_source_commit'], tooling_commit=self.plan['tooling_commit'])
@@ -226,6 +241,140 @@ class ReleaseProtocolTests(unittest.TestCase):
         (source / 'rust-runtime/Cargo.lock').write_text((ROOT / 'rust-runtime/Cargo.lock').read_text())
         with self.assertRaisesRegex(ValueError, 'Cargo lock'):
             protocol.validate_plan(plan, source)
+
+    def transition_plan(self):
+        plan = copy.deepcopy(self.plan)
+        plan['previous_release'].update(tag='0.163.0-plus.0.4.9', upstream=copy.deepcopy(PREVIOUS_UPSTREAM))
+        plan['compat'].update(recipe_revision=2, stock_binary_sha256=dict(CANDIDATE_STOCK),
+                              previous_stock_binary_sha256=dict(PREVIOUS_STOCK))
+        plan['rollout'].update(daemon_restart=True, retain=['0.163.0-plus.0.4.9'])
+        plan['retention_floor'] = '0.163.0-plus.0.4.9'
+        for gates in plan['gates'].values():
+            gates['compat']['checks'] = list(TRANSITION_CHECKS)
+        return plan
+
+    def test_revision_one_refuses_explicit_cross_upstream(self):
+        plan = copy.deepcopy(self.plan)
+        plan['previous_release']['upstream'] = dict(PREVIOUS_UPSTREAM)
+        with self.assertRaisesRegex(ValueError, 'Revision 1 upstream'):
+            protocol.validate_plan(plan, self.source)
+
+    def test_revision_two_requires_exact_transition_and_both_distinct_stock_pins(self):
+        plan = self.transition_plan()
+        protocol.validate_plan(plan, self.source)
+        for mutate in (lambda p: p['previous_release'].pop('upstream'),
+                       lambda p: p['previous_release'].update(upstream=dict(CANDIDATE_UPSTREAM)),
+                       lambda p: p['previous_release']['upstream'].update(commit='f' * 40),
+                       lambda p: p['upstream'].update(commit='f' * 40),
+                       lambda p: p['compat'].pop('previous_stock_binary_sha256'),
+                       lambda p: p['compat']['previous_stock_binary_sha256'].pop('aarch64'),
+                       lambda p: p['compat']['stock_binary_sha256'].pop('x86_64'),
+                       lambda p: p['compat'].update(previous_stock_binary_sha256=dict(CANDIDATE_STOCK)),
+                       lambda p: p['compat']['previous_stock_binary_sha256'].update(x86_64='f' * 64),
+                       lambda p: p['compat']['stock_binary_sha256'].update(aarch64='f' * 64),
+                       lambda p: p['gates']['aarch64']['compat']['checks'].pop(),
+                       lambda p: p['gates']['x86_64']['compat']['checks'].reverse(),
+                       lambda p: p['rollout'].update(daemon_restart=False),
+                       lambda p: p['rollout'].update(session_restart='optional'),
+                       lambda p: p['rollout'].update(session_restart='none')):
+            invalid = copy.deepcopy(plan)
+            mutate(invalid)
+            with self.subTest(mutate=mutate), self.assertRaises(ValueError):
+                protocol.validate_plan(invalid, self.source)
+
+    def test_retained_plan_is_validated_without_changing_canonical_bytes(self):
+        path = ROOT / 'docs/releases/0.163.0-plus.0.4.9/plan.json'
+        original = path.read_bytes()
+        plan = protocol.load(path)
+        source = legacy_source(self.base / 'retained-source')
+        before = protocol.encoded(plan)
+        protocol.validate_plan(plan, source)
+        self.assertEqual(before, protocol.encoded(plan))
+        self.assertEqual(original, path.read_bytes())
+
+    def test_revision_one_allows_only_same_upstream_optional_identity_and_no_previous_stock(self):
+        plan = copy.deepcopy(self.plan)
+        plan['previous_release']['upstream'] = copy.deepcopy(plan['upstream'])
+        protocol.validate_plan(plan, self.source)
+        plan['compat']['previous_stock_binary_sha256'] = dict(PREVIOUS_STOCK)
+        with self.assertRaisesRegex(ValueError, 'Revision 1 has one stock'):
+            protocol.validate_plan(plan, self.source)
+        plan = copy.deepcopy(self.plan)
+        plan['previous_release']['tag'] = '0.163.0-plus.0.4.9'
+        with self.assertRaisesRegex(ValueError, 'Revision 1 upstream'):
+            protocol.validate_plan(plan, self.source)
+
+    def transition_profile(self):
+        profile = copy.deepcopy(self.profile)
+        paths = ('upstream_repository', 'cargo_home', 'cargo_target_dir', 'v8_cache', 'license_cache', 'official_binary')
+        profile['native_build'] = {name: str(self.base / name) for name in paths}
+        profile['native_build'].update(cargo_jobs=2, test_threads=2,
+            official_sha256=CANDIDATE_STOCK['x86_64'],
+            previous_official_binary=str(self.base / 'previous-official'),
+            previous_official_sha256=PREVIOUS_STOCK['x86_64'])
+        return profile
+
+    def test_revision_two_attempt_requires_both_profile_roles_bound_to_plan(self):
+        plan, profile = self.transition_plan(), self.transition_profile()
+        protocol.validate_profile(profile, 'x86_64')
+        plan['targets']['x86_64']['profile_sha256'] = protocol.digest(profile)
+        root = protocol.init_attempt(plan, profile, self.source, observed=self.observed)
+        self.assertEqual(protocol.read_attempt(root)[2], profile)
+        for field in ('previous_official_binary', 'previous_official_sha256', 'official_sha256'):
+            invalid = copy.deepcopy(profile)
+            if field == 'previous_official_binary':
+                invalid['native_build'].pop(field)
+            else:
+                invalid['native_build'][field] = 'f' * 64
+            plan['targets']['x86_64']['profile_sha256'] = protocol.digest(invalid)
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                protocol.init_attempt(plan, invalid, self.source, observed=self.observed)
+        for field, value in (('previous_official_binary', 'relative'),
+                             ('previous_official_binary', profile['native_build']['official_binary']),
+                             ('previous_official_sha256', CANDIDATE_STOCK['x86_64'])):
+            invalid = copy.deepcopy(profile)
+            invalid['native_build'][field] = value
+            with self.subTest(field=field, value=value), self.assertRaises(ValueError):
+                protocol.validate_profile(invalid, 'x86_64')
+
+    def test_previous_official_execution_requires_exact_profile_and_plan_pins(self):
+        profile = self.transition_profile()
+        previous = Path(profile['native_build']['previous_official_binary'])
+        previous.write_bytes(b'previous official fixture')
+        record = protocol.file_record(previous)
+        profile['native_build']['previous_official_sha256'] = record['sha256']
+        plan = self.transition_plan()
+        plan['compat']['previous_stock_binary_sha256']['x86_64'] = record['sha256']
+        self.assertEqual(protocol._executed(profile, [str(previous)], plan=plan), {str(previous): record})
+        unpinned = previous.with_name('unlisted-official')
+        shutil.copyfile(previous, unpinned)
+        with self.assertRaisesRegex(ValueError, 'outside pinned roots'):
+            protocol._executed(profile, [str(unpinned)], plan=plan)
+        with self.assertRaisesRegex(ValueError, 'transition plan'):
+            protocol._executed(profile, [str(previous)], plan=self.plan)
+        plan['compat']['previous_stock_binary_sha256']['x86_64'] = 'f' * 64
+        with self.assertRaisesRegex(ValueError, 'transition plan'):
+            protocol._executed(profile, [str(previous)], plan=plan)
+        previous.write_bytes(b'changed official fixture')
+        with self.assertRaisesRegex(ValueError, 'Previous official binary pin'):
+            protocol._executed(profile, [str(previous)], plan=plan)
+
+    def test_revision_one_legacy_receipts_status_export_and_accept_stay_immutable(self):
+        fixture = ReleaseProtocolTests()
+        fixture.setUp(legacy=True)
+        self.addCleanup(fixture.doCleanups)
+        root = fixture.qualified()
+        names = ['plan.json', 'profile.json', *[str(path.relative_to(root)) for path in (root / 'receipts').glob('*.json')]]
+        original = {name: (root / name).read_bytes() for name in names}
+        self.assertEqual(protocol.status(root)['missing'], [])
+        protocol.accept_attempt(root, source_root=fixture.source)
+        bundle = self.base / 'legacy.tgz'
+        record = protocol.export_attempt(root, bundle)
+        imported = protocol.import_attempt(bundle, self.base / 'legacy-import', expected_sha256=record['sha256'])
+        protocol.accept_attempt(imported, source_root=fixture.source, archive=root / 'outputs/candidate.tar.gz')
+        for name, value in original.items():
+            self.assertEqual(value, (root / name).read_bytes())
+            self.assertEqual(value, (imported / name).read_bytes())
 
     def test_native_profile_requires_observed_host_runtime_and_source(self):
         for field, value in [('architecture', 'aarch64'), ('hostname', 'elsewhere'),
@@ -582,6 +731,36 @@ class ReleaseProtocolTests(unittest.TestCase):
         binary.write_bytes(packaging.elf(183))
         with self.assertRaisesRegex(ValueError, 'qualified inventory'):
             protocol._executed(profile, [str(binary)], plan=self.plan, previous_package=proof)
+
+    def test_transition_previous_package_requires_previous_upstream_provenance(self):
+        plan = self.transition_plan()
+        previous = self.base / 'previous-transition-package'
+        binary = previous / 'bin/codex'
+        binary.parent.mkdir(parents=True)
+        binary.write_bytes(packaging.elf(62))
+        expected = plan['previous_release']['targets']['x86_64']
+        manifest = {'release': plan['previous_release']['tag'], 'target': self.profile['triple'],
+            'plus_commit': plan['compat']['previous_source_commit'], 'upstream': dict(PREVIOUS_UPSTREAM),
+            'tree_sha256': expected['tree_sha256'], 'files': {'bin/codex': protocol.file_record(binary)}}
+        for upstream in (PREVIOUS_UPSTREAM, CANDIDATE_UPSTREAM, dict(PREVIOUS_UPSTREAM, commit='f' * 40), None):
+            manifest['upstream'] = upstream
+            self.put(previous, 'codex-plus.json', manifest)
+            sha = protocol.file_record(previous / 'codex-plus.json')['sha256']
+            expected['manifest_sha256'] = sha
+            proof = {'path': str(previous), 'manifest_sha256': sha}
+            if upstream == PREVIOUS_UPSTREAM:
+                protocol._executed(self.profile, [str(binary)], plan=plan, previous_package=proof)
+            else:
+                with self.subTest(upstream=upstream), self.assertRaisesRegex(ValueError, 'Previous package upstream'):
+                    protocol._executed(self.profile, [str(binary)], plan=plan, previous_package=proof)
+        manifest['upstream'] = dict(PREVIOUS_UPSTREAM)
+        self.put(previous, 'codex-plus.json', manifest)
+        expected['manifest_sha256'] = protocol.file_record(previous / 'codex-plus.json')['sha256']
+        profile = self.transition_profile()
+        profile['native_build']['previous_official_binary'] = str(binary)
+        proof = {'path': str(previous), 'manifest_sha256': expected['manifest_sha256']}
+        with self.assertRaisesRegex(ValueError, 'Previous official binary pin'):
+            protocol._executed(profile, [str(binary)], plan=plan, previous_package=proof)
 
     def forensic_recovery(self, saved_finished=None, finished=None):
         root = self.attempt()
