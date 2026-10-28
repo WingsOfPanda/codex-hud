@@ -23,6 +23,34 @@ spec.loader.exec_module(compat)
 
 
 class CursorCaptureContract(unittest.TestCase):
+    def test_required_core_matches_selected_exact_recipe(self):
+        tree = ast.parse((compat.RECIPE / 'cursor-capture.py').read_text())
+        manifest = next(node.value for node in tree.body if isinstance(node, ast.Assign)
+                        and any(isinstance(target, ast.Name) and target.id == 'manifest' for target in node.targets))
+        required = next(value for key, value in zip(manifest.keys, manifest.values)
+                        if isinstance(key, ast.Constant) and key.value == 'core_required')
+        code = compile(ast.Expression(required), 'cursor-capture.py', 'eval')
+        for upstream in (compat.UPSTREAM, compat.UPSTREAM_165):
+            with self.subTest(upstream=upstream):
+                self.assertEqual(eval(code, {'UPSTREAM': upstream}), upstream['version'])
+
+    def test_capture_and_verifier_refuse_core_outside_selected_exact_recipe(self):
+        for filename in ('cursor-capture.py', 'cursor-verify.py'):
+            tree = ast.parse((compat.RECIPE / filename).read_text())
+            guard = next(node for node in tree.body if isinstance(node, ast.Assert)
+                         and 'native_core_version' in ast.unparse(node.test))
+            code = compile(ast.Module(body=[guard], type_ignores=[]), filename, 'exec')
+            for upstream in (compat.UPSTREAM, compat.UPSTREAM_165):
+                for version in ('0.163.0', '0.165.0', '0.166.0'):
+                    with self.subTest(filename=filename, upstream=upstream, version=version):
+                        manifest = dict(core_required=upstream['version'], native_core_version=version)
+                        scope = dict(UPSTREAM=upstream, TMUX='tmux', manifest=manifest, m=manifest)
+                        if version == upstream['version']:
+                            exec(code, scope)
+                        else:
+                            with self.assertRaises(AssertionError):
+                                exec(code, scope)
+
     def test_affected_unknown_job_requires_needs_review_row(self):
         tree = ast.parse((compat.RECIPE / 'cursor-capture.py').read_text())
         predicate = next(node.value for node in ast.walk(tree) if isinstance(node, ast.keyword)
