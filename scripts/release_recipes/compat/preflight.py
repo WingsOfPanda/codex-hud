@@ -22,7 +22,7 @@ assert Path(tempfile.gettempdir()) == short
 config = json.loads((BASE / 'native.config.json').read_text())
 source = Path(config['source'])
 fixture_source = Path(config['fixture_source']).resolve(strict=True)
-sys.path[:0] = [str(fixture_source / 'tests'), str(fixture_source)]
+sys.path[:0] = [str(RECIPE.parents[1]), str(fixture_source / 'tests'), str(fixture_source)]
 os.environ['CODEX_PLUS_TEST_RUNTIME'] = str(Path(config['new_package']) / 'bin/codex-plus-runtime')
 assert os.uname().machine == config['architecture']
 

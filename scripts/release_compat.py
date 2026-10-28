@@ -16,7 +16,6 @@ import subprocess
 import sys
 import tomllib
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 from release_protocol import TRANSITION_STOCK, TRANSITION_PREVIOUS_STOCK, _module
 
 RECIPE = Path(__file__).resolve().parent / 'release_recipes/compat'
