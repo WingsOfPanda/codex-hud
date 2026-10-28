@@ -5579,10 +5579,10 @@ index 4f4152126..35cd72240 100644
  }
 diff --git a/codex-rs/tui/src/app/worker_hud.rs b/codex-rs/tui/src/app/worker_hud.rs
 new file mode 100644
-index 000000000..3943f812e
+index 000000000..4c790d51f
 --- /dev/null
 +++ b/codex-rs/tui/src/app/worker_hud.rs
-@@ -0,0 +1,1865 @@
+@@ -0,0 +1,1866 @@
 +//! Per-client worker metadata refresh. These requests never start or steer a turn.
 +
 +use super::*;
@@ -5899,6 +5899,7 @@ index 000000000..3943f812e
 +                                search_term: None,
 +                                parent_thread_id: Some(root.to_string()),
 +                                ancestor_thread_id: None,
++                                attached_to_thread_id: None,
 +                            },
 +                        })
 +                        .await
