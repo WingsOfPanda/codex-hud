@@ -17711,7 +17711,7 @@ index 000000000..091d6b725
 +    }
 +}
 diff --git a/codex-rs/tui/src/exec_cell/compact.rs b/codex-rs/tui/src/exec_cell/compact.rs
-index c4dcf63c3..12345de1d 100644
+index c4dcf63c3..c9debd269 100644
 --- a/codex-rs/tui/src/exec_cell/compact.rs
 +++ b/codex-rs/tui/src/exec_cell/compact.rs
 @@ -4,7 +4,6 @@ use super::model::ExecCell;
@@ -17769,6 +17769,24 @@ index c4dcf63c3..12345de1d 100644
      }
  
      pub(super) fn compact_command_lines(&self, width: u16) -> Vec<HyperlinkLine> {
+@@ -79,7 +66,7 @@ impl ExecCell {
+         }
+         let nonzero_exit = call.output.as_ref().filter(|output| output.exit_code != 0);
+         let marker = if nonzero_exit.is_some() {
+-            "•".bold()
++            "•".red().bold()
+         } else if self.is_active() {
+             activity_indicator(
+                 call.start_time,
+@@ -91,7 +78,7 @@ impl ExecCell {
+             "•".green().bold()
+         };
+         let title = if let Some(output) = nonzero_exit {
+-            format!("Exited (status {})", output.exit_code)
++            format!("Failed (exit {})", output.exit_code)
+         } else if self.is_active() {
+             "Running".to_owned()
+         } else if call.is_unified_exec_interaction() {
 @@ -110,23 +97,334 @@ impl ExecCell {
              header.push_span(" …");
          }
@@ -18233,7 +18251,7 @@ index 000000000..47fc7f8f5
 +---
 +• Advised on task · 4:12
 diff --git a/codex-rs/tui/src/exec_cell/snapshots/codex_tui__exec_cell__render__tests__truncated_live_output_preview_and_transcript.snap b/codex-rs/tui/src/exec_cell/snapshots/codex_tui__exec_cell__render__tests__truncated_live_output_preview_and_transcript.snap
-index 443fe2a85..f57ea030e 100644
+index 443fe2a85..9fffd2c2b 100644
 --- a/codex-rs/tui/src/exec_cell/snapshots/codex_tui__exec_cell__render__tests__truncated_live_output_preview_and_transcript.snap
 +++ b/codex-rs/tui/src/exec_cell/snapshots/codex_tui__exec_cell__render__tests__truncated_live_output_preview_and_transcript.snap
 @@ -1,6 +1,5 @@
@@ -18243,7 +18261,17 @@ index 443fe2a85..f57ea030e 100644
  expression: "(preview, compact, transcript)"
  ---
  (
-@@ -34,10 +33,8 @@ expression: "(preview, compact, transcript)"
+@@ -26,18 +25,16 @@ expression: "(preview, compact, transcript)"
+     ],
+     [
+         Line::from_iter([
+-            Span::from("•").bold(),
++            Span::from("•").red().bold(),
+             Span::from(" "),
+-            Span::from("Exited (status 1)").bold(),
++            Span::from("Failed (exit 1)").bold(),
+             Span::from(" "),
+             Span::from("echo").fg(Color::Rgb(137, 180, 250)),
              Span::from(" output").fg(Color::Rgb(205, 214, 244)),
          ]),
          Line::from_iter([
