@@ -11,6 +11,7 @@ import time
 import traceback
 
 from fixtures.upstream_0163 import BoundaryProvider, message
+from fixtures.turn_completion import wait_for_turn_completion
 from native_smoke import Terminal, composer_ready, wait, write_model_catalog
 from test_advisor_integration import official_stock_identity
 from test_background_integration import RecordingClient, stop, wait as wait_server
@@ -126,9 +127,12 @@ stream_max_retries=0
             provider.root_steps.append((message(SEED), None))
             seed = rpc.call('turn/start', {'threadId': parent, 'input': [
                 {'type': 'text', 'text': 'Seed private transition history.', 'text_elements': []}]})['turn']['id']
+            wait_for_turn_completion(rpc, parent, seed)
             wait_server(lambda: (thread := rpc.call('thread/read', {'threadId': parent,
                 'includeTurns': True})['thread'])['status']['type'] == 'idle'
-                and thread['turns'][-1]['id'] == seed and thread['turns'][-1]['status'] == 'completed',
+                and len(thread['turns']) == 1 and thread['turns'][-1]['id'] == seed
+                and thread['turns'][-1]['status'] == 'completed'
+                and SEED in json.dumps(thread['turns'][-1]),
                 'exact seed turn did not complete')
             assert provider.count == 1, provider.requests
             rpc.call('thread/name/set', {'threadId': parent, 'name': f'private-{scenario}'})

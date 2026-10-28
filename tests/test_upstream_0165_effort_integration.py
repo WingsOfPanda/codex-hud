@@ -8,6 +8,7 @@ import subprocess
 import tempfile
 
 from fixtures.advisor_provider import AdvisorProvider
+from fixtures.turn_completion import wait_for_turn_completion
 from test_advisor_integration import official_stock_identity
 from test_background_integration import RecordingClient, stop, wait
 
@@ -76,10 +77,12 @@ stream_max_retries=0
                         'approvalPolicy': 'never', 'sandbox': 'read-only'})['thread']['id']
                     selected = ('low', 'high', 'high', 'low')
                     for number, effort in enumerate(selected, 1):
-                        rpc.call('turn/start', {'threadId': parent, 'effort': effort, 'input': [
-                            {'type': 'text', 'text': f'Fixture turn {number}.', 'text_elements': []}]})
+                        ident = rpc.call('turn/start', {'threadId': parent, 'effort': effort, 'input': [
+                            {'type': 'text', 'text': f'Fixture turn {number}.', 'text_elements': []}]})['turn']['id']
+                        wait_for_turn_completion(rpc, parent, ident)
                         wait(lambda: len((thread := rpc.call('thread/read', {
                             'threadId': parent, 'includeTurns': True})['thread'])['turns']) == number
+                            and thread['turns'][-1]['id'] == ident
                             and thread['turns'][-1]['status'] == 'completed', 'effort turn did not complete')
                     bodies = [request['body'] for request in provider.requests]
                     assert len(bodies) == 4, bodies
