@@ -123,7 +123,9 @@ class QualificationCopyTests(unittest.TestCase):
 
 
 class PackageIntegrityTests(unittest.TestCase):
-    def setUp(self):
+    def setUp(self, *, packager=package_release):
+        self.packager = packager
+        package_release = packager
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.package = Path(self.temp.name) / 'codex-plus-fixture'
@@ -141,7 +143,7 @@ class PackageIntegrityTests(unittest.TestCase):
             path.chmod(0o755)
         bwrap_hash = hashlib.sha256(elf(62)).hexdigest().encode()
         (self.package / 'bin/codex').write_bytes(elf(62) + bwrap_hash)
-        metadata = {'layoutVersion': 1, 'version': '0.165.0',
+        metadata = {'layoutVersion': 1, 'version': package_release.UPSTREAM_VERSION,
                     'target': 'x86_64-unknown-linux-gnu', 'variant': 'codex',
                     'entrypoint': 'bin/codex', 'resourcesDir': 'codex-resources',
                     'pathDir': 'codex-path'}
@@ -168,7 +170,8 @@ class PackageIntegrityTests(unittest.TestCase):
             'coordinator_protocol': package_release.COORDINATOR_PROTOCOL,
             'execution_record_format': package_release.EXECUTION_RECORD_FORMAT,
             'frontend_patch_sha256': 'b' * 64, 'target': 'x86_64-unknown-linux-gnu',
-            'upstream': {'version': '0.165.0', 'tag': 'rust-v0.165.0',
+            'upstream': {'version': package_release.UPSTREAM_VERSION,
+                         'tag': 'rust-v' + package_release.UPSTREAM_VERSION,
                          'commit': package_release.UPSTREAM_COMMIT},
             'build': {'glibc': '2.39', 'rust': '1.99.1', 'cargo_profile': 'release'},
             'voice': False,
@@ -176,6 +179,7 @@ class PackageIntegrityTests(unittest.TestCase):
         self.seal()
 
     def seal(self):
+        package_release = self.packager
         if all((self.package / name).is_file() for name in
                ('bin/codex-plus-runtime',) + package_release.RUNTIME_LICENSE_FILES):
             self.manifest['runtime'] = package_release.runtime_provenance(
@@ -193,7 +197,7 @@ class PackageIntegrityTests(unittest.TestCase):
         (self.package / 'codex-plus.json').write_text(json.dumps(self.manifest))
 
     def verify(self):
-        return package_release.verify_package(self.package)
+        return self.packager.verify_package(self.package)
 
     def test_valid_package_and_declared_hash_recipe(self):
         self.assertEqual(package_release.COORDINATOR_PROTOCOL, 5)

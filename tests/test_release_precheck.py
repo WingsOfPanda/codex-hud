@@ -33,13 +33,13 @@ class Readiness(unittest.TestCase):
         build['official_sha256'] = self.native.sha(build['official_binary'])
         build['pkg_config'] = fixture.libcap_fixture()
         self.plan['compat']['stock_binary_sha256']['x86_64'] = build['official_sha256']
-        self.plan['compat']['fixture_files'] = {name: compat.digest(native_tests.ROOT / name)
+        self.plan['compat']['fixture_files'] = {name: compat.digest(fixture.fixture.source / name)
                                                for name in compat.RECOVERY_FIXTURES}
         for gates in self.plan['gates'].values():
             gates['compat']['checks'] = list(compat.GATES)
             gates['captures']['checks'] = ['native-cursor-states']
         old = packaging.PackageIntegrityTests('test_valid_package_and_declared_hash_recipe')
-        old.setUp()
+        old.setUp(packager=fixture.fixture.packager)
         self.addCleanup(old.doCleanups)
         old.manifest.update(release=self.plan['previous_release']['tag'],
                             plus_commit=self.plan['compat']['previous_source_commit'])
@@ -95,6 +95,19 @@ class Readiness(unittest.TestCase):
         self.assertEqual(result['scope'], 'native-prerequisites')
         self.assertIn('packaging-notices', result['not_checked'])
         self.assertNotIn('accepted', result)
+
+    def test_previous_package_refuses_0165_plan_with_pinned_0163_rollback(self):
+        import copy
+        candidate = copy.deepcopy(self.plan)
+        candidate['upstream'] = {
+            'version': packaging.package_release.UPSTREAM_VERSION,
+            'tag': 'rust-v' + packaging.package_release.UPSTREAM_VERSION,
+            'commit': packaging.package_release.UPSTREAM_COMMIT}
+        self.assertEqual(self.workflow.previous_package(self.plan, self.profile, self.old), self.old)
+        before = self.inventory()
+        with self.assertRaisesRegex(ValueError, 'Unsupported previous package protocol/upstream'):
+            self.workflow.previous_package(candidate, self.profile, self.old)
+        self.assertEqual(self.inventory(), before)
 
     def test_old_package_content_and_modes_fail_without_allocation(self):
         helper = self.old / 'bin/codex-plus-runtime'

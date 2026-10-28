@@ -159,6 +159,54 @@ assert NEW_VERSION == __import__('sys').argv[2]
         with self.assertRaisesRegex(ValueError, 'protocol'):
             self.prepare(plan, profile, config, 'protocol')
 
+    def test_0165_refused_by_config_fixture_and_accepted_package_guards(self):
+        import test_packaging as packaging
+        plan, profile, config = self.inputs()
+        prepared = self.prepare(plan, profile, config)
+        bound = json.loads((Path(prepared['scope']) / 'native.config.json').read_text())
+        compat.validate_config(bound)
+        compat.fixture_inputs(plan, profile)
+        compat.accepted_package(bound)
+        product = packaging.PackageIntegrityTests('test_valid_package_and_declared_hash_recipe')
+        product.setUp()
+        self.addCleanup(product.doCleanups)
+        product.manifest['plus_commit'] = self.commit
+        product.seal()
+        current = product.manifest['upstream']
+        with self.assertRaisesRegex(ValueError, 'New upstream requires recipe qualification'):
+            compat.validate_config(dict(bound, upstream=current))
+        with self.assertRaisesRegex(ValueError, 'Unsupported compatibility recipe/upstream'):
+            compat.fixture_inputs(dict(plan, upstream=current), profile)
+        bound.update(new_package=str(product.package), release=product.manifest['release'],
+                     new_manifest_sha256=compat.digest(product.package / 'codex-plus.json'))
+        approval = Path(bound['qualification_evidence'])
+        accepted = json.loads(approval.read_text())
+        accepted['manifest_sha256'] = bound['new_manifest_sha256']
+        approval.write_text(json.dumps(accepted))
+        bound['qualification_evidence_sha256'] = compat.digest(approval)
+        with self.assertRaisesRegex(ValueError, 'Unsupported package protocol'):
+            compat.accepted_package(bound)
+
+    def test_0165_package_refused_by_legacy_mixer(self):
+        import test_packaging as packaging
+        plan, profile, config = self.inputs()
+        prepared = self.prepare(plan, profile, config)
+        product = packaging.PackageIntegrityTests('test_valid_package_and_declared_hash_recipe')
+        product.setUp()
+        self.addCleanup(product.doCleanups)
+        code = """import importlib.util,pathlib,sys,unittest
+spec=importlib.util.spec_from_file_location('gate',pathlib.Path(sys.argv[1])/'verify-mixes.py')
+gate=importlib.util.module_from_spec(spec);spec.loader.exec_module(gate)
+package=pathlib.Path(sys.argv[2])
+with unittest.TestCase().assertRaisesRegex(AssertionError,'0.165.0-plus.'):
+    gate.package_identity(package,'0.4.9','a'*40,gate.digest(package/'codex-plus.json'))
+"""
+        env = dict(os.environ, CODEX_PLUS_COMPAT_SCOPE=prepared['scope'],
+                   PYTHONPATH=str(compat.RECIPE), PYTHONDONTWRITEBYTECODE='1')
+        result = subprocess.run([sys.executable, '-c', code, str(compat.RECIPE), str(product.package)],
+                                env=env, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def native_evidence(self, name='attempt'):
         plan, profile, config = self.inputs()
         prepared = self.prepare(plan, profile, config, name)
@@ -409,16 +457,20 @@ assert NEW_VERSION == __import__('sys').argv[2]
 
     def test_helper_only_release_accepts_identical_frontend_bytes(self):
         import test_packaging as packaging
+        from release_fixture_source import legacy_source
+        from test_release_protocol import protocol
+        source = legacy_source(self.root / 'source-0163')
+        packager = protocol._module(source / 'scripts/package-release.py')
         old = packaging.PackageIntegrityTests('test_valid_package_and_declared_hash_recipe')
-        old.setUp()
+        old.setUp(packager=packager)
         self.addCleanup(old.doCleanups)
         new = packaging.PackageIntegrityTests('test_valid_package_and_declared_hash_recipe')
-        new.setUp()
+        new.setUp(packager=packager)
         self.addCleanup(new.doCleanups)
         old.manifest.update(release='0.163.0-plus.0.4.6', plus_commit='2' * 40)
         (old.package / 'bin/codex-plus-runtime').write_bytes((old.package / 'bin/codex-plus-runtime').read_bytes() + b'old helper')
         old.seal()
-        plan, profile, config = self.inputs(packaging.package_release.PLUS_VERSION)
+        plan, profile, config = self.inputs(packager.PLUS_VERSION)
         prepared = self.prepare(plan, profile, config)
         code = """import importlib.util,pathlib,sys
 from recipe_context import CONFIG,OLD_VERSION,NEW_VERSION
@@ -446,10 +498,10 @@ assert 'changed frontend requires fresh package build' not in driver
         import test_packaging as packaging
         workflow = self.workflow()
         fixture = fixtures.ReleaseProtocolTests()
-        fixture.setUp()
+        fixture.setUp(legacy=True)
         self.addCleanup(fixture.doCleanups)
         old = packaging.PackageIntegrityTests('test_valid_package_and_declared_hash_recipe')
-        old.setUp()
+        old.setUp(packager=fixture.packager)
         self.addCleanup(old.doCleanups)
         old.manifest.update(release=fixture.plan['previous_release']['tag'], plus_commit=fixture.plan['compat']['previous_source_commit'])
         old.seal()
@@ -478,8 +530,8 @@ assert 'changed frontend requires fresh package build' not in driver
                      'rust-runtime/Cargo.lock', 'bin/codex-plus', fixture.plan['patch']['path'], *compat.RECOVERY_FIXTURES):
             path = source / name
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_bytes((SCRIPTS.parent / name).read_bytes())
-            path.chmod((SCRIPTS.parent / name).stat().st_mode & 0o777)
+            path.write_bytes((fixture.source / name).read_bytes())
+            path.chmod((fixture.source / name).stat().st_mode & 0o777)
         subprocess.run(['git', 'init', '-q', str(source)], check=True)
         subprocess.run(['git', '-C', str(source), 'add', '.'], check=True)
         subprocess.run(['git', '-C', str(source), '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', 'source'], check=True)
@@ -487,7 +539,7 @@ assert 'changed frontend requires fresh package build' not in driver
         fixture.observed['plus_source_commit'] = fixture.plan['plus_source_commit']
         fixture.profile['source_root'] = str(source)
         fixture.plan['compat']['stock_binary_sha256']['x86_64'] = compat.digest(official)
-        fixture.plan['compat']['fixture_files'].update({name: compat.digest(SCRIPTS.parent / name)
+        fixture.plan['compat']['fixture_files'].update({name: compat.digest(fixture.source / name)
             for name in compat.RECOVERY_FIXTURES})
         for name in ('python', 'executor_package_root'):
             fixture.observed[name] = copy.deepcopy(fixture.profile[name])
@@ -496,9 +548,9 @@ assert 'changed frontend requires fresh package build' not in driver
             fixture.plan['gates'][arch]['compat']['checks'] = list(compat.GATES)
             fixture.plan['gates'][arch]['captures']['checks'] = ['native-cursor-states']
         original_setup = packaging.PackageIntegrityTests.setUp
-        def package_setup(value):
-            original_setup(value)
-            (value.package / 'bin/codex-plus').write_bytes((SCRIPTS.parent / 'bin/codex-plus').read_bytes())
+        def package_setup(value, **kwargs):
+            original_setup(value, **kwargs)
+            (value.package / 'bin/codex-plus').write_bytes((fixture.source / 'bin/codex-plus').read_bytes())
             value.manifest['plus_commit'] = fixture.plan['plus_source_commit']
             value.seal()
         with patch.object(packaging.PackageIntegrityTests, 'setUp', package_setup):
