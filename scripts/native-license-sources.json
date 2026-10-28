@@ -429,6 +429,157 @@
       }
     }
   },
+  "deno_core_icudata@0.78.0": {
+    "archive": {
+      "sha256": "b963d2d79672b4c379e4511acccd27bb35b4c1b32a93f596d52ff14a064293bc",
+      "url": "https://static.crates.io/crates/deno_core_icudata/deno_core_icudata-0.78.0.crate"
+    },
+    "authors_metadata": [
+      "the Deno authors"
+    ],
+    "basis": "published-license-declaration",
+    "checksum": "b963d2d79672b4c379e4511acccd27bb35b4c1b32a93f596d52ff14a064293bc",
+    "declared_license": "MIT",
+    "files": [
+      {
+        "kind": "source-evidence",
+        "local_path": "Cargo.toml.orig",
+        "path": "retained/Cargo.toml.orig",
+        "sha256": "151acc78e12d7a849141e0ce714beb64e955cd43f9d9429d17232982de5ea017",
+        "url": "https://raw.githubusercontent.com/denoland/deno_core_icudata/9adfc1019ed4fce2e873c8bc7aebec09928010c8/Cargo.toml"
+      },
+      {
+        "kind": "source-evidence",
+        "local_path": "README.md",
+        "path": "retained/README.md",
+        "sha256": "3227421e62451436a2da8d5a35e0681b2b5eececb9be02fa8c59c9f77231a324",
+        "url": "https://raw.githubusercontent.com/denoland/deno_core_icudata/9adfc1019ed4fce2e873c8bc7aebec09928010c8/README.md"
+      },
+      {
+        "kind": "canonical-license",
+        "license": "MIT",
+        "path": "canonical/MIT.txt",
+        "revision": "31ba1a50e5397e00a304dbadc76531740e89ee48",
+        "sha256": "b05785f9f18e6716bab63424b11454513b9943a222595b70411009202fc592b5",
+        "spdx_release": "v3.29.0",
+        "url": "https://raw.githubusercontent.com/spdx/license-list-data/31ba1a50e5397e00a304dbadc76531740e89ee48/text/MIT.txt"
+      },
+      {
+        "encoding": "base64",
+        "kind": "component-notices",
+        "path": "components/icu/LICENSE",
+        "revision": "d578f2e8b7bd5938e21cfb6bf15c079e0aa5b738",
+        "sha256": "e55522d81edc687a341a4411e0776e54ca654e90147f354a90458aaced4116af",
+        "source_bindings": [
+          "src/icudtl.dat"
+        ],
+        "url": "https://chromium.googlesource.com/chromium/deps/icu/+/d578f2e8b7bd5938e21cfb6bf15c079e0aa5b738/LICENSE?format=TEXT"
+      },
+      {
+        "kind": "embedded-notice",
+        "path": "components/icu/embedded-notice.txt",
+        "sha256": "59c09b36c7fb8b4d92655e69e7b262bb468bac10783605b71121a6ff58e64750",
+        "source_bindings": [
+          "src/icudtl.dat"
+        ],
+        "text": " Copyright (C) 2016 and later: Unicode, Inc. and others. License & terms of use: http://www.unicode.org/copyright.html ",
+        "url": "https://raw.githubusercontent.com/denoland/deno_core_icudata/9adfc1019ed4fce2e873c8bc7aebec09928010c8/src/icudtl.dat"
+      },
+      {
+        "kind": "component-attribution",
+        "path": "components/icu/attribution.txt",
+        "sha256": "a0a2f1c20a9ca8ef52ef270fb8e22d5f96f3082e8e4709aa3f7aeddf57dbb7b2",
+        "source_bindings": [
+          "src/icudtl.dat"
+        ],
+        "text": "deno_core_icudata: wrapper MIT declaration and embedded ICU data have separate notices.\nThe published 10,876,560-byte src/icudtl.dat is byte-identical to Chromium ICU d578f2e8b7bd5938e21cfb6bf15c079e0aa5b738/common/icudtl.dat.\nThe complete 27,718-byte same-revision ICU LICENSE bundle follows, including Unicode-3.0 and its third-party notices. This preserves the upstream bundle; it does not assert that every listed source/build tool is shipped in the data blob.\nICU source: https://chromium.googlesource.com/chromium/deps/icu/+/d578f2e8b7bd5938e21cfb6bf15c079e0aa5b738/common/icudtl.dat?format=TEXT\n",
+        "url": "https://chromium.googlesource.com/chromium/deps/icu/+/d578f2e8b7bd5938e21cfb6bf15c079e0aa5b738/common/icudtl.dat?format=TEXT"
+      }
+    ],
+    "required_files": [
+      {
+        "kind": "source-evidence",
+        "path": "retained/Cargo.toml.orig",
+        "sha256": "151acc78e12d7a849141e0ce714beb64e955cd43f9d9429d17232982de5ea017"
+      },
+      {
+        "kind": "source-evidence",
+        "path": "retained/README.md",
+        "sha256": "3227421e62451436a2da8d5a35e0681b2b5eececb9be02fa8c59c9f77231a324"
+      },
+      {
+        "kind": "canonical-license",
+        "license": "MIT",
+        "path": "canonical/MIT.txt",
+        "sha256": "b05785f9f18e6716bab63424b11454513b9943a222595b70411009202fc592b5"
+      },
+      {
+        "kind": "component-notices",
+        "path": "components/icu/LICENSE",
+        "sha256": "e55522d81edc687a341a4411e0776e54ca654e90147f354a90458aaced4116af",
+        "source_bindings": [
+          "src/icudtl.dat"
+        ]
+      },
+      {
+        "kind": "embedded-notice",
+        "path": "components/icu/embedded-notice.txt",
+        "sha256": "59c09b36c7fb8b4d92655e69e7b262bb468bac10783605b71121a6ff58e64750",
+        "source_bindings": [
+          "src/icudtl.dat"
+        ]
+      },
+      {
+        "kind": "component-attribution",
+        "path": "components/icu/attribution.txt",
+        "sha256": "a0a2f1c20a9ca8ef52ef270fb8e22d5f96f3082e8e4709aa3f7aeddf57dbb7b2",
+        "source_bindings": [
+          "src/icudtl.dat"
+        ]
+      }
+    ],
+    "selected_license": "MIT",
+    "selected_license_file": "canonical/MIT.txt",
+    "source": "registry+https://github.com/rust-lang/crates.io-index",
+    "source_evidence": {
+      "Cargo.toml": {
+        "archive_path": "Cargo.toml",
+        "sha256": "68bd96f30db56de8a9625331d66e69a134114d7e3387ffe990d912f23dd9f9da",
+        "url": "https://static.crates.io/crates/deno_core_icudata/deno_core_icudata-0.78.0.crate"
+      },
+      "Cargo.toml.orig": {
+        "archive_path": "Cargo.toml.orig",
+        "sha256": "151acc78e12d7a849141e0ce714beb64e955cd43f9d9429d17232982de5ea017",
+        "upstream_sha256": "151acc78e12d7a849141e0ce714beb64e955cd43f9d9429d17232982de5ea017",
+        "url": "https://raw.githubusercontent.com/denoland/deno_core_icudata/9adfc1019ed4fce2e873c8bc7aebec09928010c8/Cargo.toml"
+      },
+      "README.md": {
+        "archive_path": "README.md",
+        "sha256": "3227421e62451436a2da8d5a35e0681b2b5eececb9be02fa8c59c9f77231a324",
+        "upstream_sha256": "3227421e62451436a2da8d5a35e0681b2b5eececb9be02fa8c59c9f77231a324",
+        "url": "https://raw.githubusercontent.com/denoland/deno_core_icudata/9adfc1019ed4fce2e873c8bc7aebec09928010c8/README.md"
+      },
+      "src/icudtl.dat": {
+        "archive_path": "src/icudtl.dat",
+        "matching_component_source": {
+          "bytes": 10876560,
+          "encoding": "base64",
+          "name": "chromium-icu-common_icudtl.dat",
+          "path": "common/icudtl.dat",
+          "sha256": "9f48c7f9c7c94d516a14870707e910ab94d75ae640ff6842c4af53276cd26ebe",
+          "url": "https://chromium.googlesource.com/chromium/deps/icu/+/d578f2e8b7bd5938e21cfb6bf15c079e0aa5b738/common/icudtl.dat?format=TEXT"
+        },
+        "sha256": "9f48c7f9c7c94d516a14870707e910ab94d75ae640ff6842c4af53276cd26ebe",
+        "upstream_sha256": "9f48c7f9c7c94d516a14870707e910ab94d75ae640ff6842c4af53276cd26ebe",
+        "url": "https://raw.githubusercontent.com/denoland/deno_core_icudata/9adfc1019ed4fce2e873c8bc7aebec09928010c8/src/icudtl.dat"
+      },
+      "src/lib.rs": {
+        "archive_path": "src/lib.rs",
+        "sha256": "3f4f335a36a7ec1101256ad5c7ace9e23e4049f8fc4066d16961384ff03db258",
+        "url": "https://static.crates.io/crates/deno_core_icudata/deno_core_icudata-0.78.0.crate"
+      }
+    }
+  },
   "display_container@0.9.0": {
     "checksum": "0a110a75c96bedec8e65823dea00a1d710288b7a369d95fd8a0f5127639466fa",
     "files": [
@@ -529,6 +680,18 @@
         "url": "https://raw.githubusercontent.com/jpopesculian/eventsource-stream/3d46f1c758f9ee4681e9da0427556d24c53f9c01/src/lib.rs"
       }
     }
+  },
+  "flatbuffers@25.12.19": {
+    "checksum": "35f6839d7b3b98adde531effaf34f0c2badc6f4735d26fe74709d8e513a96ef3",
+    "files": [
+      {
+        "path": "LICENSE",
+        "revision": "7e163021e59cca4f8e1e35a7c828b5c6b7915953",
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+        "url": "https://raw.githubusercontent.com/google/flatbuffers/7e163021e59cca4f8e1e35a7c828b5c6b7915953/LICENSE"
+      }
+    ],
+    "source": "registry+https://github.com/rust-lang/crates.io-index"
   },
   "fluent-langneg@0.13.1": {
     "checksum": "7eebbe59450baee8282d71676f3bfed5689aeab00b27545e83e5f14b1195e8b0",
