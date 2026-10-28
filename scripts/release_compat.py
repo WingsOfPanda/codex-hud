@@ -14,6 +14,7 @@ import re
 import secrets
 import subprocess
 import sys
+import tomllib
 
 from release_protocol import TRANSITION_STOCK, TRANSITION_PREVIOUS_STOCK
 
@@ -243,9 +244,69 @@ def validate_paired_report(path, config):
         fixture.get('runtime_sha256') == digest(Path(config['old_package']) / 'bin/codex-plus-runtime'),
         'Paired original fixture identity/result mismatch')
     requests = fixture.get('provider_requests', [])
-    require(len(requests) >= 2 and [row['body'].get('reasoning', {}).get('effort') for row in requests[-2:]] ==
-        ['xhigh', 'high'] and all(row.get('thread') == fixture.get('parent') for row in requests[-2:]),
+    require(len(requests) >= 3 and all(row.get('thread') == fixture.get('parent') for row in requests[-3:]),
         'Paired candidate effort/old-stock inference wire proof missing')
+    high = dict(type='configuration_update', reasoning=dict(effort='high'))
+    xhigh = dict(type='configuration_update', reasoning=dict(effort='xhigh'))
+    bodies = [row['body'] for row in requests[-3:]]
+    updates = [[item for item in body['input'] if item.get('type') == 'configuration_update'] for body in bodies[:2]]
+    override = report.get('effort_override', {})
+    require(updates == [[high], [high, xhigh]] and override.get('configuration_updates') == updates and
+        override.get('selected_efforts') == ['high', 'xhigh'] and
+        override.get('request_efforts') == ['high', 'high'] and
+        [body.get('reasoning', {}).get('effort') for body in bodies] == ['high', 'high', 'high'] and
+        all(body.get('model') == 'gpt-6.1-sol' for body in bodies) and
+        override.get('rollback_selected_effort') == override.get('rollback_request_effort') == 'high',
+        'Paired default effort override configuration updates missing or wrong')
+    require(override.get('stable_prompt_cache_key') and
+        [body.get('prompt_cache_key') for body in bodies[:2]] == [override['stable_prompt_cache_key']] * 2 and
+        len(override.get('candidate_turns', [])) == 2 and
+        len(set(override['candidate_turns'] + [report['rollback_turn']])) == 3 and
+        override['candidate_turns'][-1] == report['new_turn'], 'Paired effort sequence/cache-key identity mismatch')
+    full_history_path = path.parent / 'fixture/stock-read-before-rollback.json'
+    require(full_history_path.is_file() and not full_history_path.is_symlink() and
+        override.get('stock_read_before_sha256') == digest(full_history_path), 'Paired completed full-history read missing')
+    full_history = json.loads(full_history_path.read_text())
+    require(full_history.get('id') == fixture.get('parent') and
+        set(override['candidate_turns']) <= {turn.get('id') for turn in full_history.get('turns', [])
+            if turn.get('status') == 'completed'}, 'Paired candidate turns not completed in full-history read')
+    fixture_config_path, catalog_path = path.parent / 'fixture/config.toml', path.parent / 'fixture/paired-models.json'
+    require(all(item.is_file() and not item.is_symlink() for item in (fixture_config_path, catalog_path)),
+        'Paired effort provider/model metadata missing')
+    fixture_config = tomllib.loads(fixture_config_path.read_text())
+    models = json.loads(catalog_path.read_text()).get('models', [])
+    require(fixture_config.get('model_provider') == 'isolated' and
+        fixture_config.get('model_providers', {}).get('isolated', {}).get('name') == 'OpenAI' and
+        'reasoning_effort_override' not in fixture_config.get('features', {}) and
+        any(model.get('slug') == 'gpt-6.1-sol' and model.get('supports_reasoning_effort_updates') is True for model in models),
+        'Paired effort override did not use default feature and supporting OpenAI model')
+    before_path, after_path = (path.parent / 'fixture' / ('stock-history-' + label + '-rollback.jsonl')
+        for label in ('before', 'after'))
+    require(all(item.is_file() and not item.is_symlink() for item in (before_path, after_path)),
+        'Paired persisted configuration-update history missing')
+    before_history, after_history = before_path.read_bytes(), after_path.read_bytes()
+    before_rows = [json.loads(line) for line in before_history.splitlines()]
+    persisted = [row['payload'] for row in before_rows if row.get('type') == 'response_item' and
+        row.get('payload', {}).get('type') == 'configuration_update']
+    require(persisted == [high, xhigh] and override.get('persisted_updates') == persisted and
+        override.get('history_before_sha256') == digest(before_path) and
+        override.get('history_after_sha256') == digest(after_path) and after_history.startswith(before_history) and
+        override.get('original_history_prefix_preserved') is True,
+        'Paired persisted effort updates missing or rewritten by old stock')
+    contexts = {row['payload']['turn_id']: row['payload'].get('effort') for row in before_rows
+        if row.get('type') == 'turn_context'}
+    require(any(row.get('type') == 'session_meta' and row.get('payload', {}).get('id') == fixture.get('parent')
+            for row in before_rows) and
+        [contexts.get(turn) for turn in override['candidate_turns']] == ['high', 'xhigh'] and
+        all(any(row.get('type') == 'event_msg' and row.get('payload', {}).get('type') == 'task_complete' and
+            row['payload'].get('turn_id') == turn for row in before_rows) for turn in override['candidate_turns']),
+        'Paired persisted candidate turns/selected efforts do not match original thread')
+    appended = [json.loads(line) for line in after_history[len(before_history):].splitlines()]
+    require(any(row.get('type') == 'turn_context' and row.get('payload', {}).get('turn_id') == report['rollback_turn'] and
+            row['payload'].get('effort') == 'high' for row in appended) and
+        sum(row.get('type') == 'event_msg' and row.get('payload', {}).get('type') == 'task_complete' and
+            row['payload'].get('turn_id') == report['rollback_turn'] for row in appended) == 1,
+        'Paired old-stock inference did not complete once on appended original history')
     execution, parent = report.get('execution_id', ''), fixture.get('parent', '')
     require(all(re.fullmatch('[0-9a-f-]{36}', value) for value in (execution, parent)),
         'Paired execution capture identity invalid')

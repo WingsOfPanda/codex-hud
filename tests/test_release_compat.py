@@ -364,11 +364,31 @@ with unittest.TestCase().assertRaisesRegex(AssertionError,'0.165.0-plus.'):
         fixture_path = path.parent / 'fixture/report.json'
         fixture_path.parent.mkdir(parents=True)
         parent, execution = '1' * 36, '2' * 36
+        high = dict(type='configuration_update', reasoning=dict(effort='high'))
+        xhigh = dict(type='configuration_update', reasoning=dict(effort='xhigh'))
         fixture = dict(passed=True, remote_model_requests=0, parent=parent,
             stock_sha256=bound['previous_stock_binary_sha256']['x86_64'], stock_version='codex-cli 0.163.0',
             runtime_sha256=compat.digest(self.root / 'old/bin/codex-plus-runtime'),
-            provider_requests=[dict(thread=parent, body=dict(reasoning=dict(effort=effort))) for effort in ('xhigh', 'high')])
+            provider_requests=[dict(thread=parent, body=dict(model='gpt-6.1-sol', reasoning=dict(effort='high'), input=updates,
+                prompt_cache_key='stable-paired-key')) for updates in ([high], [high, xhigh], [])])
         fixture_path.write_text(json.dumps(fixture))
+        (path.parent / 'fixture/config.toml').write_text('model_provider="isolated"\n[model_providers.isolated]\nname="OpenAI"\n')
+        (path.parent / 'fixture/paired-models.json').write_text(json.dumps({'models': [dict(
+            slug='gpt-6.1-sol', supports_reasoning_effort_updates=True)]}))
+        before_history = path.parent / 'fixture/stock-history-before-rollback.jsonl'
+        after_history = path.parent / 'fixture/stock-history-after-rollback.jsonl'
+        history_rows = [dict(type='session_meta', payload=dict(id=parent))]
+        for turn, effort, update in (('candidate-first', 'high', high), ('candidate-turn', 'xhigh', xhigh)):
+            history_rows += [dict(type='turn_context', payload=dict(turn_id=turn, effort=effort)),
+                dict(type='response_item', payload=update),
+                dict(type='event_msg', payload=dict(type='task_complete', turn_id=turn))]
+        before_history.write_text(''.join(json.dumps(row) + '\n' for row in history_rows))
+        appended = [dict(type='turn_context', payload=dict(turn_id='rollback-turn', effort='high')),
+            dict(type='event_msg', payload=dict(type='task_complete', turn_id='rollback-turn'))]
+        after_history.write_bytes(before_history.read_bytes() + ''.join(json.dumps(row) + '\n' for row in appended).encode())
+        full_history_path = path.parent / 'fixture/stock-read-before-rollback.json'
+        full_history_path.write_text(json.dumps(dict(id=parent, turns=[dict(id=turn, status='completed')
+            for turn in ('candidate-first', 'candidate-turn')])))
         report = {key: bound[key] for key in
             ('source_commit', 'release', 'previous_release', 'upstream', 'previous_upstream', 'architecture')}
         report.update(schema=1, passed=True, old_stock_readable=True, old_stock_resumed_inference=True,
@@ -378,6 +398,12 @@ with unittest.TestCase().assertRaisesRegex(AssertionError,'0.165.0-plus.'):
             private_home=str(self.short / 'aa/home'), configuration_sha256=compat.digest(scope / 'native.config.json'),
             new_manifest_sha256=bound['new_manifest_sha256'], old_manifest_sha256=bound['previous_identity']['manifests']['x86_64'],
             fixture_report_sha256=compat.digest(fixture_path), new_turn='candidate-turn', rollback_turn='rollback-turn', execution_id=execution)
+        report['effort_override'] = dict(selected_efforts=['high', 'xhigh'], request_efforts=['high', 'high'],
+            configuration_updates=[[high], [high, xhigh]], persisted_updates=[high, xhigh],
+            stable_prompt_cache_key='stable-paired-key', candidate_turns=['candidate-first', 'candidate-turn'],
+            history_before_sha256=compat.digest(before_history), history_after_sha256=compat.digest(after_history),
+            stock_read_before_sha256=compat.digest(full_history_path),
+            original_history_prefix_preserved=True, rollback_selected_effort='high', rollback_request_effort='high')
         report['phases'] = [dict(name=name, generation=str(index),
             stock_sha256=bound['previous_stock_binary_sha256' if old else 'stock_binary_sha256']['x86_64'],
             stock_version='codex-cli ' + bound['previous_upstream' if old else 'upstream']['version'],
@@ -424,6 +450,9 @@ with unittest.TestCase().assertRaisesRegex(AssertionError,'0.165.0-plus.'):
             'changed-state': lambda r: r['execution_state_after'].update(bytes_sha256='3' * 64),
             'hold-not-quiet': lambda r: r['holds'][0]['observed'].update(execution_quiet=False),
             'wrong-fixture-hash': lambda r: r.update(fixture_report_sha256='0' * 64),
+            'no-configuration-updates': lambda r: r['effort_override'].update(configuration_updates=[[], []]),
+            'no-persisted-updates': lambda r: r['effort_override'].update(persisted_updates=[]),
+            'no-full-history-read': lambda r: r['effort_override'].update(stock_read_before_sha256='0' * 64),
         }
         for name, mutate in mutations.items():
             with self.subTest(name=name):
@@ -436,6 +465,24 @@ with unittest.TestCase().assertRaisesRegex(AssertionError,'0.165.0-plus.'):
         raw['evidence_sha256'].pop('paired-stock-transition/report.json')
         (scope / 'evidence/report.json').write_text(json.dumps(raw))
         with self.assertRaisesRegex(ValueError, 'Paired dedicated report missing'):
+            compat.export_reports(scope)
+
+    def test_paired_report_rejects_missing_wire_updates_after_rehashing_all_summaries(self):
+        scope, raw = self.native_evidence(paired=True)
+        config = json.loads((scope / 'native.config.json').read_text())
+        path = scope / 'evidence/paired-stock-transition/report.json'
+        report = json.loads(path.read_text())
+        fixture_path = path.parent / 'fixture/report.json'
+        fixture = json.loads(fixture_path.read_text())
+        for request in fixture['provider_requests']:
+            request['body']['input'] = []
+        fixture_path.write_text(json.dumps(fixture))
+        report['fixture_report_sha256'] = compat.digest(fixture_path)
+        report['effort_override']['configuration_updates'] = [[], []]
+        path.write_text(json.dumps(report))
+        raw['evidence_sha256']['paired-stock-transition/report.json'] = compat.digest(path)
+        (scope / 'evidence/report.json').write_text(json.dumps(raw))
+        with self.assertRaisesRegex(ValueError, 'effort override configuration updates missing'):
             compat.export_reports(scope)
 
     def test_paired_recovery_cases_bind_candidate_daemon_even_for_old_reader(self):

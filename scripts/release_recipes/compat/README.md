@@ -37,19 +37,29 @@ The additional gate uses one private home and actual pinned official binaries:
 1. Stock 163 and the previous package create a real managed execution, delivered
    callback, paused goal, admitted Ultracode snapshot and stock history, then hold.
 2. Stock 165 and the candidate read the original rows/results, observe and release
-   the old hold, complete a scripted loopback `xhigh` effort-changing turn, then hold.
+   the old hold, complete scripted loopback `high` then `xhigh` turns with
+   default-on effort override and supporting OpenAI model metadata, then hold.
 3. Stock 163 and the previous package observe and release the new hold, read the
    candidate-written history and complete an actual resumed loopback inference.
 
 The gate compares every Plus table and schema, original immutable execution JSON,
 result, callback count and one workload run across the switches. Only the existing
 finite monotonic root `state.updated_at` allowance applies during maintenance.
-Reads, holds, restarts and resume make zero provider requests; the two deliberate
-inference turns each make exactly one scripted loopback request. No snapshot is
-restored. Phase daemon/helper hashes, generations, full package identities, both
-holds, wire proof, raw fixture report hash and verified private cleanup are checked
-again by canonical export. This gate does not establish running-executor transfer,
-all upstream memory-v2/default feature behavior, paid-provider cache behavior, or
+Reads, holds, restarts and resume make zero provider requests. Each of the two
+candidate turns and one rollback turn makes exactly one scripted loopback request.
+The candidate request effort stays `high`; its actual wire input accumulates
+`configuration_update` selections for `high` and `xhigh`. Both updates must also
+exist in the captured rollout before rollback, after a successful full-history
+read has returned both exact candidate turns completed. Stock 163 must resume and infer from
+that exact history, preserving every original byte as a prefix of the appended
+rollout. The fixture config and model catalog prove OpenAI identity, supporting
+model metadata and the absence of a reasoning-override feature override. No
+snapshot is restored. Phase daemon/helper hashes, generations, full package
+identities, both holds, wire and persisted-history proof, raw fixture report hash
+and verified private cleanup are checked again by canonical export. This gate
+retains the inherited fixture's explicit `apps=false` and `memories=false` settings
+and reports that limit. It does not establish running-executor transfer,
+fleet memory-v2/default feature behavior, paid-provider cache behavior, or
 production rollout policy. The existing old-TUI gate separately tests its actual
 window; a frontend re-exec guard is not a blanket refusal of helper commands.
 

@@ -60,10 +60,11 @@ finally:
 assert not home.exists() and not gate.owned_processes(home)
 
 if config['recipe_revision'] == 2:
+    from fixtures.paired_stock_transition import PairedStockServer
     binary = Path(config['previous_stock_binary'])
     assert gate.digest(binary) == config['previous_stock_binary_sha256'][config['architecture']]
     assert subprocess.check_output([str(binary), '--version'], text=True).strip() == 'codex-cli ' + config['previous_upstream']['version']
-    fixture = DetachedJobServer(Path(config['old_package']) / 'bin/codex-plus-runtime',
+    fixture = PairedStockServer(Path(config['old_package']) / 'bin/codex-plus-runtime',
         binary, BASE / 'setup-smoke/previous-stock',
         config='features.apps=false\nfeatures.memories=false\n')
     home = fixture.home

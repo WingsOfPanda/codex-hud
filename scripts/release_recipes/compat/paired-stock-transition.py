@@ -22,8 +22,7 @@ def run(evidence):
     source = Path(CONFIG['fixture_source'])
     sys.path[:0] = [str(source / 'tests'), str(source)]
     from fixtures import custom_goal_server
-    from fixtures.detached_jobs import DetachedJobServer
-    from fixtures.paired_stock_transition import exercise
+    from fixtures.paired_stock_transition import PairedStockServer, exercise
     spec = importlib.util.spec_from_file_location('paired_oracle', RECIPE / 'verify-mixes.py')
     oracle = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(oracle)
@@ -46,7 +45,7 @@ def run(evidence):
             oracle.native_elf(binary)
             assert digest(binary) == pins[CONFIG['architecture']]
             assert subprocess.check_output([str(binary), '--version'], text=True).strip() == 'codex-cli ' + upstream['version']
-        fixture = DetachedJobServer(old_runtime, old_binary, evidence / 'fixture',
+        fixture = PairedStockServer(old_runtime, old_binary, evidence / 'fixture',
             config='features.apps=false\nfeatures.memories=false\n')
         report['private_home'] = str(fixture.home)
         report.update(exercise(fixture, new_runtime, old_binary, new_binary, oracle))
