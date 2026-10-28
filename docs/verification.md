@@ -1,8 +1,10 @@
 # Native HUD verification
 
-Target: Codex 0.163.0, commit
-`83086188ae0614bd882818ff1aa23f3194962012`, Linux x86_64 and ARM64,
+Development target: Codex 0.165.0, commit
+`360319d8dee62d87e2d59fc0c21805d79519cfed`, Linux x86_64 and ARM64,
 Rust 1.99.1. Keep the ordinary installed Codex and global configuration intact.
+The historical results below retain their original versions; they do not qualify
+the [0.165.0 adaptation](upstream-0.165.0-assessment.md).
 
 ## Saved native results
 
