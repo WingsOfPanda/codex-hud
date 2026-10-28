@@ -248,7 +248,7 @@ class NativeTests(unittest.TestCase):
         c = native.Context(self.attempt(), 'frontend')
         c.UPSTREAM.mkdir()
         for name in ('LICENSE', 'NOTICE', 'codex-rs/vendor/bubblewrap/COPYING',
-                     'third_party/v8/rusty_v8_150_4_0_release_manifests.sha256'):
+                     'third_party/v8/rusty_v8_152_2_0_release_manifests.sha256'):
             path = c.UPSTREAM / name
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes((ROOT / 'LICENSE').read_bytes())
@@ -731,6 +731,18 @@ else:
                                  {name: 'a' * 64 for name in installed})
                 self.assertNotIn('fresh_frontend', c.REPORT)
                 self.assertNotIn('frontend_rebuilt', c.REPORT)
+
+
+class UpstreamQualificationTests(unittest.TestCase):
+    def test_0165_package_support_does_not_qualify_production_recipe(self):
+        plan = {'upstream': {'version': '0.165.0'}}
+        with self.assertRaisesRegex(ValueError, 'Upstream recipe needs qualification'):
+            native.build_inputs(plan, {})
+
+    def test_qualified_0163_still_checks_native_prerequisites(self):
+        plan = {'upstream': {'version': '0.163.0'}}
+        with self.assertRaisesRegex(ValueError, 'Compiler recipe needs qualification'):
+            native.build_inputs(plan, {'toolchain': {'version': '1.99.0'}})
 
 
 if __name__ == '__main__':

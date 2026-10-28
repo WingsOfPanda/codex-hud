@@ -28,13 +28,13 @@ from urllib.request import urlopen
 
 
 ROOT = Path(__file__).resolve().parents[1]
-UPSTREAM_COMMIT = '83086188ae0614bd882818ff1aa23f3194962012'
-UPSTREAM_VERSION = '0.163.0'
+UPSTREAM_COMMIT = '360319d8dee62d87e2d59fc0c21805d79519cfed'
+UPSTREAM_VERSION = '0.165.0'
 PLUS_VERSION = '0.4.9'
 RELEASE = f'{UPSTREAM_VERSION}-plus.{PLUS_VERSION}'
 COORDINATOR_PROTOCOL = 5
 EXECUTION_RECORD_FORMAT = 1
-PATCH = 'patches/codex-0.163.0-worker-hud.patch'
+PATCH = 'patches/codex-0.165.0-worker-hud.patch'
 TARGETS = {'x86_64-unknown-linux-gnu': 62, 'aarch64-unknown-linux-gnu': 183}
 DOCS = ('README.md', 'GLOSSARY.md', 'docs/background-work.md',
         'docs/releases/0.163.0-plus.0.4.9.md',
@@ -91,11 +91,11 @@ LICENSE_DOWNLOADS = {
                           '0f96a83840e146e43c0ec96a22ec1f392e0680e6c1226e6f3ba87e0740af850f'),
     'ripgrep-LICENSE-UNLICENSE': ('BurntSushi/ripgrep/15.2.0/UNLICENSE',
                                 '7e12e5df4bae12cb21581ba157ced20e1986a0508dd10d0e8a4ab9a4cf94e85c'),
-    'rusty-v8-LICENSE': ('denoland/rusty_v8/v150.4.0/LICENSE',
+    'rusty-v8-LICENSE': ('denoland/rusty_v8/v152.2.0/LICENSE',
                          '1c6356fb751d45f0c53093ebf8a7f5e580e802f51999178e19d60f3ec39e147d'),
-    'v8-LICENSE': ('v8/v8/15.0.245.2/LICENSE',
+    'v8-LICENSE': ('v8/v8/15.2.124.1/LICENSE',
                    '6ab33af8774a0f396ee3aeeb761e3229057682d6f9fa7f572e390c2cb3a6e509'),
-    'v8-LICENSE.v8': ('v8/v8/15.0.245.2/LICENSE.v8',
+    'v8-LICENSE.v8': ('v8/v8/15.2.124.1/LICENSE.v8',
                       '4af93c12062c58058378de2397dc1c92bbff9ddfb1d583a01c84127557ce97ca'),
 }
 RUNTIME_LICENSE_FILES = ('licenses/codex-plus-runtime-NOTICES.txt',
@@ -248,7 +248,7 @@ def verify_package(package):
         raise ValueError('Invalid detached execution record format')
     if (manifest.get('schema_version') != 1 or manifest.get('release') != RELEASE or
             manifest.get('target') not in TARGETS or
-            manifest.get('upstream') != {'version': UPSTREAM_VERSION, 'tag': 'rust-v0.163.0',
+            manifest.get('upstream') != {'version': UPSTREAM_VERSION, 'tag': 'rust-v' + UPSTREAM_VERSION,
                                           'commit': UPSTREAM_COMMIT}):
         raise ValueError('Invalid release identity')
     if not re.fullmatch(r'[0-9a-f]{40}', manifest.get('plus_commit', '')):
@@ -333,7 +333,7 @@ def add_licenses(source, package, cache):
     for name, origin in {'LICENSE': 'LICENSE', 'NOTICE': 'NOTICE',
                          'licenses/bubblewrap-COPYING': 'codex-rs/vendor/bubblewrap/COPYING',
                          'licenses/rusty-v8-release-manifests.sha256':
-                         'third_party/v8/rusty_v8_150_4_0_release_manifests.sha256'}.items():
+                         'third_party/v8/rusty_v8_152_2_0_release_manifests.sha256'}.items():
         copy_file(source / origin, package / name)
         provenance[name] = {'upstream_path': origin, 'upstream_commit': UPSTREAM_COMMIT,
                             'sha256': sha256(source / origin)}
@@ -355,8 +355,8 @@ def resource_provenance(source, target):
         result[name] = {'manifest': relative, 'manifest_sha256': sha256(source / relative),
                         'archive_url': artifact.url, 'archive_sha256': artifact.digest,
                         'archive_size': artifact.size, 'archive_member': artifact.archive_member}
-    result['rusty-v8'] = {'crate_version': '150.4.0', 'v8_version': '15.0.245.2',
-                          'release': 'rusty-v8-v150.4.0',
+    result['rusty-v8'] = {'crate_version': '152.2.0', 'v8_version': '15.2.124.1',
+                          'release': 'rusty-v8-v152.2.0',
                           'checksum_manifest': 'licenses/rusty-v8-release-manifests.sha256'}
     result['bwrap'] = {'upstream_path': 'codex-rs/vendor/bubblewrap',
                        'upstream_commit': UPSTREAM_COMMIT, 'license': 'licenses/bubblewrap-COPYING'}
@@ -425,7 +425,7 @@ def build(args):
             'schema_version': 1, 'release': RELEASE, 'plus_commit': args.plus_commit,
             'coordinator_protocol': COORDINATOR_PROTOCOL,
             'execution_record_format': EXECUTION_RECORD_FORMAT,
-            'upstream': {'version': UPSTREAM_VERSION, 'tag': 'rust-v0.163.0',
+            'upstream': {'version': UPSTREAM_VERSION, 'tag': 'rust-v' + UPSTREAM_VERSION,
                          'commit': UPSTREAM_COMMIT},
             'frontend_patch_sha256': sha256(ROOT / PATCH), 'target': args.target,
             'build': {'glibc': args.build_glibc, 'rust': '1.99.1', 'cargo_profile': 'release'},

@@ -53,7 +53,7 @@ def check(source, upstream, target, cache, output):
         cached(path, expected)
     source_licenses = [source / 'LICENSE', *[upstream / name for name in
         ('LICENSE', 'NOTICE', 'codex-rs/vendor/bubblewrap/COPYING',
-         'third_party/v8/rusty_v8_150_4_0_release_manifests.sha256')]]
+         'third_party/v8/rusty_v8_152_2_0_release_manifests.sha256')]]
     source_hashes = {str(path): sha(path) for path in source_licenses}
     notices.generate(source, target, output, upstream_source=upstream, license_cache=cache)
     native = json.loads((output / notices.NATIVE_DEPENDENCIES).read_text())

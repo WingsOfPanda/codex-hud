@@ -82,8 +82,8 @@ def manifest_check(package):
     protocol = manifest.get('coordinator_protocol')
     assert type(protocol) is int and protocol == 5, 'unsupported coordinator protocol'
     assert type(manifest.get('execution_record_format')) is int and manifest['execution_record_format'] == 1
-    assert manifest['upstream'] == {'version': '0.163.0', 'tag': 'rust-v0.163.0',
-        'commit': '83086188ae0614bd882818ff1aa23f3194962012'}, manifest['upstream']
+    assert manifest['upstream'] == {'version': '0.165.0', 'tag': 'rust-v0.165.0',
+        'commit': '360319d8dee62d87e2d59fc0c21805d79519cfed'}, manifest['upstream']
     assert manifest['build']['rust'] == '1.99.1' and manifest['build']['cargo_profile'] == 'release'
     assert manifest['resources'], 'resource provenance missing'
     assert manifest['target'] == f'{platform.machine()}-unknown-linux-gnu', manifest['target']
