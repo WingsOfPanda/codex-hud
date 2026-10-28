@@ -37,6 +37,8 @@ def closure(profile):
                                        'release_protocol.py', 'release_ownership.py')]
     paths += [path for path in (scripts / 'release_recipes/compat').iterdir() if path.is_file()]
     paths += [Path(profile['python']['path']), Path(profile['executor_package_root']) / 'bin/codex-plus-runtime']
+    if 'previous_official_binary' in profile.get('native_build', {}):
+        paths.append(Path(profile['native_build']['previous_official_binary']))
     files = {str(path.resolve()): protocol.file_record(path.resolve()) for path in paths}
     if profile['python'].get('fixture_imports'):
         files.update(native.fixture_closure(profile))
@@ -74,7 +76,7 @@ def previous_package(plan, profile, old_package):
     protocol.require(old_files == old_manifest['files'] and
         verifier.tree_sha256(old_files) == old_manifest['tree_sha256'] == previous['tree_sha256'],
         'Previous package inventory mismatch')
-    protocol.require(old_manifest['upstream'] == plan['upstream'] and
+    protocol.require(old_manifest['upstream'] == plan['previous_release'].get('upstream', plan['upstream']) and
         old_manifest['coordinator_protocol'] == 5 and old_manifest['execution_record_format'] == 1,
         'Unsupported previous package protocol/upstream')
     return old
@@ -103,6 +105,10 @@ def precheck(plan, profile, old_package, cleanup):
     previous_package(plan, profile, old_package)
     protocol.require(profile['native_build']['official_sha256'] ==
         plan['compat']['stock_binary_sha256'][profile['architecture']], 'Compatibility official binary pin mismatch')
+    if plan['compat']['recipe_revision'] == 2:
+        protocol.require(profile['native_build']['previous_official_sha256'] ==
+            plan['compat']['previous_stock_binary_sha256'][profile['architecture']],
+            'Compatibility previous official binary pin mismatch')
     return {'ready': True, 'scope': 'native-prerequisites', 'plan_sha256': protocol.digest(plan),
         'profile_sha256': protocol.digest(profile),
         'checks': ['plan-profile-host-pins', 'native-inputs-imports', 'production-libcap',
@@ -131,6 +137,8 @@ def prepare_attempt(root, old_package):
         'qualification_evidence': str(approval_path), 'new_manifest_sha256': approval['manifest_sha256'],
         'new_archive_sha256': approval['archive_sha256'], 'qualification_evidence_sha256': native.sha(approval_path),
         'root_accepted_final_package': True}
+    if plan['compat']['recipe_revision'] == 2:
+        settings['previous_stock_binary'] = profile['native_build']['previous_official_binary']
     prepared = compat.prepare(plan, profile, root, config=settings,
         helper_binding={'helper': str(helper), 'sha256': native.sha(helper)})
     protocol.write_once(root / 'outputs/compat-previous-package.json', {'path': str(old), 'manifest_sha256': pin})
@@ -143,7 +151,7 @@ def prepare_attempt(root, old_package):
             if path.is_file():
                 protocol.require(not path.is_symlink(), 'Package input symlink refused')
                 files[str(path.resolve())] = protocol.file_record(path)
-    for name in ('stock_binary', 'new_archive'):
+    for name in ('stock_binary', 'new_archive', *(('previous_stock_binary',) if plan['compat']['recipe_revision'] == 2 else ())):
         path = Path(settings[name])
         files[str(path.resolve())] = protocol.file_record(path)
     for name in ('native-preparation.json', 'ownership-baseline.json', 'outputs/compat-package-approval.json',
@@ -299,6 +307,8 @@ def run_attempt(root, execution):
         executed.update(str(Path(package) / name) for name in ('bin/codex', 'bin/codex-plus-runtime',
             'bin/codex-code-mode-host', 'bin/codex-plus', 'codex-resources/bwrap'))
     executed.add(profile['native_build']['official_binary'])
+    if plan['compat']['recipe_revision'] == 2:
+        executed.add(profile['native_build']['previous_official_binary'])
     executed.update(str(Path(profile['source_root']) / name) for name in plan['compat']['fixture_files'])
     outputs = [path.relative_to(root).as_posix() for name in ('compat', 'outputs', 'logs')
                for path in (root / name).rglob('*') if path.is_file() and not path.is_symlink()]

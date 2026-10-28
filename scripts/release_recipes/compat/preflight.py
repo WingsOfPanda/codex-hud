@@ -59,6 +59,26 @@ finally:
     fixture.close(True)
 assert not home.exists() and not gate.owned_processes(home)
 
+if config['recipe_revision'] == 2:
+    from fixtures.paired_stock_transition import PairedStockServer
+    binary = Path(config['previous_stock_binary'])
+    assert gate.digest(binary) == config['previous_stock_binary_sha256'][config['architecture']]
+    assert subprocess.check_output([str(binary), '--version'], text=True).strip() == 'codex-cli ' + config['previous_upstream']['version']
+    fixture = PairedStockServer(Path(config['old_package']) / 'bin/codex-plus-runtime',
+        binary, BASE / 'setup-smoke/previous-stock',
+        config='features.apps=false\nfeatures.memories=false\n')
+    home = fixture.home
+    try:
+        path = home / 'app-server-control/app-server-control.sock'
+        assert path.is_socket() and len(os.fsencode(path)) < 104
+        assert fixture.provider.count == 0
+        rows.append(dict(name='actual-previous-stock-constructor', path=str(path),
+            socket_bytes=len(os.fsencode(path)), passed=True, provider_requests=0,
+            stock_sha256=gate.digest(binary), stock_upstream=config['previous_upstream']))
+    finally:
+        fixture.close(True)
+    assert not home.exists() and not gate.owned_processes(home)
+
 contract = importlib.import_module('test_claude_advisor')
 with install(BASE):
     case = contract.ClaudeAdvisor('test_root_required')

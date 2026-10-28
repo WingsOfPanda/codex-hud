@@ -16,7 +16,7 @@ import traceback
 sys.dont_write_bytecode = True
 AREA = Path(__file__).resolve().parent
 sys.path.insert(0, str(AREA.parents[1]))
-from release_compat import validate_recovery_reports
+from release_compat import validate_recovery_reports, validate_paired_report
 SOURCE = CONFIG['source_commit']
 ORIGIN = CONFIG['source_commit']
 PATCH = CONFIG['frontend_patch_sha256']
@@ -64,7 +64,7 @@ def run(args):
     assert final['archive_sha256'] == config['new_archive_sha256'] and final['manifest_sha256'] == config['new_manifest_sha256']
     pin = gate.OLD_IDENTITIES[OLD_VERSION]
     architecture = config['architecture']
-    old = gate.package_identity(Path(config['old_package']), OLD_VERSION, pin['commit'], pin['manifests'][architecture])
+    old = gate.package_identity(Path(config['old_package']), OLD_VERSION, pin['commit'], pin['manifests'][architecture], role='old')
     new = gate.package_identity(Path(config['new_package']), NEW_VERSION, SOURCE, config['new_manifest_sha256'])
     gate.distinct_packages(dict(old=old, new=new))
     archive = archives.archive_identity(config['new_archive'], architecture, NEW_VERSION, SOURCE,
@@ -126,6 +126,12 @@ def run(args):
             '--evidence', evidence/'cursor-v2'], 300)
         stage('packaged-recovery-policy', [sys.executable, AREA/'recovery-policy.py',
             '--evidence', evidence/'recovery-policy'], 180)
+        paired = {}
+        if config['recipe_revision'] == 2:
+            stage('paired-stock-transition', [sys.executable, AREA/'paired-stock-transition.py',
+                '--evidence', evidence/'paired-stock-transition'], 150)
+            validate_paired_report(evidence/'paired-stock-transition/report.json', config)
+            paired['paired-stock-transition/report.json'] = gate.digest(evidence/'paired-stock-transition/report.json')
         recovery = validate_recovery_reports(evidence/'recovery-policy', config)
         rollback = json.loads((evidence/'rollback/gate.json').read_text())
         advisor = json.loads((evidence/'advisor-nine-checks.json').read_text())
@@ -153,7 +159,7 @@ def run(args):
             restart_required_before_production_claude=False,
             evidence_sha256={str(path.relative_to(evidence)):gate.digest(path) for path in (
                 evidence/'rollback/gate.json', evidence/'advisor-nine-checks.json', evidence/'old-tui-root-result/report.json')}
-                | {'recovery-policy/' + name: sha for name, sha in recovery.items()})
+                | {'recovery-policy/' + name: sha for name, sha in recovery.items()} | paired)
     except BaseException:
         report['error'] = traceback.format_exc()
         raise
