@@ -6,6 +6,8 @@ user “go.” Follow steps 1–6 and copy the [checklist](release-checklist.md)
 evidence directory. For an interrupted release, first reconcile that
 checklist with actual jobs and artifacts, then take the applicable
 [recovery branch](#recovery). Continue from the earliest unmet exit check.
+Use the [low-token execution rules](#low-token-execution) throughout; a routine
+release should be a small sequence of shell calls, not continuous model supervision.
 
 ## Automation endpoint
 
@@ -43,6 +45,34 @@ an interrupted resume without duplicate outward effects, and a failed-stage
 recovery that preserves evidence and does not rerun unaffected accepted stages.
 Record commands, outcomes and remaining manual decisions in the pilot record.
 One command does not promise bug-free software or waive a failed acceptance check.
+
+## Low-token execution
+
+Use the existing checked-in commands. This book change does not request a new
+release command, runner, or framework. The single-command endpoint above remains
+a future implementation goal; do not claim it is available or build it as a side
+task during a release.
+
+- Prepare the stage commands and acceptance checks once. Batch safe mechanical
+  steps into a few shell calls while preserving required proposal reviews,
+  ownership boundaries and action approvals.
+- Keep deterministic validation in the existing tools. Return only phase, result,
+  next action and evidence paths to the model. Retain full logs and manifests on
+  disk; read targeted failure excerpts only when a check needs investigation.
+- Filter status queries to the exact execution and unresolved work. Never dump
+  the complete historical park ledger into model context. Reconcile delayed or
+  duplicate notices minimally; they do not justify a new analysis or test run.
+- Give each native owner one conditional assignment through its final return.
+  Do not add status-only agents, acknowledgement exchanges or advisor reviews to
+  routine successful stages. Use model reasoning for a new defect, conflicting
+  evidence, a material change or a decision that cannot be made by the existing
+  validators.
+- End the turn once observation is armed. Do not poll with model turns, resend
+  unchanged instructions, or rerun accepted work for another progress report.
+  Report meaningful changes and the final result concisely.
+
+Token reduction must not remove required tests, cleanup proof, artifact checks or
+publication approval. Reduce repeated reasoning and narration, not verification.
 
 ## Owners
 
