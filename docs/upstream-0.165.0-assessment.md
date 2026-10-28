@@ -19,8 +19,9 @@ workspace package versions are reconciled to 0.165.0. Rust remains 1.99.1.
 Build/package provenance now selects V8 crate 152.2.0 and V8 15.2.124.1.
 X86 development compilation passed, followed by 19 focused Rust groups covering
 324 unique tests. Native smoke (23 stages), Morandi, the footer and nine compact
-display/color/status configurations passed. ARM compiled the preceding candidate;
-its corrected frontend and native/terminal checks remain pending.
+display/color/status configurations passed. ARM corrected frontend and harness
+compilation passed with cleanup exit 0. Its 19 Rust groups passed 349 executions
+covering the same 324 unique test names as x86, with no ignored tests.
 
 The first builds exposed three distinct port issues: the new optional
 `ThreadListParams.attached_to_thread_id` needed an explicit `None`; upstream's
@@ -51,7 +52,19 @@ actual server-side cache hits. No feature-enable override or paid provider is us
 Private x86 stock background/advisor/foreground checks and 19 lifecycle,
 custom-goal and Ultracode cases passed. The development identity fixture pins
 official 0.163 and 0.165 binaries for x86 and ARM; a version string alone is
-insufficient. ARM execution of these checks remains pending.
+insufficient. ARM reports 35 of 39 private matrix cases passed with clean cleanup;
+final acceptance remains pending the four affected case rechecks below.
+
+The ARM matrix exposed one omitted `--colors on` fixture argument and three
+first-history-read failures (`list_turns is not supported yet`). The latter
+occurred before observed turn completion; the removed private database prevents
+identifying its exact original state. A test-only correction waits for the exact
+completed-turn notification through metadata reads before asserting full history.
+It does not suppress RPC errors or claim that completion guarantees persistence.
+Root verification passed five regression tests and seven injected-error scenarios:
+the original callers fail before completion, corrected callers pass, and persistent
+Unsupported or other errors still fail. ARM rechecks use separate fixture inputs
+and preserve the original outcomes and 35 passed cases; product binaries are unchanged.
 
 Private x86 diagnostics also passed old 0.163 reads and cold resume of tested
 0.165 history, including effort-update items. Actual old 0.4.8 and 0.4.9 TUIs
