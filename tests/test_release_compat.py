@@ -72,6 +72,25 @@ class CursorCaptureContract(unittest.TestCase):
 
 
 class Compatibility(unittest.TestCase):
+    def test_preflight_loads_recovery_contract_with_native_python_environment(self):
+        from release_native import python_env
+        env = python_env(dict(source_root=str(SCRIPTS.parent),
+                              python=dict(libpython=None, fixture_sites=[])))
+        self.assertNotIn(str(SCRIPTS), env['PYTHONPATH'].split(os.pathsep))
+        code = """import ast, importlib.util, pathlib, sys
+recipe = pathlib.Path(sys.argv[1])
+preflight = recipe / 'preflight.py'
+loader = next(node for node in ast.parse(preflight.read_text()).body
+              if isinstance(node, ast.FunctionDef) and node.name == 'load')
+exec(compile(ast.Module(body=[loader], type_ignores=[]), str(preflight), 'exec'))
+recovery = load('recovery_contract', recipe.parents[1] / 'release_compat.py')
+assert sum(map(len, recovery.RECOVERY_CASES.values())) == 14
+assert pathlib.Path(sys.modules['release_protocol'].__file__).resolve() == recipe.parents[1] / 'release_protocol.py'
+"""
+        result = subprocess.run([sys.executable, '-B', '-c', code, str(compat.RECIPE)],
+            cwd=compat.RECIPE, env=env, capture_output=True, text=True, timeout=20)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
