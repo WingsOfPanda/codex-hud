@@ -15097,10 +15097,10 @@ index 4e1127ba4..e6d4f0a4f 100644
  #[tokio::test]
 diff --git a/codex-rs/tui/src/chatwidget/tests/shell_policy.rs b/codex-rs/tui/src/chatwidget/tests/shell_policy.rs
 new file mode 100644
-index 000000000..7eb1c4afc
+index 000000000..22ded5441
 --- /dev/null
 +++ b/codex-rs/tui/src/chatwidget/tests/shell_policy.rs
-@@ -0,0 +1,733 @@
+@@ -0,0 +1,735 @@
 +use super::*;
 +use crate::chatwidget::shell_policy::{
 +    SHELL_FOREGROUND_LIMIT, ShellVisibility, eligible_shell, quiet_shell, shell_directive,
@@ -15740,7 +15740,7 @@ index 000000000..7eb1c4afc
 +
 +#[tokio::test]
 +async fn shell_policy_managed_background_updates_terminal_program_status() {
-+    use crate::terminal_program_status::ProgramStatus::{Idle, Working};
++    use crate::terminal_program_status::ProgramStatus::{Done, Idle, Working};
 +
 +    for exit in [0, 130] {
 +        let (mut chat, _, _) = make_chatwidget_manual(None).await;
@@ -15752,13 +15752,15 @@ index 000000000..7eb1c4afc
 +            "proc",
 +            "# codex-plus-shell: background\nsleep 9",
 +        );
-+        chat.bottom_pane.set_task_running(false);
++        chat.on_task_complete(None, None, false);
 +        assert!(chat.managed_shells["managed"].quiet);
 +        assert_eq!(chat.desired_program_status(), Working);
 +        assert_eq!(chat.iterm_session_detail(Working), None);
 +        handle_exec_end(&mut chat, completed(item, Some(9000), exit, "done\n"));
 +        assert!(chat.managed_shells.is_empty());
 +        assert!(chat.unified_exec_processes.is_empty());
++        assert_eq!(chat.desired_program_status(), Done);
++        chat.acknowledge_program_status();
 +        assert_eq!(chat.desired_program_status(), Idle);
 +    }
 +}
