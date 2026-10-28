@@ -3,7 +3,6 @@
 Run: python3 tests/test_advisor_foreground_integration.py OFFICIAL_CODEX
 """
 import argparse
-import hashlib
 import json
 import os
 from pathlib import Path
@@ -17,15 +16,14 @@ import time
 from fixtures.advisor_provider import AdvisorProvider, RESULT
 from fixtures.foreground_advisor_provider import ForegroundAdvisorProvider
 from fixtures.worker_shell_wait_provider import cell_result
-from test_advisor_integration import OFFICIAL_SHA256
+from test_advisor_integration import official_stock_identity
 from test_background_integration import REPO, RecordingClient, stop, wait
 
 
 def run(binary, evidence, seconds=65):
     evidence.mkdir(parents=True, exist_ok=True)
-    digest = hashlib.sha256(binary.read_bytes()).hexdigest()
-    assert digest == OFFICIAL_SHA256, f'expected pinned official stock binary, got {digest}'
-    report = {'binary': str(binary), 'sha256': digest, 'remote_provider_requests': 0}
+    version, digest = official_stock_identity(binary)
+    report = {'binary': str(binary), 'version': version, 'sha256': digest, 'remote_provider_requests': 0}
     rpc = native = None
     with tempfile.TemporaryDirectory(prefix='advisor-foreground-') as temporary:
         root = Path(temporary)
