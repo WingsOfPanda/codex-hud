@@ -34,6 +34,10 @@ def has_disclosure(text):
     return 'Show details' in text or bool(re.search(r'^\s*\+ \d+ lines?\b', text, re.MULTILINE))
 
 
+def has_expanded_disclosure(text):
+    return bool(re.search(r'^[ \t]*− (?:Show less|Hide details)[ \t]*$', text, re.MULTILINE))
+
+
 def compact_contract(text, *, failed=False, explored=False, running=False):
     """Check rendered rows, never ANSI bytes that may contain an older frame."""
     rows = text.splitlines()
@@ -65,7 +69,7 @@ def disclosure(terminal, expanded):
     # F4 focuses the last activity; Right/Left reuse its existing local disclosure.
     os.write(terminal.master, b'\x1bOS')
     os.write(terminal.master, b'\x1b[C' if expanded else b'\x1b[D')
-    wait([terminal], lambda: 'Show less' in terminal.text if expanded else has_disclosure(terminal.text),
+    wait([terminal], lambda: has_expanded_disclosure(terminal.text) if expanded else has_disclosure(terminal.text),
          'existing per-activity disclosure did not toggle')
     os.write(terminal.master, b'\x1b[27u')
 
@@ -143,7 +147,7 @@ def run_case(binary, launcher, root, evidence, case, theme=None):
             (workspace / 'progress').touch()
             wait([terminal], lambda: 'DISPLAY_UPDATE_PROGRESS' in terminal.text,
                  'expansion did not survive live output update')
-            assert 'Show less' in terminal.text, terminal.text
+            assert has_expanded_disclosure(terminal.text), terminal.text
             snapshot(terminal, evidence, 'running-expanded-update')
             stages.append('running-collapse-expand-and-update')
             (workspace / 'release').touch()
@@ -153,7 +157,7 @@ def run_case(binary, launcher, root, evidence, case, theme=None):
         if case.startswith('background') or case == 'auto_running':
             wait([terminal], lambda: 'Background ·' not in terminal.text, 'completed background HUD did not clear', 5)
         if held:
-            assert 'Show less' in terminal.text and OUTPUT[-1] in terminal.text, terminal.text
+            assert has_expanded_disclosure(terminal.text) and OUTPUT[-1] in terminal.text, terminal.text
             stages.append('expansion-survives-completion')
             disclosure(terminal, False)
         snapshot(terminal, evidence, 'complete-before-contract')
@@ -202,7 +206,7 @@ def run_case(binary, launcher, root, evidence, case, theme=None):
         wait([replay], lambda: 'fixture-finished' in replay.text and composer_ready(replay.text),
              'private resume did not render retained turn', 30)
         compact_contract(replay.text, failed=failed, explored=explored)
-        assert 'Show less' not in replay.text, 'manual expansion persisted across restart'
+        assert not has_expanded_disclosure(replay.text), 'manual expansion persisted across restart'
         assert provider.count == 2 and turns(home) == 1, 'display/resume added a model request or turn'
         replay_outputs = [event['payload']['output'] for event in rollout(home)
                           if event.get('type') == 'response_item'
@@ -236,6 +240,13 @@ def run_case(binary, launcher, root, evidence, case, theme=None):
 
 
 class ContractSelfTest(unittest.TestCase):
+    def test_native_disclosure_types_distinguish_expanded_from_collapsed(self):
+        for text in ('    − Show less  ', '    − Hide details  '):
+            self.assertTrue(has_expanded_disclosure(text))
+            self.assertFalse(has_disclosure(text))
+        for text in ('+ Show details', '+ 10 lines (^t to expand)', 'output mentions Hide details'):
+            self.assertFalse(has_expanded_disclosure(text))
+
     def test_rollout_reads_only_complete_records_without_hiding_corruption(self):
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary)
