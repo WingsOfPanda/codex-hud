@@ -21,10 +21,10 @@ Required fields (no implicit defaults):
 | `upstream` | `{version, tag, commit}`; ordinary revisions on the product source's pinned upstream only |
 | `plus_source_commit`, `tooling_commit` | Independently pinned product and recipe revisions |
 | `patch` | `{path, sha256}`; must match the product-source packager and patch bytes |
-| `previous_release` | `{tag, handoff_sha256, targets}`; both target records contain `asset`, `sha256`, `manifest_sha256`, `tree_sha256` |
+| `previous_release` | `{tag, handoff_sha256, targets}`, with optional `upstream: {version, tag, commit}`; both target records contain `asset`, `sha256`, `manifest_sha256`, `tree_sha256` |
 | `targets` | Both `x86_64` and `aarch64`: `{triple, profile_sha256, build_glibc}` |
 | `gates` | Both architectures, each containing exactly the five gates below |
-| `compat` | `{ap_version, fixture_ssh_destinations, recipe_revision: 1, previous_source_commit, stock_binary_sha256: {arch: sha256}, fixture_files: {relative_path: sha256}}` |
+| `compat` | `{ap_version, fixture_ssh_destinations, recipe_revision, previous_source_commit, stock_binary_sha256: {arch: sha256}, fixture_files: {relative_path: sha256}}`; revision 2 additionally requires `previous_stock_binary_sha256: {arch: sha256}` |
 | `rollout` | The published handoff fields: `daemon_restart`, `quiet_checkpoint`, `executions`, `session_restart`, `agents_md`, `retain`, `notes` |
 | `retention_floor` | A retained rollback release; the previous release must also be retained |
 | `note` | Companion note below `docs/releases/` |
@@ -49,6 +49,32 @@ patch and both Cargo manifest/lock versions; it does not replace those sources.
 Coordinator AP replay additionally pins `compat.ap_replay` with `source_commit`,
 `installed_plugin_commit`, and `bundle_sha256`.
 
+Compatibility recipe revisions preserve schema version 1 and original JSON bytes:
+
+- Revision 1 requires an unchanged upstream. An omitted `previous_release.upstream`
+  means the candidate upstream; an explicit identity must equal it. The previous
+  release tag must carry that upstream version. There is one stock binary map;
+  `previous_stock_binary_sha256` is refused. Retained 0.163 evidence needs no rewrite.
+- Revision 2 supports only `{version: "0.163.0", tag: "rust-v0.163.0",
+  commit: "83086188ae0614bd882818ff1aa23f3194962012"}` as the required explicit
+  previous upstream, and `{version: "0.165.0", tag: "rust-v0.165.0",
+  commit: "360319d8dee62d87e2d59fc0c21805d79519cfed"}` as the candidate. Both
+  stock maps must contain both architectures and match these exact distinct pins:
+
+| Architecture | Previous stock 0.163.0 SHA-256 | Candidate stock 0.165.0 SHA-256 |
+| --- | --- | --- |
+| `x86_64` | `399ff69c431c066e40de318fba45c2b07f45a76b19939d247ee4828fc70c4215` | `c06a67fd8ac76508dc78bd99ce20c9f317b8d568beda59485f3f4134df9962d5` |
+| `aarch64` | `8a96f66d059d653e68bfd5f3c79337e6f1d7d170d80bf705eb7d0249b34c0ece` | `b32ece31af06440da980b733fb8fefdd1f193439595fda84096f1caaceec543f` |
+
+Revision 2 compatibility checks are exactly, in order: `quiet-rollback`,
+`advisor-nine-checks`, `actual-old-tui-root-result`, `packaged-cursor-v2`,
+`packaged-recovery-policy`, `paired-stock-transition`. The added check does not
+replace any existing guard or evidence. Release identity includes the upstream;
+the previous and candidate Plus version may both be `0.4.9`. Supporting these
+fields does not qualify a recipe or establish shipping acceptance. The paired
+cutover requires existing rollout fields `daemon_restart: true` and
+`session_restart: "required"`, with the previous paired release retained.
+
 ## Native profile and initialization
 
 A profile has exactly `schema_version`, `host_id`, `hostname`, `architecture`,
@@ -61,6 +87,12 @@ paths to SHA-256 pins. Optional `native_build` contains exactly
 `cargo_jobs` and `test_threads` (positive integers). Native preparation requires
 this build profile. Roots/tool paths are absolute; `libpython` is an
 absolute path or null. The version strings are exact observed values, not ranges.
+Optional `native_build.previous_official_binary` (absolute path) and
+`previous_official_sha256` are a pair. Their canonical path and digest must differ
+from the candidate official binary. Revision 2 attempts require both roles and
+bind their profile digests to the corresponding architecture's plan stock maps,
+including when reading retained attempt metadata. Revision 1 profiles remain
+valid without these fields.
 Optional `native_build.pkg_config` is `{path, files}`: an absolute pkg-config
 directory and a nonempty map of absolute lexical input paths to SHA-256 pins.
 Native preparation probes the selected libcap pc/header/library, checks every
@@ -131,6 +163,11 @@ Compatibility can supply `previous_package=<relative input proof>` containing
 its manifest hash/release/source/target/tree matches the plan's previous release;
 each executed old file must match that qualified inventory. Symlinks and arbitrary
 old package roots are refused.
+Revision 2 also requires the previous manifest's exact upstream identity to match
+`previous_release.upstream`. Its previous official binary is admitted only at the
+exact profile path with the profile and plan SHA-256 pins. Each executed binary
+retains its complete file record in the immutable receipt and input digest; the
+additional binary path does not authorize a surrounding directory.
 
 `execution` contains exactly `job_id`, `executor_package_root`, `executor_sha256`,
 `architecture`, `plus_source_commit`, `tooling_commit`, `outcome`, `exit_code`,
