@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import json
 import os
+import platform
 from pathlib import Path
 import shutil
 import signal
@@ -19,8 +20,14 @@ from test_background_integration import REPO, stop, wait
 
 
 PARENT = '00000000-0000-0000-0000-000000000001'
-OFFICIAL_SHA256 = '399ff69c431c066e40de318fba45c2b07f45a76b19939d247ee4828fc70c4215'
-OFFICIAL_165_SHA256 = 'c06a67fd8ac76508dc78bd99ce20c9f317b8d568beda59485f3f4134df9962d5'
+OFFICIAL_SHA256 = {
+    'x86_64': '399ff69c431c066e40de318fba45c2b07f45a76b19939d247ee4828fc70c4215',
+    'aarch64': '8a96f66d059d653e68bfd5f3c79337e6f1d7d170d80bf705eb7d0249b34c0ece',
+}.get(platform.machine())
+OFFICIAL_165_SHA256 = {
+    'x86_64': 'c06a67fd8ac76508dc78bd99ce20c9f317b8d568beda59485f3f4134df9962d5',
+    'aarch64': 'b32ece31af06440da980b733fb8fefdd1f193439595fda84096f1caaceec543f',
+}.get(platform.machine())
 MODEL = {'id': 'catalog-astra-id', 'model': 'gpt-6-astra', 'hidden': False,
          'supportedReasoningEfforts': [{'reasoningEffort': 'xhigh', 'description': 'Extra high'}]}
 
@@ -30,6 +37,7 @@ def official_stock_identity(binary):
     digest = hashlib.sha256(binary.read_bytes()).hexdigest()
     reviewed = {'codex-cli 0.163.0': OFFICIAL_SHA256, 'codex-cli 0.165.0': OFFICIAL_165_SHA256}
     assert version in reviewed, f'expected a reviewed official stock version, got {version}'
+    assert reviewed[version] is not None, f'unsupported stock fixture architecture: {platform.machine()}'
     assert digest == reviewed[version], f'expected pinned official stock binary for {version}, got {digest}'
     return version, digest
 
