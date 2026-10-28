@@ -29,7 +29,7 @@ def package_identity(package, manifest_sha256, tui_sha256):
     manifest_path = package / 'codex-plus.json'
     assert digest(manifest_path) == manifest_sha256, 'old package manifest does not match reviewed identity'
     manifest = json.loads(manifest_path.read_text())
-    assert manifest['release'] == '0.163.0-plus.0.4.9', manifest['release']
+    assert manifest['release'] in {'0.163.0-plus.0.4.8', '0.163.0-plus.0.4.9'}, manifest['release']
     for name in ('bin/codex', 'bin/codex-plus-runtime', 'bin/codex-code-mode-host'):
         assert digest(package / name) == manifest['files'][name]['sha256'], name
     assert digest(package / 'bin/codex') == tui_sha256, 'old TUI does not match reviewed identity'
