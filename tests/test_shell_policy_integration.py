@@ -106,6 +106,7 @@ def completion_rows(text, exit_code=0):
 def assert_compact_completion(text, exit_code=0):
     assert len(completion_rows(text, exit_code)) == 1, text
     assert 'Show details' in text or re.search(r'^\s*\+ \d+ lines?\b', text, re.MULTILINE), text
+    assert 'Show less' not in text and 'Hide details' not in text, text
     assert 'POLICY_STARTED' not in text and 'POLICY_COMPLETE' not in text, text
     failures = re.findall(r'FAIL_LINE_\d+', text)
     assert failures == (['FAIL_LINE_039'] if exit_code else []), text
@@ -119,14 +120,15 @@ def check_shell_details(terminal, log, failed, evidence):
     os.write(terminal.master, b'\x1bOS\x1b[C')
     expected = ['POLICY_STARTED'] + ([f'FAIL_LINE_{index:03}' for index in range(40)]
                                       if failed else ['POLICY_COMPLETE'])
-    wait([terminal], lambda: 'Show less' in terminal.text and all(line in terminal.text for line in expected)
+    expanded_label = 'Hide details' if failed else 'Show less'
+    wait([terminal], lambda: expanded_label in terminal.text and all(line in terminal.text for line in expected)
          and str(log) in ''.join(terminal.text.split()), 'expanded shell lost retained log or output')
     assert 'codex-plus log:' in terminal.text, terminal.text
     assert not draft or 'policy-editable-draft' in terminal.text, terminal.text
     evidence.write_text(terminal.text + '\n')
     # Keep focus on this activity while collapsing, then return input to the composer.
     os.write(terminal.master, b'\x1b[D\x1b[27u')
-    wait([terminal], lambda: 'Show less' not in terminal.text, 'shell details did not collapse')
+    wait([terminal], lambda: expanded_label not in terminal.text, 'shell details did not collapse')
     replies = terminal.resize(rows, columns)
     wait([terminal], lambda: terminal.resized_frame(replies), 'collapsed shell geometry did not finish')
     assert_compact_completion(terminal.text, 17 if failed else 0)
@@ -210,7 +212,6 @@ def run_tui_case(binary, root, evidence, case):
         wait([replay], lambda: completion_rows(replay.text, expected_exit) and 'fixture-finished' in replay.text,
              'resume did not reproduce compact command row', 30)
         assert_compact_completion(replay.text, expected_exit)
-        assert 'Show less' not in replay.text, 'resume retained manual shell expansion'
         assert provider.count == expected_requests and turns(home) == 1, 'replay called a model or created a turn'
         (evidence / f'{case}-replay-screen.txt').write_text(replay.text + '\n')
         return {'case': case, 'exit': expected_exit, 'compact': True,
