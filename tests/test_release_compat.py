@@ -2,6 +2,7 @@
 import ast
 import importlib.util
 import copy
+import hashlib
 import json
 import os
 import platform
@@ -15,12 +16,41 @@ from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 SCRIPTS = Path(__file__).resolve().parents[1] / 'scripts'
+sys.path.insert(0, str(SCRIPTS))
 spec = importlib.util.spec_from_file_location('release_compat', SCRIPTS / 'release_compat.py')
 compat = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(compat)
 
 
 class CursorCaptureContract(unittest.TestCase):
+    def test_required_core_matches_selected_exact_recipe(self):
+        tree = ast.parse((compat.RECIPE / 'cursor-capture.py').read_text())
+        manifest = next(node.value for node in tree.body if isinstance(node, ast.Assign)
+                        and any(isinstance(target, ast.Name) and target.id == 'manifest' for target in node.targets))
+        required = next(value for key, value in zip(manifest.keys, manifest.values)
+                        if isinstance(key, ast.Constant) and key.value == 'core_required')
+        code = compile(ast.Expression(required), 'cursor-capture.py', 'eval')
+        for upstream in (compat.UPSTREAM, compat.UPSTREAM_165):
+            with self.subTest(upstream=upstream):
+                self.assertEqual(eval(code, {'UPSTREAM': upstream}), upstream['version'])
+
+    def test_capture_and_verifier_refuse_core_outside_selected_exact_recipe(self):
+        for filename in ('cursor-capture.py', 'cursor-verify.py'):
+            tree = ast.parse((compat.RECIPE / filename).read_text())
+            guard = next(node for node in tree.body if isinstance(node, ast.Assert)
+                         and 'native_core_version' in ast.unparse(node.test))
+            code = compile(ast.Module(body=[guard], type_ignores=[]), filename, 'exec')
+            for upstream in (compat.UPSTREAM, compat.UPSTREAM_165):
+                for version in ('0.163.0', '0.165.0', '0.166.0'):
+                    with self.subTest(filename=filename, upstream=upstream, version=version):
+                        manifest = dict(core_required=upstream['version'], native_core_version=version)
+                        scope = dict(UPSTREAM=upstream, TMUX='tmux', manifest=manifest, m=manifest)
+                        if version == upstream['version']:
+                            exec(code, scope)
+                        else:
+                            with self.assertRaises(AssertionError):
+                                exec(code, scope)
+
     def test_affected_unknown_job_requires_needs_review_row(self):
         tree = ast.parse((compat.RECIPE / 'cursor-capture.py').read_text())
         predicate = next(node.value for node in ast.walk(tree) if isinstance(node, ast.keyword)
@@ -42,6 +72,29 @@ class CursorCaptureContract(unittest.TestCase):
 
 
 class Compatibility(unittest.TestCase):
+    def test_preflight_loads_recovery_contract_with_native_python_environment(self):
+        from release_native import python_env
+        env = python_env(dict(source_root=str(SCRIPTS.parent),
+                              python=dict(libpython=None, fixture_sites=[])))
+        self.assertNotIn(str(SCRIPTS), env['PYTHONPATH'].split(os.pathsep))
+        code = """import ast, importlib.util, pathlib, sys
+RECIPE = recipe = pathlib.Path(sys.argv[1])
+fixture_source = pathlib.Path(sys.argv[2])
+preflight = recipe / 'preflight.py'
+tree = ast.parse(preflight.read_text())
+paths = next(node for node in tree.body if isinstance(node, ast.Assign)
+             and ast.unparse(node.targets[0]) == 'sys.path[:0]')
+loader = next(node for node in tree.body
+              if isinstance(node, ast.FunctionDef) and node.name == 'load')
+exec(compile(ast.Module(body=[paths, loader], type_ignores=[]), str(preflight), 'exec'))
+recovery = load('recovery_contract', recipe.parents[1] / 'release_compat.py')
+assert sum(map(len, recovery.RECOVERY_CASES.values())) == 14
+assert pathlib.Path(sys.modules['release_protocol'].__file__).resolve() == recipe.parents[1] / 'release_protocol.py'
+"""
+        result = subprocess.run([sys.executable, '-B', '-c', code, str(compat.RECIPE), str(SCRIPTS.parent)],
+            cwd=compat.RECIPE, env=env, capture_output=True, text=True, timeout=20)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
@@ -103,6 +156,89 @@ class Compatibility(unittest.TestCase):
         attempt.mkdir()
         return compat.prepare(plan, profile, attempt, config=config,
                               helper_binding={'helper': str(self.helper), 'sha256': compat.digest(self.helper)})
+
+    def paired_inputs(self):
+        plan, profile, config = self.inputs('0.4.9')
+        plan.update(upstream=compat.UPSTREAM_165, release='0.165.0-plus.0.4.9')
+        plan['previous_release'].update(tag='0.163.0-plus.0.4.9', upstream=compat.UPSTREAM)
+        plan['compat'].update(recipe_revision=2,
+            stock_binary_sha256={'x86_64': compat.digest(self.stock), 'aarch64': '6' * 64})
+        old_stock = self.root / 'old-stock'
+        old_stock.write_bytes(b'previous official stock')
+        plan['compat']['previous_stock_binary_sha256'] = {'x86_64': compat.digest(old_stock), 'aarch64': '7' * 64}
+        for name, mapping in (('TRANSITION_STOCK', plan['compat']['stock_binary_sha256']),
+                ('TRANSITION_PREVIOUS_STOCK', plan['compat']['previous_stock_binary_sha256'])):
+            mocked = patch.object(compat, name, mapping)
+            mocked.start()
+            self.addCleanup(mocked.stop)
+        for name in (compat.PAIRED_FIXTURE, *compat.MEMORY_FIXTURES):
+            path = self.source / name
+            path.write_text('paired fixture')
+        self.git('add', '.')
+        self.git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', 'paired fixture')
+        self.commit = self.git('rev-parse', 'HEAD').strip()
+        plan['plus_source_commit'] = self.commit
+        plan['compat']['fixture_files'].update({name: compat.digest(self.source / name)
+            for name in (compat.PAIRED_FIXTURE, *compat.MEMORY_FIXTURES)})
+        profile['native_build'] = dict(previous_official_binary=str(old_stock), previous_official_sha256=compat.digest(old_stock))
+        plan['gates']['x86_64']['compat']['checks'] = list(compat.gate_names(2))
+        manifest = self.package / 'codex-plus.json'
+        value = json.loads(manifest.read_text())
+        value.update(upstream=plan['upstream'], release=plan['release'], plus_commit=self.commit)
+        manifest.write_text(json.dumps(value))
+        config['new_manifest_sha256'] = compat.digest(manifest)
+        approval = Path(config['qualification_evidence'])
+        value = json.loads(approval.read_text())
+        value.update(source=self.commit, manifest_sha256=config['new_manifest_sha256'])
+        approval.write_text(json.dumps(value))
+        config['qualification_evidence_sha256'] = compat.digest(approval)
+        return plan, profile, config
+
+    def test_paired_recipe_freezes_old_stock_and_equal_plus_versions_by_full_release(self):
+        plan, profile, config = self.paired_inputs()
+        prepared = self.prepare(plan, profile, config)
+        bound = json.loads((Path(prepared['scope']) / 'native.config.json').read_text())
+        self.assertEqual(bound['previous_upstream'], compat.UPSTREAM)
+        self.assertEqual(bound['previous_stock_binary'], profile['native_build']['previous_official_binary'])
+        self.assertEqual(bound['previous_stock_binary_sha256'], plan['compat']['previous_stock_binary_sha256'])
+        self.assertEqual(prepared['gates'], list(compat.GATES) + ['paired-stock-transition'])
+        code = """import importlib.util,pathlib
+from recipe_context import CONFIG, OLD_VERSION, NEW_VERSION
+p=pathlib.Path(__import__('sys').argv[1])
+spec=importlib.util.spec_from_file_location('gate',p/'verify-mixes.py')
+gate=importlib.util.module_from_spec(spec);spec.loader.exec_module(gate)
+assert OLD_VERSION == NEW_VERSION == '0.4.9'
+identities={role:dict(helper_sha256='equal',manifest_sha256=role,manifest=dict(
+    release=CONFIG['previous_release'] if role=='old' else CONFIG['release'],
+    upstream=CONFIG['previous_upstream'] if role=='old' else CONFIG['upstream'])) for role in ('old','new')}
+gate.distinct_packages(identities)
+identities['old']['manifest']['upstream']=CONFIG['upstream']
+try: gate.distinct_packages(identities)
+except AssertionError: pass
+else: raise AssertionError('old role accepted candidate upstream')
+"""
+        result = subprocess.run([sys.executable, '-c', code, str(compat.RECIPE)],
+            env=dict(os.environ, CODEX_PLUS_COMPAT_SCOPE=prepared['scope'], PYTHONPATH=str(compat.RECIPE),
+                PYTHONDONTWRITEBYTECODE='1'), capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_paired_recipe_rejects_old_stock_tamper_and_missing_gate_before_allocation(self):
+        plan, profile, config = self.paired_inputs()
+        old_stock = Path(profile['native_build']['previous_official_binary'])
+        old_stock.write_bytes(b'changed stock')
+        with self.assertRaisesRegex(ValueError, 'Previous stock binary digest mismatch'):
+            self.prepare(plan, profile, config, 'tampered')
+        self.assertFalse((self.root / 'tampered/compat').exists())
+        old_stock.write_bytes(b'previous official stock')
+        plan['gates']['x86_64']['compat']['checks'] = list(compat.GATES)
+        with self.assertRaisesRegex(ValueError, 'Unsupported compatibility checks'):
+            self.prepare(plan, profile, config, 'missing-gate')
+        self.assertFalse((self.root / 'missing-gate/compat').exists())
+        plan['gates']['x86_64']['compat']['checks'] = list(compat.gate_names(2))
+        plan['compat']['fixture_files'].pop(compat.MEMORY_FIXTURES[0])
+        with self.assertRaisesRegex(ValueError, 'Memory fixture closure missing'):
+            self.prepare(plan, profile, config, 'missing-memory')
+        self.assertFalse((self.root / 'missing-memory/compat').exists())
 
     def test_next_revision_changes_data_only_and_loads_actual_validators(self):
         hashes = {path.name: compat.digest(path) for path in compat.RECIPE.iterdir() if path.is_file()}
@@ -207,8 +343,8 @@ with unittest.TestCase().assertRaisesRegex(AssertionError,'0.165.0-plus.'):
                                 env=env, capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
 
-    def native_evidence(self, name='attempt'):
-        plan, profile, config = self.inputs()
+    def native_evidence(self, name='attempt', paired=False):
+        plan, profile, config = self.paired_inputs() if paired else self.inputs()
         prepared = self.prepare(plan, profile, config, name)
         scope = Path(prepared['scope'])
         bound = json.loads((scope / 'native.config.json').read_text())
@@ -227,7 +363,7 @@ with unittest.TestCase().assertRaisesRegex(AssertionError,'0.165.0-plus.'):
             configuration_sha256=compat.digest(scope / 'native.config.json'), gate_sha256=bound['recipe_hashes']['verify-mixes.py'],
             archive={'archive_sha256': config['new_archive_sha256']}, packages={'new': {'manifest_sha256': config['new_manifest_sha256']}},
             evidence_sha256={str(path.relative_to(evidence)): compat.digest(path) for path in evidence.rglob('*.json') if not path.is_relative_to(captures)},
-            stages=[dict(name=name, passed=True, exit_code=0) for name in compat.GATES])
+            stages=[dict(name=name, passed=True, exit_code=0) for name in compat.gate_names(bound['recipe_revision'])])
         cases = []
         new_sha = compat.digest(self.package / 'bin/codex-plus-runtime')
         old_sha = compat.digest(self.root / 'old/bin/codex-plus-runtime')
@@ -241,11 +377,13 @@ with unittest.TestCase().assertRaisesRegex(AssertionError,'0.165.0-plus.'):
                 path = evidence / 'recovery-policy' / suite / scenario / 'report.json'
                 path.parent.mkdir(parents=True)
                 case = dict(passed=True, scenario=scenario, runtime_sha256=new_sha,
-                    stock_sha256=compat.digest(self.stock), stock_version='codex-cli 0.163.0',
+                    stock_sha256=compat.digest(self.stock), stock_version='codex-cli ' + bound['upstream']['version'],
                     remote_model_requests=0, private_home_removed=True,
                     private_home=str(self.short / 'aa' / scenario / 'home'))
                 if scenario.endswith('old-reader'):
                     case['old_runtime_sha256'] = old_sha
+                if paired:
+                    case.update(stock_role='candidate', stock_upstream=bound['upstream'])
                 if scenario.startswith('cleanup-recovery'):
                     case['recovery_policy'] = dict(exit_code=0 if scenario.endswith('success') else 7,
                         old_reader=scenario.endswith('old-reader'),
@@ -262,15 +400,171 @@ with unittest.TestCase().assertRaisesRegex(AssertionError,'0.165.0-plus.'):
                 cases.append(dict(suite=suite, scenario=scenario,
                     report=str(path.relative_to(evidence / 'recovery-policy')), sha256=compat.digest(path)))
         recovery = evidence / 'recovery-policy/report.json'
-        recovery.write_text(json.dumps(dict(schema=1, passed=True, source_commit=self.commit,
+        recovery_value = dict(schema=1, passed=True, source_commit=self.commit,
             runtime_sha256=new_sha, old_runtime_sha256=old_sha,
-            stock_sha256=compat.digest(self.stock), cases=cases)))
+            stock_sha256=compat.digest(self.stock), cases=cases)
+        if paired:
+            recovery_value.update(stock_role='candidate', stock_upstream=bound['upstream'])
+        recovery.write_text(json.dumps(recovery_value))
         raw['packages']['new']['helper_sha256'] = new_sha
         raw['packages']['old'] = {'helper_sha256': old_sha}
         raw['evidence_sha256'].update({str(path.relative_to(evidence)): compat.digest(path)
             for path in (recovery, *(evidence / 'recovery-policy' / row['report'] for row in cases))})
+        if paired:
+            self.paired_report(scope, bound)
+            path = evidence / 'paired-stock-transition/report.json'
+            raw['evidence_sha256']['paired-stock-transition/report.json'] = compat.digest(path)
+            paired_report = json.loads(path.read_text())
+            raw['evidence_sha256'].update({'paired-stock-transition/' + name: sha
+                for name, sha in paired_report['memory_evidence_sha256'].items()})
         (evidence / 'report.json').write_text(json.dumps(raw))
         return scope, raw
+
+    def paired_report(self, scope, bound):
+        path = scope / 'evidence/paired-stock-transition/report.json'
+        fixture_path = path.parent / 'fixture/report.json'
+        fixture_path.parent.mkdir(parents=True)
+        parent, execution = '1' * 36, '2' * 36
+        high = dict(type='configuration_update', reasoning=dict(effort='high'))
+        xhigh = dict(type='configuration_update', reasoning=dict(effort='xhigh'))
+        fixture = dict(passed=True, remote_model_requests=0, parent=parent,
+            stock_sha256=bound['previous_stock_binary_sha256']['x86_64'], stock_version='codex-cli 0.163.0',
+            runtime_sha256=compat.digest(self.root / 'old/bin/codex-plus-runtime'),
+            provider_requests=[dict(thread=parent, body=dict(model='gpt-6.1-sol', reasoning=dict(effort='high'), input=updates,
+                prompt_cache_key='stable-paired-key')) for updates in ([high], [high, xhigh], [])])
+        fixture_path.write_text(json.dumps(fixture))
+        (path.parent / 'fixture/config.toml').write_text('model_provider="isolated"\n[model_providers.isolated]\nname="OpenAI"\n')
+        (path.parent / 'fixture/paired-models.json').write_text(json.dumps({'models': [dict(
+            slug='gpt-6.1-sol', supports_reasoning_effort_updates=True)]}))
+        before_history = path.parent / 'fixture/stock-history-before-rollback.jsonl'
+        after_history = path.parent / 'fixture/stock-history-after-rollback.jsonl'
+        history_rows = [dict(type='session_meta', payload=dict(id=parent))]
+        for turn, effort, update in (('candidate-first', 'high', high), ('candidate-turn', 'xhigh', xhigh)):
+            history_rows += [dict(type='turn_context', payload=dict(turn_id=turn, effort=effort)),
+                dict(type='response_item', payload=update),
+                dict(type='event_msg', payload=dict(type='task_complete', turn_id=turn))]
+        before_history.write_text(''.join(json.dumps(row) + '\n' for row in history_rows))
+        appended = [dict(type='turn_context', payload=dict(turn_id='rollback-turn', effort='high')),
+            dict(type='event_msg', payload=dict(type='task_complete', turn_id='rollback-turn'))]
+        after_history.write_bytes(before_history.read_bytes() + ''.join(json.dumps(row) + '\n' for row in appended).encode())
+        full_history_path = path.parent / 'fixture/stock-read-before-rollback.json'
+        full_history_path.write_text(json.dumps(dict(id=parent, turns=[dict(id=turn, status='completed')
+            for turn in ('candidate-first', 'candidate-turn')])))
+        report = {key: bound[key] for key in
+            ('source_commit', 'release', 'previous_release', 'upstream', 'previous_upstream', 'architecture')}
+        report.update(schema=1, passed=True, old_stock_readable=True, old_stock_resumed_inference=True,
+            original_result_preserved=True, rows_unchanged=True, private_home_removed=True,
+            snapshot_restore=False, remote_model_requests=0, provider_requests_from_reads_holds_restart=0,
+            workload_runs=1, callbacks=1, owned_survivors_after_cleanup=[],
+            private_home=str(self.short / 'aa/home'), configuration_sha256=compat.digest(scope / 'native.config.json'),
+            new_manifest_sha256=bound['new_manifest_sha256'], old_manifest_sha256=bound['previous_identity']['manifests']['x86_64'],
+            fixture_report_sha256=compat.digest(fixture_path), new_turn='candidate-turn', rollback_turn='rollback-turn', execution_id=execution)
+        report['effort_override'] = dict(selected_efforts=['high', 'xhigh'], request_efforts=['high', 'high'],
+            configuration_updates=[[high], [high, xhigh]], persisted_updates=[high, xhigh],
+            stable_prompt_cache_key='stable-paired-key', candidate_turns=['candidate-first', 'candidate-turn'],
+            history_before_sha256=compat.digest(before_history), history_after_sha256=compat.digest(after_history),
+            stock_read_before_sha256=compat.digest(full_history_path),
+            original_history_prefix_preserved=True, rollback_selected_effort='high', rollback_request_effort='high')
+        report['phases'] = [dict(name=name, generation=str(index),
+            stock_sha256=bound['previous_stock_binary_sha256' if old else 'stock_binary_sha256']['x86_64'],
+            stock_version='codex-cli ' + bound['previous_upstream' if old else 'upstream']['version'],
+            runtime_sha256=compat.digest(self.root / 'old/bin/codex-plus-runtime' if old else self.package / 'bin/codex-plus-runtime'))
+            for index, (name, old) in enumerate((('old-before', True), ('candidate', False), ('old-rollback', True)))]
+        report['ledger_before'] = report['ledger_after'] = {'tables': {name: [{'id': 'original'}] for name in
+            ('jobs', 'callbacks', 'goals', 'ultracode_turns', 'ultracode_submissions')}}
+        for label, directory, clock in (('before', path.parent / 'fixture/execution-baseline', 1),
+                ('after', path.parent / 'fixture/executions/v1' / parent / execution, 2)):
+            directory.mkdir(parents=True)
+            for name in ('manifest.json', 'state.json', 'result.json', 'observation.json'):
+                (directory / name).write_text('{"updated_at":' + str(clock) + ',"state":"completed"}' if name == 'state.json' else '{}')
+            report['execution_' + label + '_sha256'] = {item.name: compat.digest(item) for item in directory.iterdir()}
+            report['execution_state_' + label] = dict(clock=clock,
+                bytes_sha256=hashlib.sha256(b'{"updated_at":<updated_at>,"state":"completed"}').hexdigest())
+        workload = path.parent / 'fixture/work/job/runs'
+        workload.parent.mkdir(parents=True)
+        workload.write_text('run\n')
+        report['holds'] = [dict(entered=dict(id=ident, held=True, admission_quiet=True, execution_quiet=True),
+            observed=dict(id=ident, held=True, admission_quiet=True, execution_quiet=True), left=dict(id=ident, held=False))
+            for ident in ('old-entered', 'new-entered')]
+        from test_release_memory_reports import memory_evidence
+        report['memory_lanes'], report['memory_evidence_sha256'] = memory_evidence(path.parent, bound)
+        path.write_text(json.dumps(report))
+        return path, report
+
+    def test_paired_export_requires_complete_hashed_role_bound_transition_proof(self):
+        scope, raw = self.native_evidence(paired=True)
+        result = compat.export_reports(scope)
+        exported = json.loads(Path(result['compat']).read_text())
+        self.assertEqual(set(exported['checks']), set(compat.gate_names(2)))
+        self.assertIn('compat/evidence/paired-stock-transition/report.json',
+            exported['checks']['paired-stock-transition']['evidence'])
+        bound = json.loads((scope / 'native.config.json').read_text())
+        path = scope / 'evidence/paired-stock-transition/report.json'
+        original = json.loads(path.read_text())
+        mutations = {
+            'wrong-old-stock': lambda r: r['phases'][2].update(stock_sha256=bound['stock_binary_sha256']['x86_64']),
+            'wrong-helper': lambda r: r['phases'][0].update(runtime_sha256='0' * 64),
+            'missing-phase': lambda r: r['phases'].pop(),
+            'same-generation': lambda r: r['phases'][2].update(generation=r['phases'][0]['generation']),
+            'no-inference': lambda r: r.update(old_stock_resumed_inference=False),
+            'snapshot-fallback': lambda r: r.update(snapshot_restore=True),
+            'changed-rows': lambda r: r['ledger_after']['tables']['callbacks'].append({'id': 'duplicate'}),
+            'changed-record': lambda r: r['execution_after_sha256'].update(result_json='3' * 64),
+            'changed-state': lambda r: r['execution_state_after'].update(bytes_sha256='3' * 64),
+            'hold-not-quiet': lambda r: r['holds'][0]['observed'].update(execution_quiet=False),
+            'wrong-fixture-hash': lambda r: r.update(fixture_report_sha256='0' * 64),
+            'no-configuration-updates': lambda r: r['effort_override'].update(configuration_updates=[[], []]),
+            'no-persisted-updates': lambda r: r['effort_override'].update(persisted_updates=[]),
+            'no-full-history-read': lambda r: r['effort_override'].update(stock_read_before_sha256='0' * 64),
+        }
+        for name, mutate in mutations.items():
+            with self.subTest(name=name):
+                report = copy.deepcopy(original)
+                mutate(report)
+                path.write_text(json.dumps(report))
+                with self.assertRaises(ValueError):
+                    compat.validate_paired_report(path, bound)
+        path.write_text(json.dumps(original))
+        raw['evidence_sha256'].pop('paired-stock-transition/report.json')
+        (scope / 'evidence/report.json').write_text(json.dumps(raw))
+        with self.assertRaisesRegex(ValueError, 'Paired dedicated report missing'):
+            compat.export_reports(scope)
+
+    def test_paired_report_rejects_missing_wire_updates_after_rehashing_all_summaries(self):
+        scope, raw = self.native_evidence(paired=True)
+        config = json.loads((scope / 'native.config.json').read_text())
+        path = scope / 'evidence/paired-stock-transition/report.json'
+        report = json.loads(path.read_text())
+        fixture_path = path.parent / 'fixture/report.json'
+        fixture = json.loads(fixture_path.read_text())
+        for request in fixture['provider_requests']:
+            request['body']['input'] = []
+        fixture_path.write_text(json.dumps(fixture))
+        report['fixture_report_sha256'] = compat.digest(fixture_path)
+        report['effort_override']['configuration_updates'] = [[], []]
+        path.write_text(json.dumps(report))
+        raw['evidence_sha256']['paired-stock-transition/report.json'] = compat.digest(path)
+        (scope / 'evidence/report.json').write_text(json.dumps(raw))
+        with self.assertRaisesRegex(ValueError, 'effort override configuration updates missing'):
+            compat.export_reports(scope)
+
+    def test_paired_recovery_cases_bind_candidate_daemon_even_for_old_reader(self):
+        scope, unused = self.native_evidence(paired=True)
+        config = json.loads((scope / 'native.config.json').read_text())
+        evidence = scope / 'evidence/recovery-policy'
+        compat.validate_recovery_reports(evidence, config)
+        report = json.loads((evidence / 'report.json').read_text())
+        row = next(row for row in report['cases'] if row['scenario'] == 'cleanup-recovery-old-reader')
+        case_path = evidence / row['report']
+        original = json.loads(case_path.read_text())
+        for patch_value in ({'stock_role': 'previous'}, {'stock_upstream': compat.UPSTREAM},
+                {'stock_version': 'codex-cli 0.163.0'}, {'old_runtime_sha256': '0' * 64}):
+            with self.subTest(patch=patch_value):
+                case_path.write_text(json.dumps(dict(original, **patch_value)))
+                row['sha256'] = compat.digest(case_path)
+                (evidence / 'report.json').write_text(json.dumps(report))
+                with self.assertRaises(ValueError):
+                    compat.validate_recovery_reports(evidence, config)
 
     def test_coordinator_reports_bind_dedicated_results_and_native_capture_bytes(self):
         scope, raw = self.native_evidence()
@@ -494,14 +788,24 @@ assert 'changed frontend requires fresh package build' not in driver
         return module
 
     def test_production_composition_writes_real_core_compat_and_capture_receipts(self):
+        self.production_composition(paired=False)
+
+    def test_paired_composition_freezes_and_executes_previous_stock_with_previous_upstream(self):
+        self.production_composition(paired=True)
+
+    def production_composition(self, *, paired):
         import test_release_protocol as fixtures
         import test_packaging as packaging
         workflow = self.workflow()
         fixture = fixtures.ReleaseProtocolTests()
-        fixture.setUp(legacy=True)
+        fixture.setUp(legacy=not paired)
         self.addCleanup(fixture.doCleanups)
+        if paired:
+            fixture.plan = fixture.transition_plan()
         old = packaging.PackageIntegrityTests('test_valid_package_and_declared_hash_recipe')
-        old.setUp(packager=fixture.packager)
+        old_packager = fixture.packager if not paired else fixtures.protocol._module(
+            fixtures.legacy_source(fixture.base / 'previous-source-0163') / 'scripts/package-release.py')
+        old.setUp(packager=old_packager)
         self.addCleanup(old.doCleanups)
         old.manifest.update(release=fixture.plan['previous_release']['tag'], plus_commit=fixture.plan['compat']['previous_source_commit'])
         old.seal()
@@ -525,9 +829,16 @@ assert 'changed frontend requires fresh package build' not in driver
         fixture.profile['native_build'] = {name: str(fixture.base / name) for name in
             ('upstream_repository', 'cargo_home', 'cargo_target_dir', 'v8_cache', 'license_cache')}
         fixture.profile['native_build'].update(official_binary=str(official), official_sha256=compat.digest(official), cargo_jobs=1, test_threads=1)
+        if paired:
+            previous_stock = fixture.base / 'previous-official'
+            previous_stock.write_bytes(b'pinned previous stock')
+            fixture.profile['native_build'].update(previous_official_binary=str(previous_stock),
+                previous_official_sha256=compat.digest(previous_stock))
+            fixture.plan['compat']['previous_stock_binary_sha256']['x86_64'] = compat.digest(previous_stock)
         source = fixture.base / 'product-source'
         for name in ('scripts/package-release.py', 'scripts/native-results.py', 'rust-runtime/Cargo.toml',
-                     'rust-runtime/Cargo.lock', 'bin/codex-plus', fixture.plan['patch']['path'], *compat.RECOVERY_FIXTURES):
+                     'rust-runtime/Cargo.lock', 'bin/codex-plus', fixture.plan['patch']['path'], *compat.RECOVERY_FIXTURES,
+                     *((compat.PAIRED_FIXTURE, *compat.MEMORY_FIXTURES) if paired else ())):
             path = source / name
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes((fixture.source / name).read_bytes())
@@ -539,13 +850,23 @@ assert 'changed frontend requires fresh package build' not in driver
         fixture.observed['plus_source_commit'] = fixture.plan['plus_source_commit']
         fixture.profile['source_root'] = str(source)
         fixture.plan['compat']['stock_binary_sha256']['x86_64'] = compat.digest(official)
+        if paired:
+            for module in (fixtures.protocol, workflow.protocol, compat, workflow.compat):
+                for name, mapping in (('TRANSITION_STOCK', fixture.plan['compat']['stock_binary_sha256']),
+                        ('TRANSITION_PREVIOUS_STOCK', fixture.plan['compat']['previous_stock_binary_sha256'])):
+                    mocked = patch.object(module, name, mapping)
+                    mocked.start()
+                    self.addCleanup(mocked.stop)
         fixture.plan['compat']['fixture_files'].update({name: compat.digest(fixture.source / name)
             for name in compat.RECOVERY_FIXTURES})
+        if paired:
+            fixture.plan['compat']['fixture_files'].update({name: compat.digest(source / name)
+                for name in (compat.PAIRED_FIXTURE, *compat.MEMORY_FIXTURES)})
         for name in ('python', 'executor_package_root'):
             fixture.observed[name] = copy.deepcopy(fixture.profile[name])
         for arch in fixture.plan['targets']:
             fixture.plan['targets'][arch]['profile_sha256'] = fixtures.protocol.digest(fixture.profile)
-            fixture.plan['gates'][arch]['compat']['checks'] = list(compat.GATES)
+            fixture.plan['gates'][arch]['compat']['checks'] = list(compat.gate_names(2 if paired else 1))
             fixture.plan['gates'][arch]['captures']['checks'] = ['native-cursor-states']
         original_setup = packaging.PackageIntegrityTests.setUp
         def package_setup(value, **kwargs):
@@ -591,13 +912,14 @@ assert 'changed frontend requires fresh package build' not in driver
             proposal = workflow.prepare_attempt(root, canonical)
             workflow.verify_attempt(root)
         self.assertEqual(proposal['argv'][3], 'run-attempt')
+        self.assertEqual(proposal['deadline_seconds'], 1680 if paired else 1500)
         scope = root / 'compat'
         self.assertFalse(any(path.suffix == '.py' for path in scope.iterdir()))
         def execute(*args, **kwargs):
             raw = fixture.put(root, 'compat/raw.log', 'actual simulated child completion')
             evidence = {raw: fixtures.protocol.file_record(root / raw)['sha256']}
             common = dict(architecture='x86_64', plus_source_commit=fixture.plan['plus_source_commit'])
-            fixture.put(root, 'compat/compat-report.json', dict(common, checks={name: {'outcome': 'passed', 'evidence': evidence} for name in compat.GATES}))
+            fixture.put(root, 'compat/compat-report.json', dict(common, checks={name: {'outcome': 'passed', 'evidence': evidence} for name in compat.gate_names(2 if paired else 1)}))
             screen = fixture.put(root, 'compat/screen.txt', 'native geometry bytes')
             inventory = fixture.put(root, 'compat/capture-manifest.json', dict(architecture='x86_64', package_sha256=compat.digest(root / report['archive']),
                 files={screen: fixtures.protocol.file_record(root / screen)}))
@@ -622,6 +944,11 @@ assert 'changed frontend requires fresh package build' not in driver
         self.assertEqual(rows['compat']['input']['previous_package'], 'outputs/compat-previous-package.json')
         self.assertIn(str(canonical / 'bin/codex'), rows['compat']['input']['executed'])
         self.assertIn(str(SCRIPTS / 'package-release.py'), rows['compat']['input']['executed'])
+        if paired:
+            self.assertIn(str(previous_stock), rows['compat']['input']['executed'])
+            frozen = fixtures.protocol.load(root / 'compat-preparation.json')['closure']
+            self.assertEqual(frozen[str(previous_stock)]['sha256'], compat.digest(previous_stock))
+            self.assertEqual(fixtures.protocol.load(scope / 'native.config.json')['previous_stock_binary'], str(previous_stock))
         self.assertIn(str(site / 'pyte/__init__.py'), rows['compat']['input']['executed'])
         self.assertNotIn(str(site / 'pyte/escape.py'), rows['compat']['input']['executed'])
         self.assertIn(str(site / 'pyte/escape.py'), fixtures.protocol.load(root / 'compat-preparation.json')['closure'])

@@ -1,0 +1,288 @@
+{
+  "accepted": true,
+  "architectures": {
+    "aarch64": {
+      "accepted": {
+        "accepted": true,
+        "architecture": "aarch64",
+        "attempt": "0.165.0-plus.0.4.9-aarch64-8cca6038b6953871",
+        "coordinator_protocol": 5,
+        "execution_record_format": 1,
+        "plan_sha256": "2c345c273dce74dffea603e862f40e81433ed7b29ab83e7910a3d902b2df3c2a",
+        "receipts": {
+          "ap": "ecabbec19b6dfd1cf67089f0f1be4ddbbc7185202dfb3f494f3e1392ef7ff6c2",
+          "captures": "af5db0bef81643eb128322a9bce9e24d4d64fc1ae37e0dfc6bee992066686cb5",
+          "compat": "12d30c73984a76c2bcd875453a3fbff441e3dee7cf7a13c7ee71e2d4528dc3c3",
+          "frontend": "30cbb00e818013eac56dcb6c35bb6127bcb5ecd30303c06841d22264c9595c43",
+          "native-tests": "9fbf7871b4fc4d65fa4babbd3d0eb38fc58bdc0d43317aebddcdb506ecb3093d",
+          "package": "9c657505bc4ce80be113551c25fbb61ff1a363a2ff75546d909e702e076b2fb0",
+          "preflight": "60b7387affafa3539ff35f821051a6b89c2c09b2a0facd7f13f3afbe98ae2706",
+          "runtime": "3efc197058b559894884c8deecee166afd444b706f9cf24ae065d58f539a926f"
+        },
+        "rehearsal": false,
+        "target": {
+          "asset": "codex-plus-0.165.0-plus.0.4.9-aarch64-unknown-linux-gnu.tar.gz",
+          "manifest_sha256": "7f0033ee04a660ce5f8ce1c1ea1256a3da81c9e9c39f0d5be1608ed8b5d5f3b7",
+          "sha256": "0e683618b59dddc5da370ff18056a35a6cb6b9731772e320fea50305bf429951",
+          "tree_sha256": "aae2b70640d3484fdb8b68cfd5ee4231ca9d6cae3ba9e4a93c2236468017dc37",
+          "triple": "aarch64-unknown-linux-gnu"
+        }
+      },
+      "advisor_stub_checks": 9,
+      "ap_bundle": {
+        "path": "evidence/aarch64-ap.tar.gz",
+        "sha256": "b2184da96a1535c5d27932e0f2c7b55eed8ea41b77e851f87422a9479b12be0a",
+        "size": 568282
+      },
+      "ap_busy_pairs": 2,
+      "ap_replay": {
+        "ap_version": "0.7.35",
+        "bundle_sha256": "083d059561677558aa57b4e1b1eed84003555399b4063b30acc25c26fc2762b9",
+        "busy_pairs": 2,
+        "candidate_acceptance": true,
+        "captures": 20,
+        "classifier_sha256": "42827cdada62a39853ed75a6586824db0c4350c75bc0fc06d2cd8b05d44cf833",
+        "commands": [
+          {
+            "argv": [
+              "/home/liupan/.nvm/versions/node/v24.21.0/bin/node",
+              "/home/liupan/Aerius/codex-plus/.build/release-protocol/full-proof-preparation/ap/source-at-5b821743/node_modules/vitest/vitest.mjs",
+              "run",
+              "/home/liupan/Aerius/codex-plus/.build/release-protocol/full-proof-preparation/ap/source-at-5b821743/tests/codex-plus-footer.test.ts",
+              "--config",
+              "/home/liupan/Aerius/codex-plus/.build/release0165/tooling-097993a/scripts/release_recipes/compat/vitest.replay.config.ts",
+              "--reporter",
+              "json",
+              "--outputFile",
+              "/home/liupan/Aerius/codex-plus/.build/release0165/ap-replay/arm-v3/release-vitest.json"
+            ],
+            "exit_code": 0
+          },
+          {
+            "argv": [
+              "/home/liupan/.nvm/versions/node/v24.21.0/bin/node",
+              "/home/liupan/Aerius/codex-plus/.build/release-protocol/full-proof-preparation/ap/source-at-5b821743/node_modules/vitest/vitest.mjs",
+              "run",
+              "/home/liupan/Aerius/codex-plus/.build/release0165/tooling-097993a/scripts/release_recipes/compat/ap-release-replay-observer.test.ts",
+              "--config",
+              "/home/liupan/Aerius/codex-plus/.build/release0165/tooling-097993a/scripts/release_recipes/compat/vitest.replay.config.ts",
+              "--reporter",
+              "json",
+              "--outputFile",
+              "/home/liupan/Aerius/codex-plus/.build/release0165/ap-replay/arm-v3/observer-vitest.json"
+            ],
+            "exit_code": 0
+          }
+        ],
+        "cursor_sha256": "332d70e35c14d46650a3add2a98b71ba2c6727e07283f7bb562d4bbd40333527",
+        "installed_plugin_commit": "3b71bdeb2cee84eb2abd30e2179726e25a166f19",
+        "live_nudge_invoked": false,
+        "observer_sha256": "7fa358ac8fff76ea6167696f7bfeca82b7dd0d133e7a16f1a5e3d1353151a19a",
+        "passed": true,
+        "source_commit": "5b8217438fc7f1b5579e835c4973379e985f355a",
+        "tests": 23
+      },
+      "ap_tests": 23,
+      "captures": 20,
+      "compatibility_gates": 6,
+      "footer_contract": {
+        "acceptance": "fresh final packaged binary on native host; zero model calls or submitted turns; all expected AP verdicts and cursor-bounded busy hash changes",
+        "activity_rows_with_overflow": 6,
+        "ap_release": "0.7.35",
+        "capture_bundle_version": 2,
+        "cursor_fields": "cursor_y cursor_x pane_height pane_width cursor_flag",
+        "explicit_help_max_rows": 9,
+        "fixture_status_line": [
+          "model-with-reasoning",
+          "current-dir",
+          "compact-display",
+          "context-remaining",
+          "weekly-limit"
+        ],
+        "fixture_theme": "morandi",
+        "footer_max_rows": 8,
+        "frontend_patch_sha256": "f85e94a52c6c7437d956e2bc2cb5a28f6dbbcd494c3165ca141a793041a1f48b",
+        "pane_sizes": [
+          "100x40",
+          "80-column split"
+        ],
+        "plain_capture": "tmux capture-pane -p without -e or -J",
+        "release": "0.165.0-plus.0.4.9",
+        "required_states": [
+          "idle-empty",
+          "idle-help",
+          "busy t0 and t5",
+          "busy-typed",
+          "two-row draft",
+          "approval",
+          "Ultra idle",
+          "requestUserInput notes",
+          "MCP text form"
+        ],
+        "states_per_native_target": 20
+      },
+      "frontend_executions": 349,
+      "frontend_groups": 19,
+      "frontend_unique_names": 324,
+      "helper_tests": 205,
+      "native_bundle": {
+        "path": "evidence/aarch64-native.tar.gz",
+        "sha256": "7e42994bc88eb58be6330fc2dca3529290c739dcccad67c9160925f20a0a4c7b",
+        "size": 5913134
+      },
+      "recovery_cases": 14,
+      "rust_ignored": 0
+    },
+    "x86_64": {
+      "accepted": {
+        "accepted": true,
+        "architecture": "x86_64",
+        "attempt": "0.165.0-plus.0.4.9-x86_64-3c949b470215a4c0",
+        "coordinator_protocol": 5,
+        "execution_record_format": 1,
+        "plan_sha256": "2c345c273dce74dffea603e862f40e81433ed7b29ab83e7910a3d902b2df3c2a",
+        "receipts": {
+          "ap": "78ef86c6ef0473083134e49708810483c382be9ef5637b77a858da45a0856ef9",
+          "captures": "98e708d9e88899e89f08055c45ac5efeb0c25f4dc632067e5a66a161c7327a03",
+          "compat": "6499e6035b0ca1d4a405acf27d42a85bf62fba56d6e693f24e88d20d4ce6e861",
+          "frontend": "9cd6a4c17903f44c5c3cfe4640f0743e6a2e7f19143aa909e8ac327aa56d8b01",
+          "native-tests": "58e75193e984a5ea6d920efffa74bc645d878ac563f1c5c0d83ad895de74b0d0",
+          "package": "9faa0aa57bc754ac641304168132b9e03a4c699c0e62483834a1d7590f15a43b",
+          "preflight": "9e5868c538c012338b89d0b6362722b6c8e4ed43eba71b43fc5b11fdc21f87a6",
+          "runtime": "e8d8fa354925c49ebcd10a07392953e77972e3744cb2775a37b42891a5667c7a"
+        },
+        "rehearsal": false,
+        "target": {
+          "asset": "codex-plus-0.165.0-plus.0.4.9-x86_64-unknown-linux-gnu.tar.gz",
+          "manifest_sha256": "a221f71abd18d61738338fbf46327ce9b545fec638d623b14488dc3e7a386b85",
+          "sha256": "177a2fa5cffcf73af155fed2db31ac415a55743c1b99f1c98a64c91668f89ab4",
+          "tree_sha256": "86b86e49b790ab4d889a3bc0fe5710beb0fde06fb195b24847742818cf50f771",
+          "triple": "x86_64-unknown-linux-gnu"
+        }
+      },
+      "advisor_stub_checks": 9,
+      "ap_bundle": {
+        "path": "evidence/x86_64-ap.tar.gz",
+        "sha256": "a5475963be64b647ca8bd46ec82e6fd9bfddbe272e9017421ad7b7850187b0d5",
+        "size": 567926
+      },
+      "ap_busy_pairs": 2,
+      "ap_replay": {
+        "ap_version": "0.7.35",
+        "bundle_sha256": "083d059561677558aa57b4e1b1eed84003555399b4063b30acc25c26fc2762b9",
+        "busy_pairs": 2,
+        "candidate_acceptance": true,
+        "captures": 20,
+        "classifier_sha256": "42827cdada62a39853ed75a6586824db0c4350c75bc0fc06d2cd8b05d44cf833",
+        "commands": [
+          {
+            "argv": [
+              "/home/liupan/.nvm/versions/node/v24.21.0/bin/node",
+              "/home/liupan/Aerius/codex-plus/.build/release-protocol/full-proof-preparation/ap/source-at-5b821743/node_modules/vitest/vitest.mjs",
+              "run",
+              "/home/liupan/Aerius/codex-plus/.build/release-protocol/full-proof-preparation/ap/source-at-5b821743/tests/codex-plus-footer.test.ts",
+              "--config",
+              "/home/liupan/Aerius/codex-plus/.build/release0165/tooling-097993a/scripts/release_recipes/compat/vitest.replay.config.ts",
+              "--reporter",
+              "json",
+              "--outputFile",
+              "/home/liupan/Aerius/codex-plus/.build/release0165/ap-replay/x86-v3/release-vitest.json"
+            ],
+            "exit_code": 0
+          },
+          {
+            "argv": [
+              "/home/liupan/.nvm/versions/node/v24.21.0/bin/node",
+              "/home/liupan/Aerius/codex-plus/.build/release-protocol/full-proof-preparation/ap/source-at-5b821743/node_modules/vitest/vitest.mjs",
+              "run",
+              "/home/liupan/Aerius/codex-plus/.build/release0165/tooling-097993a/scripts/release_recipes/compat/ap-release-replay-observer.test.ts",
+              "--config",
+              "/home/liupan/Aerius/codex-plus/.build/release0165/tooling-097993a/scripts/release_recipes/compat/vitest.replay.config.ts",
+              "--reporter",
+              "json",
+              "--outputFile",
+              "/home/liupan/Aerius/codex-plus/.build/release0165/ap-replay/x86-v3/observer-vitest.json"
+            ],
+            "exit_code": 0
+          }
+        ],
+        "cursor_sha256": "332d70e35c14d46650a3add2a98b71ba2c6727e07283f7bb562d4bbd40333527",
+        "installed_plugin_commit": "3b71bdeb2cee84eb2abd30e2179726e25a166f19",
+        "live_nudge_invoked": false,
+        "observer_sha256": "7fa358ac8fff76ea6167696f7bfeca82b7dd0d133e7a16f1a5e3d1353151a19a",
+        "passed": true,
+        "source_commit": "5b8217438fc7f1b5579e835c4973379e985f355a",
+        "tests": 23
+      },
+      "ap_tests": 23,
+      "captures": 20,
+      "compatibility_gates": 6,
+      "footer_contract": {
+        "acceptance": "fresh final packaged binary on native host; zero model calls or submitted turns; all expected AP verdicts and cursor-bounded busy hash changes",
+        "activity_rows_with_overflow": 6,
+        "ap_release": "0.7.35",
+        "capture_bundle_version": 2,
+        "cursor_fields": "cursor_y cursor_x pane_height pane_width cursor_flag",
+        "explicit_help_max_rows": 9,
+        "fixture_status_line": [
+          "model-with-reasoning",
+          "current-dir",
+          "compact-display",
+          "context-remaining",
+          "weekly-limit"
+        ],
+        "fixture_theme": "morandi",
+        "footer_max_rows": 8,
+        "frontend_patch_sha256": "f85e94a52c6c7437d956e2bc2cb5a28f6dbbcd494c3165ca141a793041a1f48b",
+        "pane_sizes": [
+          "100x40",
+          "80-column split"
+        ],
+        "plain_capture": "tmux capture-pane -p without -e or -J",
+        "release": "0.165.0-plus.0.4.9",
+        "required_states": [
+          "idle-empty",
+          "idle-help",
+          "busy t0 and t5",
+          "busy-typed",
+          "two-row draft",
+          "approval",
+          "Ultra idle",
+          "requestUserInput notes",
+          "MCP text form"
+        ],
+        "states_per_native_target": 20
+      },
+      "frontend_executions": 349,
+      "frontend_groups": 19,
+      "frontend_unique_names": 324,
+      "helper_tests": 205,
+      "native_bundle": {
+        "path": "evidence/x86_64-native.tar.gz",
+        "sha256": "c4044a1bc72ee910503fee954f3fd88fb19cd04ed1dbfa5fdcec33356ba2a2ab",
+        "size": 5805143
+      },
+      "recovery_cases": 14,
+      "rust_ignored": 0
+    }
+  },
+  "coordinator_commit": "097993a191d89f3a4c07736493a143cd5b1ac348",
+  "execution_tooling_commit": "097993a191d89f3a4c07736493a143cd5b1ac348",
+  "frontend_patch_sha256": "f85e94a52c6c7437d956e2bc2cb5a28f6dbbcd494c3165ca141a793041a1f48b",
+  "limits": [
+    "AP0.7.35 replay ran on x86 over native x86 and ARM captures; no live nudge.",
+    "Nine Advisor checks use local/stub providers; no paid-provider or real cross-host Advisor qualification. Three explicit real-SSH skips retained.",
+    "x86 raw bwrap UID-map probe failed equally for official and Plus; both CLI read-only sandbox probes passed. ARM raw and CLI probes passed.",
+    "Shipping old-TUI gate uses previous0.163.0-plus.0.4.9 against candidate0.165 daemon. Development048/049 idle-switch tests remain separate evidence.",
+    "Effort updates preserve request effort and cache key in loopback tests; no measured paid cache-hit or cost-saving claim.",
+    "Existing fleet V1 memory rollback uses unchanged defaults. FreshV2 is preserved and explicitly readable by old stock, whose default remains V1.",
+    "Publication, main merge, fleet installation and process restart are separate outcomes."
+  ],
+  "product_commit": "097993a191d89f3a4c07736493a143cd5b1ac348",
+  "release": "0.165.0-plus.0.4.9",
+  "upstream": {
+    "commit": "360319d8dee62d87e2d59fc0c21805d79519cfed",
+    "tag": "rust-v0.165.0",
+    "version": "0.165.0"
+  }
+}

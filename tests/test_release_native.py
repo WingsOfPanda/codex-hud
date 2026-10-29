@@ -82,6 +82,37 @@ class NativeTests(unittest.TestCase):
         self.assertEqual(git.call_count, 1)
         self.assertEqual(git.call_args.args[0][3:5], ['archive', source.LEGACY_COMMIT])
 
+    def test_paired_build_inputs_bind_both_official_binaries_and_rustdoc(self):
+        self.plan['upstream'] = native.UPSTREAM_165
+        self.plan['previous_release']['upstream'] = native.UPSTREAM_163
+        self.plan['compat']['recipe_revision'] = 2
+        build = self.profile['native_build']
+        for name in ('upstream_repository', 'cargo_home', 'cargo_target_dir', 'v8_cache', 'license_cache'):
+            Path(build[name]).mkdir()
+        Path(build['official_binary']).write_bytes(b'new official fixture')
+        previous = self.base / 'previous-official'
+        previous.write_bytes(b'old official fixture')
+        build.update(official_sha256=native.sha(build['official_binary']),
+                     previous_official_binary=str(previous), previous_official_sha256=native.sha(previous))
+        self.plan['compat']['stock_binary_sha256']['x86_64'] = build['official_sha256']
+        self.plan['compat']['previous_stock_binary_sha256'] = {'x86_64': native.sha(previous)}
+        self.profile['toolchain']['rustc'] = str(self.base / 'rustc')
+        rustdoc = Path(self.profile['toolchain']['rustc']).with_name('rustdoc')
+        rustdoc.write_bytes(b'pinned rustdoc fixture')
+        self.profile['system_tools'][str(rustdoc.resolve())] = native.sha(rustdoc)
+        native.build_inputs(self.plan, self.profile)
+        previous.write_bytes(b'changed previous official')
+        with self.assertRaisesRegex(ValueError, 'Paired official binary pin mismatch'):
+            native.build_inputs(self.plan, self.profile)
+        previous.write_bytes(b'old official fixture')
+        rustdoc.write_bytes(b'changed rustdoc')
+        with self.assertRaisesRegex(ValueError, 'rustdoc'):
+            native.build_inputs(self.plan, self.profile)
+        rustdoc.write_bytes(b'pinned rustdoc fixture')
+        del build['previous_official_sha256']
+        with self.assertRaisesRegex(ValueError, 'Previous official binary'):
+            native.build_inputs(self.plan, self.profile)
+
     def setup_runner(self, root):
         context = {'closure': {str(ROOT / 'scripts/release_native.py'):
                               protocol.file_record(ROOT / 'scripts/release_native.py')}, 'cleanup': self.hook}
@@ -327,6 +358,19 @@ else:
         self.assertEqual(set(report['compiler_versions']), {'rustc', 'cargo'})
         self.assertEqual(len(report['product_scripts']), 2)
         self.assertTrue((output / 'preflight.json').is_file())
+
+    def test_packaging_preflight_retains_0163_v8_manifest(self):
+        recipe, c, notices, packager, cache, _ = self.packaging_fixture()
+        directory = c.UPSTREAM / 'third_party/v8'
+        current = directory / 'rusty_v8_152_2_0_release_manifests.sha256'
+        previous = directory / 'rusty_v8_150_4_0_release_manifests.sha256'
+        current.rename(previous)
+        with patch.object(recipe, 'module', side_effect=[notices, packager]), \
+             patch.object(packager, 'UPSTREAM_VERSION', '0.163.0'), \
+             patch.dict(os.environ, c.ENV, clear=True):
+            report = recipe.check(c.SOURCE, c.UPSTREAM, c.TARGET, cache, c.BASE / 'notices')
+        self.assertIn(str(previous), report['source_license_inputs'])
+        self.assertNotIn(str(current), report['source_license_inputs'])
 
     def test_packaging_preflight_refuses_missing_compiler_and_license_inputs(self):
         for missing in ('compiler', 'compiler-version', 'cargo-version', 'copyright',
@@ -757,13 +801,49 @@ else:
 
 
 class UpstreamQualificationTests(unittest.TestCase):
+    OLD = {'version': '0.163.0', 'tag': 'rust-v0.163.0',
+           'commit': '83086188ae0614bd882818ff1aa23f3194962012'}
+    NEW = {'version': '0.165.0', 'tag': 'rust-v0.165.0',
+           'commit': '360319d8dee62d87e2d59fc0c21805d79519cfed'}
+
+    def test_reviewed_0165_family_reaches_compiler_validation(self):
+        plan = {'upstream': self.NEW, 'previous_release': {'upstream': self.OLD},
+                'compat': {'recipe_revision': 2}}
+        with self.assertRaisesRegex(ValueError, 'Compiler recipe needs qualification'):
+            native.build_inputs(plan, {'toolchain': {'version': '1.99.0'}})
+
+    def test_changed_commit_tag_or_recipe_cannot_select_0165(self):
+        plan = {'upstream': self.NEW, 'previous_release': {'upstream': self.OLD},
+                'compat': {'recipe_revision': 2}}
+        for field, value in (('tag', 'rust-v0.165.0-alpha.1'), ('commit', '0' * 40)):
+            changed = copy.deepcopy(plan)
+            changed['upstream'][field] = value
+            with self.subTest(field=field), self.assertRaisesRegex(ValueError, 'Upstream recipe'):
+                native.build_inputs(changed, {})
+        for revision in (1, 3):
+            changed = copy.deepcopy(plan)
+            changed['compat']['recipe_revision'] = revision
+            with self.subTest(revision=revision), self.assertRaisesRegex(ValueError, 'Upstream recipe'):
+                native.build_inputs(changed, {})
+
+    def test_0165_filters_extend_preserved_0163_inventory(self):
+        recipe = native.module(native.RECIPE / 'build.py')
+        old = recipe.filters({'upstream': self.OLD})
+        new = recipe.filters({'upstream': self.NEW})
+        self.assertEqual(old, recipe.FILTERS)
+        self.assertEqual(len(new), 19)
+        self.assertTrue(set(old) < set(new))
+        self.assertTrue({'plus_goal', 'ultracode', 'shell_policy', 'command_display',
+                         'compact_display', 'daemon_menu', 'native_history',
+                         'active_turn_steer', 'chatwidget::tests::exec_flow'} <= set(new))
+
     def test_0165_package_support_does_not_qualify_production_recipe(self):
         plan = {'upstream': {'version': '0.165.0'}}
         with self.assertRaisesRegex(ValueError, 'Upstream recipe needs qualification'):
             native.build_inputs(plan, {})
 
     def test_qualified_0163_still_checks_native_prerequisites(self):
-        plan = {'upstream': {'version': '0.163.0'}}
+        plan = {'upstream': self.OLD, 'compat': {'recipe_revision': 1}}
         with self.assertRaisesRegex(ValueError, 'Compiler recipe needs qualification'):
             native.build_inputs(plan, {'toolchain': {'version': '1.99.0'}})
 

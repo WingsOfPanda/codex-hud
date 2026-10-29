@@ -107,7 +107,7 @@ manifest={'baseline_only':a.baseline,'target_release':CONFIG['release'],'capture
     'fixture_tui':{'theme':'morandi','status_line':SELECTION,'status_line_use_colors':True},
     'bundle_version':2,'AP_policy':'cursor_flag=1 and positive bare composer on cursor row; whole-screen busy priority',
     'development_pre_package':a.development,'missing_states':[],
-    'core_required':'0.163.0','binary':str(a.binary),'binary_sha256':digest(a.binary),
+    'core_required':UPSTREAM['version'],'binary':str(a.binary),'binary_sha256':digest(a.binary),
     'binary_version':subprocess.check_output([str(a.binary),'--version'],text=True).strip(),
     'source_start':source_identity(),'reviewed_footer_contract':str(a.footer_contract.resolve()),
     'reviewed_footer_contract_sha256':digest(a.footer_contract),
@@ -116,7 +116,7 @@ manifest['binary_source_commit']=subprocess.check_output(['git','rev-parse',a.bi
 manifest['binary_source_patch_sha256']=hashlib.sha256(subprocess.check_output(['git','show',
     manifest['binary_source_commit']+':'+CONFIG['patch_path']],cwd=a.source)).hexdigest()
 manifest['native_core_version']=re.search(r'\b(\d+\.\d+\.\d+)\b',manifest['binary_version'])[1]
-assert TMUX and manifest['native_core_version']=='0.163.0'
+assert TMUX and manifest['native_core_version']==UPSTREAM['version']
 host=a.binary.with_name('codex-code-mode-host')
 manifest['code_mode_host']={'path':str(host),'sha256':digest(host)} if host.exists() else None
 if not a.baseline:

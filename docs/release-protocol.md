@@ -5,6 +5,13 @@ runner. Check its status before preparing or launching an attempt.
 
 ## Qualification status
 
+The explicit revision-2 path for stock 0.163.0 to 0.165.0 is under release
+qualification. It binds both official binaries and adds `paired-stock-transition`
+after the existing compatibility checks. Development and fixture tests are
+supporting evidence; complete native packages, paired rollback, captures and AP
+acceptance on both targets are still required before a 0.165 shipping claim.
+Revision 1 retains its same-upstream contract and historical evidence.
+
 The native workflow completed the published
 [0.4.8 qualification](releases/0.163.0-plus.0.4.8/qualification.json) on both
 architectures: product `05f883c228b18830ed93f691460715525b42a825`, executed

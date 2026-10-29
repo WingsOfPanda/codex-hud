@@ -13,7 +13,7 @@ p=argparse.ArgumentParser(description=__doc__)
 p.add_argument('--evidence',type=Path,required=True)
 a=p.parse_args();m=json.loads((a.evidence/'manifest.json').read_text())
 assert m.get('capture_complete') and 'failure' not in m
-assert m['native_core_version']=='0.163.0'
+assert m['native_core_version']==UPSTREAM['version']
 assert m['fixture_tui']=={'theme':'morandi','status_line_use_colors':True,
     'status_line':['model-with-reasoning','current-dir','compact-display','context-remaining','weekly-limit']}
 if not m['baseline_only']:assert m['source_start']==m['source_end']

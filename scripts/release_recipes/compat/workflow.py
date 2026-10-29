@@ -37,6 +37,8 @@ def closure(profile):
                                        'release_protocol.py', 'release_ownership.py')]
     paths += [path for path in (scripts / 'release_recipes/compat').iterdir() if path.is_file()]
     paths += [Path(profile['python']['path']), Path(profile['executor_package_root']) / 'bin/codex-plus-runtime']
+    if 'previous_official_binary' in profile.get('native_build', {}):
+        paths.append(Path(profile['native_build']['previous_official_binary']))
     files = {str(path.resolve()): protocol.file_record(path.resolve()) for path in paths}
     if profile['python'].get('fixture_imports'):
         files.update(native.fixture_closure(profile))
@@ -53,12 +55,13 @@ def executed_origins(profile, paths):
 
 def proposal(root, profile, command, inputs, *, topic):
     script = str(Path(profile['tooling_root']) / 'scripts/release_compat.py')
+    budget = compat.COMPAT_BUDGETS[protocol.load(root / 'plan.json')['compat']['recipe_revision'] if command == 'run-attempt' else 1]
     return {'schema': 1, 'topic': topic,
         'argv': [profile['python']['path'], '-B', script, command, '--attempt', str(root), '--execution', '{execution}'],
         'cwd': profile['tooling_root'], 'env': native.python_env(profile),
         'inputs': [{'source': str(root / name), 'path': name} for name in inputs],
         'exclusive_keys': ['release-compat-' + protocol.digest(str(root))[:24]],
-        'expected_duration_seconds': 900, 'deadline_seconds': 1500, 'cancel_grace_seconds': 90}
+        'expected_duration_seconds': budget['native'], 'deadline_seconds': budget['managed'], 'cancel_grace_seconds': 90}
 
 
 def previous_package(plan, profile, old_package):
@@ -74,7 +77,7 @@ def previous_package(plan, profile, old_package):
     protocol.require(old_files == old_manifest['files'] and
         verifier.tree_sha256(old_files) == old_manifest['tree_sha256'] == previous['tree_sha256'],
         'Previous package inventory mismatch')
-    protocol.require(old_manifest['upstream'] == plan['upstream'] and
+    protocol.require(old_manifest['upstream'] == plan['previous_release'].get('upstream', plan['upstream']) and
         old_manifest['coordinator_protocol'] == 5 and old_manifest['execution_record_format'] == 1,
         'Unsupported previous package protocol/upstream')
     return old
@@ -103,6 +106,10 @@ def precheck(plan, profile, old_package, cleanup):
     previous_package(plan, profile, old_package)
     protocol.require(profile['native_build']['official_sha256'] ==
         plan['compat']['stock_binary_sha256'][profile['architecture']], 'Compatibility official binary pin mismatch')
+    if plan['compat']['recipe_revision'] == 2:
+        protocol.require(profile['native_build']['previous_official_sha256'] ==
+            plan['compat']['previous_stock_binary_sha256'][profile['architecture']],
+            'Compatibility previous official binary pin mismatch')
     return {'ready': True, 'scope': 'native-prerequisites', 'plan_sha256': protocol.digest(plan),
         'profile_sha256': protocol.digest(profile),
         'checks': ['plan-profile-host-pins', 'native-inputs-imports', 'production-libcap',
@@ -131,6 +138,8 @@ def prepare_attempt(root, old_package):
         'qualification_evidence': str(approval_path), 'new_manifest_sha256': approval['manifest_sha256'],
         'new_archive_sha256': approval['archive_sha256'], 'qualification_evidence_sha256': native.sha(approval_path),
         'root_accepted_final_package': True}
+    if plan['compat']['recipe_revision'] == 2:
+        settings['previous_stock_binary'] = profile['native_build']['previous_official_binary']
     prepared = compat.prepare(plan, profile, root, config=settings,
         helper_binding={'helper': str(helper), 'sha256': native.sha(helper)})
     protocol.write_once(root / 'outputs/compat-previous-package.json', {'path': str(old), 'manifest_sha256': pin})
@@ -143,7 +152,7 @@ def prepare_attempt(root, old_package):
             if path.is_file():
                 protocol.require(not path.is_symlink(), 'Package input symlink refused')
                 files[str(path.resolve())] = protocol.file_record(path)
-    for name in ('stock_binary', 'new_archive'):
+    for name in ('stock_binary', 'new_archive', *(('previous_stock_binary',) if plan['compat']['recipe_revision'] == 2 else ())):
         path = Path(settings[name])
         files[str(path.resolve())] = protocol.file_record(path)
     for name in ('native-preparation.json', 'ownership-baseline.json', 'outputs/compat-package-approval.json',
@@ -262,7 +271,8 @@ def run_attempt(root, execution):
     try:
         with (root / 'logs/compat-managed.log').open('xb') as log:
             code = native.owned_run(argv, helper=Path(profile['executor_package_root']) / 'bin/codex-plus-runtime',
-                python=profile['python']['path'], cwd=root, env=env, stdout=log, timeout=1080)
+                python=profile['python']['path'], cwd=root, env=env, stdout=log,
+                timeout=compat.COMPAT_BUDGETS[plan['compat']['recipe_revision']]['workflow'])
     except Exception as exc:
         error = repr(exc)
     audit = cleanup_record(root, root / 'outputs/compat-cleanup.json',
@@ -299,6 +309,8 @@ def run_attempt(root, execution):
         executed.update(str(Path(package) / name) for name in ('bin/codex', 'bin/codex-plus-runtime',
             'bin/codex-code-mode-host', 'bin/codex-plus', 'codex-resources/bwrap'))
     executed.add(profile['native_build']['official_binary'])
+    if plan['compat']['recipe_revision'] == 2:
+        executed.add(profile['native_build']['previous_official_binary'])
     executed.update(str(Path(profile['source_root']) / name) for name in plan['compat']['fixture_files'])
     outputs = [path.relative_to(root).as_posix() for name in ('compat', 'outputs', 'logs')
                for path in (root / name).rglob('*') if path.is_file() and not path.is_symlink()]

@@ -38,6 +38,7 @@ PATCH = 'patches/codex-0.165.0-worker-hud.patch'
 TARGETS = {'x86_64-unknown-linux-gnu': 62, 'aarch64-unknown-linux-gnu': 183}
 DOCS = ('README.md', 'GLOSSARY.md', 'docs/background-work.md',
         'docs/upstream-0.165.0-assessment.md',
+        'docs/releases/0.165.0-plus.0.4.9.md',
         'docs/releases/0.163.0-plus.0.4.9.md',
         'docs/releases/0.163.0-plus.0.4.8.md',
         'docs/release-book.md', 'docs/release-checklist.md',

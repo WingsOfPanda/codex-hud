@@ -22,7 +22,7 @@ assert Path(tempfile.gettempdir()) == short
 config = json.loads((BASE / 'native.config.json').read_text())
 source = Path(config['source'])
 fixture_source = Path(config['fixture_source']).resolve(strict=True)
-sys.path[:0] = [str(fixture_source / 'tests'), str(fixture_source)]
+sys.path[:0] = [str(RECIPE.parents[1]), str(fixture_source / 'tests'), str(fixture_source)]
 os.environ['CODEX_PLUS_TEST_RUNTIME'] = str(Path(config['new_package']) / 'bin/codex-plus-runtime')
 assert os.uname().machine == config['architecture']
 
@@ -58,6 +58,48 @@ try:
 finally:
     fixture.close(True)
 assert not home.exists() and not gate.owned_processes(home)
+
+if config['recipe_revision'] == 2:
+    from fixtures.paired_stock_transition import PairedStockServer
+    binary = Path(config['previous_stock_binary'])
+    assert gate.digest(binary) == config['previous_stock_binary_sha256'][config['architecture']]
+    assert subprocess.check_output([str(binary), '--version'], text=True).strip() == 'codex-cli ' + config['previous_upstream']['version']
+    fixture = PairedStockServer(Path(config['old_package']) / 'bin/codex-plus-runtime',
+        binary, BASE / 'setup-smoke/previous-stock',
+        config='features.apps=false\nfeatures.memories=false\n')
+    home = fixture.home
+    try:
+        path = home / 'app-server-control/app-server-control.sock'
+        assert path.is_socket() and len(os.fsencode(path)) < 104
+        assert fixture.provider.count == 0
+        rows.append(dict(name='actual-previous-stock-constructor', path=str(path),
+            socket_bytes=len(os.fsencode(path)), passed=True, provider_requests=0,
+            stock_sha256=gate.digest(binary), stock_upstream=config['previous_upstream']))
+    finally:
+        fixture.close(True)
+    assert not home.exists() and not gate.owned_processes(home)
+    from fixtures import stock_memory_transition as memory
+    with tempfile.TemporaryDirectory(prefix='mm-', dir=short) as temporary:
+        root = Path(temporary)
+        home, work = root / 'home', root / 'work'
+        home.mkdir(mode=0o700)
+        work.mkdir()
+        provider = memory.Provider('v2', home / 'memories_v2', 'setup-only-memory')
+        server = None
+        try:
+            memory.write_config(home, provider)
+            server = memory.StockServer(Path(config['stock_binary']), home, work,
+                BASE / 'setup-smoke/memory-constructor.log')
+            path = home / 'app-server-control/app-server-control.sock'
+            assert path.is_socket() and len(os.fsencode(path)) < 104 and not provider.requests
+            rows.append(dict(name='actual-memory-StockServer-constructor', path=str(path),
+                socket_bytes=len(os.fsencode(path)), passed=True, provider_requests=0))
+        finally:
+            if server:
+                server.close()
+            provider.close()
+        assert not gate.owned_processes(home)
+    assert not home.exists()
 
 contract = importlib.import_module('test_claude_advisor')
 with install(BASE):

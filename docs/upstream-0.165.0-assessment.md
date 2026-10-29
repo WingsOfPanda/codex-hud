@@ -79,9 +79,11 @@ lifecycle or a complete packaged rollback.
 
 ## Release boundary
 
-The current native/compatibility recipes deliberately reject 0.165.0. Their
-same-upstream previous-package and old-TUI checks cannot establish a stock-daemon
-version transition. Before enabling a new release path:
+The retained revision-1 native/compatibility recipes reject the cross-upstream
+transition. Revision 2 binds the exact old/new stock identities and adds a paired
+transition gate; it is under release qualification. Same-upstream previous-package
+and old-TUI checks alone cannot establish a stock-daemon version transition.
+Before claiming a qualified release:
 
 1. Complete native compilation, affected Rust and terminal tests on the candidate.
 2. Select the paired stock 0.165 daemon/Plus cutover and rollback contract with
