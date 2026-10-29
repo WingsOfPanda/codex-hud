@@ -10,6 +10,16 @@ version pins, update policy, and global configuration belong to `fleet-config`.
 
 ## Development
 
+- Validate unknown data at its owning boundary, then pass typed values inward.
+  Trust guarantees established by a schema, constructor or internal type instead
+  of repeating shape, null or property checks. Changed external data crosses a
+  new boundary; process ownership and artifact integrity still need their checks.
+- Keep single-use logic at its call site. Extract a helper when it is reused,
+  isolates a complex boundary, or has a clear independent name that simplifies
+  the caller.
+- Let errors propagate unless the caller can recover, perform required cleanup,
+  or add actionable context. Catch specific errors; preserve the original cause
+  and failed outcome rather than returning a success-shaped default.
 - Before changing park or callback behavior, read the domain terms in
   [GLOSSARY.md](GLOSSARY.md).
 - Before changing the Codex client, read [Build](README.md#build). Client source

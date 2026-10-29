@@ -53,23 +53,48 @@ release command, runner, or framework. The single-command endpoint above remains
 a future implementation goal; do not claim it is available or build it as a side
 task during a release.
 
-- Prepare the stage commands and acceptance checks once. Batch safe mechanical
-  steps into a few shell calls while preserving required proposal reviews,
-  ownership boundaries and action approvals.
-- Keep deterministic validation in the existing tools. Return only phase, result,
-  next action and evidence paths to the model. Retain full logs and manifests on
-  disk; read targeted failure excerpts only when a check needs investigation.
-- Filter status queries to the exact execution and unresolved work. Never dump
-  the complete historical park ledger into model context. Reconcile delayed or
-  duplicate notices minimally; they do not justify a new analysis or test run.
-- Give each native owner one conditional assignment through its final return.
-  Do not add status-only agents, acknowledgement exchanges or advisor reviews to
-  routine successful stages. Use model reasoning for a new defect, conflicting
-  evidence, a material change or a decision that cannot be made by the existing
-  validators.
-- End the turn once observation is armed. Do not poll with model turns, resend
-  unchanged instructions, or rerun accepted work for another progress report.
-  Report meaningful changes and the final result concisely.
+1. **Bound the context.** Prefer a fresh coordinator session for a new release,
+   using the existing checklist as its handoff: scope and grant references,
+   selected commits, owners, active job/observer IDs, accepted gates, unresolved
+   failures and next action. Link older evidence instead of pasting prior release
+   transcripts. A handoff file alone does not shrink an existing model context.
+   Preserve the owning root and callback route while jobs run; if a fresh context
+   is unavailable, continue authorized work with bounded reads, not a new approval
+   stop. Read required instructions once per selected revision and context; load
+   other references only for the current decision.
+2. **Execute a phase, not a conversation.** Prepare commands and acceptance checks
+   once, then batch safe mechanical steps through the existing tools. Return to
+   the model at a required review, a concrete failure or the phase's final result,
+   rather than after each file, hash or command. Keep proposal reviews, ownership
+   boundaries and action approvals. Upstream adaptation or new recipe development
+   is a separate phase within the existing grant, not routine shipping work.
+3. **Accept at the owning boundary.** The coordinator runs the required independent
+   acceptance command on the actual returned artifacts. Within that verified
+   scope, use its verdict and evidence references; do not add manual recounting,
+   parallel validators or another test run to restate a passing result. Recheck
+   when inputs change, a new trust boundary is crossed, evidence conflicts, or
+   the selected recipe requires it. Archive transfer, publication verification
+   and fresh process-ownership checks retain their own boundaries.
+4. **Return a small result.** Successful tool and owner returns contain phase,
+   exact attempt/artifact identity, verdict, evidence path and next action.
+   Failures add the failing check and a targeted excerpt. Full logs, manifests,
+   inventories and command transcripts stay on disk. Filter status to the exact
+   job and relevant fields, including when a status command returns instructions
+   already read for the current binding. Open additional evidence only to resolve
+   a named uncertainty; do not reconstruct reports with ad-hoc scripts when an
+   existing validator already supplies them.
+5. **Delegate through completion.** Give each native owner one conditional
+   assignment through its final return. Routine successful stages need neither
+   acknowledgement exchanges nor status-only agents or advisor calls. Keep a
+   child's brief self-contained rather than inheriting the release conversation.
+   End the root turn once its remaining work is registered. Reconcile delayed or
+   duplicate notices against the saved result; unchanged evidence does not start
+   another analysis, monitor or test run.
+
+**Exit check:** each phase leaves its compact verdict and next action in the
+existing checklist, with detailed evidence on disk. A failed required gate remains
+failed; a successful phase continues under the existing grant. No separate report
+or acknowledgement is needed merely to demonstrate compliance with these rules.
 
 Token reduction must not remove required tests, cleanup proof, artifact checks or
 publication approval. Reduce repeated reasoning and narration, not verification.
@@ -405,6 +430,12 @@ Record [phase timings](release-performance.md#measurement-limits), overlap, cach
 conditions and review/recovery waits in the checklist. For CPU/cache experiments,
 use the [comparison method](release-protocol.md#publication-and-timing); report
 measured improvement or “not measured,” not a whole-release estimate from one stage.
+When usage records are available, summarize request count, cached/uncached input
+and output by coordinator and owner for the release window. Deduplicate request
+IDs; reasoning is part of output, and lifetime totals are not release usage.
+Compare adaptation, routine execution and recovery separately. Token volume does
+not establish subscription cost or savings; record unavailable measurements as
+such rather than launching another investigation to close the release.
 
 **Exit check:** every rollout target has an operator-confirmed result and released
 hold, and required restarts have verified outcomes. Otherwise report rollout or
