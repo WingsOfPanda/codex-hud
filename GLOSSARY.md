@@ -1,6 +1,6 @@
-# Codex Plus background work
+# Codex Plus
 
-The language of registered work and completion delivery.
+The language of registered work, completion delivery and shared mods.
 
 ## Language
 
@@ -50,3 +50,21 @@ _Avoid_: Job result
 The durable account of parks, watched jobs, and callback delivery. It preserves
 their identities and records what is known or uncertain across interruptions.
 _Avoid_: Log
+
+## Shared mods
+
+**Shared mod**:
+An internally maintained extension with common behavior for Claude Code and
+Codex Plus, whose available features may differ explicitly between hosts.
+
+**Mod capability**:
+A particular behavior a host supports for a shared mod. Support for one
+capability does not imply support for the mod's other features.
+
+**Mod host**:
+The Codex Plus integration through which compatible mod packages provide their
+supported behavior without a native release for each package.
+
+**Mod package**:
+A versioned, independently installable extension that declares the mod-host
+capabilities it requires.
