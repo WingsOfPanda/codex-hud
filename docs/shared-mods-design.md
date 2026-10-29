@@ -1,7 +1,8 @@
 # Shared mods design
 
-Status: design review complete; remaining user decisions are listed below.
-This document records scope and proposals, not implementation or rollout approval.
+Status: implemented on the feature branch following the user's instruction to
+finish the design and implement. Scoped acceptance is recorded in
+[mod-host evidence](evidence/mod-host.json); release and rollout remain separate.
 
 ## Accepted scope
 
@@ -30,9 +31,9 @@ Claude engine/API compatibility is not promised.
   engine/Plus versions and shared configuration; it is not currently the mods
   installer.
 
-The mods owner reports job-watch 0.5.0 merged at `fed07ed` and subsequently main
-at `cb60d92`. These reported commits are not the future integration pin. No
-implementation has been dispatched, including parser extraction.
+The verified integration package is job-watch 0.6.1 from claude-mods commit
+`fa5905d805eeffd9944dbf0b870522f63b75b6d5`, on its owner's unmerged feature branch.
+The native host contains no job-watch-specific code or packaged copy.
 
 ## Proposed reusable host
 
@@ -85,9 +86,11 @@ A package is ordinary Node code with the user's OS authority. Declared
 capabilities/access are compatibility and review metadata, not an enforced
 filesystem/network/command sandbox. The proposed initial trust model is reviewed
 internal packages, pinned by source identity and digest, with explicit enablement.
-User acceptance of that model remains pending.
+An enforced sandbox is outside this bounded implementation.
 
-The native host enforces lifecycle, output schema/size, display budget and
+The implementation uses this trusted-internal-code model and configured external
+Node for the bounded development scope. It grants no automatic installation
+authority. The native host enforces lifecycle, output schema/size, display budget and
 identity binding. Package code owns supported readers. Tests must prove that
 the reviewed collector ignores command-bearing fields; JSON transport alone
 does not provide that guarantee.
@@ -99,8 +102,8 @@ separate implementation choice.
 
 ## First consumer: job-watch
 
-Proposed initial collector: local marker records only. This narrower reader set
-still needs the user's agreement. Use filesystem reads and a fixed tmux command
+The initial collector supports local marker records only. It uses filesystem
+reads and a fixed tmux command
 with argv; no record-supplied shell, SSH, arbitrary condition, progress or show
 command. A missing identity never broadens record selection.
 
@@ -110,12 +113,12 @@ values, and chooses the newest installed AP bundle. These are outside the
 restricted collector; Claude's existing trusted-record policy is distinct.
 
 The refined mods proposal shares classification through a pure
-`entries(jobs, now, history?, budget)` function: state/attention order, parent
+`entries(jobs, seen, budget)` function: state/attention order, parent
 alert association, name/progress interpretation, summary counts and age handling.
 Collection stays host-specific; the TSV parser is Claude-only when Codex uses a
 separate Node collector. Claude footer/board and Codex view formatting must call
-the same classification implementation. The signature is illustrative, not yet
-a frozen interface. The entry limit must accept the granted budget rather than
+the same classification implementation; `seen` supplies the clock and optional
+delivery history. The entry limit accepts the granted budget rather than
 hard-code six for every host.
 
 Acceptance exercises both real formatter paths through that shared function;
@@ -230,18 +233,17 @@ The current evidence does not establish that every Claude engine feature can
 be supported by a client using an unchanged official Codex daemon. Assess each
 capability when selected; do not label it impossible without that evidence.
 
-## Remaining user decisions
+## Implemented choices and remaining deployment decisions
 
-- Trusted internal Node packages versus requiring an enforced sandbox first.
-- Configured external Node prerequisite versus a bundled runtime.
-- Local-marker-only job-watch pilot, its tmux/shared-owner visibility and
-  outside-tmux behavior.
-- Failure isolation, restart-based activation and initial no-pruning policy.
-- Installer ownership and automatic update authority before deployment.
+The bounded implementation uses trusted internal packages, external Node,
+failure isolation, process-pinned versions and no updater or pruning. Job-watch
+uses local marker reads, current-owner/pane visibility and empty output outside
+tmux. The exact interface is in [mod-host.md](mod-host.md).
 
-After those choices, freeze the exact contract and bounded implementation briefs.
-Neither reviewer advice nor this document grants merge, publication or install
-authority.
+Installer ownership, automatic advancement, release qualification and deployment
+remain separate decisions. Neither reviewer advice nor this document grants
+merge, publication or install authority. Remote readers, wakes and other mod
+capabilities remain outside this implementation.
 
 ## Review evidence
 
@@ -249,5 +251,6 @@ Two Opus 5.5 / xhigh consultations returned `revise`: local results and
 supplied-file hashes are in `.build/shared-mods/advisor-review-01/` and
 `.build/shared-mods/advisor-review-02/`. Root verified inputs and relevant native,
 ledger, footer and probe source. The mods owner supplied the matching generic-host
-proposal; this document consolidates the reviews. Source review is not runtime
-qualification. No shared-host code or integration tests have run.
+proposal; this document consolidates the reviews. Source review alone is not
+runtime qualification; the evidence record names the native, terminal and
+consumer checks that subsequently ran and their limits.

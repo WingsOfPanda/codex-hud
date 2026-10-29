@@ -1699,7 +1699,7 @@ index 000000000..e4bde32f1
 +</dict>
 +</plist>
 diff --git a/codex-rs/tui/src/app.rs b/codex-rs/tui/src/app.rs
-index 1b3b21e07..3bd477034 100644
+index 1b3b21e07..9aff0021a 100644
 --- a/codex-rs/tui/src/app.rs
 +++ b/codex-rs/tui/src/app.rs
 @@ -196,6 +196,7 @@ use tokio_util::sync::CancellationToken;
@@ -1719,19 +1719,36 @@ index 1b3b21e07..3bd477034 100644
  pub(crate) use agents_overview::AGENTS_OVERVIEW_VIEW_ID;
  mod activity_groups;
  mod app_server_event_targets;
-@@ -638,6 +641,7 @@ pub(crate) struct App {
+@@ -638,6 +641,8 @@ pub(crate) struct App {
      pending_thread_titles: HashMap<(ThreadId, ThreadTitleDestination), CancellationToken>,
      thread_event_listener_tasks: HashMap<ThreadId, JoinHandle<()>>,
      agent_navigation: AgentNavigationState,
 +    worker_hud: worker_hud::WorkerHudState,
++    mod_host: crate::mod_host::Host,
      agents_overview: agents_overview::AgentsOverviewState,
      side_threads: HashMap<ThreadId, SideThreadState>,
      abandoned_side_threads: HashSet<ThreadId>,
-@@ -1165,6 +1169,7 @@ impl App {
+@@ -1165,6 +1170,23 @@ impl App {
                      }
                      self.chat_widget.pre_draw_tick();
                      self.refresh_agents_overview_usage(app_server, tui.frame_requester());
 +                    self.refresh_worker_hud(app_server, &tui.frame_requester());
++                    let identity = (!app_server.uses_remote_workspace()
++                        && self.current_displayed_thread_id() == self.primary_thread_id)
++                        .then_some(self.primary_thread_id)
++                        .flatten()
++                        .map(|id| id.to_string());
++                    let budget = self.chat_widget.mod_row_budget(screen_size.width);
++                    let views = self.mod_host.tick(
++                        self.local_settings.codex_home.as_path(),
++                        identity,
++                        screen_size.width,
++                        budget,
++                    );
++                    self.chat_widget.set_mod_views(views);
++                    if let Some(interval) = self.mod_host.next_tick() {
++                        tui.frame_requester().schedule_frame_in(interval);
++                    }
                      let rendered_area = self.render_chat_widget_frame(tui, screen_size)?;
                      if tui.is_owned_screen()
                          && self.transcript_view.history
@@ -3713,50 +3730,62 @@ index 59a21ec2d..000000000
 -
 -  enter select · esc back
 diff --git a/codex-rs/tui/src/app/startup.rs b/codex-rs/tui/src/app/startup.rs
-index aacc60b90..e2eea9bb6 100644
+index aacc60b90..6dc895a84 100644
 --- a/codex-rs/tui/src/app/startup.rs
 +++ b/codex-rs/tui/src/app/startup.rs
-@@ -1033,6 +1033,7 @@ See the Codex keymap documentation for supported actions and examples."
+@@ -1033,6 +1033,8 @@ See the Codex keymap documentation for supported actions and examples."
              pending_thread_titles: HashMap::new(),
              thread_event_listener_tasks: HashMap::new(),
              agent_navigation: AgentNavigationState::default(),
 +            worker_hud: Default::default(),
++            mod_host: Default::default(),
              agents_overview,
              side_threads: HashMap::new(),
              abandoned_side_threads: HashSet::new(),
+@@ -1666,6 +1668,7 @@ See the Codex keymap documentation for supported actions and examples."
+                 }
+             }
+         };
++        app.mod_host.shutdown().await;
+         app.chat_widget.mention_usage_mut().flush().await;
+         if let Err(err) = backends.shutdown().await {
+             tracing::warn!(error = %err, "failed to shut down embedded app server");
 diff --git a/codex-rs/tui/src/app/test_support.rs b/codex-rs/tui/src/app/test_support.rs
-index a0efb3310..923cd79a3 100644
+index a0efb3310..6c1062fd4 100644
 --- a/codex-rs/tui/src/app/test_support.rs
 +++ b/codex-rs/tui/src/app/test_support.rs
-@@ -97,6 +97,7 @@ pub(crate) async fn make_test_app() -> Box<App> {
+@@ -97,6 +97,8 @@ pub(crate) async fn make_test_app() -> Box<App> {
          pending_thread_titles: HashMap::new(),
          thread_event_listener_tasks: HashMap::new(),
          agent_navigation: AgentNavigationState::default(),
 +        worker_hud: Default::default(),
++        mod_host: Default::default(),
          agents_overview: Default::default(),
          side_threads: HashMap::new(),
          abandoned_side_threads: HashSet::new(),
 diff --git a/codex-rs/tui/src/app/tests.rs b/codex-rs/tui/src/app/tests.rs
-index ae4532818..72958baeb 100644
+index ae4532818..a62b6414b 100644
 --- a/codex-rs/tui/src/app/tests.rs
 +++ b/codex-rs/tui/src/app/tests.rs
-@@ -6468,6 +6468,7 @@ async fn make_test_app() -> Box<App> {
+@@ -6468,6 +6468,8 @@ async fn make_test_app() -> Box<App> {
          pending_thread_titles: HashMap::new(),
          thread_event_listener_tasks: HashMap::new(),
          agent_navigation: AgentNavigationState::default(),
 +        worker_hud: Default::default(),
++        mod_host: Default::default(),
          pending_server_profiles: HashMap::new(),
          agents_overview: Default::default(),
          side_threads: HashMap::new(),
-@@ -6594,6 +6595,7 @@ pub(super) async fn make_test_app_with_channels() -> (
+@@ -6594,6 +6596,8 @@ pub(super) async fn make_test_app_with_channels() -> (
              pending_thread_titles: HashMap::new(),
              thread_event_listener_tasks: HashMap::new(),
              agent_navigation: AgentNavigationState::default(),
 +            worker_hud: Default::default(),
++            mod_host: Default::default(),
              pending_server_profiles: HashMap::new(),
              agents_overview: Default::default(),
              side_threads: HashMap::new(),
-@@ -6634,46 +6636,35 @@ pub(super) async fn make_test_app_with_channels() -> (
+@@ -6634,46 +6638,35 @@ pub(super) async fn make_test_app_with_channels() -> (
  }
  
  #[tokio::test]
@@ -3817,7 +3846,7 @@ index ae4532818..72958baeb 100644
          goal_files::objective_file_path(&reference, Some(home)).is_some()
      };
      let suffix = "attachments/00000000-0000-4000-8000-000000000000/goal-objective.md";
-@@ -6684,155 +6675,89 @@ async fn set_thread_goal_draft_materializes_long_objective_and_confirms_before_p
+@@ -6684,155 +6677,89 @@ async fn set_thread_goal_draft_materializes_long_objective_and_confirms_before_p
      ] {
          assert!(!is_managed(&codex_home, &path));
      }
@@ -4032,7 +4061,7 @@ index ae4532818..72958baeb 100644
      app_server.shutdown().await?;
      Ok(())
  }
-@@ -6840,12 +6765,13 @@ async fn set_thread_goal_draft_materializes_long_objective_and_confirms_before_p
+@@ -6840,12 +6767,13 @@ async fn set_thread_goal_draft_materializes_long_objective_and_confirms_before_p
  #[tokio::test]
  async fn replace_goal_confirmation_snapshot() {
      let mut app = make_test_app().await;
@@ -4047,7 +4076,7 @@ index ae4532818..72958baeb 100644
      );
      assert_app_snapshot!(
          "replace_goal_confirmation",
-@@ -6853,6 +6779,163 @@ async fn replace_goal_confirmation_snapshot() {
+@@ -6853,6 +6781,163 @@ async fn replace_goal_confirmation_snapshot() {
      );
  }
  
@@ -9279,7 +9308,7 @@ index f0b809ce5..ef0ab62a6 100644
              active_agent_label: None,
          };
 diff --git a/codex-rs/tui/src/bottom_pane/mod.rs b/codex-rs/tui/src/bottom_pane/mod.rs
-index 83341eedb..ed21175e1 100644
+index 83341eedb..b69e19962 100644
 --- a/codex-rs/tui/src/bottom_pane/mod.rs
 +++ b/codex-rs/tui/src/bottom_pane/mod.rs
 @@ -174,6 +174,8 @@ pub(crate) use footer::CollaborationModeIndicator;
@@ -9329,10 +9358,20 @@ index 83341eedb..ed21175e1 100644
      pub(crate) fn show_esc_backtrack_hint(&mut self) {
          self.esc_backtrack_hint = true;
          self.composer.set_esc_backtrack_hint(/*show*/ true);
-@@ -1754,6 +1766,46 @@ impl BottomPane {
+@@ -1754,6 +1766,56 @@ impl BottomPane {
          self.request_redraw();
      }
  
++    pub(crate) fn mod_row_budget(&self, width: u16) -> usize {
++        6usize.saturating_sub(self.worker_hud.native_lines_with_budget(width, 6).len())
++    }
++
++    pub(crate) fn set_mod_views(&mut self, views: Vec<crate::mod_host::View>) {
++        if self.worker_hud.set_mod_views(views) {
++            self.request_redraw();
++        }
++    }
++
 +    pub(crate) fn set_worker_hud(
 +        &mut self,
 +        rows: Vec<worker_hud::WorkerRow>,
@@ -9376,7 +9415,7 @@ index 83341eedb..ed21175e1 100644
      /// Update the inactive-thread approval list shown above the composer.
      pub(crate) fn set_pending_thread_approvals(&mut self, threads: Vec<String>) {
          if self.pending_thread_approvals.set_threads(threads) {
-@@ -2521,11 +2573,13 @@ impl BottomPane {
+@@ -2521,11 +2583,13 @@ impl BottomPane {
                  flex.push(/*flex*/ 0, RenderableItem::Owned("".into()));
              }
              let question_summary = self.question_summary(Instant::now());
@@ -9390,7 +9429,7 @@ index 83341eedb..ed21175e1 100644
                      || question_summary.is_some())
              {
                  options.command_popup_placement = CommandPopupPlacement::AboveComposer;
-@@ -2536,6 +2590,12 @@ impl BottomPane {
+@@ -2536,6 +2600,12 @@ impl BottomPane {
                      RenderableItem::Owned(Box::new(Paragraph::new(summary))),
                  );
              }
@@ -9403,7 +9442,7 @@ index 83341eedb..ed21175e1 100644
              let mut flex2 = FlexRenderable::new();
              // Clip spacing and hints before activity and previews when the composer is tall.
              let above_composer = if let Some(gap) = options.composer_gap {
-@@ -2567,6 +2627,12 @@ impl BottomPane {
+@@ -2567,6 +2637,12 @@ impl BottomPane {
                  }))
              };
              flex2.push(/*flex*/ 0, composer);
@@ -9416,7 +9455,7 @@ index 83341eedb..ed21175e1 100644
              RenderableItem::Owned(Box::new(flex2))
          }
      }
-@@ -2587,6 +2653,12 @@ impl BottomPane {
+@@ -2587,6 +2663,12 @@ impl BottomPane {
          }
      }
  
@@ -9429,7 +9468,7 @@ index 83341eedb..ed21175e1 100644
      pub(crate) fn set_luna_reserve_active(&mut self, active: bool) {
          if self.composer.set_luna_reserve_active(active) {
              self.request_redraw();
-@@ -2622,6 +2694,44 @@ impl BottomPane {
+@@ -2622,6 +2704,44 @@ impl BottomPane {
      }
  }
  
@@ -9474,7 +9513,7 @@ index 83341eedb..ed21175e1 100644
  struct ChatComposerPresentation<'a> {
      composer: &'a chat_composer::ChatComposer,
      options: ComposerRenderOptions<'a>,
-@@ -2801,6 +2911,153 @@ mod tests {
+@@ -2801,6 +2921,153 @@ mod tests {
          assert_eq!(pane.composer_text(), "main draft");
      }
  
@@ -11194,10 +11233,10 @@ index f717e2426..7a49ebb6a 100644
 +                                                   100% context left
 diff --git a/codex-rs/tui/src/bottom_pane/worker_hud.rs b/codex-rs/tui/src/bottom_pane/worker_hud.rs
 new file mode 100644
-index 000000000..084304cd9
+index 000000000..46f9fa347
 --- /dev/null
 +++ b/codex-rs/tui/src/bottom_pane/worker_hud.rs
-@@ -0,0 +1,2012 @@
+@@ -0,0 +1,2036 @@
 +//! Read-only worker summary; clipping never takes space from the composer.
 +
 +use crate::line_truncation::truncate_line_with_ellipsis_if_overflow;
@@ -11296,6 +11335,7 @@ index 000000000..084304cd9
 +    watcher: Option<WatcherHealth>,
 +    advisor: Option<AdvisorRow>,
 +    executions: ExecutionHud,
++    mods: Vec<crate::mod_host::View>,
 +}
 +
 +#[derive(Clone, Debug, PartialEq, Eq)]
@@ -11442,7 +11482,30 @@ index 000000000..084304cd9
 +        self.lines_with_budget(width, 6)
 +    }
 +
++    pub(crate) fn set_mod_views(&mut self, views: Vec<crate::mod_host::View>) -> bool {
++        if self.mods == views {
++            return false;
++        }
++        self.mods = views;
++        true
++    }
++
 +    pub(crate) fn lines_with_budget(&self, width: u16, row_budget: u16) -> Vec<Line<'static>> {
++        let mut lines = self.native_lines_with_budget(width, row_budget);
++        if width > 0 {
++            lines.extend(crate::mod_host::lines(
++                &self.mods,
++                usize::from(row_budget.min(6)).saturating_sub(lines.len()),
++            ));
++        }
++        lines
++    }
++
++    pub(crate) fn native_lines_with_budget(
++        &self,
++        width: u16,
++        row_budget: u16,
++    ) -> Vec<Line<'static>> {
 +        let row_budget = usize::from(row_budget.min(6));
 +        if width == 0 || row_budget == 0 {
 +            return Vec::new();
@@ -13211,7 +13274,7 @@ index 000000000..084304cd9
 +    }
 +}
 diff --git a/codex-rs/tui/src/chatwidget.rs b/codex-rs/tui/src/chatwidget.rs
-index 4b9d285d2..abc29e434 100644
+index 4b9d285d2..9c3547303 100644
 --- a/codex-rs/tui/src/chatwidget.rs
 +++ b/codex-rs/tui/src/chatwidget.rs
 @@ -263,6 +263,7 @@ mod connectors;
@@ -13282,7 +13345,7 @@ index 4b9d285d2..abc29e434 100644
          if let Some(mut cell) = self.transcript.take_active_cell() {
              // Insert finalized cell into history and keep grouping consistent.
              if let Some(exec) = cell.as_any_mut().downcast_mut::<ExecCell>() {
-@@ -1470,6 +1482,63 @@ impl ChatWidget {
+@@ -1470,6 +1482,71 @@ impl ChatWidget {
          }
      }
  
@@ -13291,6 +13354,14 @@ index 4b9d285d2..abc29e434 100644
 +        view: crate::bottom_pane::custom_prompt_view::CustomPromptView,
 +    ) {
 +        self.bottom_pane.show_text_prompt(view);
++    }
++
++    pub(crate) fn mod_row_budget(&self, width: u16) -> usize {
++        self.bottom_pane.mod_row_budget(width)
++    }
++
++    pub(crate) fn set_mod_views(&mut self, views: Vec<crate::mod_host::View>) {
++        self.bottom_pane.set_mod_views(views);
 +    }
 +
 +    pub(crate) fn set_worker_hud(
@@ -13346,7 +13417,7 @@ index 4b9d285d2..abc29e434 100644
      pub(crate) fn set_pending_thread_approvals(&mut self, threads: Vec<String>) {
          self.bottom_pane.set_pending_thread_approvals(threads);
      }
-@@ -1516,6 +1585,8 @@ impl ChatWidget {
+@@ -1516,6 +1593,8 @@ impl ChatWidget {
      fn clean_background_terminals(&mut self) {
          self.submit_op(AppCommand::clean_background_terminals());
          self.unified_exec_processes.clear();
@@ -13355,7 +13426,7 @@ index 4b9d285d2..abc29e434 100644
          self.sync_unified_exec_footer();
          self.add_info_message(
              "Stopping all background terminals.".to_string(),
-@@ -1831,6 +1902,14 @@ impl ChatWidget {
+@@ -1831,6 +1910,14 @@ impl ChatWidget {
          self.blocks_direct_input = true;
          self.external_writer_view = true;
          self.pause_unavailable_thread();
@@ -18697,7 +18768,7 @@ index afa649f70..a8cb5da54 100644
      fn writes_bold_then_regular_spans() {
          use ratatui::style::Stylize;
 diff --git a/codex-rs/tui/src/lib.rs b/codex-rs/tui/src/lib.rs
-index c31c2d4da..3e8f0c8d1 100644
+index c31c2d4da..681ff9291 100644
 --- a/codex-rs/tui/src/lib.rs
 +++ b/codex-rs/tui/src/lib.rs
 @@ -136,6 +136,7 @@ pub(crate) mod custom_terminal;
@@ -18717,6 +18788,14 @@ index c31c2d4da..3e8f0c8d1 100644
  mod terminal_program_status;
  pub use insert_history::insert_history_lines;
  mod footer_hint;
+@@ -175,6 +178,7 @@ mod keymap_setup;
+ mod line_truncation;
+ pub(crate) mod live_wrap;
+ mod local_settings;
++mod mod_host;
+ mod rendered_selection;
+ pub use live_wrap::RowBuilder;
+ mod local_chatgpt_auth;
 diff --git a/codex-rs/tui/src/morandi.rs b/codex-rs/tui/src/morandi.rs
 new file mode 100644
 index 000000000..46178d16f
@@ -20968,3 +21047,1231 @@ index eaaa36661..b165e4856 100644
  #[test]
  fn terminal_output_disclosure_counts_only_revealable_lines() {
      use crate::exec_cell::CommandOutput;
+diff --git a/codex-rs/tui/src/mod_host.rs b/codex-rs/tui/src/mod_host.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..a5f567c0344a9caab328aaa295f0734828c37da5
+--- /dev/null
++++ b/codex-rs/tui/src/mod_host.rs
+@@ -0,0 +1,1222 @@
++//! Process-pinned view packages. Package code is trusted, not sandboxed.
++use anyhow::Context;
++use anyhow::bail;
++use ratatui::style::Stylize;
++use ratatui::text::Line;
++use serde::Deserialize;
++use serde_json::json;
++use sha2::Digest;
++use sha2::Sha256;
++use std::collections::BTreeMap;
++use std::collections::HashSet;
++use std::path::Component;
++use std::path::Path;
++use std::path::PathBuf;
++use std::process::Stdio;
++use std::sync::Arc;
++use std::time::Duration;
++use std::time::Instant;
++use std::time::SystemTime;
++use std::time::UNIX_EPOCH;
++use tokio::io::AsyncRead;
++use tokio::io::AsyncReadExt;
++use tokio::io::AsyncWriteExt;
++use tokio::sync::oneshot;
++use uuid::Uuid;
++
++const STDOUT_LIMIT: usize = 64 * 1024;
++const STDERR_LIMIT: usize = 16 * 1024;
++
++#[derive(Clone, Debug, Deserialize, PartialEq)]
++#[serde(rename_all = "lowercase")]
++pub(crate) enum Severity {
++    Normal,
++    Ok,
++    Warn,
++    Error,
++}
++
++#[derive(Clone, Debug, Deserialize, PartialEq)]
++pub(crate) struct Row {
++    text: String,
++    severity: Severity,
++    age_ms: Option<u64>,
++    share: Option<f64>,
++}
++
++#[derive(Clone, Debug, PartialEq)]
++pub(crate) struct View {
++    id: String,
++    rows: Vec<Row>,
++    overflow: u64,
++}
++
++#[derive(Deserialize)]
++struct Config {
++    schema: u32,
++    root: PathBuf,
++    node: PathBuf,
++    enabled: Vec<String>,
++}
++#[derive(Deserialize)]
++struct Receipt {
++    schema: u32,
++    commit: String,
++    files: BTreeMap<String, String>,
++}
++#[derive(Deserialize)]
++struct Manifest {
++    id: String,
++    version: String,
++    host_contract: u32,
++    runtime: Runtime,
++    entry: String,
++    provides: Vec<String>,
++    inputs: Vec<String>,
++    refresh: Refresh,
++    ui: Ui,
++}
++#[derive(Deserialize)]
++struct Runtime {
++    node: String,
++}
++#[derive(Deserialize)]
++struct Refresh {
++    min_interval_s: u64,
++    timeout_ms: u64,
++}
++#[derive(Deserialize)]
++struct Ui {
++    rows: usize,
++}
++
++#[derive(Clone)]
++struct Package {
++    id: String,
++    directory: PathBuf,
++    entry: PathBuf,
++    node: PathBuf,
++    minimum: semver::Version,
++    interval: Duration,
++    timeout: Duration,
++    rows: usize,
++}
++
++struct Pending {
++    identity: Option<String>,
++    request_id: String,
++    cancel: Option<oneshot::Sender<()>>,
++    result: oneshot::Receiver<anyhow::Result<View>>,
++}
++struct Slot {
++    package: Arc<Package>,
++    pending: Option<Pending>,
++    due: Option<Instant>,
++    view: Option<View>,
++}
++
++#[derive(Default)]
++pub(crate) struct Host {
++    started: bool,
++    loading: Option<oneshot::Receiver<Vec<Package>>>,
++    loading_cancel: Option<oneshot::Sender<()>>,
++    slots: Vec<Slot>,
++    identity: Option<String>,
++}
++
++impl Host {
++    pub(crate) fn tick(
++        &mut self,
++        home: &Path,
++        identity: Option<String>,
++        width: u16,
++        budget: usize,
++    ) -> Vec<View> {
++        if !self.started && identity.is_some() {
++            self.started = true;
++            let home = home.to_path_buf();
++            let (tx, rx) = oneshot::channel();
++            self.loading = Some(rx);
++            let (cancel, canceled) = oneshot::channel();
++            self.loading_cancel = Some(cancel);
++            tokio::spawn(async move {
++                let packages = load(&home, canceled).await.unwrap_or_else(|error| {
++                    tracing::warn!(%error, "mod configuration unavailable");
++                    Vec::new()
++                });
++                let _ = tx.send(packages);
++            });
++        }
++        if let Some(rx) = &mut self.loading {
++            match rx.try_recv() {
++                Ok(packages) => {
++                    self.slots = packages
++                        .into_iter()
++                        .map(|package| Slot {
++                            package: Arc::new(package),
++                            pending: None,
++                            due: Some(Instant::now()),
++                            view: None,
++                        })
++                        .collect();
++                    self.loading = None;
++                    self.loading_cancel = None;
++                }
++                Err(oneshot::error::TryRecvError::Closed) => {
++                    self.loading = None;
++                    self.loading_cancel = None;
++                }
++                Err(oneshot::error::TryRecvError::Empty) => {}
++            }
++        }
++        if self.identity != identity {
++            self.identity = identity;
++            for slot in &mut self.slots {
++                if let Some(pending) = &mut slot.pending {
++                    pending.cancel.take();
++                }
++                slot.view = None;
++                slot.due = Some(Instant::now());
++            }
++        }
++        for slot in &mut self.slots {
++            let Some(pending) = &mut slot.pending else {
++                continue;
++            };
++            let result = match pending.result.try_recv() {
++                Ok(result) => result,
++                Err(oneshot::error::TryRecvError::Empty) => continue,
++                Err(oneshot::error::TryRecvError::Closed) => {
++                    Err(anyhow::anyhow!("mod task stopped"))
++                }
++            };
++            let pending = slot.pending.take().expect("pending request");
++            if pending.identity != self.identity || pending.cancel.is_none() {
++                continue;
++            }
++            match result {
++                Ok(view) => {
++                    slot.view = Some(view);
++                    slot.due = Instant::now().checked_add(slot.package.interval);
++                }
++                Err(error) => {
++                    tracing::warn!(id = %slot.package.id, request_id = %pending.request_id, %error, "mod view unavailable");
++                    slot.view = Some(View {
++                        id: slot.package.id.clone(),
++                        rows: vec![Row {
++                            text: "unavailable".into(),
++                            severity: Severity::Warn,
++                            age_ms: None,
++                            share: None,
++                        }],
++                        overflow: 0,
++                    });
++                    slot.due = Instant::now().checked_add(Duration::from_secs(60));
++                }
++            }
++        }
++        let mut active = self
++            .slots
++            .iter()
++            .filter(|slot| slot.pending.is_some())
++            .count();
++        if let Some(identity) = &self.identity {
++            for slot in &mut self.slots {
++                if active == 2 {
++                    break;
++                }
++                if budget == 0
++                    || width == 0
++                    || slot.pending.is_some()
++                    || slot.due.is_none_or(|due| due > Instant::now())
++                {
++                    continue;
++                }
++                let request_id = Uuid::new_v4().to_string();
++                let request = json!({
++                    "host_contract": 1, "op": "view", "request_id": request_id,
++                    "session": session(identity, home), "width": width, "rows": slot.package.rows.min(budget),
++                    "now": SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_millis(),
++                });
++                let (cancel, canceled) = oneshot::channel();
++                let (tx, rx) = oneshot::channel();
++                let package = Arc::clone(&slot.package);
++                let expected = request_id.clone();
++                tokio::spawn(async move {
++                    let result = invoke(&package, &expected, request, canceled).await;
++                    let _ = tx.send(result);
++                });
++                slot.pending = Some(Pending {
++                    identity: self.identity.clone(),
++                    request_id,
++                    cancel: Some(cancel),
++                    result: rx,
++                });
++                active += 1;
++            }
++        }
++        self.slots
++            .iter()
++            .filter_map(|slot| slot.view.clone())
++            .collect()
++    }
++
++    pub(crate) fn next_tick(&self) -> Option<Duration> {
++        if self.loading.is_some() || self.slots.iter().any(|slot| slot.pending.is_some()) {
++            Some(Duration::from_millis(100))
++        } else if !self.slots.is_empty() {
++            Some(Duration::from_secs(1))
++        } else {
++            None
++        }
++    }
++
++    pub(crate) async fn shutdown(&mut self) {
++        self.loading_cancel.take();
++        for slot in &mut self.slots {
++            if let Some(pending) = &mut slot.pending {
++                pending.cancel.take();
++            }
++        }
++        for slot in &mut self.slots {
++            if let Some(pending) = slot.pending.take() {
++                let _ = pending.result.await;
++            }
++        }
++        if let Some(loading) = self.loading.take() {
++            let _ = loading.await;
++        }
++    }
++}
++
++fn session(identity: &str, home: &Path) -> serde_json::Value {
++    let mut session = json!({"thread_id": identity, "codex_home": home});
++    if let Ok(pane) = std::env::var("TMUX_PANE") {
++        session["tmux_pane"] = json!(pane);
++    }
++    session
++}
++
++fn safe_relative(name: &str) -> bool {
++    !name.is_empty()
++        && Path::new(name)
++            .components()
++            .all(|part| matches!(part, Component::Normal(_)))
++}
++
++fn read_json<T: serde::de::DeserializeOwned>(path: &Path, limit: u64) -> anyhow::Result<T> {
++    use std::io::Read;
++    let metadata = std::fs::symlink_metadata(path)?;
++    if !metadata.is_file() || metadata.len() > limit {
++        bail!("invalid bounded JSON file: {}", path.display());
++    }
++    let mut bytes = Vec::new();
++    std::fs::File::open(path)?
++        .take(limit + 1)
++        .read_to_end(&mut bytes)?;
++    if bytes.len() as u64 > limit {
++        bail!("JSON file grew beyond limit");
++    }
++    Ok(serde_json::from_slice(&bytes)?)
++}
++
++fn payload_files(
++    directory: &Path,
++    base: &Path,
++    found: &mut BTreeMap<String, String>,
++) -> anyhow::Result<()> {
++    for entry in std::fs::read_dir(directory)? {
++        let path = entry?.path();
++        let metadata = std::fs::symlink_metadata(&path)?;
++        if metadata.is_dir() {
++            payload_files(&path, base, found)?;
++        } else if metadata.is_file() {
++            if path == base.join("SOURCE.json") {
++                continue;
++            }
++            let relative = path
++                .strip_prefix(base)?
++                .to_str()
++                .context("non-UTF8 package path")?
++                .to_string();
++            let mut hash = Sha256::new();
++            std::io::copy(&mut std::fs::File::open(path)?, &mut hash)?;
++            found.insert(relative, format!("{:x}", hash.finalize()));
++        } else {
++            bail!("nonregular package payload: {}", path.display());
++        }
++    }
++    Ok(())
++}
++
++fn minimum(value: &str) -> anyhow::Result<semver::Version> {
++    let version = value
++        .strip_prefix(">=")
++        .context("runtime must use >=major.minor.patch")?;
++    let parts: Vec<_> = version.split('.').collect();
++    if parts.len() != 3
++        || parts
++            .iter()
++            .any(|part| part.is_empty() || !part.bytes().all(|ch| ch.is_ascii_digit()))
++    {
++        bail!("runtime must use >=major.minor.patch");
++    }
++    Ok(semver::Version::parse(version)?)
++}
++
++fn select(config: &Config, id: &str) -> anyhow::Result<Package> {
++    let base = config.root.join(id).canonicalize()?;
++    let directory = base.join("current").canonicalize()?;
++    if directory == base || !directory.starts_with(&base) || !directory.is_dir() {
++        bail!("version escapes package root");
++    }
++    let receipt: Receipt = read_json(&directory.join("SOURCE.json"), 1024 * 1024)?;
++    if receipt.schema != 1
++        || receipt.commit.len() != 40
++        || !receipt.commit.bytes().all(|ch| ch.is_ascii_hexdigit())
++    {
++        bail!("invalid source receipt");
++    }
++    for (name, hash) in &receipt.files {
++        if !safe_relative(name)
++            || name == "SOURCE.json"
++            || hash.len() != 64
++            || !hash.bytes().all(|ch| ch.is_ascii_hexdigit())
++        {
++            bail!("invalid receipt entry");
++        }
++    }
++    let mut found = BTreeMap::new();
++    payload_files(&directory, &directory, &mut found)?;
++    if found != receipt.files {
++        bail!("package payload differs from receipt");
++    }
++    let manifest: Manifest = read_json(&directory.join("mod.json"), 64 * 1024)?;
++    if manifest.id != id
++        || directory.file_name().and_then(|name| name.to_str()) != Some(&manifest.version)
++        || manifest.host_contract != 1
++        || manifest.provides != ["view.rows"]
++        || !(manifest.inputs.is_empty() || manifest.inputs == ["session.identity"])
++        || !safe_relative(&manifest.entry)
++        || !receipt.files.contains_key(&manifest.entry)
++    {
++        bail!("unsupported or mismatched manifest");
++    }
++    let minimum = minimum(&manifest.runtime.node)?;
++    Ok(Package {
++        id: id.into(),
++        entry: directory.join(manifest.entry),
++        directory,
++        node: config.node.clone(),
++        minimum,
++        interval: Duration::from_secs(manifest.refresh.min_interval_s.max(15)),
++        timeout: Duration::from_millis(manifest.refresh.timeout_ms.clamp(100, 5000)),
++        rows: manifest.ui.rows.clamp(1, 6),
++    })
++}
++
++async fn load(home: &Path, canceled: oneshot::Receiver<()>) -> anyhow::Result<Vec<Package>> {
++    let path = home.join("codex-plus/mods.json");
++    let selected = tokio::task::spawn_blocking(move || -> anyhow::Result<Vec<Package>> {
++        let config: Config = match read_json(&path, 64 * 1024) {
++            Ok(config) => config,
++            Err(error)
++                if error
++                    .downcast_ref::<std::io::Error>()
++                    .is_some_and(|error| error.kind() == std::io::ErrorKind::NotFound) =>
++            {
++                return Ok(Vec::new());
++            }
++            Err(error) => return Err(error),
++        };
++        if config.schema != 1 || !config.root.is_absolute() || !config.node.is_absolute() {
++            bail!("invalid mods configuration");
++        }
++        let mut ids = HashSet::new();
++        let mut packages = Vec::new();
++        for id in &config.enabled {
++            if id.is_empty()
++                || id.len() > 64
++                || !id
++                    .bytes()
++                    .all(|ch| ch.is_ascii_alphanumeric() || ch == b'-' || ch == b'_')
++                || !ids.insert(id)
++            {
++                bail!("invalid or repeated enabled mod ID");
++            }
++            match select(&config, id) {
++                Ok(package) => packages.push(package),
++                Err(error) => tracing::warn!(%id, %error, "mod package rejected"),
++            }
++        }
++        Ok(packages)
++    })
++    .await??;
++    let Some(first) = selected.first() else {
++        return Ok(selected);
++    };
++    let mut command = command(&first.node);
++    command.arg("--version");
++    let output = process(command, None, Duration::from_secs(5), canceled).await?;
++    let version =
++        semver::Version::parse(String::from_utf8(output)?.trim().trim_start_matches('v'))?;
++    if version < semver::Version::new(22, 18, 0) {
++        bail!("Node >=22.18.0 is required");
++    }
++    Ok(selected
++        .into_iter()
++        .filter(|package| {
++            let supported = version >= package.minimum;
++            if !supported {
++                tracing::warn!(id = %package.id, "mod requires newer Node");
++            }
++            supported
++        })
++        .collect())
++}
++
++fn command(node: &Path) -> tokio::process::Command {
++    let mut command = tokio::process::Command::new(node);
++    command.env_clear().env("PATH", "/usr/bin:/bin");
++    for key in [
++        "HOME",
++        "LANG",
++        "LANGUAGE",
++        "LC_ALL",
++        "LC_CTYPE",
++        "TMUX",
++        "TMUX_PANE",
++        "TMUX_TMPDIR",
++    ] {
++        if let Some(value) = std::env::var_os(key) {
++            command.env(key, value);
++        }
++    }
++    command
++        .stdin(Stdio::piped())
++        .stdout(Stdio::piped())
++        .stderr(Stdio::piped())
++        .kill_on_drop(true);
++    #[cfg(unix)]
++    command.process_group(0);
++    command
++}
++
++// The unreaped leader retains its group identity until cleanup also kills grandchildren.
++struct Group(u32);
++impl Drop for Group {
++    fn drop(&mut self) {
++        #[cfg(unix)]
++        // SAFETY: process_group(0) assigned our owned, unreaped child its own group.
++        unsafe {
++            libc::killpg(self.0 as libc::pid_t, libc::SIGKILL);
++        }
++    }
++}
++
++async fn bounded(mut stream: impl AsyncRead + Unpin, limit: usize) -> anyhow::Result<Vec<u8>> {
++    let mut bytes = Vec::new();
++    (&mut stream)
++        .take(limit as u64 + 1)
++        .read_to_end(&mut bytes)
++        .await?;
++    if bytes.len() > limit {
++        bail!("mod output overflow");
++    }
++    Ok(bytes)
++}
++
++async fn process(
++    mut command: tokio::process::Command,
++    input: Option<Vec<u8>>,
++    timeout: Duration,
++    mut canceled: oneshot::Receiver<()>,
++) -> anyhow::Result<Vec<u8>> {
++    #[cfg(not(unix))]
++    bail!("mod process-group supervision requires Unix");
++    let mut child = command.spawn().context("spawn mod process")?;
++    let group = Group(child.id().context("missing child PID")?);
++    let mut stdin = child.stdin.take().context("missing stdin")?;
++    let stdout = child.stdout.take().context("missing stdout")?;
++    let stderr = child.stderr.take().context("missing stderr")?;
++    let io = async move {
++        let write = async {
++            if let Some(input) = input {
++                stdin.write_all(&input).await?;
++            }
++            drop(stdin);
++            Ok::<_, anyhow::Error>(())
++        };
++        let ((), stdout, stderr) = tokio::try_join!(
++            write,
++            bounded(stdout, STDOUT_LIMIT),
++            bounded(stderr, STDERR_LIMIT)
++        )?;
++        if !stderr.is_empty() {
++            tracing::debug!(stderr = %String::from_utf8_lossy(&stderr), "mod stderr");
++        }
++        Ok::<_, anyhow::Error>(stdout)
++    };
++    let result = tokio::select! {
++        result = tokio::time::timeout(timeout, async { tokio::try_join!(io, exited(group.0)) }) => {
++            match result {
++                Ok(Ok((stdout, ()))) => Ok(stdout),
++                Ok(Err(error)) => Err(error),
++                Err(_) => Err(anyhow::anyhow!("mod timed out")),
++            }
++        }
++        _ = &mut canceled => Err(anyhow::anyhow!("mod canceled")),
++    };
++    drop(group);
++    // Retain the slot until group cleanup and direct-child reaping finish.
++    let status = child.wait().await?;
++    let stdout = result?;
++    if !status.success() {
++        bail!("mod exited {status}");
++    }
++    Ok(stdout)
++}
++
++async fn exited(pid: u32) -> anyhow::Result<()> {
++    #[cfg(unix)]
++    loop {
++        let mut info = std::mem::MaybeUninit::<libc::siginfo_t>::zeroed();
++        // SAFETY: waitid writes info and observes only our child without reaping it.
++        let result = unsafe {
++            libc::waitid(
++                libc::P_PID,
++                pid as libc::id_t,
++                info.as_mut_ptr(),
++                libc::WEXITED | libc::WNOHANG | libc::WNOWAIT,
++            )
++        };
++        if result < 0 {
++            return Err(std::io::Error::last_os_error().into());
++        }
++        // SAFETY: successful waitid initializes info, with PID zero if still running.
++        if unsafe { info.assume_init().si_pid() } != 0 {
++            return Ok(());
++        }
++        tokio::time::sleep(Duration::from_millis(10)).await;
++    }
++    #[cfg(not(unix))]
++    {
++        let _ = pid;
++        bail!("mod process-group supervision requires Unix");
++    }
++}
++
++#[derive(Deserialize)]
++#[serde(rename_all = "lowercase")]
++enum Status {
++    Ok,
++    Empty,
++    Unavailable,
++    Error,
++}
++#[derive(Deserialize)]
++struct Response {
++    host_contract: u32,
++    request_id: String,
++    status: Status,
++    rows: Vec<Row>,
++    #[serde(default)]
++    overflow: u64,
++    diagnostics: Option<String>,
++}
++
++fn response(id: &str, expected: &str, bytes: &[u8]) -> anyhow::Result<View> {
++    let response: Response = serde_json::from_slice(bytes)?;
++    if response.host_contract != 1
++        || response.request_id != expected
++        || response.rows.len() > 64
++        || response.rows.iter().any(|row| {
++            row.text.len() > 2048
++                || row
++                    .share
++                    .is_some_and(|share| !share.is_finite() || !(0.0..=1.0).contains(&share))
++        })
++    {
++        bail!("invalid mod response identity or rows");
++    }
++    if let Some(diagnostics) = response.diagnostics {
++        tracing::debug!(%id, %diagnostics, "mod diagnostics");
++    }
++    match response.status {
++        Status::Error | Status::Unavailable => bail!("mod reported unavailable"),
++        Status::Empty if !response.rows.is_empty() => bail!("empty response has rows"),
++        _ => {}
++    }
++    Ok(View {
++        id: id.into(),
++        rows: response.rows,
++        overflow: response.overflow,
++    })
++}
++
++async fn invoke(
++    package: &Package,
++    expected: &str,
++    request: serde_json::Value,
++    canceled: oneshot::Receiver<()>,
++) -> anyhow::Result<View> {
++    let mut command = command(&package.node);
++    command.arg(&package.entry).current_dir(&package.directory);
++    let mut input = serde_json::to_vec(&request)?;
++    input.push(b'\n');
++    let mut view = response(
++        &package.id,
++        expected,
++        &process(command, Some(input), package.timeout, canceled).await?,
++    )?;
++    let granted = request["rows"].as_u64().context("missing granted rows")? as usize;
++    view.overflow = view
++        .overflow
++        .saturating_add(view.rows.len().saturating_sub(granted) as u64);
++    view.rows.truncate(granted);
++    Ok(view)
++}
++
++fn clean(text: &str) -> String {
++    let mut result = String::new();
++    let mut escape = false;
++    let mut csi = false;
++    let mut osc = false;
++    for ch in text.chars() {
++        if osc {
++            if ch == '\u{7}' || (escape && ch == '\\') {
++                osc = false;
++            }
++            escape = ch == '\u{1b}';
++            continue;
++        }
++        if csi {
++            if ('@'..='~').contains(&ch) {
++                csi = false;
++            }
++            continue;
++        }
++        if escape {
++            escape = false;
++            csi = ch == '[';
++            osc = ch == ']';
++            continue;
++        }
++        if ch == '\u{1b}' {
++            escape = true;
++            continue;
++        }
++        if ch.is_control()
++            || matches!(ch, '\u{200b}'..='\u{200f}' | '\u{202a}'..='\u{202e}' | '\u{2060}'..='\u{206f}' | '\u{feff}')
++        {
++            continue;
++        }
++        result.push(ch);
++    }
++    result
++}
++
++pub(crate) fn lines(views: &[View], budget: usize) -> Vec<Line<'static>> {
++    let budget = budget.min(6);
++    let mut selected = Vec::new();
++    // Each package's summary precedes any package's details, in configuration order.
++    for view in views {
++        if let Some(row) = view.rows.first() {
++            selected.push((view, row));
++        }
++    }
++    for view in views {
++        for row in view.rows.iter().skip(1) {
++            selected.push((view, row));
++        }
++    }
++    let total = views.iter().fold(selected.len() as u64, |total, view| {
++        total.saturating_add(view.overflow)
++    });
++    let limit = if total > budget as u64
++        && budget > views.iter().filter(|view| !view.rows.is_empty()).count()
++    {
++        budget.saturating_sub(1)
++    } else {
++        budget
++    };
++    let mut lines: Vec<_> = selected
++        .into_iter()
++        .take(limit)
++        .map(|(view, row)| {
++            let line = Line::from(format!("  {} · {}", view.id, clean(&row.text)));
++            match row.severity {
++                Severity::Warn | Severity::Error => line.not_dim(),
++                _ => line.dim(),
++            }
++        })
++        .collect();
++    if lines.len() < budget && total > lines.len() as u64 {
++        lines.push(Line::from(format!("  +{} more mod rows", total - lines.len() as u64)).dim());
++    }
++    lines
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    fn row(text: &str) -> Row {
++        Row {
++            text: text.into(),
++            severity: Severity::Normal,
++            age_ms: None,
++            share: None,
++        }
++    }
++    fn reply() -> serde_json::Value {
++        json!({"host_contract":1,"request_id":"expected","status":"ok","rows":[{"text":"summary","severity":"normal"}]})
++    }
++    #[test]
++    fn mod_host_response_boundary() {
++        assert_eq!(
++            response("demo", "expected", &serde_json::to_vec(&reply()).unwrap())
++                .unwrap()
++                .rows
++                .len(),
++            1
++        );
++        for (field, value) in [
++            ("request_id", json!("old")),
++            ("host_contract", json!(2)),
++            ("status", json!("unknown")),
++            (
++                "rows",
++                json!([{"text":"bad","severity":"normal","age_ms":-1}]),
++            ),
++            (
++                "rows",
++                json!([{"text":"bad","severity":"normal","share":1.1}]),
++            ),
++            ("rows", json!([{"text":"bad","severity":"unknown"}])),
++            (
++                "rows",
++                json!([{"text":"x".repeat(2049),"severity":"normal"}]),
++            ),
++            (
++                "rows",
++                json!(
++                    (0..65)
++                        .map(|_| json!({"text":"x","severity":"normal"}))
++                        .collect::<Vec<_>>()
++                ),
++            ),
++        ] {
++            let mut value_response = reply();
++            value_response[field] = value;
++            assert!(
++                response(
++                    "demo",
++                    "expected",
++                    &serde_json::to_vec(&value_response).unwrap()
++                )
++                .is_err(),
++                "{field}"
++            );
++        }
++        let mut empty = reply();
++        empty["status"] = json!("empty");
++        assert!(response("demo", "expected", &serde_json::to_vec(&empty).unwrap()).is_err());
++        empty["rows"] = json!([]);
++        assert!(
++            response("demo", "expected", &serde_json::to_vec(&empty).unwrap())
++                .unwrap()
++                .rows
++                .is_empty()
++        );
++    }
++    #[test]
++    fn mod_host_summary_first_bounded_and_clean() {
++        let views = vec![
++            View {
++                id: "first".into(),
++                rows: vec![row("\u{1b}[31msummary\u{1b}[0m\n\u{202e}"), row("detail")],
++                overflow: u64::MAX,
++            },
++            View {
++                id: "second".into(),
++                rows: vec![row("\u{1b}]0;title\u{7}other"), row("more")],
++                overflow: u64::MAX,
++            },
++        ];
++        assert!(lines(&views, 0).is_empty());
++        let shown: Vec<_> = lines(&views, 3).iter().map(ToString::to_string).collect();
++        assert_eq!(&shown[..2], &["  first · summary", "  second · other"]);
++        assert!(shown[2].starts_with("  +"));
++        assert_eq!(lines(&views, 2).len(), 2);
++        assert!(lines(&[], 6).is_empty());
++    }
++    fn receipt(directory: &Path) {
++        let mut files = BTreeMap::new();
++        payload_files(directory, directory, &mut files).unwrap();
++        std::fs::write(
++            directory.join("SOURCE.json"),
++            serde_json::to_vec(&json!({"schema":1,"commit":"a".repeat(40),"files":files})).unwrap(),
++        )
++        .unwrap();
++    }
++    fn write_package(root: &Path, id: &str, version: &str) -> PathBuf {
++        let directory = root.join(id).join(version);
++        std::fs::create_dir_all(directory.join("host")).unwrap();
++        std::fs::write(directory.join("host/view.mjs"), "// fixture\n").unwrap();
++        std::fs::write(
++            directory.join("mod.json"),
++            serde_json::to_vec(&json!({
++                "id":id,"version":version,"host_contract":1,"runtime":{"node":">=22.18.0"},
++                "entry":"host/view.mjs","provides":["view.rows"],"inputs":["session.identity"],
++                "refresh":{"min_interval_s":1,"timeout_ms":99999},"ui":{"rows":99},
++            }))
++            .unwrap(),
++        )
++        .unwrap();
++        receipt(&directory);
++        directory
++    }
++    #[cfg(unix)]
++    #[test]
++    fn mod_host_selection_pin_and_integrity() {
++        use std::os::unix::fs::symlink;
++        let root = tempfile::tempdir().unwrap();
++        let first = write_package(root.path(), "demo", "1.0.0");
++        let second = write_package(root.path(), "demo", "2.0.0");
++        let current = root.path().join("demo/current");
++        symlink(&first, &current).unwrap();
++        let config = Config {
++            schema: 1,
++            root: root.path().into(),
++            node: "/usr/bin/node".into(),
++            enabled: vec!["demo".into()],
++        };
++        let selected = select(&config, "demo").unwrap();
++        assert_eq!(selected.interval, Duration::from_secs(15));
++        assert_eq!(selected.timeout, Duration::from_secs(5));
++        assert_eq!(selected.rows, 6);
++        let mut manifest: serde_json::Value =
++            read_json(&first.join("mod.json"), 64 * 1024).unwrap();
++        manifest["inputs"] = json!([]);
++        std::fs::write(
++            first.join("mod.json"),
++            serde_json::to_vec(&manifest).unwrap(),
++        )
++        .unwrap();
++        receipt(&first);
++        assert!(select(&config, "demo").is_ok());
++        std::fs::remove_file(&current).unwrap();
++        symlink(&second, &current).unwrap();
++        assert_eq!(selected.directory, first);
++        assert_eq!(select(&config, "demo").unwrap().directory, second);
++        std::fs::write(second.join("extra"), "extra").unwrap();
++        assert!(select(&config, "demo").is_err());
++        std::fs::remove_file(second.join("extra")).unwrap();
++        std::fs::write(second.join("host/view.mjs"), "changed").unwrap();
++        assert!(select(&config, "demo").is_err());
++        receipt(&second);
++        assert!(select(&config, "demo").is_ok());
++        symlink("mod.json", second.join("linked")).unwrap();
++        assert!(select(&config, "demo").is_err());
++        std::fs::remove_file(second.join("linked")).unwrap();
++        std::fs::remove_file(&current).unwrap();
++        symlink(root.path(), &current).unwrap();
++        assert!(select(&config, "demo").is_err());
++        for path in ["", "../a", "/a", "a/../b", "./a"] {
++            assert!(!safe_relative(path));
++        }
++        assert!(minimum(">=22.18.0").is_ok());
++        for version in [">=22", "22.18.0", ">=22.18.0-alpha", ">=22.18.0 || *"] {
++            assert!(minimum(version).is_err());
++        }
++    }
++    #[cfg(unix)]
++    async fn shell(script: &str, timeout: Duration) -> anyhow::Result<Vec<u8>> {
++        let mut command = command(Path::new("/bin/sh"));
++        command.args(["-c", script]);
++        let (_tx, rx) = oneshot::channel();
++        process(command, None, timeout, rx).await
++    }
++    #[cfg(unix)]
++    #[tokio::test]
++    async fn mod_host_process_output_exit_stderr_and_environment() {
++        assert_eq!(
++            shell("printf stdout; printf stderr >&2", Duration::from_secs(2))
++                .await
++                .unwrap(),
++            b"stdout"
++        );
++        assert!(
++            shell("printf valid; exit 7", Duration::from_secs(2))
++                .await
++                .is_err()
++        );
++        assert!(
++            shell("head -c 65537 /dev/zero", Duration::from_secs(2))
++                .await
++                .unwrap_err()
++                .to_string()
++                .contains("overflow")
++        );
++        assert!(
++            shell("head -c 16385 /dev/zero >&2", Duration::from_secs(2))
++                .await
++                .unwrap_err()
++                .to_string()
++                .contains("overflow")
++        );
++        assert_eq!(
++            shell(
++                "printf '%s|%s|%s' \"$PATH\" \"$NODE_OPTIONS\" \"$NODE_PATH\"",
++                Duration::from_secs(2)
++            )
++            .await
++            .unwrap(),
++            b"/usr/bin:/bin||"
++        );
++    }
++    #[cfg(target_os = "linux")]
++    fn live(pid: u32) -> bool {
++        std::fs::read_to_string(format!("/proc/{pid}/stat"))
++            .ok()
++            .is_some_and(|stat| {
++                stat.rsplit_once(") ")
++                    .is_some_and(|(_, rest)| !rest.starts_with('Z'))
++            })
++    }
++    #[cfg(target_os = "linux")]
++    #[tokio::test]
++    async fn mod_host_timeout_and_cancel_kill_owned_grandchildren() {
++        let temp = tempfile::tempdir().unwrap();
++        for cancel in [false, true] {
++            let path = temp.path().join(if cancel {
++                "cancel-pids"
++            } else {
++                "timeout-pids"
++            });
++            let mut command = command(Path::new("/bin/sh"));
++            command.args([
++                "-c",
++                "sleep 60 & printf '%s %s' $$ $! > \"$1\"; wait",
++                "fixture",
++            ]);
++            command.arg(&path);
++            let (tx, rx) = oneshot::channel();
++            let task = tokio::spawn(process(command, None, Duration::from_millis(200), rx));
++            tokio::time::timeout(Duration::from_secs(2), async {
++                while !path.exists() {
++                    tokio::time::sleep(Duration::from_millis(5)).await;
++                }
++            })
++            .await
++            .unwrap();
++            let pids: Vec<u32> = std::fs::read_to_string(&path)
++                .unwrap()
++                .split_whitespace()
++                .map(|pid| pid.parse().unwrap())
++                .collect();
++            if cancel {
++                drop(tx);
++            }
++            let error = task.await.unwrap().unwrap_err().to_string();
++            assert!(
++                error.contains(if cancel { "canceled" } else { "timed out" }),
++                "{error}"
++            );
++            tokio::time::timeout(Duration::from_secs(2), async {
++                while pids.iter().any(|pid| live(*pid)) {
++                    tokio::time::sleep(Duration::from_millis(5)).await;
++                }
++            })
++            .await
++            .unwrap();
++            assert!(
++                !Path::new(&format!("/proc/{}", pids[0])).exists(),
++                "leader was not reaped"
++            );
++        }
++    }
++    #[tokio::test]
++    async fn mod_host_old_thread_reply_and_no_overlap() {
++        let package = Arc::new(Package {
++            id: "demo".into(),
++            directory: "/".into(),
++            entry: "/unused".into(),
++            node: "/bin/false".into(),
++            minimum: semver::Version::new(22, 18, 0),
++            interval: Duration::from_secs(15),
++            timeout: Duration::from_secs(1),
++            rows: 1,
++        });
++        let (cancel, canceled) = oneshot::channel();
++        let (tx, rx) = oneshot::channel();
++        let mut host = Host {
++            started: true,
++            identity: Some("old".into()),
++            slots: vec![Slot {
++                package,
++                pending: Some(Pending {
++                    identity: Some("old".into()),
++                    request_id: "old-request".into(),
++                    cancel: Some(cancel),
++                    result: rx,
++                }),
++                due: Some(Instant::now()),
++                view: Some(View {
++                    id: "demo".into(),
++                    rows: vec![row("old")],
++                    overflow: 0,
++                }),
++            }],
++            ..Default::default()
++        };
++        assert!(
++            host.tick(Path::new("/tmp"), Some("new".into()), 100, 6)
++                .is_empty()
++        );
++        assert!(canceled.await.is_err());
++        assert!(host.slots[0].pending.as_ref().unwrap().cancel.is_none());
++        tx.send(Ok(View {
++            id: "demo".into(),
++            rows: vec![row("late")],
++            overflow: 0,
++        }))
++        .unwrap();
++        assert!(host.tick(Path::new("/tmp"), None, 100, 6).is_empty());
++        assert!(host.slots[0].pending.is_none());
++        assert!(host.tick(Path::new("/tmp"), None, 100, 6).is_empty());
++    }
++
++    #[cfg(unix)]
++    #[tokio::test]
++    async fn mod_host_two_process_cap_and_failure_backoff() {
++        let mut host = Host {
++            started: true,
++            ..Default::default()
++        };
++        for id in ["first", "second", "third"] {
++            host.slots.push(Slot {
++                package: Arc::new(Package {
++                    id: id.into(),
++                    directory: "/".into(),
++                    entry: "/unused".into(),
++                    node: "/bin/false".into(),
++                    minimum: semver::Version::new(22, 18, 0),
++                    interval: Duration::from_secs(15),
++                    timeout: Duration::from_secs(1),
++                    rows: 1,
++                }),
++                pending: None,
++                due: Some(Instant::now()),
++                view: None,
++            });
++        }
++        host.tick(Path::new("/tmp"), Some("root".into()), 100, 6);
++        assert_eq!(
++            host.slots
++                .iter()
++                .filter(|slot| slot.pending.is_some())
++                .count(),
++            2
++        );
++        assert!(host.slots[2].pending.is_none());
++        tokio::time::timeout(Duration::from_secs(2), async {
++            loop {
++                host.tick(Path::new("/tmp"), Some("root".into()), 100, 6);
++                if host.slots.iter().all(|slot| slot.view.is_some()) {
++                    break;
++                }
++                tokio::time::sleep(Duration::from_millis(5)).await;
++            }
++        })
++        .await
++        .unwrap();
++        assert!(host.slots.iter().all(|slot| slot.pending.is_none()));
++        assert!(
++            host.slots
++                .iter()
++                .all(|slot| slot.due.unwrap().duration_since(Instant::now())
++                    > Duration::from_secs(59))
++        );
++        host.shutdown().await;
++    }
++
++    #[tokio::test]
++    async fn mod_host_absent_configuration_is_pinned_empty() {
++        let home = tempfile::tempdir().unwrap();
++        let mut host = Host::default();
++        host.tick(home.path(), None, 100, 6);
++        assert!(!host.started);
++        assert!(host.next_tick().is_none());
++        host.tick(home.path(), Some("root".into()), 100, 6);
++        tokio::time::timeout(Duration::from_secs(2), async {
++            while host.next_tick().is_some() {
++                tokio::time::sleep(Duration::from_millis(5)).await;
++                host.tick(home.path(), Some("root".into()), 100, 6);
++            }
++        })
++        .await
++        .unwrap();
++        std::fs::create_dir(home.path().join("codex-plus")).unwrap();
++        std::fs::write(home.path().join("codex-plus/mods.json"), "not JSON").unwrap();
++        assert!(
++            host.tick(home.path(), Some("root".into()), 100, 6)
++                .is_empty()
++        );
++        assert!(host.next_tick().is_none());
++    }
++
++    #[cfg(target_os = "linux")]
++    #[tokio::test]
++    async fn mod_host_shutdown_waits_for_owned_process_cleanup() {
++        let directory = tempfile::tempdir().unwrap();
++        let entry = directory.path().join("view.sh");
++        std::fs::write(&entry, "sleep 60 & printf '%s %s' $$ $! > pids; wait\n").unwrap();
++        let mut host = Host {
++            started: true,
++            slots: vec![Slot {
++                package: Arc::new(Package {
++                    id: "demo".into(),
++                    directory: directory.path().into(),
++                    entry,
++                    node: "/bin/sh".into(),
++                    minimum: semver::Version::new(22, 18, 0),
++                    interval: Duration::from_secs(15),
++                    timeout: Duration::from_secs(5),
++                    rows: 1,
++                }),
++                pending: None,
++                due: Some(Instant::now()),
++                view: None,
++            }],
++            ..Default::default()
++        };
++        host.tick(directory.path(), Some("root".into()), 100, 6);
++        let pids_file = directory.path().join("pids");
++        tokio::time::timeout(Duration::from_secs(2), async {
++            while !pids_file.exists() {
++                tokio::time::sleep(Duration::from_millis(5)).await;
++            }
++        })
++        .await
++        .unwrap();
++        let pids: Vec<u32> = std::fs::read_to_string(pids_file)
++            .unwrap()
++            .split_whitespace()
++            .map(|pid| pid.parse().unwrap())
++            .collect();
++        tokio::time::timeout(Duration::from_secs(2), host.shutdown())
++            .await
++            .unwrap();
++        tokio::time::timeout(Duration::from_secs(2), async {
++            while pids.iter().any(|pid| live(*pid)) {
++                tokio::time::sleep(Duration::from_millis(5)).await;
++            }
++        })
++        .await
++        .unwrap();
++        assert!(!Path::new(&format!("/proc/{}", pids[0])).exists());
++        assert!(host.slots[0].pending.is_none());
++    }
++}

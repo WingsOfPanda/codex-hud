@@ -1,0 +1,86 @@
+{
+  "schema": 1,
+  "status": "x86_development_accepted",
+  "platform": "x86_64 Linux",
+  "upstream": "0.165.0",
+  "upstream_commit": "360319d8dee62d87e2d59fc0c21805d79519cfed",
+  "native_binary_sha256": "55093f5b408e01969f4fab9848ace19e9b199a18aee9d5c8532b9f9c1c175179",
+  "patch_sha256": "0d329b155890c0e8fafe55c92328fbbd34c6804dc9c77491ca19a19f75836790",
+  "source_reconstruction": {
+    "passed": true,
+    "reconstructed_files": 172,
+    "patch_sha256": "0d329b155890c0e8fafe55c92328fbbd34c6804dc9c77491ca19a19f75836790",
+    "only_test_formatting_after_native_build": true,
+    "production_module_bytes_unchanged": true
+  },
+  "native": {
+    "filters": {
+      "mod_host::": 9,
+      "worker_hud": 56,
+      "execution_hud": 6,
+      "plus_goal": 22,
+      "ultracode": 13,
+      "shell_policy": 22,
+      "command_display": 10,
+      "compact_display": 5
+    },
+    "test_executions": 143,
+    "unique_tests": 139,
+    "ignored": 0,
+    "workload_exit": 0,
+    "cleanup_exit": 0
+  },
+  "conformance_tests": 13,
+  "consumer": {
+    "id": "job-watch",
+    "version": "0.6.1",
+    "commit": "fa5905d805eeffd9944dbf0b870522f63b75b6d5",
+    "payload_files": 5,
+    "root_tests_initial": 59,
+    "root_tests_after_correction": 16,
+    "notes": "Counts overlap; not an all-repository test claim."
+  },
+  "terminal": {
+    "generic_packages_update_rollback": true,
+    "same_native_binary": true,
+    "isolated_failure_row": true,
+    "real_jobwatch_stages": [
+      "running",
+      "done",
+      "failed",
+      "stalled",
+      "unavailable"
+    ],
+    "existing_footer_regression": true,
+    "display_model_requests": 0,
+    "private_tmux_cleanup": true,
+    "private_workload_no_live_process": true
+  },
+  "runtime": {
+    "tested_node": "24.21.0",
+    "declared_minimum_node": "22.18.0",
+    "minimum_version_executed": false,
+    "trusted_code_not_sandboxed": true
+  },
+  "evidence": {
+    "build_execution": "bbdc0338-e475-401a-92ba-480ec057e7c9",
+    "root_report": ".build/shared-mods/native-build-accepted.json",
+    "native": ".build/shared-mods/native-host",
+    "generic": ".build/shared-mods/evidence/native-mod-host-green-02",
+    "consumer": ".build/shared-mods/evidence/native-job-watch-green-01",
+    "footer": ".build/shared-mods/evidence/footer-regression-01"
+  },
+  "limits": [
+    "Private app-server protocol fixtures/helper stub, not new stock-daemon qualification",
+    "ARM build/package qualification not run",
+    "No publication, fleet installation, updater, pruning or live configuration changes",
+    "Collector supports local marker records; remote/until conditions remain unavailable",
+    "Direct child reaped; no claim of orphan-grandchild reaping",
+    "Final source differs from built source only by cfg(test) formatting; production bytes identical and final module tests rerun"
+  ],
+  "preserved_failures": [
+    "Installed binary RED: missing mod rows after private startup",
+    "Old consumer0.6.0 stale/nonnumeric marker reproductions retained",
+    "Root patch export omitted untracked files; original frozen input retained, complete final patch reconstructs172 exact source files"
+  ]
+}

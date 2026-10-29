@@ -16,8 +16,9 @@ explicitly enabled safe IDs (ASCII letters/digits, dash, underscore; 1–64 char
 Root and Node paths must be absolute. No installation, discovery-based
 auto-enablement, updater or pruning belongs to the host.
 
-Resolve `<root>/<id>/current` to a version directory under `<root>/<id>/`
-once; keep that exact directory for this process. Check Node >=22.18.0 once.
+On the first eligible local-primary view, resolve `<root>/<id>/current` to a
+version directory under `<root>/<id>/` once; keep that exact directory for this
+process. Check Node >=22.18.0 once.
 A new TUI process (`codex resume` included) may select a new version; merely
 changing threads in an existing TUI does not.
 
@@ -42,9 +43,11 @@ trusted same-user installation, not authenticity against malicious local code.
 }
 ```
 
-v1 supports view.rows and session.identity only. Runtime accepts a minimum Node
+v1 supports view.rows and optional session.identity input only; `inputs` may be
+empty when the package needs no declared session input. Runtime accepts a minimum Node
 version in the shown >=major.minor.patch form. Refresh floor is 15 seconds;
-timeout is clamped to 100–5000 ms; requested rows to 1–6. Entry is a relative,
+timeout is clamped to 100–5000 ms; requested rows to 1–6. Numeric requests are
+nonnegative integers, with zero clamped by these host limits. Entry is a relative,
 receipt-bound regular file. Optional declared access metadata is informational,
 never a promise of enforcement. Version/ID must match the selected directory/ID.
 
@@ -89,8 +92,10 @@ It exits zero on success; it does not need to return a view response.
 Each mod has independent pending request, child, cached result and failure
 state. Never block the UI or fold it into existing watcher/advisor/goal reads.
 At most one process per mod, with a global cap of two. Failures back off to
-60 seconds. Use a new process group; cancel/kill/reap owned groups on timeout,
-overflow, view change or exit. Inherit no NODE_OPTIONS/NODE_PATH; use a controlled
+60 seconds. Use a new process group; kill live group descendants and reap the
+direct child on timeout, overflow, view change or exit. Orphan-grandchild reaping
+belongs to the OS; trusted packages must not detach into unrelated groups.
+Inherit no NODE_OPTIONS/NODE_PATH; use a controlled
 environment with HOME, locale, tmux context and fixed /usr/bin:/bin PATH.
 Packages may not rely on model credentials being forwarded. This is still
 trusted Node code and can access the user's files/network without a sandbox.

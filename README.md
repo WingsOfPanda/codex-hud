@@ -109,6 +109,22 @@ The one-time Python-to-Rust rollout needs a
 
 ## Display behavior
 
+### Optional shared display mods
+
+The development frontend includes a reusable host for explicitly enabled,
+trusted internal display packages. Compatible packages use the same host
+without a native rebuild; new host capabilities still require qualification.
+See the [mod-host contract](docs/mod-host.md) for configuration and the
+[verification gate](docs/verification.md#shared-mod-host-development) for tests.
+
+Mods run with a configured external Node executable and supply structured rows
+within the native activity budget. Existing activity and composer input retain
+priority. Each TUI selects package versions once for its local session and keeps
+those versions until exit; a new `codex resume` can select an updated package.
+The host installs nothing, enables nothing merely because it is on disk, and
+does not add model calls, wakes or job-control actions. Trusted package code is
+not an OS sandbox. Fleet installation and automatic updates remain separate.
+
 Agent shell commands use a one-line command preview with output folded behind
 the existing activity disclosure controls. Failed commands keep their exit code
 and one short output excerpt visible. Expansion retains the command and output,
