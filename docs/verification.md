@@ -74,6 +74,38 @@ acceptance. The release evidence below retains the limits verified at that time.
 
 ## Current release acceptance
 
+### Shared mod host (development)
+
+The [contract](mod-host.md) separates generic host conformance, native UI/process
+acceptance and package-domain semantics. Use a private configuration and an
+explicit absolute Node executable; do not install into the live fleet to test.
+
+```sh
+MOD_TEST_NODE=/absolute/node python3 -m unittest discover -s tests -p test_mod_conformance.py -v
+python3 scripts/mod-conformance.py --package-dir /absolute/mods/example/1.0.0 --node /absolute/node
+# Use the existing native-smoke interpreter with pyte:
+python3 tests/test_mod_host_pty.py --binary /absolute/candidate/codex \
+  --node /absolute/node --evidence /absolute/new-evidence
+```
+
+The PTY check copies one candidate binary, loads two unrelated fixture packages,
+advances and rolls back `current`, and checks that an existing TUI retains its
+version while new TUIs select the new version. It exercises configuration order,
+summary fairness, failure isolation, the six-row limit, narrow editable input,
+disabled packages and zero display-driven model requests. It uses a private
+app-server protocol fixture and helper stub, not an official-daemon proof.
+Optional `--package-dir` copies a receipt-validated consumer into that private
+root; it does not by itself qualify that consumer's job collection behavior.
+
+Run the native `mod_host::` and affected worker-HUD tests from the actual
+compiled TUI harness. Keep separate coverage for thread-switch cancellation,
+timeouts, output limits and process cleanup. Cleanup evidence distinguishes
+reaping the direct child and stopping live group descendants from orphan
+grandchild reaping by the OS. Reconstruct the patch and preserve daemon sources.
+The real job-watch package needs its own shared-classification/golden tests and
+a small controlled local marker-job display scenario. Record platform and
+package limits; development acceptance is not release or fleet qualification.
+
 ### Morandi theme (development)
 
 [Accepted development evidence](evidence/morandi-theme.json) binds the palette,
