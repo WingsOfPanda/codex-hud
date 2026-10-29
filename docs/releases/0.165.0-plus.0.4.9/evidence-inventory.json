@@ -1,0 +1,81 @@
+{
+  "files": {
+    "README.md": {
+      "sha256": "1508a4e172b4196c6726dbdaf8890e404d5e5a304de271328f86a6d103cbe7e6",
+      "size": 1387
+    },
+    "aarch64-accepted.json": {
+      "sha256": "8eac1302bd52e5180b0f05b0dd02794a3442c731525b9bef5269faec8fcf56a2",
+      "size": 1246
+    },
+    "aarch64-compat-result.json": {
+      "sha256": "abc59e6636b62cacdbfc93698cfb00e4f939733f7e1e2a739ae934955f77876c",
+      "size": 613
+    },
+    "aarch64-native-result.json": {
+      "sha256": "6a7d775c9fa7dd3819d31b1d1b5fbbc54d1b7bccdec283edc4ac212030279d39",
+      "size": 612
+    },
+    "aarch64-sandbox.json": {
+      "sha256": "96911d83efac43b5de364771b02e6c5a28333c43b7c7f25005706810b27b83d3",
+      "size": 2576
+    },
+    "evidence/aarch64-ap.tar.gz": {
+      "sha256": "b2184da96a1535c5d27932e0f2c7b55eed8ea41b77e851f87422a9479b12be0a",
+      "size": 568282
+    },
+    "evidence/aarch64-native.tar.gz": {
+      "sha256": "7e42994bc88eb58be6330fc2dca3529290c739dcccad67c9160925f20a0a4c7b",
+      "size": 5913134
+    },
+    "evidence/x86_64-ap.tar.gz": {
+      "sha256": "a5475963be64b647ca8bd46ec82e6fd9bfddbe272e9017421ad7b7850187b0d5",
+      "size": 567926
+    },
+    "evidence/x86_64-native.tar.gz": {
+      "sha256": "c4044a1bc72ee910503fee954f3fd88fb19cd04ed1dbfa5fdcec33356ba2a2ab",
+      "size": 5805143
+    },
+    "handoff.json": {
+      "sha256": "dd4d20dd7131ea9dfea9c5875d4ab08f9d5a408dc5bce0ac8babde4623afa376",
+      "size": 2048
+    },
+    "incidents.md": {
+      "sha256": "64ff03229b2d3e23d6b83d974731ff966767c7b30bc17339be2d7c48421532c5",
+      "size": 2344
+    },
+    "plan.json": {
+      "sha256": "2c345c273dce74dffea603e862f40e81433ed7b29ab83e7910a3d902b2df3c2a",
+      "size": 15037
+    },
+    "portable-verification.json": {
+      "sha256": "300ba21ede1f9bc8f87a2fb6d8660e6f6f51c3a39d720a1546cb6ad990d871de",
+      "size": 111
+    },
+    "qualification.json": {
+      "sha256": "51c645febd121be83c4e44d740e4b568c9143420983b755c2315256dabd400c8",
+      "size": 13382
+    },
+    "release-checklist.md": {
+      "sha256": "cdde257955f69c96b443b785358cd740bbb8854daf98c7c07e605d56d3913860",
+      "size": 9371
+    },
+    "x86_64-accepted.json": {
+      "sha256": "31bd113311efbb7142e161ab5aabaff22f8b0dc1282586dfe3d56e21013126b7",
+      "size": 1242
+    },
+    "x86_64-compat-result.json": {
+      "sha256": "e6d666f557360a8e96524cbe6925f9e552cdb1430023b39e55d90fa4c98f1790",
+      "size": 613
+    },
+    "x86_64-native-result.json": {
+      "sha256": "3f035472ec919863f65e05e07a0ff69fcd9e799a48d6959f5ebd0598ac9ae231",
+      "size": 613
+    },
+    "x86_64-sandbox.json": {
+      "sha256": "991df5c8795315d55960415705dc1f9368f2b22ca4f69cfe56d9a9a346a60161",
+      "size": 2627
+    }
+  },
+  "schema": 1
+}
