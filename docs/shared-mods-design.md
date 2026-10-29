@@ -32,7 +32,9 @@ Claude engine/API compatibility is not promised.
   installer.
 
 The verified integration package is job-watch 0.6.1 from claude-mods commit
-`fa5905d805eeffd9944dbf0b870522f63b75b6d5`, on its owner's unmerged feature branch.
+`fa5905d805eeffd9944dbf0b870522f63b75b6d5`, now merged into claude-mods main.
+Remote main and the unchanged accepted payload were independently verified;
+the owner's merge does not authorize or establish a fleet rollout.
 The native host contains no job-watch-specific code or packaged copy.
 
 ## Proposed reusable host
