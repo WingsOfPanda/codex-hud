@@ -6,6 +6,8 @@ user “go.” Follow steps 1–6 and copy the [checklist](release-checklist.md)
 evidence directory. For an interrupted release, first reconcile that
 checklist with actual jobs and artifacts, then take the applicable
 [recovery branch](#recovery). Continue from the earliest unmet exit check.
+Use the [low-token execution rules](#low-token-execution) throughout; a routine
+release should be a small sequence of shell calls, not continuous model supervision.
 
 ## Automation endpoint
 
@@ -43,6 +45,59 @@ an interrupted resume without duplicate outward effects, and a failed-stage
 recovery that preserves evidence and does not rerun unaffected accepted stages.
 Record commands, outcomes and remaining manual decisions in the pilot record.
 One command does not promise bug-free software or waive a failed acceptance check.
+
+## Low-token execution
+
+Use the existing checked-in commands. This book change does not request a new
+release command, runner, or framework. The single-command endpoint above remains
+a future implementation goal; do not claim it is available or build it as a side
+task during a release.
+
+1. **Bound the context.** Prefer a fresh coordinator session for a new release,
+   using the existing checklist as its handoff: scope and grant references,
+   selected commits, owners, active job/observer IDs, accepted gates, unresolved
+   failures and next action. Link older evidence instead of pasting prior release
+   transcripts. A handoff file alone does not shrink an existing model context.
+   Preserve the owning root and callback route while jobs run; if a fresh context
+   is unavailable, continue authorized work with bounded reads, not a new approval
+   stop. Read required instructions once per selected revision and context; load
+   other references only for the current decision.
+2. **Execute a phase, not a conversation.** Prepare commands and acceptance checks
+   once, then batch safe mechanical steps through the existing tools. Return to
+   the model at a required review, a concrete failure or the phase's final result,
+   rather than after each file, hash or command. Keep proposal reviews, ownership
+   boundaries and action approvals. Upstream adaptation or new recipe development
+   is a separate phase within the existing grant, not routine shipping work.
+3. **Accept at the owning boundary.** The coordinator runs the required independent
+   acceptance command on the actual returned artifacts. Within that verified
+   scope, use its verdict and evidence references; do not add manual recounting,
+   parallel validators or another test run to restate a passing result. Recheck
+   when inputs change, a new trust boundary is crossed, evidence conflicts, or
+   the selected recipe requires it. Archive transfer, publication verification
+   and fresh process-ownership checks retain their own boundaries.
+4. **Return a small result.** Successful tool and owner returns contain phase,
+   exact attempt/artifact identity, verdict, evidence path and next action.
+   Failures add the failing check and a targeted excerpt. Full logs, manifests,
+   inventories and command transcripts stay on disk. Filter status to the exact
+   job and relevant fields, including when a status command returns instructions
+   already read for the current binding. Open additional evidence only to resolve
+   a named uncertainty; do not reconstruct reports with ad-hoc scripts when an
+   existing validator already supplies them.
+5. **Delegate through completion.** Give each native owner one conditional
+   assignment through its final return. Routine successful stages need neither
+   acknowledgement exchanges nor status-only agents or advisor calls. Keep a
+   child's brief self-contained rather than inheriting the release conversation.
+   End the root turn once its remaining work is registered. Reconcile delayed or
+   duplicate notices against the saved result; unchanged evidence does not start
+   another analysis, monitor or test run.
+
+**Exit check:** each phase leaves its compact verdict and next action in the
+existing checklist, with detailed evidence on disk. A failed required gate remains
+failed; a successful phase continues under the existing grant. No separate report
+or acknowledgement is needed merely to demonstrate compliance with these rules.
+
+Token reduction must not remove required tests, cleanup proof, artifact checks or
+publication approval. Reduce repeated reasoning and narration, not verification.
 
 ## Owners
 
@@ -375,6 +430,12 @@ Record [phase timings](release-performance.md#measurement-limits), overlap, cach
 conditions and review/recovery waits in the checklist. For CPU/cache experiments,
 use the [comparison method](release-protocol.md#publication-and-timing); report
 measured improvement or “not measured,” not a whole-release estimate from one stage.
+When usage records are available, summarize request count, cached/uncached input
+and output by coordinator and owner for the release window. Deduplicate request
+IDs; reasoning is part of output, and lifetime totals are not release usage.
+Compare adaptation, routine execution and recovery separately. Token volume does
+not establish subscription cost or savings; record unavailable measurements as
+such rather than launching another investigation to close the release.
 
 **Exit check:** every rollout target has an operator-confirmed result and released
 hold, and required restarts have verified outcomes. Otherwise report rollout or
@@ -411,6 +472,12 @@ these additional traps before release qualification:
 | Current product fixtures moved to 0.165 while the retained production recipe still intentionally accepted only 0.163. | Give retained-recipe tests an explicit pinned legacy source fixture; keep current-product tests and new-upstream refusal checks. Never widen a guard just to fix fixture drift. |
 | Full-history reads immediately after the first `turn/start` failed with `list_turns is not supported yet`; the original private DB had already been removed. | Wait for the exact completed-turn notification using metadata reads, then retain strict full-history assertions and fatal RPC errors. Completion is not a durability guarantee. Preserve private diagnostic DB evidence on recurrence before teardown; do not infer its cause from the error alone. |
 | The no-color status fixture omitted `--colors on`, so the report lacked the field its assertion required. | Validate each matrix command against its actual CLI and report-producing options before launch; keep `NO_COLOR` set while enabling color observation. Correct the invocation in a new reviewed case without repeating accepted cases. |
+| 2026-10-29: the 0.165 package shell-policy check required `Show less` for failed commands, whose Generic disclosure now says `Hide details`; all captured output and the log path were present. | Exercise the package-stage success/failure disclosure predicates on the built candidate before a full qualification attempt, including collapse and replay. Correct the fixture against actual disclosure semantics; preserve output, log and composer assertions. |
+| 2026-10-29: packaged compatibility setup still required 0.163 in the cursor producer and verifier after the main recipe admitted 0.165. | Bind capture metadata and both guards to the validated recipe upstream. Test both exact supported versions and wrong-version refusal; run actual setup and the complete corrected compatibility workflow on retained package bytes before another production freeze. Diagnostic passes do not replace shipping acceptance. |
+| 2026-10-29: cursor setup passed, then a file-loaded recovery contract failed to import its sibling module under the production Python environment. | Exercise the actual file loader in a subprocess with the recipe cwd and pinned `python_env`; bind sibling imports to the selected tooling directory in the entrypoint. In-process unit imports can conceal missing paths. |
+| 2026-10-29: canonical read-only SQLite inspection refreshed four shared-memory file timestamps while every receipt-bound byte, mode and size stayed unchanged. | Compare the declared content records and retain the metadata observation separately. Do not normalize timestamps or equate reader metadata activity with a changed database payload. |
+| Git does not preserve arbitrary permission modes required by canonical evidence receipts. | Publish the original canonical bundles and mode-preserving AP sidecars; verify their digests, import/extract into fresh directories, and reproduce actual-archive acceptance before publishing. See the [0.165 portable evidence](https://github.com/WingsOfPanda/codex-plus/blob/0.165.0-plus.0.4.9/docs/releases/0.165.0-plus.0.4.9/README.md) in the release companion. |
+| 2026-10-29: a new protected SSH login blocked recovery because the ordinary user could not read its process metadata. | Use reviewed privileged read-only process inspection when available, retaining the job owner as the audit UID and its normal `HOME`; UID 0 selects the wrong cohort, and sudo `HOME=/root` can make Git ignore warnings look like a dirty checkout. The unchanged strict audit must pass before resolution. Preserve the original baseline and foreign process; use no blanket SSH exemption or persistent capability change. |
 
 ## Recovery
 
